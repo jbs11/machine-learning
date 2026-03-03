@@ -655,9 +655,11 @@
       <!-- Direction signal -->
       <div class="signal-card">
         <h4>ML Direction Signal</h4>
-        <div id="signal-badge-wrap">
+        <div id="signal-badge-wrap" style="display:flex; align-items:center; gap:.6rem; flex-wrap:wrap; margin-bottom:.7rem;">
           <span class="signal-badge HOLD" id="signal-badge">— HOLD</span>
+          <span id="vol-regime-chip" style="font-size:.7rem; font-weight:700; padding:.2rem .55rem; border-radius:4px; display:none;"></span>
         </div>
+        <div style="font-size:.72rem; color:var(--muted); margin-bottom:.7rem;" id="model-type-label"></div>
         <div class="gauge-wrap">
           <div class="gauge-label">
             <span>P(DOWN) <span id="prob-down">—</span></span>
@@ -680,7 +682,7 @@
           <span class="val" id="atr-pct-val">—</span>
         </div>
         <div class="stat-row">
-          <span class="key">60-bar accuracy</span>
+          <span class="key">CV accuracy (5-fold)</span>
           <span class="val" id="accuracy-val">—</span>
         </div>
         <div class="stat-row">
@@ -695,7 +697,7 @@
         <ul class="checklist" id="checklist">
           <li><span class="check-icon wait" id="chk-prob">●</span> P(UP) ≥ 0.65 or P(DOWN) ≤ 0.35</li>
           <li><span class="check-icon wait" id="chk-mag">●</span> Magnitude ≥ 1.0× ATR</li>
-          <li><span class="check-icon wait" id="chk-acc">●</span> 60-bar accuracy ≥ 57%</li>
+          <li><span class="check-icon wait" id="chk-acc">●</span> CV accuracy ≥ 57%</li>
           <li><span class="check-icon pass">✓</span> Threshold filter applied</li>
           <li><span class="check-icon pass">✓</span> Risk defined (1.5× ATR stop)</li>
           <li><span class="check-icon pass">✓</span> Target at magnitude forecast</li>
@@ -1130,6 +1132,27 @@ function renderSignal(s, type, symbol) {
   badge.textContent = `${sig === 'BUY' ? '▲' : sig === 'SELL' ? '▼' : '◆'} ${sig}`;
   badge.className = `signal-badge ${sig}`;
 
+  // Volatility regime chip
+  const chip = document.getElementById('vol-regime-chip');
+  if (chip) {
+    const regLabel = s.vol_regime_label || (s.vol_regime === 0 ? 'Low' : s.vol_regime === 2 ? 'High' : 'Normal');
+    const regColor = s.vol_regime === 2 ? '#f87171' : s.vol_regime === 0 ? '#38bdf8' : '#fbbf24';
+    const regBg    = s.vol_regime === 2 ? 'rgba(248,113,113,.12)' : s.vol_regime === 0 ? 'rgba(56,189,248,.12)' : 'rgba(251,191,36,.12)';
+    chip.textContent = `Vol: ${regLabel}`;
+    chip.style.color      = regColor;
+    chip.style.background = regBg;
+    chip.style.border     = `1px solid ${regColor}`;
+    chip.style.display    = 'inline-block';
+  }
+
+  // Model type label
+  const modelLabel = document.getElementById('model-type-label');
+  if (modelLabel) {
+    const assetType = s.asset_type || 'stock';
+    const featCount = (s.features_used || []).length || '—';
+    modelLabel.textContent = `Model: ${s.model_type || 'GBM Ensemble'} · ${assetType} · ${featCount} features`;
+  }
+
   // Gauge
   document.getElementById('prob-up').textContent   = (up*100).toFixed(1)+'%';
   document.getElementById('prob-down').textContent = (down*100).toFixed(1)+'%';
@@ -1219,21 +1242,26 @@ function renderExplanation(s, type, symbol) {
   const atr     = s.atr?.toFixed(2);
   const stop    = sig === 'SELL' ? s.stop_short?.toFixed(2) : s.stop_long?.toFixed(2);
   const target  = sig === 'SELL' ? s.target_short?.toFixed(2) : s.target_long?.toFixed(2);
-  const acc     = (s.backtest_accuracy * 100).toFixed(1);
+  const acc     = ((s.cv_accuracy || s.backtest_accuracy || 0) * 100).toFixed(1);
   const rr      = s.rr_ratio?.toFixed(2);
   const sigWord = sig === 'BUY' ? 'bullish' : sig === 'SELL' ? 'bearish' : 'neutral';
+  const modelDesc = s.model_type || 'GBM+ExtraTrees Ensemble';
+  const volLabel  = s.vol_regime_label || 'Normal';
+  const buyT  = s.vol_regime === 2 ? 62 : 60;
+  const sellT = s.vol_regime === 2 ? 38 : 40;
 
   let html = `<strong>${label}</strong> is currently at <strong>$${close}</strong>. `;
-  html += `The XGBoost model assigns a direction probability of <strong>P(UP) = ${up}%</strong> `;
-  html += `— a <strong>${sig === 'HOLD' ? 'borderline (hold)' : sig + ' signal'}</strong> (threshold: ≥65% for buy, ≤35% for sell). `;
-  html += `The gradient boost magnitude regressor forecasts a <strong>${mag > 0 ? '+' : ''}${mag}%</strong> `;
+  html += `The <strong>${modelDesc}</strong> assigns a direction probability of <strong>P(UP) = ${up}%</strong> `;
+  html += `— a <strong>${sig === 'HOLD' ? 'borderline (hold)' : sig + ' signal'}</strong> `;
+  html += `(threshold: ≥${buyT}% for BUY, ≤${sellT}% for SELL; volatility regime: <strong>${volLabel}</strong>). `;
+  html += `The ensemble magnitude regressor forecasts a <strong>${mag > 0 ? '+' : ''}${mag}%</strong> `;
   html += `move over the next 4-hour bar. `;
 
   if (sig !== 'HOLD') {
     html += `<br><br><strong>Trade parameters:</strong> Entry at <strong>$${close}</strong>, `;
     html += `stop at <strong>$${stop}</strong> (1.5× ATR = $${atr}), `;
     html += `target at <strong>$${target}</strong>. Risk-reward ratio: <strong>${rr}:1</strong>. `;
-    html += `60-bar backtest accuracy: <strong>${acc}%</strong>. `;
+    html += `5-fold walk-forward CV accuracy: <strong>${acc}%</strong>. `;
 
     if (type === 'futures' && s.futures_multiplier) {
       html += `<br><br><strong>Futures leverage:</strong> Each point = $${s.futures_multiplier}. `;
@@ -1310,8 +1338,9 @@ async function refreshAll() {
 
 // ── IBKR Panel ───────────────────────────────────────────────────────────────
 function toggleIBKRPanel() {
-  const panel = document.getElementById('ibkr-panel');
-  panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+  const panel   = document.getElementById('ibkr-panel');
+  const visible = getComputedStyle(panel).display !== 'none';
+  panel.style.display = visible ? 'none' : 'block';
 }
 
 function syncPortRadio(val) {
@@ -1336,7 +1365,7 @@ async function connectIBKR() {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
       body:    JSON.stringify({ host, port, clientId }),
-      signal:  AbortSignal.timeout(12000)
+      signal:  AbortSignal.timeout(15000)
     });
     const data = await r.json();
     result.style.display = 'block';
@@ -1349,7 +1378,8 @@ async function connectIBKR() {
       localStorage.setItem('ibkr_host',     host);
       localStorage.setItem('ibkr_port',     port);
       localStorage.setItem('ibkr_clientid', clientId);
-      // Update badge and force-reload fresh IBKR data (bypass cache)
+      // Auto-close panel, update badge and force-reload fresh IBKR data
+      setTimeout(() => { document.getElementById('ibkr-panel').style.display = 'none'; }, 1200);
       updateIBKRBadge(true, 'IBKR real-time');
       await Promise.all([
         loadCandles(currentSymbol, true),
@@ -1393,8 +1423,13 @@ async function disconnectIBKR() {
     const data = await r.json();
     result.style.display = 'block';
     if (data.success) {
-      result.innerHTML = '<span style="color:#fbbf24;">✓ Disconnected — using yfinance (15-20 min delayed)</span>';
+      result.innerHTML = '<span style="color:#fbbf24;">✓ Disconnected — switching to yfinance (15-20 min delayed)</span>';
       updateIBKRBadge(false);
+      // Reload chart + signal so yfinance data shows immediately
+      await Promise.all([
+        loadCandles(currentSymbol, true),
+        loadSignal(currentSymbol, currentType, true)
+      ]);
     }
   } catch(e) {
     result.style.display = 'block';
@@ -1462,6 +1497,8 @@ window.addEventListener('load', async () => {
     await checkIBKRStatus();
     loadAll(currentSymbol, currentType);
     startAutoRefresh();
+    // Periodic IBKR health check — detects dropped TWS connections within 1 min
+    setInterval(checkIBKRStatus, 60000);
   }
 });
 </script>

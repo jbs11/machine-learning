@@ -44,7 +44,10 @@ from flask_cors import CORS
 import yfinance as yf
 import pandas as pd
 import numpy as np
-from sklearn.ensemble import GradientBoostingClassifier, GradientBoostingRegressor
+from sklearn.ensemble import (GradientBoostingClassifier, GradientBoostingRegressor,
+                               ExtraTreesClassifier, ExtraTreesRegressor,
+                               VotingClassifier, VotingRegressor)
+from sklearn.model_selection import TimeSeriesSplit, cross_val_score
 from sklearn.preprocessing import StandardScaler
 from datetime import datetime, timedelta
 
@@ -327,101 +330,237 @@ def compute_atr(df: pd.DataFrame, period: int = 14) -> pd.Series:
     tr = pd.concat([hl, hc, lc], axis=1).max(axis=1)
     return tr.rolling(period).mean()
 
-FEATURE_COLS = [
-    'sma20_ratio', 'sma50_ratio', 'macd', 'macd_signal',
-    'rsi', 'bb_width', 'bb_pos', 'vol_ratio',
-    'ret1', 'ret3', 'ret5', 'atr_pct',
-    'oc_range', 'hl_range'
-]
+# ── Per-asset-type feature sets ───────────────────────────────────────────────
+STOCK_FEATURE_COLS = [
+    'sma20_ratio', 'sma50_ratio', 'sma200_ratio',
+    'macd', 'macd_signal', 'macd_hist',
+    'rsi', 'stoch_k', 'williams_r',
+    'bb_width', 'bb_pos',
+    'vol_ratio', 'vol_regime',
+    'ret1', 'ret3', 'ret5', 'ret10', 'ret20',
+    'atr_pct', 'oc_range', 'hl_range', 'obv_trend',
+]  # 23 features — balanced momentum + mean-reversion
+
+OPTIONS_FEATURE_COLS = [
+    'sma20_ratio', 'sma50_ratio',
+    'macd', 'macd_signal', 'macd_hist',
+    'rsi', 'stoch_k',
+    'bb_width', 'bb_pos',
+    'vol_ratio', 'vol_regime', 'hv5_ratio',
+    'ret1', 'ret3', 'ret5',
+    'atr_pct', 'oc_range', 'hl_range',
+]  # 18 features — volatility-heavy, shorter momentum horizon
+
+FUTURES_FEATURE_COLS = [
+    'sma20_ratio', 'sma50_ratio', 'sma200_ratio',
+    'macd', 'macd_signal', 'macd_hist',
+    'rsi', 'adx',
+    'bb_width', 'bb_pos',
+    'vol_ratio', 'vol_regime',
+    'ret1', 'ret3', 'ret5', 'ret10', 'ret20',
+    'atr_pct', 'oc_range', 'hl_range',
+]  # 21 features — trend strength + longer momentum (ADX replaces volume-based)
+
+# Indices: same as futures (index volume is unreliable for OBV)
+INDEX_FEATURE_COLS = FUTURES_FEATURE_COLS
+
+# Legacy alias so any other code referencing FEATURE_COLS still works
+FEATURE_COLS = STOCK_FEATURE_COLS
+
 
 def compute_features(df: pd.DataFrame) -> pd.DataFrame:
-    """Add 14 technical features used by the ML models."""
+    """Add all technical features used by the per-type ML models."""
     d = df.copy()
-    sma20 = d['Close'].rolling(20).mean()
-    sma50 = d['Close'].rolling(50).mean()
-    ema12 = d['Close'].ewm(span=12).mean()
-    ema26 = d['Close'].ewm(span=26).mean()
-    std20 = d['Close'].rolling(20).std()
+
+    # ── Price / trend ────────────────────────────────────────────────────────
+    sma20  = d['Close'].rolling(20).mean()
+    sma50  = d['Close'].rolling(50).mean()
+    sma200 = d['Close'].rolling(200).mean()
+    ema12  = d['Close'].ewm(span=12).mean()
+    ema26  = d['Close'].ewm(span=26).mean()
+    std20  = d['Close'].rolling(20).std()
 
     d['sma20_ratio']  = d['Close'] / (sma20 + 1e-9)
     d['sma50_ratio']  = d['Close'] / (sma50 + 1e-9)
+    # sma200_ratio falls back to sma50_ratio for short histories
+    d['sma200_ratio'] = np.where(
+        d['Close'].expanding().count() >= 200,
+        d['Close'] / (sma200 + 1e-9),
+        d['Close'] / (sma50 + 1e-9)
+    )
+
+    # ── MACD ─────────────────────────────────────────────────────────────────
     d['macd']         = ema12 - ema26
     d['macd_signal']  = d['macd'].ewm(span=9).mean()
+    d['macd_hist']    = d['macd'] - d['macd_signal']
+
+    # ── RSI ──────────────────────────────────────────────────────────────────
     d['rsi']          = compute_rsi(d['Close'], 14)
-    d['atr']          = compute_atr(d, 14)
+
+    # ── Stochastic %K (14-period) ─────────────────────────────────────────────
+    low14  = d['Low'].rolling(14).min()
+    high14 = d['High'].rolling(14).max()
+    d['stoch_k']      = (d['Close'] - low14) / (high14 - low14 + 1e-9) * 100
+
+    # ── Williams %R ──────────────────────────────────────────────────────────
+    d['williams_r']   = (high14 - d['Close']) / (high14 - low14 + 1e-9) * -100
+
+    # ── Bollinger Bands ───────────────────────────────────────────────────────
     bb_upper          = sma20 + 2 * std20
     bb_lower          = sma20 - 2 * std20
     d['bb_width']     = (bb_upper - bb_lower) / (sma20 + 1e-9)
     d['bb_pos']       = (d['Close'] - bb_lower) / (bb_upper - bb_lower + 1e-9)
-    d['vol_ratio']    = d['Volume'] / (d['Volume'].rolling(20).mean() + 1e-9)
+
+    # ── ATR ───────────────────────────────────────────────────────────────────
+    d['atr']          = compute_atr(d, 14)
+    d['atr_pct']      = d['atr'] / (d['Close'] + 1e-9)
+
+    # ── ADX (14-period) ───────────────────────────────────────────────────────
+    tr     = pd.concat([
+        d['High'] - d['Low'],
+        (d['High'] - d['Close'].shift()).abs(),
+        (d['Low']  - d['Close'].shift()).abs(),
+    ], axis=1).max(axis=1)
+    dm_pos = (d['High'] - d['High'].shift()).clip(lower=0)
+    dm_neg = (d['Low'].shift()  - d['Low']).clip(lower=0)
+    dm_pos = np.where(dm_pos > dm_neg, dm_pos, 0.0)
+    dm_neg = np.where(pd.Series(dm_neg.values) > pd.Series(dm_pos), dm_neg.values, 0.0)
+    atr14  = tr.rolling(14).mean()
+    di_pos = pd.Series(dm_pos, index=d.index).rolling(14).mean() / (atr14 + 1e-9) * 100
+    di_neg = pd.Series(dm_neg, index=d.index).rolling(14).mean() / (atr14 + 1e-9) * 100
+    dx     = (di_pos - di_neg).abs() / (di_pos + di_neg + 1e-9) * 100
+    d['adx'] = dx.rolling(14).mean()
+
+    # ── Volume features ───────────────────────────────────────────────────────
+    vol_ma20          = d['Volume'].rolling(20).mean()
+    d['vol_ratio']    = d['Volume'] / (vol_ma20 + 1e-9)
+
+    # OBV trend: normalized 10-bar slope of on-balance volume
+    obv = (np.sign(d['Close'].diff()) * d['Volume']).cumsum()
+    obv_slope         = obv.diff(10) / (obv.rolling(10).std() + 1e-9)
+    d['obv_trend']    = obv_slope.clip(-3, 3) / 3.0   # normalise to [-1, 1]
+
+    # HV5/HV20 ratio: short-term vs medium-term realized volatility
+    hv5               = d['Close'].pct_change().rolling(5).std()
+    hv20              = d['Close'].pct_change().rolling(20).std()
+    d['hv5_ratio']    = hv5 / (hv20 + 1e-9)
+
+    # ── Volatility regime 0/1/2 (low / normal / high) ─────────────────────────
+    atr_pct_med       = d['atr_pct'].rolling(50).median()
+    d['vol_regime']   = np.where(d['atr_pct'] < atr_pct_med * 0.75, 0,
+                        np.where(d['atr_pct'] > atr_pct_med * 1.50, 2, 1))
+
+    # ── Returns ───────────────────────────────────────────────────────────────
     d['ret1']         = d['Close'].pct_change(1)
     d['ret3']         = d['Close'].pct_change(3)
     d['ret5']         = d['Close'].pct_change(5)
-    d['atr_pct']      = d['atr'] / (d['Close'] + 1e-9)
+    d['ret10']        = d['Close'].pct_change(10)
+    d['ret20']        = d['Close'].pct_change(20)
+
+    # ── Bar shape ─────────────────────────────────────────────────────────────
     d['oc_range']     = (d['Close'] - d['Open']) / (d['Open'] + 1e-9)
-    d['hl_range']     = (d['High'] - d['Low'])  / (d['Open'] + 1e-9)
+    d['hl_range']     = (d['High'] - d['Low'])   / (d['Open'] + 1e-9)
+
     return d.dropna()
 
 
 # ── ML Models ─────────────────────────────────────────────────────────────────
-def train_and_predict(df: pd.DataFrame):
+_ASSET_FEATURE_MAP = {
+    'stock':   STOCK_FEATURE_COLS,
+    'options': OPTIONS_FEATURE_COLS,
+    'futures': FUTURES_FEATURE_COLS,
+    'index':   INDEX_FEATURE_COLS,
+}
+
+def train_and_predict(df: pd.DataFrame, asset_type: str = 'stock'):
     """
-    Train GBM direction classifier + magnitude regressor on history,
-    then predict on the most recent bar.
-    Returns dict with all signal fields.
+    Train a per-asset-type ensemble (GBM + ExtraTrees voting) classifier for
+    direction and a voting regressor for magnitude, then predict on the latest bar.
+
+    asset_type: 'stock' | 'options' | 'futures' | 'index'
+    Returns dict with all signal fields, or None if insufficient data.
     """
+    feat_cols = _ASSET_FEATURE_MAP.get(asset_type, STOCK_FEATURE_COLS)
+
     d = df.copy()
     d['future_ret'] = d['Close'].pct_change(1).shift(-1)
     d['direction']  = (d['future_ret'] > 0).astype(int)
-    d = d.dropna(subset=FEATURE_COLS + ['direction', 'future_ret'])
+    d = d.dropna(subset=feat_cols + ['direction', 'future_ret'])
 
     if len(d) < 80:
         return None
 
-    X     = d[FEATURE_COLS].values
+    X     = d[feat_cols].values
     y_dir = d['direction'].values
     y_mag = d['future_ret'].values
 
-    scaler  = StandardScaler()
-    X_sc    = scaler.fit_transform(X)
+    scaler = StandardScaler()
+    X_sc   = scaler.fit_transform(X)
 
-    clf = GradientBoostingClassifier(
-        n_estimators=150, max_depth=4, learning_rate=0.05,
+    # ── Ensemble direction classifier: GBM + ExtraTrees soft voting ──────────
+    gbc = GradientBoostingClassifier(
+        n_estimators=200, max_depth=4, learning_rate=0.05,
         subsample=0.8, random_state=42
     )
-    reg = GradientBoostingRegressor(
-        n_estimators=150, max_depth=4, learning_rate=0.05,
-        subsample=0.8, random_state=42
+    etc = ExtraTreesClassifier(
+        n_estimators=200, max_depth=6, random_state=42, n_jobs=-1
     )
+    clf = VotingClassifier([('gbc', gbc), ('etc', etc)], voting='soft')
     clf.fit(X_sc, y_dir)
+
+    # ── Ensemble magnitude regressor: GBR + ExtraTrees average ───────────────
+    gbr = GradientBoostingRegressor(
+        n_estimators=200, max_depth=4, learning_rate=0.05,
+        subsample=0.8, random_state=42
+    )
+    etr = ExtraTreesRegressor(
+        n_estimators=200, max_depth=6, random_state=42, n_jobs=-1
+    )
+    reg = VotingRegressor([('gbr', gbr), ('etr', etr)])
     reg.fit(X_sc, y_mag)
 
-    # Predict on latest bar
+    # ── Walk-forward cross-validation accuracy ────────────────────────────────
+    tscv = TimeSeriesSplit(n_splits=5)
+    cv_scores = cross_val_score(
+        VotingClassifier([
+            ('gbc', GradientBoostingClassifier(n_estimators=100, max_depth=4,
+                                               learning_rate=0.05, subsample=0.8,
+                                               random_state=42)),
+            ('etc', ExtraTreesClassifier(n_estimators=100, max_depth=6,
+                                         random_state=42, n_jobs=-1))
+        ], voting='soft'),
+        X_sc, y_dir, cv=tscv, scoring='accuracy', n_jobs=1
+    )
+    cv_accuracy = float(cv_scores.mean())
+
+    # ── Predict on latest bar ─────────────────────────────────────────────────
     latest      = df.iloc[-1]
-    X_latest    = np.array([[latest[c] for c in FEATURE_COLS]])
+    X_latest    = np.array([[latest[c] for c in feat_cols]])
     X_latest_sc = scaler.transform(X_latest)
 
     prob_up  = float(clf.predict_proba(X_latest_sc)[0][1])
     pred_mag = float(reg.predict(X_latest_sc)[0])
     close    = float(latest['Close'])
     atr      = float(latest['atr'])
+    vol_reg  = int(latest.get('vol_regime', 1))
 
-    if prob_up >= 0.65:
+    # ── Dynamic signal thresholds based on volatility regime ─────────────────
+    buy_thresh  = 0.62 if vol_reg == 2 else 0.60
+    sell_thresh = 0.38 if vol_reg == 2 else 0.40
+    if prob_up >= buy_thresh:
         signal = 'BUY'
-    elif prob_up <= 0.35:
+    elif prob_up <= sell_thresh:
         signal = 'SELL'
     else:
         signal = 'HOLD'
 
-    # Backtest accuracy on last 60 bars
-    test_rows = min(60, len(d) - 1)
-    X_bt   = scaler.transform(d[FEATURE_COLS].values[-test_rows:])
-    y_pred = clf.predict(X_bt)
-    acc    = float((y_pred == d['direction'].values[-test_rows:]).mean())
-
-    feat_imp = dict(zip(FEATURE_COLS,
-                        [round(float(v), 4) for v in clf.feature_importances_]))
+    # ── Feature importance from the GBM sub-estimator ─────────────────────────
+    gbc_fitted  = clf.estimators_[0]   # the fitted GradientBoostingClassifier
+    feat_imp = dict(zip(feat_cols,
+                        [round(float(v), 4) for v in gbc_fitted.feature_importances_]))
     feat_imp = dict(sorted(feat_imp.items(), key=lambda x: x[1], reverse=True))
+
+    vol_regime_label = {0: 'Low', 1: 'Normal', 2: 'High'}.get(vol_reg, 'Normal')
 
     return {
         'symbol':             latest.name if hasattr(latest, 'name') else '',
@@ -441,8 +580,14 @@ def train_and_predict(df: pd.DataFrame):
         'risk_per_unit':      round(1.5 * atr, 4),
         'reward_per_unit':    round(abs(pred_mag) * close, 4),
         'rr_ratio':           round(abs(pred_mag) * close / (1.5 * atr + 1e-9), 2),
-        'backtest_accuracy':  round(acc, 4),
+        'backtest_accuracy':  round(cv_accuracy, 4),   # kept for back-compat
+        'cv_accuracy':        round(cv_accuracy, 4),
         'feature_importance': feat_imp,
+        'model_type':         'GBM+ExtraTrees Ensemble',
+        'asset_type':         asset_type,
+        'vol_regime':         vol_reg,
+        'vol_regime_label':   vol_regime_label,
+        'features_used':      feat_cols,
         'timestamp':          datetime.now().isoformat()
     }
 
@@ -499,7 +644,7 @@ def ibkr_connect():
 
         try:
             ib = IB()
-            ib.connect(host, port, clientId=client_id, timeout=6)
+            ib.connect(host, port, clientId=client_id, timeout=8)
             if ib.isConnected():
                 _ib = ib
                 _ib_connected = True
@@ -626,6 +771,17 @@ def candles(symbol: str):
     return jsonify(result)
 
 
+def _asset_type_for(symbol: str) -> str:
+    """Determine asset_type string for ML model dispatch."""
+    if symbol in SYMBOLS.get('futures', []):
+        return 'futures'
+    if symbol in SYMBOLS.get('options', []):
+        return 'options'
+    if symbol in INDEX_SYMBOLS:
+        return 'index'
+    return 'stock'
+
+
 @app.route('/api/signal/<symbol>')
 def signal(symbol: str):
     symbol  = symbol.upper()
@@ -641,7 +797,8 @@ def signal(symbol: str):
         return jsonify({'error': f'Insufficient data for {symbol}'}), 500
 
     df = compute_features(df_4h)
-    result = train_and_predict(df)
+    asset_type = _asset_type_for(symbol)
+    result = train_and_predict(df, asset_type=asset_type)
     if result is None:
         return jsonify({'error': f'Could not compute signal for {symbol}'}), 500
 
@@ -675,7 +832,7 @@ def multi_signal(symbols: str):
             results[sym] = {'error': 'insufficient data'}
             continue
         df = compute_features(df_4h)
-        res = train_and_predict(df)
+        res = train_and_predict(df, asset_type=_asset_type_for(sym))
         if res:
             res['symbol'] = sym
             res['label']  = SYMBOL_LABELS.get(sym, sym)
