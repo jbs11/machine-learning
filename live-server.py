@@ -3,9 +3,11 @@
 Live ML Trading Data Server
 ============================
 Serves 4-hour candlestick data and GBM ML signals for:
-  - Stocks  : AAPL, NVDA, MSFT, SPY, QQQ
-  - Options : AAPL, NVDA, SPY (underlying data + IV proxy)
-  - Futures : ES=F, CL=F, GC=F, NQ=F
+  - S&P 500 ETFs : SPY, QQQ, DIA, IWM
+  - Mag 7        : AAPL, MSFT, NVDA, GOOGL, AMZN, META, TSLA
+  - Blue Chips   : JPM, BAC, V, XOM, CVX, JNJ, UNH, WMT, HD, BRK-B
+  - Options      : SPY, QQQ, AAPL, NVDA, MSFT, GOOGL, AMZN, META, TSLA
+  - Futures      : ES=F, NQ=F, CL=F, GC=F, SI=F, ZB=F
 
 Data source (priority order):
   1. Interactive Brokers via ib_async (real-time when TWS/Gateway is running)
@@ -51,28 +53,63 @@ CORS(app)
 
 # ── Available Symbols ─────────────────────────────────────────────────────────
 SYMBOLS = {
-    'stocks':  ['AAPL', 'NVDA', 'MSFT', 'SPY', 'QQQ'],
-    'options': ['AAPL', 'NVDA', 'SPY'],
-    'futures': ['ES=F', 'CL=F', 'GC=F', 'NQ=F']
+    # S&P 500 index ETFs
+    'sp500':   ['SPY', 'QQQ', 'DIA', 'IWM'],
+    # Magnificent 7
+    'mag7':    ['AAPL', 'MSFT', 'NVDA', 'GOOGL', 'AMZN', 'META', 'TSLA'],
+    # Blue-chip S&P 500 components by sector
+    'bluechip':['JPM', 'BAC', 'V', 'XOM', 'CVX', 'JNJ', 'UNH', 'WMT', 'HD', 'BRK-B'],
+    # Combined stocks list (all of the above)
+    'stocks':  ['SPY', 'QQQ', 'DIA', 'IWM',
+                'AAPL', 'MSFT', 'NVDA', 'GOOGL', 'AMZN', 'META', 'TSLA',
+                'JPM', 'BAC', 'V', 'XOM', 'CVX', 'JNJ', 'UNH', 'WMT', 'HD', 'BRK-B'],
+    # Options — most liquid underlyings
+    'options': ['SPY', 'QQQ', 'AAPL', 'NVDA', 'MSFT', 'GOOGL', 'AMZN', 'META', 'TSLA'],
+    # Futures
+    'futures': ['ES=F', 'NQ=F', 'CL=F', 'GC=F', 'SI=F', 'ZB=F']
 }
 
 SYMBOL_LABELS = {
-    'AAPL': 'Apple Inc.',
-    'NVDA': 'NVIDIA Corp.',
-    'MSFT': 'Microsoft Corp.',
-    'SPY':  'S&P 500 ETF',
-    'QQQ':  'Nasdaq-100 ETF',
-    'ES=F': 'E-mini S&P 500',
-    'CL=F': 'Crude Oil WTI',
-    'GC=F': 'Gold Futures',
-    'NQ=F': 'E-mini Nasdaq-100'
+    # S&P 500 ETFs
+    'SPY':   'S&P 500 ETF (SPY)',
+    'QQQ':   'Nasdaq-100 ETF (QQQ)',
+    'DIA':   'Dow Jones ETF (DIA)',
+    'IWM':   'Russell 2000 ETF (IWM)',
+    # Magnificent 7
+    'AAPL':  'Apple Inc. (AAPL)',
+    'MSFT':  'Microsoft Corp. (MSFT)',
+    'NVDA':  'NVIDIA Corp. (NVDA)',
+    'GOOGL': 'Alphabet / Google (GOOGL)',
+    'AMZN':  'Amazon.com (AMZN)',
+    'META':  'Meta Platforms (META)',
+    'TSLA':  'Tesla Inc. (TSLA)',
+    # Blue chips
+    'JPM':   'JPMorgan Chase (JPM)',
+    'BAC':   'Bank of America (BAC)',
+    'V':     'Visa Inc. (V)',
+    'XOM':   'Exxon Mobil (XOM)',
+    'CVX':   'Chevron Corp. (CVX)',
+    'JNJ':   'Johnson & Johnson (JNJ)',
+    'UNH':   'UnitedHealth Group (UNH)',
+    'WMT':   'Walmart Inc. (WMT)',
+    'HD':    'Home Depot (HD)',
+    'BRK-B': 'Berkshire Hathaway B (BRK-B)',
+    # Futures
+    'ES=F':  'E-mini S&P 500 (ES)',
+    'NQ=F':  'E-mini Nasdaq-100 (NQ)',
+    'CL=F':  'Crude Oil WTI (CL)',
+    'GC=F':  'Gold Futures (GC)',
+    'SI=F':  'Silver Futures (SI)',
+    'ZB=F':  '30-Year T-Bond (ZB)',
 }
 
 FUTURES_MULTIPLIERS = {
     'ES=F': 50,
+    'NQ=F': 20,
     'CL=F': 1000,
     'GC=F': 100,
-    'NQ=F': 20
+    'SI=F': 5000,
+    'ZB=F': 1000,
 }
 
 # ── Interactive Brokers (ib_async) ────────────────────────────────────────────
@@ -91,10 +128,12 @@ _ib_error = ''
 
 # Map yfinance futures symbols → (IBKR symbol, exchange)
 FUTURES_IB_MAP = {
-    'ES=F': ('ES', 'CME'),
-    'NQ=F': ('NQ', 'CME'),
-    'CL=F': ('CL', 'NYMEX'),
-    'GC=F': ('GC', 'COMEX'),
+    'ES=F': ('ES',  'CME'),
+    'NQ=F': ('NQ',  'CME'),
+    'CL=F': ('CL',  'NYMEX'),
+    'GC=F': ('GC',  'COMEX'),
+    'SI=F': ('SI',  'COMEX'),
+    'ZB=F': ('ZB',  'CBOT'),
 }
 
 

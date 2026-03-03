@@ -76,6 +76,10 @@
     .asset-btn.active { background: var(--accent); border-color: var(--accent); color: #000; }
     .asset-btn.futures.active { background: #f59e0b; border-color: #f59e0b; color: #000; }
     .asset-btn.options.active { background: #a78bfa; border-color: #a78bfa; color: #000; }
+    .asset-btn.index.active   { background: #38bdf8; border-color: #38bdf8; color: #000; }
+    .asset-btn.mag7.active    { background: #10b981; border-color: #10b981; color: #000; }
+    .asset-btn.blue.active    { background: #6366f1; border-color: #6366f1; color: #fff; }
+    .asset-tabs { row-gap: .4rem; }
 
     /* ── Main Dashboard Grid ── */
     .dash-grid {
@@ -524,17 +528,54 @@
 
   <!-- Asset selector -->
   <div class="asset-tabs">
-    <span class="asset-group-label">Stocks</span>
-    <button class="asset-btn active" data-symbol="AAPL"  data-type="stock"   onclick="selectAsset(this)">AAPL</button>
-    <button class="asset-btn"        data-symbol="NVDA"  data-type="stock"   onclick="selectAsset(this)">NVDA</button>
-    <button class="asset-btn"        data-symbol="SPY"   data-type="stock"   onclick="selectAsset(this)">SPY</button>
+    <!-- S&P 500 / Index ETFs -->
+    <span class="asset-group-label">S&amp;P 500</span>
+    <button class="asset-btn index active" data-symbol="SPY"  data-type="stock" onclick="selectAsset(this)">SPY</button>
+    <button class="asset-btn index"        data-symbol="QQQ"  data-type="stock" onclick="selectAsset(this)">QQQ</button>
+    <button class="asset-btn index"        data-symbol="DIA"  data-type="stock" onclick="selectAsset(this)">DIA</button>
+    <button class="asset-btn index"        data-symbol="IWM"  data-type="stock" onclick="selectAsset(this)">IWM</button>
+
+    <!-- Magnificent 7 -->
+    <span class="asset-group-label" style="margin-left:.5rem;">Mag 7</span>
+    <button class="asset-btn mag7" data-symbol="AAPL"  data-type="stock" onclick="selectAsset(this)">AAPL</button>
+    <button class="asset-btn mag7" data-symbol="MSFT"  data-type="stock" onclick="selectAsset(this)">MSFT</button>
+    <button class="asset-btn mag7" data-symbol="NVDA"  data-type="stock" onclick="selectAsset(this)">NVDA</button>
+    <button class="asset-btn mag7" data-symbol="GOOGL" data-type="stock" onclick="selectAsset(this)">GOOGL</button>
+    <button class="asset-btn mag7" data-symbol="AMZN"  data-type="stock" onclick="selectAsset(this)">AMZN</button>
+    <button class="asset-btn mag7" data-symbol="META"  data-type="stock" onclick="selectAsset(this)">META</button>
+    <button class="asset-btn mag7" data-symbol="TSLA"  data-type="stock" onclick="selectAsset(this)">TSLA</button>
+
+    <!-- Blue Chips -->
+    <span class="asset-group-label" style="margin-left:.5rem;">Blue Chips</span>
+    <button class="asset-btn blue" data-symbol="JPM"   data-type="stock" onclick="selectAsset(this)">JPM</button>
+    <button class="asset-btn blue" data-symbol="BAC"   data-type="stock" onclick="selectAsset(this)">BAC</button>
+    <button class="asset-btn blue" data-symbol="V"     data-type="stock" onclick="selectAsset(this)">V</button>
+    <button class="asset-btn blue" data-symbol="XOM"   data-type="stock" onclick="selectAsset(this)">XOM</button>
+    <button class="asset-btn blue" data-symbol="CVX"   data-type="stock" onclick="selectAsset(this)">CVX</button>
+    <button class="asset-btn blue" data-symbol="JNJ"   data-type="stock" onclick="selectAsset(this)">JNJ</button>
+    <button class="asset-btn blue" data-symbol="UNH"   data-type="stock" onclick="selectAsset(this)">UNH</button>
+    <button class="asset-btn blue" data-symbol="WMT"   data-type="stock" onclick="selectAsset(this)">WMT</button>
+    <button class="asset-btn blue" data-symbol="HD"    data-type="stock" onclick="selectAsset(this)">HD</button>
+    <button class="asset-btn blue" data-symbol="BRK-B" data-type="stock" onclick="selectAsset(this)">BRK-B</button>
+
+    <!-- Options -->
     <span class="asset-group-label" style="margin-left:.5rem;">Options</span>
-    <button class="asset-btn options" data-symbol="AAPL" data-type="options" onclick="selectAsset(this)">AAPL Opts</button>
-    <button class="asset-btn options" data-symbol="NVDA" data-type="options" onclick="selectAsset(this)">NVDA Opts</button>
+    <button class="asset-btn options" data-symbol="SPY"   data-type="options" onclick="selectAsset(this)">SPY Opts</button>
+    <button class="asset-btn options" data-symbol="QQQ"   data-type="options" onclick="selectAsset(this)">QQQ Opts</button>
+    <button class="asset-btn options" data-symbol="AAPL"  data-type="options" onclick="selectAsset(this)">AAPL Opts</button>
+    <button class="asset-btn options" data-symbol="NVDA"  data-type="options" onclick="selectAsset(this)">NVDA Opts</button>
+    <button class="asset-btn options" data-symbol="AMZN"  data-type="options" onclick="selectAsset(this)">AMZN Opts</button>
+    <button class="asset-btn options" data-symbol="META"  data-type="options" onclick="selectAsset(this)">META Opts</button>
+    <button class="asset-btn options" data-symbol="TSLA"  data-type="options" onclick="selectAsset(this)">TSLA Opts</button>
+
+    <!-- Futures -->
     <span class="asset-group-label" style="margin-left:.5rem;">Futures</span>
     <button class="asset-btn futures" data-symbol="ES=F" data-type="futures" onclick="selectAsset(this)">ES</button>
+    <button class="asset-btn futures" data-symbol="NQ=F" data-type="futures" onclick="selectAsset(this)">NQ</button>
     <button class="asset-btn futures" data-symbol="CL=F" data-type="futures" onclick="selectAsset(this)">CL</button>
     <button class="asset-btn futures" data-symbol="GC=F" data-type="futures" onclick="selectAsset(this)">GC</button>
+    <button class="asset-btn futures" data-symbol="SI=F" data-type="futures" onclick="selectAsset(this)">SI</button>
+    <button class="asset-btn futures" data-symbol="ZB=F" data-type="futures" onclick="selectAsset(this)">ZB</button>
   </div>
 
   <!-- Main grid -->
@@ -885,15 +926,42 @@ const API = 'http://localhost:5050';
 let chartInstance = null;
 let candleSeries   = null;
 let volumeSeries   = null;
-let currentSymbol  = 'AAPL';
+let currentSymbol  = 'SPY';
 let currentType    = 'stock';
 let autoRefreshTimer = null;
 
 const SYMBOL_LABELS = {
-  'AAPL': 'Apple (AAPL)', 'NVDA': 'NVIDIA (NVDA)', 'SPY': 'S&P 500 ETF (SPY)',
-  'MSFT': 'Microsoft (MSFT)', 'QQQ': 'Nasdaq ETF (QQQ)',
-  'ES=F': 'E-mini S&P 500 (ES)', 'CL=F': 'Crude Oil (CL)',
-  'GC=F': 'Gold (GC)', 'NQ=F': 'E-mini Nasdaq (NQ)'
+  // S&P 500 ETFs
+  'SPY':   'S&P 500 ETF (SPY)',
+  'QQQ':   'Nasdaq-100 ETF (QQQ)',
+  'DIA':   'Dow Jones ETF (DIA)',
+  'IWM':   'Russell 2000 ETF (IWM)',
+  // Magnificent 7
+  'AAPL':  'Apple (AAPL)',
+  'MSFT':  'Microsoft (MSFT)',
+  'NVDA':  'NVIDIA (NVDA)',
+  'GOOGL': 'Alphabet / Google (GOOGL)',
+  'AMZN':  'Amazon (AMZN)',
+  'META':  'Meta Platforms (META)',
+  'TSLA':  'Tesla (TSLA)',
+  // Blue chips
+  'JPM':   'JPMorgan Chase (JPM)',
+  'BAC':   'Bank of America (BAC)',
+  'V':     'Visa (V)',
+  'XOM':   'Exxon Mobil (XOM)',
+  'CVX':   'Chevron (CVX)',
+  'JNJ':   'Johnson & Johnson (JNJ)',
+  'UNH':   'UnitedHealth (UNH)',
+  'WMT':   'Walmart (WMT)',
+  'HD':    'Home Depot (HD)',
+  'BRK-B': 'Berkshire Hathaway B (BRK-B)',
+  // Futures
+  'ES=F':  'E-mini S&P 500 (ES)',
+  'NQ=F':  'E-mini Nasdaq-100 (NQ)',
+  'CL=F':  'Crude Oil WTI (CL)',
+  'GC=F':  'Gold Futures (GC)',
+  'SI=F':  'Silver Futures (SI)',
+  'ZB=F':  '30-Year T-Bond (ZB)',
 };
 
 // ── Chart init ──────────────────────────────────────────────────────────────
