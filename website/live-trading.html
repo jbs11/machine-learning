@@ -79,6 +79,7 @@
     .asset-btn.index.active   { background: #38bdf8; border-color: #38bdf8; color: #000; }
     .asset-btn.mag7.active    { background: #10b981; border-color: #10b981; color: #000; }
     .asset-btn.blue.active    { background: #6366f1; border-color: #6366f1; color: #fff; }
+    .asset-btn.idx.active     { background: #f97316; border-color: #f97316; color: #000; }
     .asset-tabs { row-gap: .4rem; }
 
     /* ── Main Dashboard Grid ── */
@@ -592,6 +593,15 @@
     <button class="asset-btn futures" data-symbol="GC=F" data-type="futures" onclick="selectAsset(this)">GC</button>
     <button class="asset-btn futures" data-symbol="SI=F" data-type="futures" onclick="selectAsset(this)">SI</button>
     <button class="asset-btn futures" data-symbol="ZB=F" data-type="futures" onclick="selectAsset(this)">ZB</button>
+
+    <!-- Market Indices -->
+    <span class="asset-group-label" style="margin-left:.5rem;">Indices</span>
+    <button class="asset-btn idx" data-symbol="^GSPC" data-type="stock" onclick="selectAsset(this)">S&amp;P 500</button>
+    <button class="asset-btn idx" data-symbol="^DJI"  data-type="stock" onclick="selectAsset(this)">DJIA</button>
+    <button class="asset-btn idx" data-symbol="^IXIC" data-type="stock" onclick="selectAsset(this)">NASDAQ</button>
+    <button class="asset-btn idx" data-symbol="^NDX"  data-type="stock" onclick="selectAsset(this)">NDX-100</button>
+    <button class="asset-btn idx" data-symbol="^RUT"  data-type="stock" onclick="selectAsset(this)">Russell</button>
+    <button class="asset-btn idx" data-symbol="^VIX"  data-type="stock" onclick="selectAsset(this)">VIX</button>
   </div>
 
   <!-- Main grid -->
@@ -978,6 +988,13 @@ const SYMBOL_LABELS = {
   'GC=F':  'Gold Futures (GC)',
   'SI=F':  'Silver Futures (SI)',
   'ZB=F':  '30-Year T-Bond (ZB)',
+  // Indices
+  '^GSPC': 'S&P 500 Index (^GSPC)',
+  '^DJI':  'Dow Jones Industrial Avg (^DJI)',
+  '^IXIC': 'NASDAQ Composite (^IXIC)',
+  '^NDX':  'NASDAQ-100 Index (^NDX)',
+  '^RUT':  'Russell 2000 Index (^RUT)',
+  '^VIX':  'CBOE Volatility Index (VIX)',
 };
 
 // ── Chart init ──────────────────────────────────────────────────────────────
@@ -1046,7 +1063,7 @@ async function loadCandles(symbol, nocache = false) {
   showChartLoading('<span class="spinner"></span>&nbsp;Downloading market data…');
   const qp = `period=90d${nocache ? '&nocache=1' : ''}`;
   try {
-    const r = await fetch(`${API}/api/candles/${symbol}?${qp}`,
+    const r = await fetch(`${API}/api/candles/${encodeURIComponent(symbol)}?${qp}`,
                           { signal: AbortSignal.timeout(25000) });
     if (!r.ok) throw new Error(r.statusText);
     const data = await r.json();
@@ -1085,7 +1102,7 @@ async function loadCandles(symbol, nocache = false) {
 async function loadSignal(symbol, type, nocache = false) {
   const qp = nocache ? '?nocache=1' : '';
   try {
-    const r = await fetch(`${API}/api/signal/${symbol}${qp}`,
+    const r = await fetch(`${API}/api/signal/${encodeURIComponent(symbol)}${qp}`,
                           { signal: AbortSignal.timeout(30000) });
     if (!r.ok) throw new Error(r.statusText);
     const s = await r.json();

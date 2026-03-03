@@ -66,7 +66,9 @@ SYMBOLS = {
     # Options — most liquid underlyings
     'options': ['SPY', 'QQQ', 'AAPL', 'NVDA', 'MSFT', 'GOOGL', 'AMZN', 'META', 'TSLA'],
     # Futures
-    'futures': ['ES=F', 'NQ=F', 'CL=F', 'GC=F', 'SI=F', 'ZB=F']
+    'futures': ['ES=F', 'NQ=F', 'CL=F', 'GC=F', 'SI=F', 'ZB=F'],
+    # Market Indices (yfinance only — not directly tradeable via IBKR)
+    'indices': ['^GSPC', '^DJI', '^IXIC', '^NDX', '^RUT', '^VIX'],
 }
 
 SYMBOL_LABELS = {
@@ -101,6 +103,13 @@ SYMBOL_LABELS = {
     'GC=F':  'Gold Futures (GC)',
     'SI=F':  'Silver Futures (SI)',
     'ZB=F':  '30-Year T-Bond (ZB)',
+    # Indices
+    '^GSPC': 'S&P 500 Index (^GSPC)',
+    '^DJI':  'Dow Jones Indus. Avg (^DJI)',
+    '^IXIC': 'NASDAQ Composite (^IXIC)',
+    '^NDX':  'NASDAQ-100 Index (^NDX)',
+    '^RUT':  'Russell 2000 Index (^RUT)',
+    '^VIX':  'CBOE Volatility Index (VIX)',
 }
 
 FUTURES_MULTIPLIERS = {
@@ -111,6 +120,9 @@ FUTURES_MULTIPLIERS = {
     'SI=F': 5000,
     'ZB=F': 1000,
 }
+
+# Indices are yfinance-only — IBKR doesn't support them as standard contracts
+INDEX_SYMBOLS = {'^GSPC', '^DJI', '^IXIC', '^NDX', '^RUT', '^VIX'}
 
 # ── Interactive Brokers (ib_async) ────────────────────────────────────────────
 try:
@@ -272,10 +284,11 @@ def get_4h_candles(symbol: str, period: str = '90d') -> pd.DataFrame:
     except Exception:
         period_days = 90
 
-    # 1) Try IBKR live data
-    df = get_4h_candles_ibkr(symbol, period_days)
-    if not df.empty:
-        return df
+    # 1) Try IBKR live data (skip for indices — not standard IBKR contracts)
+    if symbol not in INDEX_SYMBOLS:
+        df = get_4h_candles_ibkr(symbol, period_days)
+        if not df.empty:
+            return df
 
     # 2) Fall back to yfinance (15-20 min delayed)
     try:
