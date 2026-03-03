@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ML in Trading — Artificial Intelligence Course</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ── Navigation ── -->
+<nav class="nav">
+  <a href="index.html" class="nav-logo">
+    <img src="images/steve.jpg" class="nav-logo-photo" alt="Stephen Borick">
+    <div class="nav-logo-text">
+      <span class="nav-company">Artificial Intelligence</span>
+      <span class="nav-name">Solutions, Inc.</span>
+    </div>
+  </a>
+  <ul class="nav-links">
+    <li><a href="index.html">Home</a></li>
+    <li><a href="neural-networks.html">Neural Networks</a></li>
+    <li><a href="machine-learning.html">Machine Learning</a></li>
+    <li><a href="ml-trading.html" class="active">ML in Trading</a></li>
+  </ul>
+</nav>
+
+<!-- ── Breadcrumb ── -->
+<div style="background:var(--surface); border-bottom:1px solid var(--border);">
+  <div class="breadcrumb">
+    <a href="index.html">AI Course</a>
+    <span class="breadcrumb-sep">›</span>
+    <span>Module 3: ML in Trading</span>
+  </div>
+</div>
+
+<!-- ── Page Hero ── -->
+<section class="page-hero">
+  <div class="page-hero-inner">
+    <span class="badge badge-gold" style="margin-bottom:1rem; display:inline-block;">Module 3 · Applied ML</span>
+    <h1>📈 Machine Learning in Trading</h1>
+    <p>
+      Discover how quantitative hedge funds apply machine learning to the S&amp;P 500 —
+      engineering features from OHLCV data, predicting market direction and magnitude,
+      and building LSTM-powered strategies with backtested Sharpe ratios above 1.5.
+    </p>
+  </div>
+</section>
+
+<!-- ── Video ── -->
+<section class="video-section">
+  <div class="video-inner">
+    <div style="max-width:854px; margin:0 auto;">
+      <video
+        controls
+        preload="metadata"
+        style="width:100%; border-radius:12px; border:1px solid var(--border); display:block; background:#000;"
+      >
+        <source src="videos/ml-trading.mp4" type="video/mp4">
+        <p style="color:var(--muted); padding:2rem; text-align:center;">
+          Video is rendering — check back shortly, or
+          <a href="http://localhost:3000" target="_blank">open in Remotion Studio</a>.
+        </p>
+      </video>
+      <p style="text-align:right; margin-top:.5rem; font-size:.78rem; color:var(--muted);">
+        Module 3 · ML in Trading · ~107s · 1280×720 · H.264
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ── Lesson Content ── -->
+<div class="section">
+  <div class="lesson-grid">
+
+    <!-- Main Content -->
+    <div class="lesson-main">
+
+      <!-- Overview -->
+      <div class="content-block">
+        <h2>📖 Why Machine Learning in Trading?</h2>
+        <p>
+          Financial markets generate enormous amounts of structured data — prices, volumes, order flow,
+          earnings, and macroeconomic indicators — across thousands of instruments and decades of history.
+          Human traders can analyze only a fraction of this information at a time. Machine learning models
+          have no such constraint.
+        </p>
+        <p>
+          ML approaches markets as a <strong>pattern recognition problem</strong>: given the history of a
+          price series and derived features, predict future price direction or magnitude. The patterns ML
+          discovers are often <em>non-linear, multi-dimensional, and time-varying</em> — beyond the reach
+          of traditional technical or fundamental analysis.
+        </p>
+        <p>
+          Leading quantitative funds — Renaissance Technologies, Two Sigma, D.E. Shaw, and Citadel — use
+          sophisticated ML pipelines that have generated billions in alpha over decades. This module
+          introduces the core concepts behind these systems.
+        </p>
+
+        <div class="stat-strip">
+          <div class="stat"><div class="stat-value">$500B+</div><div class="stat-label">Assets managed by quant funds</div></div>
+          <div class="stat"><div class="stat-value">66%+</div><div class="stat-label">US equity volume: algorithmic</div></div>
+          <div class="stat"><div class="stat-value">60+ yrs</div><div class="stat-label">S&amp;P 500 daily price history</div></div>
+          <div class="stat"><div class="stat-value">1.5+</div><div class="stat-label">Sharpe ratio target (ML strat.)</div></div>
+        </div>
+      </div>
+
+      <!-- Data -->
+      <div class="content-block">
+        <h2>🗄 Market Data: The S&amp;P 500 Dataset</h2>
+        <p>
+          The <strong>S&amp;P 500</strong> is the most widely tracked equity index in the world — a
+          cap-weighted basket of 500 large US companies. It provides a clean, survivorship-adjusted
+          benchmark with decades of daily price data.
+        </p>
+
+        <h3>OHLCV Data Fields</h3>
+        <p>Each trading session produces five data points:</p>
+        <ul>
+          <li><strong>Open</strong> — Price of the first trade when the market opens at 9:30 AM ET.</li>
+          <li><strong>High</strong> — Highest price reached during the session.</li>
+          <li><strong>Low</strong> — Lowest price reached during the session.</li>
+          <li><strong>Close</strong> — Price of the last trade at 4:00 PM ET. The most widely used reference price.</li>
+          <li><strong>Volume</strong> — Total shares traded. High volume on a price move confirms significance.</li>
+        </ul>
+
+        <h3>Why OHLCV Is Rich in Information</h3>
+        <p>
+          The spread between high and low (the <strong>session range</strong>) reveals intraday volatility.
+          The relationship between open and close (the <strong>candle body</strong>) indicates directional
+          conviction. Volume relative to its moving average signals unusual institutional activity.
+        </p>
+
+        <h3>Data Preprocessing Considerations</h3>
+        <ul>
+          <li><strong>Adjusting for splits &amp; dividends</strong> — Raw prices must be backward-adjusted to be comparable across time.</li>
+          <li><strong>Returns vs. prices</strong> — Log returns (ln(Pₜ/Pₜ₋₁)) are stationary and more suitable for ML models than raw prices.</li>
+          <li><strong>Normalization</strong> — Rolling z-score normalization makes features comparable across different market regimes.</li>
+          <li><strong>Stationarity</strong> — Many ML models assume stationary inputs. Raw prices are non-stationary; returns and detrended series are more suitable.</li>
+        </ul>
+      </div>
+
+      <!-- Feature Engineering -->
+      <div class="content-block">
+        <h2>🔧 Feature Engineering for Markets</h2>
+        <p>
+          Raw OHLCV data contains little predictive signal on its own. The power of ML in trading comes
+          largely from <strong>feature engineering</strong> — transforming raw price action into informative
+          indicators that expose the underlying market structure.
+        </p>
+
+        <h3>Trend Features (Moving Averages)</h3>
+        <ul>
+          <li><strong>SMA(20)</strong> — Simple 20-day moving average. Smooths noise; the current price relative to SMA-20 measures short-term trend.</li>
+          <li><strong>SMA(50)</strong> — 50-day moving average. Medium-term trend indicator. A golden cross (SMA-20 crossing above SMA-50) is a classic bullish signal.</li>
+          <li><strong>EMA(12/26)</strong> — Exponential moving averages weight recent prices more. Form the basis of MACD.</li>
+          <li><strong>Price/SMA ratio</strong> — How far price has deviated from its moving average. Mean reversion signal.</li>
+        </ul>
+
+        <h3>Momentum Features</h3>
+        <ul>
+          <li><strong>RSI (14-day)</strong> — Relative Strength Index. Oscillates between 0 and 100. Above 70 = overbought; below 30 = oversold. One of the most reliable short-term mean-reversion signals.</li>
+          <li><strong>MACD</strong> — Moving Average Convergence Divergence. Difference between EMA(12) and EMA(26). Signal line is EMA(9) of MACD. Crossovers indicate momentum shifts.</li>
+          <li><strong>Rate of Change (ROC)</strong> — Percentage price change over N days. Captures medium-term momentum.</li>
+          <li><strong>Williams %R</strong> — Measures where current price sits within the N-day high-low range. Similar to RSI but inverted.</li>
+        </ul>
+
+        <h3>Volatility Features</h3>
+        <ul>
+          <li><strong>Bollinger Bands</strong> — Upper and lower bands at SMA ± 2σ (two standard deviations). Price touching the lower band signals potential reversal; breakouts confirm momentum.</li>
+          <li><strong>ATR (Average True Range)</strong> — Average of the true range (max of: High−Low, |High−prev.Close|, |Low−prev.Close|) over N days. Quantifies recent volatility for position sizing.</li>
+          <li><strong>Rolling Standard Deviation</strong> — 20-day standard deviation of log returns. Regime indicator — high volatility precedes large moves.</li>
+        </ul>
+
+        <h3>Volume Features</h3>
+        <ul>
+          <li><strong>On-Balance Volume (OBV)</strong> — Running total of volume with sign determined by price direction. Confirms price trends when OBV aligns.</li>
+          <li><strong>VWAP</strong> — Volume-Weighted Average Price. Institutions measure execution quality relative to VWAP.</li>
+          <li><strong>Volume Ratio</strong> — Today's volume divided by 20-day average. &gt;2 signals unusual activity.</li>
+        </ul>
+
+        <h3>Derived Statistical Features</h3>
+        <ul>
+          <li>Rolling skewness and kurtosis of returns (market regime detection)</li>
+          <li>Autocorrelation of returns (measures persistence)</li>
+          <li>Intraday range as a percentage of close (relative volatility)</li>
+          <li>Gap: today's open vs. yesterday's close (overnight risk)</li>
+        </ul>
+      </div>
+
+      <!-- Direction Prediction -->
+      <div class="content-block">
+        <h2>🎯 Predicting Market Direction (Classification)</h2>
+        <p>
+          The most common ML trading formulation: predict whether the S&amp;P 500 will close
+          <strong>higher (+1) or lower (−1)</strong> tomorrow, given today's feature vector.
+        </p>
+        <div class="formula">y = sign(Close[t+1] − Close[t])   ∈ {+1, −1}</div>
+
+        <h3>Algorithm: Random Forest Classifier</h3>
+        <p>
+          Random Forests are particularly well-suited to this problem because:
+        </p>
+        <ul>
+          <li>They handle non-linear, high-dimensional feature spaces without overfitting as severely as individual trees</li>
+          <li>They are robust to noisy, non-stationary data</li>
+          <li>They provide feature importance rankings, revealing which indicators contribute most</li>
+          <li>They require minimal hyperparameter tuning to achieve competitive performance</li>
+        </ul>
+
+        <h3>Confusion Matrix Interpretation</h3>
+        <p>For a binary direction classifier, four outcomes are possible:</p>
+        <div class="term-grid">
+          <div class="term-card">
+            <div class="term" style="color:var(--success);">True Positive (TP)</div>
+            <p>Predicted UP and market went UP. Profitable long trade.</p>
+          </div>
+          <div class="term-card">
+            <div class="term" style="color:var(--muted);">True Negative (TN)</div>
+            <p>Predicted DOWN and market went DOWN. Profitable short trade.</p>
+          </div>
+          <div class="term-card">
+            <div class="term" style="color:#f87171;">False Positive (FP)</div>
+            <p>Predicted UP but market went DOWN. Long position loses money.</p>
+          </div>
+          <div class="term-card">
+            <div class="term" style="color:#f87171;">False Negative (FN)</div>
+            <p>Predicted DOWN but market went UP. Missed opportunity or short loses.</p>
+          </div>
+        </div>
+
+        <h3>Realistic Performance Expectations</h3>
+        <p>
+          Markets are near-efficient — directional accuracy of <strong>52–58%</strong> is considered
+          strong. A 55% accuracy model, applied consistently with proper position sizing, can generate
+          significant risk-adjusted returns over thousands of trades. The edge is statistical, not certain
+          on any individual trade.
+        </p>
+      </div>
+
+      <!-- Magnitude Prediction -->
+      <div class="content-block">
+        <h2>📐 Predicting Move Magnitude (Regression)</h2>
+        <p>
+          Knowing <em>direction</em> is valuable. Knowing <em>how much</em> the market will move
+          is even more powerful — it enables <strong>proportional position sizing</strong>. When the
+          model is highly confident of a large move, you invest more; when confidence is low, you reduce
+          exposure.
+        </p>
+        <div class="formula">y = (Close[t+1] − Close[t]) / Close[t]   ← next-day log return</div>
+
+        <h3>Prediction Intervals</h3>
+        <p>
+          Rather than a single point estimate, advanced models output a <strong>prediction interval</strong>
+          — upper and lower bounds around the expected return. These bounds can be estimated via:
+        </p>
+        <ul>
+          <li><strong>Quantile regression</strong> — Directly models the Nth percentile of the return distribution</li>
+          <li><strong>Conformal prediction</strong> — Distribution-free, guaranteed coverage of true value with probability 1−α</li>
+          <li><strong>Bayesian neural networks</strong> — Maintain uncertainty estimates over weights, propagating uncertainty to predictions</li>
+        </ul>
+
+        <h3>Position Sizing from Magnitude Forecasts</h3>
+        <p>
+          The <strong>Kelly Criterion</strong> provides a theoretically optimal position size as a
+          fraction of portfolio:
+        </p>
+        <div class="formula">f* = (p·b − q) / b</div>
+        <p>where p = win probability, q = 1−p, b = win/loss ratio. In practice, "half Kelly" (f*/2) is
+        used to reduce variance while still compounding efficiently.</p>
+      </div>
+
+      <!-- LSTM -->
+      <div class="content-block">
+        <h2>🔁 Long Short-Term Memory Networks</h2>
+        <p>
+          Standard feedforward networks treat each day's feature vector independently. But markets have
+          <strong>temporal structure</strong> — a sequence of 20 days of data tells a richer story than
+          20 isolated daily snapshots. <strong>LSTMs</strong> are designed to exploit this structure.
+        </p>
+
+        <h3>How LSTM Memory Works</h3>
+        <p>
+          An LSTM cell maintains two state vectors — the <strong>cell state</strong> (long-term memory)
+          and the <strong>hidden state</strong> (working memory). Three learned gates control information flow:
+        </p>
+        <ul>
+          <li><strong>Forget Gate</strong> — Decides what fraction of the current cell state to discard. Sigmoid output 0 = forget everything, 1 = retain everything.</li>
+          <li><strong>Input Gate</strong> — Decides what new information to write into the cell state.</li>
+          <li><strong>Output Gate</strong> — Decides what portion of the cell state to expose as the hidden state (output).</li>
+        </ul>
+        <div class="formula">Cell state:   C[t] = f·C[t-1] + i·tanh(W_c·[h[t-1], x[t]] + b_c)</div>
+        <div class="formula">Hidden state: h[t] = o·tanh(C[t])</div>
+
+        <h3>LSTM Architecture for Trading</h3>
+        <ul>
+          <li><strong>Input sequence</strong>: 20–60 trading days of features (OHLCV + derived indicators)</li>
+          <li><strong>LSTM layers</strong>: 1–3 stacked layers with 64–256 hidden units each</li>
+          <li><strong>Dropout</strong>: 0.2–0.4 between LSTM layers for regularization</li>
+          <li><strong>Output</strong>: Dense layer with 1 unit (regression) or softmax (classification)</li>
+        </ul>
+
+        <h3>Why LSTM Outperforms Simple Models on Time Series</h3>
+        <p>
+          LSTM can learn that a pullback after a 3-day rally in a rising-rate environment predicts a bounce
+          — a relationship spanning multiple days that a static feature vector would miss. The gating
+          mechanism allows the network to selectively remember relevant historical context.
+        </p>
+      </div>
+
+      <!-- Backtesting -->
+      <div class="content-block">
+        <h2>📋 Backtesting &amp; Performance Metrics</h2>
+        <p>
+          <strong>Backtesting</strong> simulates how a trading strategy would have performed on historical
+          data. It is the primary tool for evaluating ML trading models before risking real capital.
+        </p>
+
+        <h3>Critical Pitfalls</h3>
+        <ul>
+          <li><strong>Look-ahead bias</strong> — Using data that would not have been available at decision time. Example: using tomorrow's open price as a feature. This is the most common and dangerous error.</li>
+          <li><strong>Survivorship bias</strong> — Only testing on stocks still trading today. Companies that went bankrupt are excluded, inflating apparent returns.</li>
+          <li><strong>Overfitting</strong> — Tuning strategy parameters to fit historical data specifically. Always use a held-out test period the model was never exposed to.</li>
+          <li><strong>Transaction costs</strong> — Commissions, bid-ask spread, and market impact. A strategy showing 15% annual gross return may deliver only 8% net.</li>
+        </ul>
+
+        <h3>Walk-Forward Analysis</h3>
+        <p>
+          The gold standard for time series validation. Train on data from years 1–5, test on year 6.
+          Slide forward: train on years 2–6, test on year 7. Repeat. This mimics the true deployment
+          environment and reveals whether the strategy generalizes across different market regimes.
+        </p>
+
+        <h3>Performance Metrics</h3>
+        <div class="term-grid">
+          <div class="term-card">
+            <div class="term">Total Return</div>
+            <p>Cumulative portfolio gain over the backtest period. Compare to buy-and-hold benchmark.</p>
+          </div>
+          <div class="term-card">
+            <div class="term">CAGR</div>
+            <p>Compound Annual Growth Rate. Annualized return accounting for compounding.</p>
+          </div>
+          <div class="term-card">
+            <div class="term">Sharpe Ratio</div>
+            <p>(Return − Risk-free rate) / Volatility. &gt;1 = good, &gt;1.5 = excellent, &gt;2 = exceptional.</p>
+          </div>
+          <div class="term-card">
+            <div class="term">Max Drawdown</div>
+            <p>Largest peak-to-trough decline. Measures worst-case loss from a portfolio peak.</p>
+          </div>
+          <div class="term-card">
+            <div class="term">Calmar Ratio</div>
+            <p>CAGR / Max Drawdown. Risk-adjusted return relative to the worst loss experienced.</p>
+          </div>
+          <div class="term-card">
+            <div class="term">Win Rate</div>
+            <p>Percentage of trades that are profitable. Must be interpreted alongside win/loss ratio.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Risk Management -->
+      <div class="content-block">
+        <h2>🛡 Risk Management</h2>
+        <p>
+          Even a profitable strategy can be ruined by poor risk management. Protecting capital is the
+          prerequisite for long-term compounding.
+        </p>
+        <ul>
+          <li><strong>Position sizing</strong> — Never risk more than 1–2% of portfolio on a single trade. Use ATR-based sizing to adjust for current volatility.</li>
+          <li><strong>Stop-loss orders</strong> — Exit trades that move against you beyond a predefined threshold. Protects against rare large adverse moves.</li>
+          <li><strong>Volatility targeting</strong> — Scale position sizes inversely with realized volatility to maintain constant portfolio risk across market regimes.</li>
+          <li><strong>Diversification</strong> — Trade multiple uncorrelated instruments or strategies to reduce idiosyncratic risk.</li>
+          <li><strong>Maximum drawdown limits</strong> — Automatically reduce position sizes or halt trading if drawdown exceeds a threshold (e.g., 15%). Prevents the strategy from destroying capital in adverse regimes.</li>
+          <li><strong>Regime detection</strong> — Identify whether the current market is trending, mean-reverting, or in crisis mode, and adjust strategy parameters accordingly.</li>
+        </ul>
+      </div>
+
+      <!-- Real-World -->
+      <div class="content-block">
+        <h2>🌍 Real-World Applications &amp; Practitioners</h2>
+
+        <h3>Leading Quantitative Funds</h3>
+        <ul>
+          <li><strong>Renaissance Technologies (Medallion Fund)</strong> — ~66% gross annual return since 1988. The most successful quant fund in history. Uses advanced statistical and ML models across all asset classes.</li>
+          <li><strong>Two Sigma</strong> — $60B+ AUM. One of the largest employers of data scientists and ML engineers in finance. Uses deep learning for alpha generation.</li>
+          <li><strong>D.E. Shaw</strong> — Pioneered systematic trading in the 1990s. Known for exploiting market microstructure and statistical arbitrage.</li>
+          <li><strong>Citadel Securities</strong> — A leading market maker using ML for real-time pricing and inventory management across millions of trades daily.</li>
+        </ul>
+
+        <h3>Broader Applications</h3>
+        <ul>
+          <li><strong>Robo-advisors</strong> (Betterment, Wealthfront) — Automated portfolio construction and rebalancing</li>
+          <li><strong>Risk management systems</strong> — Real-time portfolio risk estimation and hedging</li>
+          <li><strong>Alternative data</strong> — Satellite imagery, credit card data, and news sentiment feeding ML alpha signals</li>
+          <li><strong>Crypto markets</strong> — 24/7 trading with higher signal-to-noise ratio for ML strategies</li>
+        </ul>
+      </div>
+
+    </div><!-- end lesson-main -->
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-card">
+        <h4>Topics Covered</h4>
+        <ul>
+          <li>Why ML in trading</li>
+          <li>S&amp;P 500 OHLCV data</li>
+          <li>Moving averages (SMA/EMA)</li>
+          <li>RSI, MACD, Bollinger Bands</li>
+          <li>ATR and volume features</li>
+          <li>Direction classification (RF)</li>
+          <li>Confusion matrix</li>
+          <li>Magnitude regression</li>
+          <li>Prediction intervals</li>
+          <li>Kelly criterion</li>
+          <li>LSTM architecture</li>
+          <li>Walk-forward backtesting</li>
+          <li>Sharpe / drawdown / Calmar</li>
+          <li>Risk management</li>
+        </ul>
+      </div>
+      <div class="sidebar-card">
+        <h4>Key Terms</h4>
+        <ul>
+          <li>OHLCV</li>
+          <li>Log returns</li>
+          <li>RSI / MACD / ATR</li>
+          <li>Bollinger Bands</li>
+          <li>Random Forest classifier</li>
+          <li>Confusion matrix</li>
+          <li>LSTM / gating mechanism</li>
+          <li>Walk-forward analysis</li>
+          <li>Sharpe ratio</li>
+          <li>Maximum drawdown</li>
+          <li>Look-ahead bias</li>
+          <li>Survivorship bias</li>
+          <li>Volatility targeting</li>
+        </ul>
+      </div>
+      <div class="sidebar-card">
+        <h4>Course Navigation</h4>
+        <ul>
+          <li><a href="machine-learning.html">← Machine Learning</a></li>
+          <li><a href="index.html">← Course Home</a></li>
+        </ul>
+      </div>
+    </aside>
+
+  </div>
+</div>
+
+<!-- ── Footer ── -->
+<footer class="footer">
+  <div class="footer-logo">
+    <img src="images/steve.jpg" alt="Stephen Borick">
+    <strong>Artificial Intelligence Solutions, Inc.</strong>
+  </div>
+  <p>© 2026 Artificial Intelligence Solutions, Inc. — All rights reserved.</p>
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,18 @@
+{
+  "name": "my-project",
+  "scripts": {
+    "remotion": "remotion studio remotion/index.jsx",
+    "build:video": "remotion render remotion/index.jsx"
+  },
+  "dependencies": {
+    "@remotion/cli": "^4.0.431",
+    "msedge-tts": "^2.0.4",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "remotion": "^4.0.431"
+  },
+  "devDependencies": {
+    "@ffmpeg-installer/ffmpeg": "^1.1.0",
+    "fluent-ffmpeg": "^2.1.3"
+  }
+}

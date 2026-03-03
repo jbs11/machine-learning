@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Machine Learning — Artificial Intelligence Course</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ── Navigation ── -->
+<nav class="nav">
+  <a href="index.html" class="nav-logo">
+    <img src="images/steve.jpg" class="nav-logo-photo" alt="Stephen Borick">
+    <div class="nav-logo-text">
+      <span class="nav-company">Artificial Intelligence</span>
+      <span class="nav-name">Solutions, Inc.</span>
+    </div>
+  </a>
+  <ul class="nav-links">
+    <li><a href="index.html">Home</a></li>
+    <li><a href="neural-networks.html">Neural Networks</a></li>
+    <li><a href="machine-learning.html" class="active">Machine Learning</a></li>
+    <li><a href="ml-trading.html">ML in Trading</a></li>
+  </ul>
+</nav>
+
+<!-- ── Breadcrumb ── -->
+<div style="background:var(--surface); border-bottom:1px solid var(--border);">
+  <div class="breadcrumb">
+    <a href="index.html">AI Course</a>
+    <span class="breadcrumb-sep">›</span>
+    <span>Module 2: Machine Learning</span>
+  </div>
+</div>
+
+<!-- ── Page Hero ── -->
+<section class="page-hero">
+  <div class="page-hero-inner">
+    <span class="badge badge-cyan" style="margin-bottom:1rem; display:inline-block;">Module 2 · Core ML</span>
+    <h1>📊 Machine Learning</h1>
+    <p>
+      From first principles to production pipelines — understand how machines learn patterns from
+      data without explicit programming, and apply that understanding across three major learning paradigms.
+    </p>
+  </div>
+</section>
+
+<!-- ── Video ── -->
+<section class="video-section">
+  <div class="video-inner">
+    <div style="max-width:854px; margin:0 auto;">
+      <video
+        controls
+        preload="metadata"
+        style="width:100%; border-radius:12px; border:1px solid var(--border); display:block; background:#000;"
+      >
+        <source src="videos/machine-learning.mp4" type="video/mp4">
+        <p style="color:var(--muted); padding:2rem; text-align:center;">
+          Video is rendering — check back shortly, or
+          <a href="http://localhost:3000" target="_blank">open in Remotion Studio</a>.
+        </p>
+      </video>
+      <p style="text-align:right; margin-top:.5rem; font-size:.78rem; color:var(--muted);">
+        Module 2 · Machine Learning · ~104s · 1280×720 · H.264
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ── Lesson Content ── -->
+<div class="section">
+  <div class="lesson-grid">
+
+    <!-- Main Content -->
+    <div class="lesson-main">
+
+      <!-- Overview -->
+      <div class="content-block">
+        <h2>📖 What Is Machine Learning?</h2>
+        <p>
+          <strong>Machine learning</strong> is a branch of artificial intelligence that gives computer systems
+          the ability to learn and improve from experience without being explicitly programmed. Rather than
+          writing rules by hand, we provide a model with data and let it discover the rules on its own.
+        </p>
+        <p>
+          Tom Mitchell's classical definition: <em>"A computer program is said to learn from experience E with
+          respect to task T and performance measure P, if its performance on T as measured by P improves with
+          experience E."</em>
+        </p>
+        <p>
+          ML has become the dominant approach to AI because modern data abundance and computing power make it
+          practical to train models on millions of examples — reaching human-level or superhuman performance on
+          many narrow tasks.
+        </p>
+
+        <div class="stat-strip">
+          <div class="stat"><div class="stat-value">2.5 QB</div><div class="stat-label">Data generated daily</div></div>
+          <div class="stat"><div class="stat-value">97%</div><div class="stat-label">Email spam filtered by ML</div></div>
+          <div class="stat"><div class="stat-value">$200B+</div><div class="stat-label">ML market by 2030</div></div>
+          <div class="stat"><div class="stat-value">10,000×</div><div class="stat-label">Compute increase since 2012</div></div>
+        </div>
+      </div>
+
+      <!-- Three Paradigms -->
+      <div class="content-block">
+        <h2>🔀 The Three Learning Paradigms</h2>
+
+        <h3>1. Supervised Learning</h3>
+        <p>
+          The most common paradigm. The training set consists of <strong>labeled examples</strong> — pairs of
+          (input X, correct output y). The model learns a mapping f(X) → y by minimizing prediction error on
+          the training data, then generalizes to unseen examples.
+        </p>
+        <ul>
+          <li><strong>Classification</strong> — Predict a discrete class label. Example: Is this email spam or not-spam? Is this tumor malignant or benign? What digit (0–9) does this image show?</li>
+          <li><strong>Regression</strong> — Predict a continuous numeric value. Example: What will this house sell for? What will the S&amp;P 500 close at tomorrow?</li>
+        </ul>
+
+        <h3>2. Unsupervised Learning</h3>
+        <p>
+          No labels are provided. The model must discover <strong>hidden structure</strong> in the data on its own — finding natural groupings, compressing representations, or identifying anomalies.
+        </p>
+        <ul>
+          <li><strong>Clustering</strong> — Group similar data points. Algorithms: K-Means, DBSCAN, hierarchical clustering. Used in customer segmentation and document grouping.</li>
+          <li><strong>Dimensionality Reduction</strong> — Compress high-dimensional data while preserving structure. Algorithms: PCA, t-SNE, UMAP. Used for visualization and feature extraction.</li>
+          <li><strong>Anomaly Detection</strong> — Identify unusual patterns that deviate from the norm. Used in fraud detection and network intrusion detection.</li>
+          <li><strong>Generative Models</strong> — Learn the data distribution to generate new samples. Examples: GANs, VAEs, diffusion models (Stable Diffusion).</li>
+        </ul>
+
+        <h3>3. Reinforcement Learning</h3>
+        <p>
+          An <strong>agent</strong> interacts with an environment, taking actions that yield rewards or
+          penalties. Over many episodes, the agent learns a <em>policy</em> — a strategy for choosing actions
+          that maximizes long-term cumulative reward.
+        </p>
+        <ul>
+          <li>Powered AlphaGo's defeat of the world Go champion in 2016</li>
+          <li>Trains ChatGPT to follow human instructions (RLHF)</li>
+          <li>Optimizes robotic manipulation tasks</li>
+          <li>Used in algorithmic trading for portfolio management</li>
+        </ul>
+      </div>
+
+      <!-- ML Pipeline -->
+      <div class="content-block">
+        <h2>⚙️ The Machine Learning Pipeline</h2>
+        <p>
+          Building a production ML system is a multi-stage engineering process. Each stage is critical — a
+          failure at any point undermines the entire system.
+        </p>
+
+        <h3>1. Problem Definition</h3>
+        <p>Clearly define the task: What is X? What is y? What metric defines success? What decisions will the model's output drive?</p>
+
+        <h3>2. Data Collection &amp; Exploration</h3>
+        <p>
+          Gather data from databases, APIs, scrapers, or sensors. Perform <strong>Exploratory Data Analysis
+          (EDA)</strong>: examine distributions, correlations, missing values, and class imbalance.
+        </p>
+
+        <h3>3. Data Preprocessing</h3>
+        <ul>
+          <li><strong>Handling missing values</strong> — Impute with mean/median, or drop rows/columns.</li>
+          <li><strong>Normalization / standardization</strong> — Scale features so no single variable dominates (Z-score, Min-Max).</li>
+          <li><strong>Encoding categoricals</strong> — One-hot encoding, ordinal encoding, or learned embeddings.</li>
+          <li><strong>Train/validation/test split</strong> — Typical: 70% train, 15% validation, 15% test. Never touch the test set until final evaluation.</li>
+        </ul>
+
+        <h3>4. Feature Engineering</h3>
+        <p>
+          The art of transforming raw data into features that expose patterns to the model. Often the single
+          biggest lever for improving performance. Techniques include: polynomial features, interaction terms,
+          log transforms, rolling statistics, and domain-specific derivations.
+        </p>
+
+        <h3>5. Model Selection &amp; Training</h3>
+        <p>Choose an algorithm based on data size, dimensionality, interpretability requirements, and latency constraints. Train on the training set, tune hyperparameters on the validation set.</p>
+
+        <h3>6. Evaluation &amp; Hyperparameter Tuning</h3>
+        <p>Grid search or Bayesian optimization over hyperparameter space. Use cross-validation to get reliable performance estimates. Evaluate on the held-out test set exactly once.</p>
+
+        <h3>7. Deployment &amp; Monitoring</h3>
+        <p>Serve the model via REST API, batch job, or edge device. Monitor for <strong>data drift</strong> (input distribution changes) and <strong>concept drift</strong> (relationship between X and y changes over time). Retrain regularly.</p>
+      </div>
+
+      <!-- Algorithms -->
+      <div class="content-block">
+        <h2>🧮 Core Algorithms</h2>
+
+        <h3>Linear &amp; Logistic Regression</h3>
+        <p>
+          The simplest supervised models. Linear regression fits a straight line (hyperplane) through data
+          to predict continuous values. Logistic regression applies a sigmoid to predict binary probabilities.
+          Both are fast, interpretable, and serve as strong baselines.
+        </p>
+        <div class="formula">Linear:   ŷ = w₀ + w₁x₁ + w₂x₂ + … + wₙxₙ</div>
+        <div class="formula">Logistic: P(y=1) = σ(w·x + b) = 1 / (1 + e^−(w·x+b))</div>
+
+        <h3>Decision Trees &amp; Random Forests</h3>
+        <p>
+          A <strong>decision tree</strong> partitions the feature space with a sequence of binary splits,
+          creating a flowchart-like structure. Easy to interpret, but prone to overfitting.
+        </p>
+        <p>
+          A <strong>Random Forest</strong> ensembles hundreds of independently-trained trees, each on a
+          random subset of data and features. Averaging their predictions dramatically reduces variance and
+          overfitting — making Random Forests one of the most reliable general-purpose algorithms.
+        </p>
+
+        <h3>Gradient Boosting (XGBoost, LightGBM)</h3>
+        <p>
+          Builds an ensemble of weak learners sequentially — each tree corrects the errors of the previous.
+          The dominant algorithm in tabular data competitions. XGBoost and LightGBM add regularization,
+          parallelism, and missing-value handling for exceptional performance.
+        </p>
+
+        <h3>Support Vector Machines (SVM)</h3>
+        <p>
+          Finds the <strong>maximum-margin hyperplane</strong> separating classes in feature space.
+          The kernel trick allows SVMs to learn non-linear boundaries by implicitly mapping data to
+          higher-dimensional spaces. Effective for high-dimensional, small-sample problems.
+        </p>
+
+        <h3>Neural Networks</h3>
+        <p>
+          The most flexible algorithm — see Module 1 for a full treatment. Neural networks dominate
+          unstructured data (images, text, audio) but require more data and compute than classical ML
+          algorithms.
+        </p>
+      </div>
+
+      <!-- Evaluation -->
+      <div class="content-block">
+        <h2>📏 Model Evaluation</h2>
+
+        <h3>Classification Metrics</h3>
+        <ul>
+          <li><strong>Accuracy</strong> — Fraction of correct predictions. Misleading on imbalanced datasets.</li>
+          <li><strong>Precision</strong> — Of predicted positives, fraction that are actually positive. High precision = few false alarms.</li>
+          <li><strong>Recall (Sensitivity)</strong> — Of actual positives, fraction detected. High recall = few missed cases.</li>
+          <li><strong>F1 Score</strong> — Harmonic mean of precision and recall. Balanced single metric when both matter.</li>
+          <li><strong>ROC-AUC</strong> — Area under the Receiver Operating Characteristic curve. Measures discrimination ability across all thresholds; 1.0 = perfect, 0.5 = random.</li>
+          <li><strong>Confusion Matrix</strong> — 2×2 table of true/false positives and negatives. Essential for understanding error types.</li>
+        </ul>
+
+        <h3>Regression Metrics</h3>
+        <ul>
+          <li><strong>MAE</strong> (Mean Absolute Error) — Average absolute deviation. Robust to outliers.</li>
+          <li><strong>RMSE</strong> (Root Mean Squared Error) — Penalizes large errors more heavily. Standard in practice.</li>
+          <li><strong>R²</strong> (R-squared) — Fraction of variance explained by the model. 1.0 = perfect fit, 0 = no better than predicting the mean.</li>
+        </ul>
+
+        <h3>Cross-Validation</h3>
+        <p>
+          <strong>k-Fold cross-validation</strong> splits data into k folds, trains on k−1 folds, and
+          evaluates on the remaining fold — rotating through all combinations. The average score gives a
+          low-variance estimate of true out-of-sample performance.
+        </p>
+      </div>
+
+      <!-- Applications -->
+      <div class="content-block">
+        <h2>🌍 Real-World Applications</h2>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:1rem; margin-top:.5rem;">
+          <div>
+            <h3>E-Commerce &amp; Streaming</h3>
+            <ul>
+              <li>Netflix/Spotify recommendation engines</li>
+              <li>Amazon product search ranking</li>
+              <li>Dynamic pricing optimization</li>
+              <li>Inventory demand forecasting</li>
+            </ul>
+          </div>
+          <div>
+            <h3>Finance &amp; Banking</h3>
+            <ul>
+              <li>Credit scoring and loan approval</li>
+              <li>Fraud and transaction anomaly detection</li>
+              <li>Algorithmic trading strategies</li>
+              <li>Risk model calibration</li>
+            </ul>
+          </div>
+          <div>
+            <h3>Healthcare</h3>
+            <ul>
+              <li>Radiology image classification</li>
+              <li>Early disease detection</li>
+              <li>Drug candidate screening</li>
+              <li>Patient outcome prediction</li>
+            </ul>
+          </div>
+          <div>
+            <h3>Technology &amp; Industry</h3>
+            <ul>
+              <li>Predictive maintenance (IoT)</li>
+              <li>Quality control in manufacturing</li>
+              <li>Energy consumption optimization</li>
+              <li>Autonomous systems</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- end lesson-main -->
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-card">
+        <h4>Topics Covered</h4>
+        <ul>
+          <li>Definition &amp; history of ML</li>
+          <li>Supervised learning</li>
+          <li>Unsupervised learning</li>
+          <li>Reinforcement learning</li>
+          <li>The full ML pipeline</li>
+          <li>Feature engineering</li>
+          <li>Linear &amp; logistic regression</li>
+          <li>Decision trees &amp; random forests</li>
+          <li>Gradient boosting (XGBoost)</li>
+          <li>Support vector machines</li>
+          <li>Classification metrics</li>
+          <li>Regression metrics</li>
+          <li>Cross-validation</li>
+        </ul>
+      </div>
+      <div class="sidebar-card">
+        <h4>Key Terms</h4>
+        <ul>
+          <li>Training / validation / test set</li>
+          <li>Overfitting / underfitting</li>
+          <li>Hyperparameter tuning</li>
+          <li>Bias-variance tradeoff</li>
+          <li>Precision / recall / F1</li>
+          <li>ROC-AUC</li>
+          <li>Gradient boosting</li>
+          <li>Ensemble methods</li>
+          <li>k-Fold cross-validation</li>
+          <li>Data drift / concept drift</li>
+        </ul>
+      </div>
+      <div class="sidebar-card">
+        <h4>Course Navigation</h4>
+        <ul>
+          <li><a href="neural-networks.html">← Neural Networks</a></li>
+          <li><a href="ml-trading.html">ML in Trading →</a></li>
+        </ul>
+      </div>
+    </aside>
+
+  </div>
+</div>
+
+<!-- ── Footer ── -->
+<footer class="footer">
+  <div class="footer-logo">
+    <img src="images/steve.jpg" alt="Stephen Borick">
+    <strong>Artificial Intelligence Solutions, Inc.</strong>
+  </div>
+  <p>© 2026 Artificial Intelligence Solutions, Inc. — All rights reserved.</p>
+</footer>
+
+</body>
+</html>

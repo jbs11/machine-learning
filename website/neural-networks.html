@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Neural Networks — Artificial Intelligence Course</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ── Navigation ── -->
+<nav class="nav">
+  <a href="index.html" class="nav-logo">
+    <img src="images/steve.jpg" class="nav-logo-photo" alt="Stephen Borick">
+    <div class="nav-logo-text">
+      <span class="nav-company">Artificial Intelligence</span>
+      <span class="nav-name">Solutions, Inc.</span>
+    </div>
+  </a>
+  <ul class="nav-links">
+    <li><a href="index.html">Home</a></li>
+    <li><a href="neural-networks.html" class="active">Neural Networks</a></li>
+    <li><a href="machine-learning.html">Machine Learning</a></li>
+    <li><a href="ml-trading.html">ML in Trading</a></li>
+  </ul>
+</nav>
+
+<!-- ── Breadcrumb ── -->
+<div style="background:var(--surface); border-bottom:1px solid var(--border);">
+  <div class="breadcrumb">
+    <a href="index.html">AI Course</a>
+    <span class="breadcrumb-sep">›</span>
+    <span>Module 1: Neural Networks</span>
+  </div>
+</div>
+
+<!-- ── Page Hero ── -->
+<section class="page-hero">
+  <div class="page-hero-inner">
+    <span class="badge badge-purple" style="margin-bottom:1rem; display:inline-block;">Module 1 · Foundations</span>
+    <h1>🧠 Neural Networks</h1>
+    <p>
+      Explore how interconnected artificial neurons learn from data — building the computational
+      foundation that powers image recognition, natural language processing, and modern AI.
+    </p>
+  </div>
+</section>
+
+<!-- ── Video ── -->
+<section class="video-section">
+  <div class="video-inner">
+    <div style="max-width:854px; margin:0 auto;">
+      <video
+        controls
+        preload="metadata"
+        style="width:100%; border-radius:12px; border:1px solid var(--border); display:block; background:#000;"
+        poster=""
+      >
+        <source src="videos/neural-network.mp4" type="video/mp4">
+        <p style="color:var(--muted); padding:2rem; text-align:center;">
+          Video is rendering — check back shortly, or
+          <a href="http://localhost:3000" target="_blank">open in Remotion Studio</a>.
+        </p>
+      </video>
+      <p style="text-align:right; margin-top:.5rem; font-size:.78rem; color:var(--muted);">
+        Module 1 · Neural Networks · ~103s · 1280×720 · H.264
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ── Lesson Content ── -->
+<div class="section">
+  <div class="lesson-grid">
+
+    <!-- Main Content -->
+    <div class="lesson-main">
+
+      <!-- Overview -->
+      <div class="content-block">
+        <h2>📖 What Are Neural Networks?</h2>
+        <p>
+          A <strong>neural network</strong> is a computational model loosely inspired by the structure of the
+          human brain. Just as the brain consists of billions of neurons connected by synapses, an artificial
+          neural network consists of <strong>nodes (artificial neurons)</strong> connected by weighted edges.
+        </p>
+        <p>
+          The key insight is that neural networks can <strong>learn any function</strong> from input to output,
+          given enough data and capacity — a property known as <em>universal approximation</em>. This makes them
+          extraordinarily flexible: the same architecture that recognizes faces can also translate languages,
+          predict stock prices, or generate music.
+        </p>
+        <p>
+          Neural networks are the engine behind <strong>deep learning</strong> — the sub-field of machine
+          learning that uses networks with many layers to extract hierarchically complex features from raw data.
+        </p>
+
+        <div class="stat-strip">
+          <div class="stat"><div class="stat-value">~86B</div><div class="stat-label">Neurons in human brain</div></div>
+          <div class="stat"><div class="stat-value">175B</div><div class="stat-label">GPT-3 parameters</div></div>
+          <div class="stat"><div class="stat-value">&lt;1ms</div><div class="stat-label">Inference time per query</div></div>
+          <div class="stat"><div class="stat-value">1943</div><div class="stat-label">First neuron model (McCulloch)</div></div>
+        </div>
+      </div>
+
+      <!-- Single Neuron -->
+      <div class="content-block">
+        <h2>⚡ How a Single Neuron Works</h2>
+        <p>
+          The fundamental building block is the <strong>perceptron</strong> — an artificial neuron that
+          performs a weighted sum of its inputs and passes the result through a non-linear activation function.
+        </p>
+
+        <h3>The Computation</h3>
+        <p>Given inputs x₁, x₂, …, xₙ, each with a corresponding learned weight w, the neuron computes:</p>
+        <div class="formula">z = (x₁·w₁) + (x₂·w₂) + … + (xₙ·wₙ) + b</div>
+        <div class="formula">output = f(z)   ← activation function applied to weighted sum</div>
+
+        <p>
+          The <strong>bias term b</strong> shifts the activation threshold, allowing the neuron to activate
+          even when all inputs are zero. It gives the model an extra degree of freedom.
+        </p>
+
+        <h3>Activation Functions</h3>
+        <p>
+          The activation function introduces <strong>non-linearity</strong>, which is what allows stacked
+          layers to learn complex patterns. Without it, any deep network would collapse to a single linear
+          transformation — no more powerful than logistic regression.
+        </p>
+
+        <div class="term-grid">
+          <div class="term-card">
+            <div class="term">ReLU</div>
+            <p>max(0, z) — Fast, avoids vanishing gradient. Default choice for hidden layers.</p>
+          </div>
+          <div class="term-card">
+            <div class="term">Sigmoid</div>
+            <p>1/(1+e⁻ᶻ) — Outputs 0–1. Used in binary output layers for probabilities.</p>
+          </div>
+          <div class="term-card">
+            <div class="term">Tanh</div>
+            <p>Outputs −1 to +1. Zero-centered; often preferred over sigmoid in hidden layers.</p>
+          </div>
+          <div class="term-card">
+            <div class="term">Softmax</div>
+            <p>Converts logits to probabilities that sum to 1. Used in multi-class outputs.</p>
+          </div>
+          <div class="term-card">
+            <div class="term">Leaky ReLU</div>
+            <p>max(0.01z, z) — Fixes the dying ReLU problem by allowing small negative gradients.</p>
+          </div>
+          <div class="term-card">
+            <div class="term">GELU</div>
+            <p>Smooth approximation of ReLU used in Transformers (BERT, GPT).</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Network Architecture -->
+      <div class="content-block">
+        <h2>🏗 Network Architecture</h2>
+        <p>
+          Individual neurons are arranged into <strong>layers</strong>. Each layer transforms its input
+          into a new representation, and deeper networks extract increasingly abstract features.
+        </p>
+
+        <h3>Layer Types</h3>
+        <ul>
+          <li><strong>Input Layer</strong> — Receives raw data. Size equals the number of input features (pixels, sensor readings, word embeddings, etc.).</li>
+          <li><strong>Hidden Layers</strong> — One or more intermediate layers where feature extraction happens. Each layer learns to detect progressively more complex patterns.</li>
+          <li><strong>Output Layer</strong> — Produces the final prediction. Size depends on the task: 1 node for regression, N nodes for N-class classification.</li>
+        </ul>
+
+        <h3>Depth vs. Width</h3>
+        <p>
+          <strong>Depth</strong> (number of layers) determines the <em>level of abstraction</em> a network
+          can represent. Early layers detect low-level features (edges, frequencies); deeper layers detect
+          complex composites (faces, semantics).
+        </p>
+        <p>
+          <strong>Width</strong> (neurons per layer) controls <em>representational capacity</em> within each
+          level of abstraction. Wider layers can memorize more patterns but also overfit more easily.
+        </p>
+
+        <h3>Fully Connected vs. Specialized Architectures</h3>
+        <ul>
+          <li><strong>Multi-Layer Perceptron (MLP)</strong> — Every neuron connects to every neuron in the next layer. General purpose; good for tabular data.</li>
+          <li><strong>Convolutional Neural Network (CNN)</strong> — Shares weights across spatial positions via filters. Ideal for images and sequences.</li>
+          <li><strong>Recurrent Neural Network (RNN/LSTM)</strong> — Processes sequences with temporal memory. Used for time series and NLP.</li>
+          <li><strong>Transformer</strong> — Uses self-attention to model long-range dependencies. Powers GPT, BERT, Stable Diffusion.</li>
+        </ul>
+      </div>
+
+      <!-- Forward Pass -->
+      <div class="content-block">
+        <h2>➡️ The Forward Pass</h2>
+        <p>
+          During <strong>inference</strong>, data flows from left to right through the network — this is called
+          the <em>forward pass</em>. At each layer, a matrix multiplication is performed (computing all weighted
+          sums in parallel) followed by the activation function.
+        </p>
+        <div class="formula">Layer output = activation( W · input + b )</div>
+        <p>
+          Modern frameworks like PyTorch and TensorFlow use <strong>GPU-accelerated matrix operations</strong>
+          to make this extremely fast. A forward pass through a 50-layer network on a modern GPU takes
+          milliseconds.
+        </p>
+        <p>
+          The forward pass is also used during training — predictions are computed first, then compared to the
+          true labels to compute a loss, which drives backpropagation.
+        </p>
+      </div>
+
+      <!-- Training -->
+      <div class="content-block">
+        <h2>🎯 Training: Backpropagation &amp; Gradient Descent</h2>
+        <p>
+          Training is the process of <strong>adjusting weights</strong> so the network's predictions become
+          more accurate. It combines two algorithms: <em>loss computation</em> and <em>backpropagation</em>.
+        </p>
+
+        <h3>Step 1 — Compute Loss</h3>
+        <p>
+          After a forward pass, the <strong>loss function</strong> measures prediction error. Common choices:
+        </p>
+        <ul>
+          <li><strong>Mean Squared Error (MSE)</strong> — For regression: average of squared differences between predicted and actual values.</li>
+          <li><strong>Cross-Entropy Loss</strong> — For classification: measures how wrong the predicted probability distribution is vs. the true label.</li>
+        </ul>
+
+        <h3>Step 2 — Backpropagation</h3>
+        <p>
+          Backpropagation applies the <strong>chain rule of calculus</strong> to efficiently compute the
+          gradient of the loss with respect to every weight in the network — working from the output layer
+          backward to the input layer.
+        </p>
+        <div class="formula">∂Loss/∂w = ∂Loss/∂output · ∂output/∂z · ∂z/∂w</div>
+
+        <h3>Step 3 — Update Weights (Gradient Descent)</h3>
+        <p>Each weight is nudged in the direction that reduces the loss:</p>
+        <div class="formula">w ← w − η · (∂Loss/∂w)</div>
+        <p>where <strong>η (eta)</strong> is the <em>learning rate</em> — a hyperparameter controlling step size.</p>
+
+        <h3>Optimizers</h3>
+        <ul>
+          <li><strong>SGD</strong> (Stochastic Gradient Descent) — Updates after each mini-batch. Simple and effective with momentum.</li>
+          <li><strong>Adam</strong> — Adapts the learning rate per parameter using moment estimates. The default choice for most tasks.</li>
+          <li><strong>RMSProp</strong> — Divides gradients by a running average of magnitudes. Good for RNNs.</li>
+        </ul>
+      </div>
+
+      <!-- Regularization -->
+      <div class="content-block">
+        <h2>🛡 Overfitting &amp; Regularization</h2>
+        <p>
+          A network with enough capacity can memorize its training data perfectly — but then fails on new
+          data. This is called <strong>overfitting</strong>. Regularization techniques prevent it:
+        </p>
+        <ul>
+          <li><strong>Dropout</strong> — Randomly sets a fraction of neurons to zero during training, forcing the network to learn redundant representations.</li>
+          <li><strong>Batch Normalization</strong> — Normalizes layer inputs across each mini-batch, stabilizing and accelerating training.</li>
+          <li><strong>Weight Decay (L2)</strong> — Adds a penalty proportional to weight magnitude, shrinking large weights toward zero.</li>
+          <li><strong>Data Augmentation</strong> — Artificially expands training data by transforming examples (flips, rotations, noise), improving generalization.</li>
+          <li><strong>Early Stopping</strong> — Halts training when validation loss stops improving, preventing the model from overfitting further.</li>
+        </ul>
+      </div>
+
+      <!-- Applications -->
+      <div class="content-block">
+        <h2>🌍 Real-World Applications</h2>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:1rem; margin-top:.5rem;">
+          <div>
+            <h3>Computer Vision</h3>
+            <ul>
+              <li>Image classification (ResNet, EfficientNet)</li>
+              <li>Object detection (YOLO, Faster R-CNN)</li>
+              <li>Medical imaging (tumor detection)</li>
+              <li>Autonomous vehicle perception</li>
+            </ul>
+          </div>
+          <div>
+            <h3>Natural Language Processing</h3>
+            <ul>
+              <li>Sentiment analysis</li>
+              <li>Machine translation (Google Translate)</li>
+              <li>Text generation (GPT-4, Claude)</li>
+              <li>Document summarization</li>
+            </ul>
+          </div>
+          <div>
+            <h3>Audio &amp; Speech</h3>
+            <ul>
+              <li>Speech recognition (Whisper)</li>
+              <li>Voice synthesis (TTS)</li>
+              <li>Music generation</li>
+              <li>Noise cancellation</li>
+            </ul>
+          </div>
+          <div>
+            <h3>Scientific Discovery</h3>
+            <ul>
+              <li>Protein folding (AlphaFold)</li>
+              <li>Drug discovery</li>
+              <li>Climate modeling</li>
+              <li>Particle physics classification</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- end lesson-main -->
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-card">
+        <h4>Topics Covered</h4>
+        <ul>
+          <li>What are neural networks</li>
+          <li>Single neuron computation</li>
+          <li>Activation functions</li>
+          <li>Network layers &amp; depth</li>
+          <li>Forward pass</li>
+          <li>Backpropagation</li>
+          <li>Gradient descent optimizers</li>
+          <li>Overfitting &amp; regularization</li>
+          <li>CNN, RNN, Transformer types</li>
+          <li>Real-world applications</li>
+        </ul>
+      </div>
+      <div class="sidebar-card">
+        <h4>Key Terms</h4>
+        <ul>
+          <li>Perceptron</li>
+          <li>Weighted sum / dot product</li>
+          <li>Activation function (ReLU, Sigmoid)</li>
+          <li>Loss function</li>
+          <li>Gradient descent</li>
+          <li>Backpropagation</li>
+          <li>Learning rate</li>
+          <li>Epoch / mini-batch</li>
+          <li>Overfitting</li>
+          <li>Dropout</li>
+          <li>Universal approximation</li>
+        </ul>
+      </div>
+      <div class="sidebar-card">
+        <h4>Next Module</h4>
+        <ul>
+          <li><a href="machine-learning.html">Machine Learning →</a></li>
+        </ul>
+      </div>
+    </aside>
+
+  </div>
+</div>
+
+<!-- ── Footer ── -->
+<footer class="footer">
+  <div class="footer-logo">
+    <img src="images/steve.jpg" alt="Stephen Borick">
+    <strong>Artificial Intelligence Solutions, Inc.</strong>
+  </div>
+  <p>© 2026 Artificial Intelligence Solutions, Inc. — All rights reserved.</p>
+</footer>
+
+</body>
+</html>
