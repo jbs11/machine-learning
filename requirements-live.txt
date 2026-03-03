@@ -1,0 +1,18 @@
+flask>=3.0.0
+flask-cors>=4.0.0
+yfinance>=0.2.40
+scikit-learn>=1.4.0
+pandas>=2.1.0
+numpy>=1.26.0
+
+# Upgrade to live data — uncomment when using Interactive Brokers:
+# ib_async>=2.0.0         # pip install ib_async (active fork of ib_insync)
+
+# Or for Schwab/TD Ameritrade (stocks + options + futures):
+# schwab-py>=1.4.0        # pip install schwab-py
+
+# Or for stocks/options only (Alpaca):
+# alpaca-py>=0.20.0       # pip install alpaca-py
+
+# Or for data-only (Polygon.io):
+# polygon-api-client>=1.14.0  # pip install polygon-api-client

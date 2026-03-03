@@ -1,0 +1,1052 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Live ML Trading Dashboard — Artificial Intelligence Course</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
+  <style>
+    /* ── Dashboard Layout ── */
+    .dashboard-wrap {
+      max-width: 1300px;
+      margin: 0 auto;
+      padding: 2rem 1.5rem;
+    }
+    .server-bar {
+      display: flex;
+      align-items: center;
+      gap: .75rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: .6rem 1.2rem;
+      margin-bottom: 1.5rem;
+      font-size: .85rem;
+    }
+    .server-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      background: #f87171;
+      flex-shrink: 0;
+      transition: background .3s;
+    }
+    .server-dot.online { background: #4ade80; }
+    .server-msg { color: var(--muted); flex: 1; }
+    .refresh-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      padding: .3rem .8rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: .8rem;
+      transition: border-color .2s, color .2s;
+    }
+    .refresh-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* ── Asset Selector ── */
+    .asset-tabs {
+      display: flex;
+      gap: .5rem;
+      flex-wrap: wrap;
+      margin-bottom: 1.5rem;
+    }
+    .asset-group-label {
+      font-size: .72rem;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      align-self: center;
+      margin-right: .25rem;
+    }
+    .asset-btn {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      padding: .4rem .9rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: .83rem;
+      font-weight: 600;
+      transition: all .15s;
+    }
+    .asset-btn:hover { border-color: var(--accent); color: var(--text); }
+    .asset-btn.active { background: var(--accent); border-color: var(--accent); color: #000; }
+    .asset-btn.futures.active { background: #f59e0b; border-color: #f59e0b; color: #000; }
+    .asset-btn.options.active { background: #a78bfa; border-color: #a78bfa; color: #000; }
+
+    /* ── Main Dashboard Grid ── */
+    .dash-grid {
+      display: grid;
+      grid-template-columns: 1fr 320px;
+      gap: 1.5rem;
+    }
+    @media (max-width: 900px) {
+      .dash-grid { grid-template-columns: 1fr; }
+    }
+
+    /* ── Chart Area ── */
+    .chart-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .chart-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: .9rem 1.2rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .chart-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+    }
+    .chart-meta {
+      font-size: .78rem;
+      color: var(--muted);
+    }
+    #chart-container {
+      height: 420px;
+      background: #0d1117;
+    }
+    .chart-loading {
+      height: 420px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--muted);
+      font-size: .9rem;
+      background: #0d1117;
+    }
+
+    /* ── Signal Panel ── */
+    .signal-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+    .signal-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.1rem 1.2rem;
+    }
+    .signal-card h4 {
+      font-size: .8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .07em;
+      color: var(--muted);
+      margin-bottom: .8rem;
+    }
+    .signal-badge {
+      display: inline-block;
+      padding: .35rem 1rem;
+      border-radius: 6px;
+      font-size: 1rem;
+      font-weight: 800;
+      letter-spacing: .05em;
+      margin-bottom: .7rem;
+    }
+    .signal-badge.BUY  { background: rgba(74,222,128,.15); color: #4ade80; border: 1px solid #4ade80; }
+    .signal-badge.SELL { background: rgba(248,113,113,.15); color: #f87171; border: 1px solid #f87171; }
+    .signal-badge.HOLD { background: rgba(251,191,36,.12);  color: #fbbf24; border: 1px solid #fbbf24; }
+
+    /* Probability gauge */
+    .gauge-wrap { margin: .5rem 0 .9rem; }
+    .gauge-label { display: flex; justify-content: space-between; font-size: .75rem; color: var(--muted); margin-bottom: .3rem; }
+    .gauge-bar { height: 10px; background: rgba(255,255,255,.08); border-radius: 5px; overflow: hidden; }
+    .gauge-fill {
+      height: 100%;
+      border-radius: 5px;
+      transition: width .5s ease;
+      background: linear-gradient(90deg, #f87171, #fbbf24 50%, #4ade80);
+    }
+
+    .stat-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      padding: .35rem 0;
+      border-bottom: 1px solid rgba(255,255,255,.05);
+      font-size: .82rem;
+    }
+    .stat-row:last-child { border-bottom: none; }
+    .stat-row .key { color: var(--muted); }
+    .stat-row .val { font-weight: 700; font-variant-numeric: tabular-nums; }
+    .val.up   { color: #4ade80; }
+    .val.down { color: #f87171; }
+    .val.neutral { color: #fbbf24; }
+
+    /* Checklist */
+    .checklist { list-style: none; padding: 0; margin: 0; }
+    .checklist li {
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+      font-size: .78rem;
+      padding: .28rem 0;
+      color: var(--muted);
+    }
+    .check-icon { font-size: .9rem; width: 1.1rem; text-align: center; flex-shrink: 0; }
+    .check-icon.pass { color: #4ade80; }
+    .check-icon.fail { color: #f87171; }
+    .check-icon.wait { color: #fbbf24; }
+
+    /* Feature importance mini-bars */
+    .feat-row {
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+      font-size: .72rem;
+      margin-bottom: .25rem;
+    }
+    .feat-name { width: 90px; color: var(--muted); flex-shrink: 0; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; }
+    .feat-bar-bg { flex: 1; height: 6px; background: rgba(255,255,255,.07); border-radius: 3px; }
+    .feat-bar-fill { height: 100%; border-radius: 3px; background: var(--accent); }
+    .feat-val { width: 38px; text-align: right; color: var(--muted); flex-shrink: 0; }
+
+    /* ── Broker Section ── */
+    .broker-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.2rem;
+      margin-top: 1.5rem;
+    }
+    @media (max-width: 800px) { .broker-grid { grid-template-columns: 1fr; } }
+    .broker-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.2rem;
+    }
+    .broker-card.recommended { border-color: #10b981; }
+    .broker-badge {
+      font-size: .7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: #10b981;
+      margin-bottom: .5rem;
+    }
+    .broker-name { font-size: 1.05rem; font-weight: 800; margin-bottom: .4rem; }
+    .broker-covers { display: flex; gap: .4rem; flex-wrap: wrap; margin-bottom: .7rem; }
+    .cover-tag {
+      font-size: .7rem;
+      padding: .2rem .5rem;
+      border-radius: 4px;
+      font-weight: 700;
+    }
+    .cover-tag.yes  { background: rgba(74,222,128,.15); color: #4ade80; }
+    .cover-tag.no   { background: rgba(248,113,113,.12); color: #f87171; }
+    .broker-lib { font-size: .78rem; color: var(--muted); }
+    .broker-lib code {
+      background: rgba(255,255,255,.08);
+      padding: .1rem .4rem;
+      border-radius: 3px;
+      font-size: .75rem;
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 14px; height: 14px;
+      border: 2px solid rgba(255,255,255,.15);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+      vertical-align: middle;
+      margin-right: .4rem;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Pipeline diagram */
+    .pipeline {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      flex-wrap: wrap;
+      margin: 1.5rem 0;
+    }
+    .pipe-step {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: .6rem 1rem;
+      font-size: .82rem;
+      font-weight: 700;
+      text-align: center;
+      min-width: 110px;
+    }
+    .pipe-arrow {
+      font-size: 1.1rem;
+      color: var(--muted);
+      padding: 0 .4rem;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Navigation ── -->
+<nav class="nav">
+  <a href="index.html" class="nav-logo">
+    <img src="images/steve.jpg" class="nav-logo-photo" alt="Stephen Borick">
+    <div class="nav-logo-text">
+      <span class="nav-company">Artificial Intelligence</span>
+      <span class="nav-name">Solutions, Inc.</span>
+    </div>
+  </a>
+  <ul class="nav-links">
+    <li><a href="index.html">Home</a></li>
+    <li><a href="neural-networks.html">Neural Networks</a></li>
+    <li><a href="machine-learning.html">Machine Learning</a></li>
+    <li><a href="ml-trading.html">ML in Trading</a></li>
+    <li><a href="stock-trading.html">Stocks</a></li>
+    <li><a href="options-trading.html">Options</a></li>
+    <li><a href="futures-trading.html">Futures</a></li>
+    <li><a href="live-trading.html" class="active">Live Trading</a></li>
+  </ul>
+</nav>
+
+<!-- ── Breadcrumb ── -->
+<div style="background:var(--surface); border-bottom:1px solid var(--border);">
+  <div class="breadcrumb">
+    <a href="index.html">AI Course</a>
+    <span class="breadcrumb-sep">›</span>
+    <a href="ml-trading.html">ML in Trading</a>
+    <span class="breadcrumb-sep">›</span>
+    <span>Live ML Trading Dashboard</span>
+  </div>
+</div>
+
+<!-- ── Page Hero ── -->
+<section class="page-hero">
+  <div class="page-hero-inner">
+    <span class="badge badge-gold" style="margin-bottom:1rem; display:inline-block; background:rgba(16,185,129,.15); color:#10b981; border:1px solid #10b981;">Live System · Module 7</span>
+    <h1>🟢 Live ML Trading Dashboard</h1>
+    <p>
+      Real-time 4-hour candlestick charts powered by market data, with XGBoost direction
+      probabilities and magnitude forecasts for stocks, options, and futures — all in one dashboard.
+      Run the Python server locally to connect live market data.
+    </p>
+  </div>
+</section>
+
+<!-- ── Video ── -->
+<section class="video-section">
+  <div class="video-inner">
+    <div style="max-width:854px; margin:0 auto;">
+      <video
+        controls
+        preload="metadata"
+        style="width:100%; border-radius:12px; border:1px solid var(--border); display:block; background:#000;"
+      >
+        <source src="videos/live-trading.mp4" type="video/mp4">
+        <p style="color:var(--muted); padding:2rem; text-align:center;">Video rendering…</p>
+      </video>
+      <p style="text-align:right; margin-top:.5rem; font-size:.78rem; color:var(--muted);">
+        Module 7 · Live ML Trading System · 1280×720 · H.264
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ── Live Dashboard ── -->
+<div style="background: #080d14; border-top:1px solid var(--border); border-bottom:1px solid var(--border);">
+<div class="dashboard-wrap">
+
+  <!-- Server status bar -->
+  <div class="server-bar">
+    <div class="server-dot" id="server-dot"></div>
+    <span class="server-msg" id="server-msg">
+      <span class="spinner" id="spinner"></span>Connecting to live-server.py on port 5050…
+    </span>
+    <span id="last-update" style="font-size:.75rem; color:var(--muted);"></span>
+    <button class="refresh-btn" onclick="refreshAll()">↻ Refresh</button>
+  </div>
+
+  <!-- Asset selector -->
+  <div class="asset-tabs">
+    <span class="asset-group-label">Stocks</span>
+    <button class="asset-btn active" data-symbol="AAPL"  data-type="stock"   onclick="selectAsset(this)">AAPL</button>
+    <button class="asset-btn"        data-symbol="NVDA"  data-type="stock"   onclick="selectAsset(this)">NVDA</button>
+    <button class="asset-btn"        data-symbol="SPY"   data-type="stock"   onclick="selectAsset(this)">SPY</button>
+    <span class="asset-group-label" style="margin-left:.5rem;">Options</span>
+    <button class="asset-btn options" data-symbol="AAPL" data-type="options" onclick="selectAsset(this)">AAPL Opts</button>
+    <button class="asset-btn options" data-symbol="NVDA" data-type="options" onclick="selectAsset(this)">NVDA Opts</button>
+    <span class="asset-group-label" style="margin-left:.5rem;">Futures</span>
+    <button class="asset-btn futures" data-symbol="ES=F" data-type="futures" onclick="selectAsset(this)">ES</button>
+    <button class="asset-btn futures" data-symbol="CL=F" data-type="futures" onclick="selectAsset(this)">CL</button>
+    <button class="asset-btn futures" data-symbol="GC=F" data-type="futures" onclick="selectAsset(this)">GC</button>
+  </div>
+
+  <!-- Main grid -->
+  <div class="dash-grid">
+
+    <!-- Chart -->
+    <div>
+      <div class="chart-card">
+        <div class="chart-header">
+          <div>
+            <span class="chart-title" id="chart-symbol-title">AAPL — 4H Candlestick</span>
+            <div class="chart-meta" id="chart-ohlc-display"></div>
+          </div>
+          <span class="chart-meta" id="chart-candle-count"></span>
+        </div>
+        <div id="chart-container">
+          <div class="chart-loading" id="chart-loading">
+            <span class="spinner"></span>&nbsp;Loading market data…
+          </div>
+        </div>
+      </div>
+
+      <!-- Trade Setup panel (below chart) -->
+      <div class="signal-card" style="margin-top:1rem;">
+        <h4>Trade Setup — <span id="setup-symbol">—</span></h4>
+        <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:.75rem; margin-bottom:.5rem;" id="trade-setup-grid">
+          <div><div style="font-size:.72rem; color:var(--muted); margin-bottom:.2rem;">Entry</div><div id="setup-entry" style="font-weight:700; font-variant-numeric:tabular-nums;">—</div></div>
+          <div><div style="font-size:.72rem; color:var(--muted); margin-bottom:.2rem;">Stop (1.5×ATR)</div><div id="setup-stop" style="font-weight:700; color:#f87171; font-variant-numeric:tabular-nums;">—</div></div>
+          <div><div style="font-size:.72rem; color:var(--muted); margin-bottom:.2rem;">Target</div><div id="setup-target" style="font-weight:700; color:#4ade80; font-variant-numeric:tabular-nums;">—</div></div>
+          <div><div style="font-size:.72rem; color:var(--muted); margin-bottom:.2rem;">R:R Ratio</div><div id="setup-rr" style="font-weight:700; font-variant-numeric:tabular-nums;">—</div></div>
+        </div>
+        <div id="setup-futures-row" style="display:none; padding-top:.5rem; border-top:1px solid rgba(255,255,255,.06); margin-top:.3rem;">
+          <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:.75rem;">
+            <div><div style="font-size:.72rem; color:var(--muted); margin-bottom:.2rem;">Risk ($/contract)</div><div id="setup-risk-dollars" style="font-weight:700; color:#f87171;">—</div></div>
+            <div><div style="font-size:.72rem; color:var(--muted); margin-bottom:.2rem;">Reward ($/contract)</div><div id="setup-reward-dollars" style="font-weight:700; color:#4ade80;">—</div></div>
+            <div><div style="font-size:.72rem; color:var(--muted); margin-bottom:.2rem;">Multiplier</div><div id="setup-multiplier" style="font-weight:700;">—</div></div>
+          </div>
+        </div>
+        <div id="setup-options-row" style="display:none; padding-top:.5rem; border-top:1px solid rgba(255,255,255,.06); margin-top:.3rem; font-size:.82rem; color:var(--muted);">
+          <strong>Options Strategy:</strong> <span id="setup-options-strategy" style="color:var(--text); font-weight:700;">—</span>
+          &nbsp;·&nbsp; IV Rank check: use options-chain IV before entry.
+          Strike selection: break-even must be inside predicted magnitude.
+        </div>
+      </div>
+    </div>
+
+    <!-- Right panel -->
+    <div class="signal-panel">
+
+      <!-- Direction signal -->
+      <div class="signal-card">
+        <h4>ML Direction Signal</h4>
+        <div id="signal-badge-wrap">
+          <span class="signal-badge HOLD" id="signal-badge">— HOLD</span>
+        </div>
+        <div class="gauge-wrap">
+          <div class="gauge-label">
+            <span>P(DOWN) <span id="prob-down">—</span></span>
+            <span>P(UP) <span id="prob-up">—</span></span>
+          </div>
+          <div class="gauge-bar">
+            <div class="gauge-fill" id="gauge-fill" style="width:50%"></div>
+          </div>
+        </div>
+        <div class="stat-row">
+          <span class="key">Magnitude forecast</span>
+          <span class="val" id="magnitude-val">—</span>
+        </div>
+        <div class="stat-row">
+          <span class="key">ATR (4H)</span>
+          <span class="val" id="atr-val">—</span>
+        </div>
+        <div class="stat-row">
+          <span class="key">ATR %</span>
+          <span class="val" id="atr-pct-val">—</span>
+        </div>
+        <div class="stat-row">
+          <span class="key">60-bar accuracy</span>
+          <span class="val" id="accuracy-val">—</span>
+        </div>
+        <div class="stat-row">
+          <span class="key">Last updated</span>
+          <span class="val" id="updated-val" style="font-size:.75rem; color:var(--muted);">—</span>
+        </div>
+      </div>
+
+      <!-- Signal quality checklist -->
+      <div class="signal-card">
+        <h4>Signal Quality Checklist</h4>
+        <ul class="checklist" id="checklist">
+          <li><span class="check-icon wait" id="chk-prob">●</span> P(UP) ≥ 0.65 or P(DOWN) ≤ 0.35</li>
+          <li><span class="check-icon wait" id="chk-mag">●</span> Magnitude ≥ 1.0× ATR</li>
+          <li><span class="check-icon wait" id="chk-acc">●</span> 60-bar accuracy ≥ 57%</li>
+          <li><span class="check-icon pass">✓</span> Threshold filter applied</li>
+          <li><span class="check-icon pass">✓</span> Risk defined (1.5× ATR stop)</li>
+          <li><span class="check-icon pass">✓</span> Target at magnitude forecast</li>
+        </ul>
+      </div>
+
+      <!-- Feature importance -->
+      <div class="signal-card">
+        <h4>Top Feature Drivers</h4>
+        <div id="feat-importance">
+          <div style="color:var(--muted); font-size:.8rem;">Loading ML model…</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Market Explanation -->
+  <div class="signal-card" style="margin-top:1.5rem; padding:1.4rem 1.6rem;">
+    <h4>Reading the Signal — <span id="explain-symbol">—</span></h4>
+    <div id="market-explanation" style="font-size:.87rem; line-height:1.7; color:var(--muted);">
+      Select an asset above to load the ML signal and market explanation.
+    </div>
+  </div>
+
+</div><!-- dashboard-wrap -->
+</div>
+
+<!-- ── Lesson Content ── -->
+<div class="section">
+  <div class="lesson-grid">
+    <div class="lesson-main">
+
+      <!-- Broker Selection -->
+      <div class="content-block">
+        <h2>🏦 Best Broker for Live ML Trading Data</h2>
+        <p>
+          Your broker API determines the quality and latency of the data feeding your ML models.
+          For a system trading stocks, options, and futures, you need a single API that covers
+          all three asset classes with reliable Python support.
+        </p>
+
+        <div class="broker-grid">
+          <div class="broker-card recommended">
+            <div class="broker-badge">★ Recommended — All Three</div>
+            <div class="broker-name">Interactive Brokers</div>
+            <div class="broker-covers">
+              <span class="cover-tag yes">Stocks ✓</span>
+              <span class="cover-tag yes">Options ✓</span>
+              <span class="cover-tag yes">Futures ✓</span>
+            </div>
+            <div class="broker-lib">
+              Python: <code>ib_async</code> (active fork of ib_insync)<br>
+              Install: <code>pip install ib_async</code><br>
+              Cost: Free with funded account. Paper trading: free.<br>
+              Requires TWS or IB Gateway running locally on port 7497.
+            </div>
+          </div>
+          <div class="broker-card">
+            <div class="broker-badge">Stocks + Options</div>
+            <div class="broker-name">Alpaca</div>
+            <div class="broker-covers">
+              <span class="cover-tag yes">Stocks ✓</span>
+              <span class="cover-tag yes">Options ✓</span>
+              <span class="cover-tag no">Futures ✗</span>
+            </div>
+            <div class="broker-lib">
+              Python: <code>alpaca-py</code><br>
+              Install: <code>pip install alpaca-py</code><br>
+              Free paper trading + delayed data.<br>
+              Real-time: ~$99/month subscription.
+            </div>
+          </div>
+          <div class="broker-card">
+            <div class="broker-badge">All Three — Second Option</div>
+            <div class="broker-name">Charles Schwab API</div>
+            <div class="broker-covers">
+              <span class="cover-tag yes">Stocks ✓</span>
+              <span class="cover-tag yes">Options ✓</span>
+              <span class="cover-tag yes">Futures ✓</span>
+            </div>
+            <div class="broker-lib">
+              Python: <code>schwab-py</code><br>
+              Install: <code>pip install schwab-py</code><br>
+              Free with Schwab account. OAuth2 auth.<br>
+              Replaced TD Ameritrade API.
+            </div>
+          </div>
+        </div>
+
+        <h3 style="margin-top:1.5rem;">Connecting Interactive Brokers — Python Example</h3>
+        <pre style="background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:1.1rem 1.2rem; font-size:.8rem; overflow-x:auto; line-height:1.6;"><code><span style="color:#a78bfa;">from</span> <span style="color:#38bdf8;">ib_async</span> <span style="color:#a78bfa;">import</span> IB, Stock, Future, util
+
+<span style="color:#64748b;"># 1. Connect (TWS must be running on port 7497)</span>
+ib = IB()
+ib.connect(<span style="color:#86efac;">'127.0.0.1'</span>, 7497, clientId=1)
+
+<span style="color:#64748b;"># 2. Fetch AAPL 1H bars (last 30 days)</span>
+contract = Stock(<span style="color:#86efac;">'AAPL'</span>, <span style="color:#86efac;">'SMART'</span>, <span style="color:#86efac;">'USD'</span>)
+bars = ib.reqHistoricalData(
+    contract, endDateTime=<span style="color:#86efac;">''</span>, durationStr=<span style="color:#86efac;">'30 D'</span>,
+    barSizeSetting=<span style="color:#86efac;">'1 hour'</span>, whatToShow=<span style="color:#86efac;">'MIDPOINT'</span>, useRTH=<span style="color:#f59e0b;">True</span>
+)
+df_1h = util.df(bars)   <span style="color:#64748b;"># → resample to 4H in live-server.py</span>
+
+<span style="color:#64748b;"># 3. ES Futures</span>
+es_contract = Future(<span style="color:#86efac;">'ES'</span>, <span style="color:#86efac;">'202503'</span>, <span style="color:#86efac;">'CME'</span>)
+bars_es = ib.reqHistoricalData(es_contract, ...)
+
+<span style="color:#64748b;"># 4. Subscribe to real-time ticks</span>
+ib.reqMktData(contract, <span style="color:#86efac;">''</span>, <span style="color:#f59e0b;">False</span>, <span style="color:#f59e0b;">False</span>)</code></pre>
+      </div>
+
+      <!-- Data pipeline -->
+      <div class="content-block">
+        <h2>🔄 4-Hour Candle Data Pipeline</h2>
+
+        <div class="pipeline">
+          <div class="pipe-step" style="border-color:#10b981;">Market Data<br><small style="font-weight:400; color:var(--muted);">IBKR / yfinance</small></div>
+          <div class="pipe-arrow">→</div>
+          <div class="pipe-step">1H OHLCV<br><small style="font-weight:400; color:var(--muted);">Raw bars</small></div>
+          <div class="pipe-arrow">→</div>
+          <div class="pipe-step" style="border-color:var(--accent);">Resample 4H<br><small style="font-weight:400; color:var(--muted);">pandas resample</small></div>
+          <div class="pipe-arrow">→</div>
+          <div class="pipe-step">14 Features<br><small style="font-weight:400; color:var(--muted);">RSI, ATR, MACD…</small></div>
+          <div class="pipe-arrow">→</div>
+          <div class="pipe-step" style="border-color:#a78bfa;">GBM Model<br><small style="font-weight:400; color:var(--muted);">Direction + Mag.</small></div>
+          <div class="pipe-arrow">→</div>
+          <div class="pipe-step" style="border-color:#4ade80;">Signal JSON<br><small style="font-weight:400; color:var(--muted);">→ Dashboard</small></div>
+        </div>
+
+        <h3>4-Hour Bar Construction</h3>
+        <pre style="background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:1rem 1.2rem; font-size:.8rem; overflow-x:auto; line-height:1.6;"><code><span style="color:#a78bfa;">import</span> yfinance <span style="color:#a78bfa;">as</span> yf
+
+<span style="color:#64748b;"># Download 1H bars (90-day window)</span>
+raw = yf.download(<span style="color:#86efac;">'AAPL'</span>, period=<span style="color:#86efac;">'90d'</span>, interval=<span style="color:#86efac;">'1h'</span>)
+
+<span style="color:#64748b;"># Resample to 4H candles</span>
+df_4h = raw.resample(<span style="color:#86efac;">'4h'</span>).agg({
+    <span style="color:#86efac;">'Open'</span>:   <span style="color:#86efac;">'first'</span>,
+    <span style="color:#86efac;">'High'</span>:   <span style="color:#86efac;">'max'</span>,
+    <span style="color:#86efac;">'Low'</span>:    <span style="color:#86efac;">'min'</span>,
+    <span style="color:#86efac;">'Close'</span>:  <span style="color:#86efac;">'last'</span>,
+    <span style="color:#86efac;">'Volume'</span>: <span style="color:#86efac;">'sum'</span>
+}).dropna()
+<span style="color:#64748b;"># Each bar = 4 hours of price action — ~6 bars per trading day</span></code></pre>
+      </div>
+
+      <!-- How to run -->
+      <div class="content-block">
+        <h2>🚀 Running the Live Trading Server</h2>
+        <ol>
+          <li><strong>Install Python dependencies:</strong><br>
+            <code style="background:var(--surface); padding:.2rem .5rem; border-radius:4px; font-size:.85rem;">pip install flask flask-cors yfinance scikit-learn pandas numpy</code>
+          </li>
+          <li style="margin-top:.7rem;"><strong>Start the server</strong> (from the Machine Learning project folder):<br>
+            <code style="background:var(--surface); padding:.2rem .5rem; border-radius:4px; font-size:.85rem;">python live-server.py</code>
+          </li>
+          <li style="margin-top:.7rem;"><strong>Serve the website</strong> (from the website folder):<br>
+            <code style="background:var(--surface); padding:.2rem .5rem; border-radius:4px; font-size:.85rem;">npx serve -l 8080 website/</code>
+          </li>
+          <li style="margin-top:.7rem;"><strong>Open</strong> <a href="http://localhost:8080/live-trading.html" style="color:var(--accent);">http://localhost:8080/live-trading.html</a> — the dashboard auto-connects to <code>localhost:5050</code>.</li>
+          <li style="margin-top:.7rem;"><strong>Upgrade to live data:</strong> Replace yfinance with <code>ib_async</code> and connect Interactive Brokers TWS on port 7497.</li>
+        </ol>
+
+        <h3>Server Endpoints</h3>
+        <table style="width:100%; border-collapse:collapse; font-size:.83rem; margin-top:.5rem;">
+          <tbody>
+            <tr style="border-bottom:1px solid var(--border);">
+              <td style="padding:.6rem .8rem; font-family:monospace; color:var(--accent);">/api/candles/AAPL</td>
+              <td style="padding:.6rem .8rem; color:var(--muted);">4H OHLCV array for any symbol</td>
+            </tr>
+            <tr style="border-bottom:1px solid var(--border);">
+              <td style="padding:.6rem .8rem; font-family:monospace; color:var(--accent);">/api/signal/ES=F</td>
+              <td style="padding:.6rem .8rem; color:var(--muted);">ML direction prob + magnitude + trade params</td>
+            </tr>
+            <tr style="border-bottom:1px solid var(--border);">
+              <td style="padding:.6rem .8rem; font-family:monospace; color:var(--accent);">/api/multi/AAPL,ES=F,GC=F</td>
+              <td style="padding:.6rem .8rem; color:var(--muted);">Batch signals for multiple symbols</td>
+            </tr>
+            <tr>
+              <td style="padding:.6rem .8rem; font-family:monospace; color:var(--accent);">/api/symbols</td>
+              <td style="padding:.6rem .8rem; color:var(--muted);">List of all available symbols</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-card">
+        <h4>Broker Comparison</h4>
+        <ul>
+          <li><strong>IBKR</strong> — All three, <code>ib_async</code></li>
+          <li><strong>Schwab</strong> — All three, <code>schwab-py</code></li>
+          <li><strong>Alpaca</strong> — Stocks+Options, <code>alpaca-py</code></li>
+          <li><strong>Polygon.io</strong> — Data only</li>
+          <li><strong>Tradovate</strong> — Futures only</li>
+        </ul>
+      </div>
+      <div class="sidebar-card">
+        <h4>Dashboard Features</h4>
+        <ul>
+          <li>4H candlestick charts</li>
+          <li>TradingView Lightweight Charts</li>
+          <li>XGBoost direction probability</li>
+          <li>Magnitude forecast (%)</li>
+          <li>ATR-based entry/stop/target</li>
+          <li>6-condition signal checklist</li>
+          <li>Feature importance ranking</li>
+          <li>Futures dollar risk/reward</li>
+          <li>Options strategy selector</li>
+          <li>Auto-refresh every 4 min</li>
+        </ul>
+      </div>
+      <div class="sidebar-card">
+        <h4>Server Stack</h4>
+        <ul>
+          <li>Python 3.10+</li>
+          <li>Flask 3.0 REST API</li>
+          <li>flask-cors (browser access)</li>
+          <li>yfinance (delayed data)</li>
+          <li>scikit-learn GBM models</li>
+          <li>pandas 4H resampling</li>
+          <li>In-memory cache (4 min TTL)</li>
+        </ul>
+      </div>
+      <div class="sidebar-card">
+        <h4>Module Navigation</h4>
+        <ul>
+          <li><a href="futures-trading.html">← Futures (Module 6)</a></li>
+          <li><a href="ml-trading.html">← ML in Trading</a></li>
+          <li><a href="index.html">← Course Home</a></li>
+        </ul>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<!-- ── Footer ── -->
+<footer class="footer">
+  <div class="footer-logo">
+    <img src="images/steve.jpg" alt="Stephen Borick">
+    <strong>Artificial Intelligence Solutions, Inc.</strong>
+  </div>
+  <p>© 2026 Artificial Intelligence Solutions, Inc. — All rights reserved.</p>
+</footer>
+
+<!-- ── Dashboard JavaScript ── -->
+<script>
+const API = 'http://localhost:5050';
+let chartInstance = null;
+let candleSeries   = null;
+let volumeSeries   = null;
+let currentSymbol  = 'AAPL';
+let currentType    = 'stock';
+let autoRefreshTimer = null;
+
+const SYMBOL_LABELS = {
+  'AAPL': 'Apple (AAPL)', 'NVDA': 'NVIDIA (NVDA)', 'SPY': 'S&P 500 ETF (SPY)',
+  'MSFT': 'Microsoft (MSFT)', 'QQQ': 'Nasdaq ETF (QQQ)',
+  'ES=F': 'E-mini S&P 500 (ES)', 'CL=F': 'Crude Oil (CL)',
+  'GC=F': 'Gold (GC)', 'NQ=F': 'E-mini Nasdaq (NQ)'
+};
+
+// ── Chart init ──────────────────────────────────────────────────────────────
+function initChart() {
+  const container = document.getElementById('chart-container');
+  container.innerHTML = '';
+  chartInstance = LightweightCharts.createChart(container, {
+    width:  container.clientWidth,
+    height: 420,
+    layout: { background: { color: '#0d1117' }, textColor: '#94a3b8' },
+    grid:   { vertLines: { color: '#1e293b' }, horzLines: { color: '#1e293b' } },
+    crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
+    rightPriceScale: { borderColor: '#1e293b' },
+    timeScale: { borderColor: '#1e293b', timeVisible: true, secondsVisible: false }
+  });
+
+  candleSeries = chartInstance.addCandlestickSeries({
+    upColor: '#4ade80', downColor: '#f87171',
+    borderUpColor: '#4ade80', borderDownColor: '#f87171',
+    wickUpColor: '#4ade80', wickDownColor: '#f87171'
+  });
+
+  volumeSeries = chartInstance.addHistogramSeries({
+    color: '#26a69a', priceFormat: { type: 'volume' },
+    priceScaleId: 'volume',
+    scaleMargins: { top: 0.8, bottom: 0 }
+  });
+
+  // OHLC on crosshair
+  chartInstance.subscribeCrosshairMove(p => {
+    if (p.seriesData && p.seriesData.size > 0) {
+      const d = p.seriesData.get(candleSeries);
+      if (d) {
+        document.getElementById('chart-ohlc-display').textContent =
+          `O: ${d.open.toFixed(2)}  H: ${d.high.toFixed(2)}  L: ${d.low.toFixed(2)}  C: ${d.close.toFixed(2)}`;
+      }
+    }
+  });
+
+  // Resize
+  new ResizeObserver(() => {
+    chartInstance.applyOptions({ width: container.clientWidth });
+  }).observe(container);
+}
+
+// ── Load candles ────────────────────────────────────────────────────────────
+async function loadCandles(symbol) {
+  document.getElementById('chart-loading').style.display = 'flex';
+  try {
+    const r = await fetch(`${API}/api/candles/${symbol}?period=90d`);
+    if (!r.ok) throw new Error(r.statusText);
+    const data = await r.json();
+    if (!Array.isArray(data) || data.length === 0) throw new Error('No candles');
+
+    candleSeries.setData(data.map(c => ({
+      time: c.time, open: c.open, high: c.high, low: c.low, close: c.close
+    })));
+    volumeSeries.setData(data.map(c => ({
+      time: c.time, value: c.volume,
+      color: c.close >= c.open ? 'rgba(74,222,128,.25)' : 'rgba(248,113,113,.25)'
+    })));
+    chartInstance.timeScale().fitContent();
+    document.getElementById('chart-candle-count').textContent =
+      `${data.length} × 4H bars`;
+    document.getElementById('chart-loading').style.display = 'none';
+    document.getElementById('chart-symbol-title').textContent =
+      `${SYMBOL_LABELS[symbol] || symbol} — 4H Candlestick`;
+  } catch(e) {
+    document.getElementById('chart-loading').innerHTML =
+      `<span style="color:#f87171;">Could not load chart data — is live-server.py running?<br><small>${e.message}</small></span>`;
+    document.getElementById('chart-loading').style.display = 'flex';
+  }
+}
+
+// ── Load ML signal ──────────────────────────────────────────────────────────
+async function loadSignal(symbol, type) {
+  try {
+    const r = await fetch(`${API}/api/signal/${symbol}`);
+    if (!r.ok) throw new Error(r.statusText);
+    const s = await r.json();
+    renderSignal(s, type, symbol);
+    setServerOnline(true);
+  } catch(e) {
+    setServerOnline(false);
+    renderSignalError(symbol);
+  }
+}
+
+function renderSignal(s, type, symbol) {
+  const up   = s.prob_up   || 0;
+  const down = s.prob_down || 0;
+  const sig  = s.signal    || 'HOLD';
+  const mag  = s.pred_magnitude_pct || 0;
+  const atr  = s.atr       || 0;
+  const acc  = s.backtest_accuracy || 0;
+  const close = s.close || 0;
+
+  // Badge
+  const badge = document.getElementById('signal-badge');
+  badge.textContent = `${sig === 'BUY' ? '▲' : sig === 'SELL' ? '▼' : '◆'} ${sig}`;
+  badge.className = `signal-badge ${sig}`;
+
+  // Gauge
+  document.getElementById('prob-up').textContent   = (up*100).toFixed(1)+'%';
+  document.getElementById('prob-down').textContent = (down*100).toFixed(1)+'%';
+  document.getElementById('gauge-fill').style.width = (up*100)+'%';
+
+  // Stats
+  const magColor = mag > 0 ? 'up' : 'down';
+  document.getElementById('magnitude-val').textContent = `${mag > 0 ? '+' : ''}${mag.toFixed(3)}%`;
+  document.getElementById('magnitude-val').className   = `val ${magColor}`;
+  document.getElementById('atr-val').textContent    = atr.toFixed(4);
+  document.getElementById('atr-pct-val').textContent = `${s.atr_pct?.toFixed(3)}%`;
+  document.getElementById('accuracy-val').textContent = `${(acc*100).toFixed(1)}%`;
+  document.getElementById('accuracy-val').className   = `val ${acc >= 0.57 ? 'up' : 'neutral'}`;
+  document.getElementById('updated-val').textContent  = new Date(s.timestamp).toLocaleTimeString();
+
+  // Checklist
+  const probOk = sig === 'BUY' || sig === 'SELL';
+  const magOk  = Math.abs(mag / 100 * close) >= atr;
+  const accOk  = acc >= 0.57;
+  setCheck('chk-prob', probOk);
+  setCheck('chk-mag',  magOk);
+  setCheck('chk-acc',  accOk);
+
+  // Trade setup
+  document.getElementById('setup-symbol').textContent = SYMBOL_LABELS[symbol] || symbol;
+  document.getElementById('setup-entry').textContent  = close.toFixed(4);
+  document.getElementById('setup-stop').textContent   = sig === 'SELL' ? s.stop_short?.toFixed(4) : s.stop_long?.toFixed(4);
+  document.getElementById('setup-target').textContent = sig === 'SELL' ? s.target_short?.toFixed(4) : s.target_long?.toFixed(4);
+  document.getElementById('setup-rr').textContent     = s.rr_ratio?.toFixed(2) + ':1';
+
+  // Futures extras
+  const futRow = document.getElementById('setup-futures-row');
+  if (type === 'futures' && s.futures_multiplier) {
+    futRow.style.display = 'block';
+    document.getElementById('setup-risk-dollars').textContent    = `$${s.risk_dollars?.toFixed(0)}`;
+    document.getElementById('setup-reward-dollars').textContent  = `$${s.reward_dollars?.toFixed(0)}`;
+    document.getElementById('setup-multiplier').textContent      = `$${s.futures_multiplier}/pt`;
+  } else {
+    futRow.style.display = 'none';
+  }
+
+  // Options extras
+  const optRow = document.getElementById('setup-options-row');
+  if (type === 'options') {
+    optRow.style.display = 'block';
+    const ivAssumption = 35; // placeholder — real IV needs options chain
+    let strategy = '—';
+    if (sig === 'BUY')  strategy = ivAssumption < 30 ? 'Bull Call Spread (IV low → buy premium)' : 'Sell Bull Put Spread (IV high → sell premium)';
+    if (sig === 'SELL') strategy = ivAssumption < 30 ? 'Bear Put Spread (IV low → buy premium)' : 'Sell Bear Call Spread (IV high → sell premium)';
+    if (sig === 'HOLD') strategy = 'Iron Condor (IV high) or No Trade (IV low)';
+    document.getElementById('setup-options-strategy').textContent = strategy;
+  } else {
+    optRow.style.display = 'none';
+  }
+
+  // Feature importance
+  renderFeatureImportance(s.feature_importance || {});
+
+  // Market explanation
+  renderExplanation(s, type, symbol);
+}
+
+function setCheck(id, pass) {
+  const el = document.getElementById(id);
+  el.textContent = pass ? '✓' : '✗';
+  el.className   = `check-icon ${pass ? 'pass' : 'fail'}`;
+}
+
+function renderFeatureImportance(fi) {
+  const container = document.getElementById('feat-importance');
+  const entries = Object.entries(fi).slice(0, 6);
+  const maxVal  = entries[0]?.[1] || 0.01;
+  container.innerHTML = entries.map(([k, v]) => `
+    <div class="feat-row">
+      <div class="feat-name">${k}</div>
+      <div class="feat-bar-bg"><div class="feat-bar-fill" style="width:${(v/maxVal*100).toFixed(0)}%"></div></div>
+      <div class="feat-val">${(v*100).toFixed(1)}%</div>
+    </div>`).join('');
+}
+
+function renderExplanation(s, type, symbol) {
+  const label   = SYMBOL_LABELS[symbol] || symbol;
+  const sig     = s.signal;
+  const up      = (s.prob_up * 100).toFixed(1);
+  const mag     = s.pred_magnitude_pct?.toFixed(2);
+  const close   = s.close?.toFixed(2);
+  const atr     = s.atr?.toFixed(2);
+  const stop    = sig === 'SELL' ? s.stop_short?.toFixed(2) : s.stop_long?.toFixed(2);
+  const target  = sig === 'SELL' ? s.target_short?.toFixed(2) : s.target_long?.toFixed(2);
+  const acc     = (s.backtest_accuracy * 100).toFixed(1);
+  const rr      = s.rr_ratio?.toFixed(2);
+  const sigWord = sig === 'BUY' ? 'bullish' : sig === 'SELL' ? 'bearish' : 'neutral';
+
+  let html = `<strong>${label}</strong> is currently at <strong>$${close}</strong>. `;
+  html += `The XGBoost model assigns a direction probability of <strong>P(UP) = ${up}%</strong> `;
+  html += `— a <strong>${sig === 'HOLD' ? 'borderline (hold)' : sig + ' signal'}</strong> (threshold: ≥65% for buy, ≤35% for sell). `;
+  html += `The gradient boost magnitude regressor forecasts a <strong>${mag > 0 ? '+' : ''}${mag}%</strong> `;
+  html += `move over the next 4-hour bar. `;
+
+  if (sig !== 'HOLD') {
+    html += `<br><br><strong>Trade parameters:</strong> Entry at <strong>$${close}</strong>, `;
+    html += `stop at <strong>$${stop}</strong> (1.5× ATR = $${atr}), `;
+    html += `target at <strong>$${target}</strong>. Risk-reward ratio: <strong>${rr}:1</strong>. `;
+    html += `60-bar backtest accuracy: <strong>${acc}%</strong>. `;
+
+    if (type === 'futures' && s.futures_multiplier) {
+      html += `<br><br><strong>Futures leverage:</strong> Each point = $${s.futures_multiplier}. `;
+      html += `Risk per contract: <strong>$${s.risk_dollars?.toFixed(0)}</strong>. `;
+      html += `Reward per contract: <strong>$${s.reward_dollars?.toFixed(0)}</strong>. `;
+      html += `Size position so that this risk equals ≤2% of account equity.`;
+    } else if (type === 'options') {
+      html += `<br><br><strong>Options context:</strong> Check IV rank before entry. `;
+      html += `If IV rank &lt; 30: buy a debit spread (${sig === 'BUY' ? 'bull call spread' : 'bear put spread'}). `;
+      html += `If IV rank &gt; 60: sell a credit spread. Strike selection: break-even must be inside the `;
+      html += `predicted ${Math.abs(mag)}% magnitude move.`;
+    }
+  } else {
+    html += `<br><br>The signal does not meet the confidence threshold. <strong>Do not trade.</strong> `;
+    html += `Wait for P(UP) ≥ 65% or P(DOWN) ≤ 35% (= P(UP) ≤ 35%) before entering a position.`;
+  }
+
+  document.getElementById('market-explanation').innerHTML = html;
+  document.getElementById('explain-symbol').textContent = label;
+}
+
+function renderSignalError(symbol) {
+  ['signal-badge', 'prob-up', 'prob-down', 'magnitude-val', 'atr-val',
+   'atr-pct-val', 'accuracy-val'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.textContent = '—'; el.className = 'val'; }
+  });
+  document.getElementById('signal-badge').className = 'signal-badge HOLD';
+  document.getElementById('signal-badge').textContent = '— HOLD';
+  document.getElementById('market-explanation').innerHTML =
+    `<span style="color:#f87171;">⚠ Server not responding. Run <code>python live-server.py</code> from the project folder, then click ↻ Refresh.</span>`;
+}
+
+// ── Server status ────────────────────────────────────────────────────────────
+function setServerOnline(online) {
+  const dot = document.getElementById('server-dot');
+  const msg = document.getElementById('server-msg');
+  const spinner = document.getElementById('spinner');
+  spinner.style.display = 'none';
+  if (online) {
+    dot.className = 'server-dot online';
+    msg.textContent = 'Connected to live-server.py — data refreshes every 4 minutes';
+  } else {
+    dot.className = 'server-dot';
+    msg.innerHTML = '⚠ Server offline — run <code>python live-server.py</code> to connect live market data';
+  }
+  document.getElementById('last-update').textContent =
+    'Updated: ' + new Date().toLocaleTimeString();
+}
+
+// ── Asset selection ──────────────────────────────────────────────────────────
+function selectAsset(btn) {
+  document.querySelectorAll('.asset-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  currentSymbol = btn.dataset.symbol;
+  currentType   = btn.dataset.type;
+  loadAll(currentSymbol, currentType);
+}
+
+function loadAll(symbol, type) {
+  loadCandles(symbol);
+  loadSignal(symbol, type);
+}
+
+async function refreshAll() {
+  document.getElementById('spinner').style.display = '';
+  document.getElementById('server-msg').innerHTML =
+    '<span class="spinner"></span>Refreshing…';
+  loadAll(currentSymbol, currentType);
+}
+
+// ── Check server health ──────────────────────────────────────────────────────
+async function checkServer() {
+  try {
+    const r = await fetch(`${API}/api/health`, { signal: AbortSignal.timeout(3000) });
+    return r.ok;
+  } catch { return false; }
+}
+
+// ── Auto-refresh every 4 minutes ────────────────────────────────────────────
+function startAutoRefresh() {
+  if (autoRefreshTimer) clearInterval(autoRefreshTimer);
+  autoRefreshTimer = setInterval(() => {
+    loadAll(currentSymbol, currentType);
+  }, 4 * 60 * 1000);
+}
+
+// ── Boot ─────────────────────────────────────────────────────────────────────
+window.addEventListener('load', async () => {
+  initChart();
+  const online = await checkServer();
+  if (!online) {
+    setServerOnline(false);
+    document.getElementById('chart-loading').innerHTML =
+      '<span style="color:#f87171; text-align:center;">Server offline — run python live-server.py<br><small>Charts load automatically when server starts</small></span>';
+    document.getElementById('chart-loading').style.display = 'flex';
+  } else {
+    loadAll(currentSymbol, currentType);
+    startAutoRefresh();
+  }
+});
+</script>
+
+</body>
+</html>
