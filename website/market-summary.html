@@ -186,7 +186,47 @@
       margin-bottom: 1.5rem;
     }
     @media (max-width: 800px) { .strong-grid { grid-template-columns: 1fr; } }
+
+    /* ── Forecast section ── */
+    .forecast-grid {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.2rem;
+      margin-bottom: 1.5rem;
+    }
+    @media (max-width: 1100px) { .forecast-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width:  600px) { .forecast-grid { grid-template-columns: 1fr; } }
+    .forecast-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; overflow: hidden;
+    }
+    .forecast-card-header {
+      padding: .75rem 1rem; border-bottom: 1px solid var(--border);
+      font-size: .88rem; font-weight: 900;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .forecast-chart { height: 180px; position: relative; }
+    .forecast-table { width: 100%; border-collapse: collapse; font-size: .77rem; }
+    .forecast-table th {
+      text-align: left; padding: .4rem .8rem;
+      font-size: .67rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .07em; color: var(--muted);
+      border-bottom: 1px solid var(--border);
+    }
+    .forecast-table td { padding: .4rem .8rem; border-bottom: 1px solid rgba(255,255,255,.04); }
+    .forecast-table tr:last-child td { border-bottom: none; }
+    .horizon-label { font-size: .72rem; font-weight: 700; color: var(--muted); }
+    .forecast-summary {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; padding: 1.1rem 1.3rem; margin-bottom: 1.5rem;
+      font-size: .82rem; line-height: 1.7; color: var(--muted);
+    }
+    .forecast-summary strong { color: var(--text); }
+    .forecast-summary-grid {
+      display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    @media (max-width: 700px) { .forecast-summary-grid { grid-template-columns: 1fr; } }
   </style>
+  <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
 </head>
 <body>
 
@@ -214,6 +254,14 @@
     <h2>Market Summary</h2>
     <span class="ts" id="data-ts"></span>
   </div>
+
+  <!-- ── Multi-Horizon Forecast Section ────────────────────────────────── -->
+  <div class="section-title">📅 Multi-Horizon Market Forecast</div>
+  <div id="forecast-loading" style="text-align:center;color:var(--muted);padding:1.5rem 0 .5rem;">
+    <span class="spinner"></span> Loading daily forecast models (SPY · QQQ · ES=F · GC=F)…
+  </div>
+  <div id="forecast-cards" class="forecast-grid" style="display:none;"></div>
+  <div id="forecast-summaries" class="forecast-summary-grid" style="display:none;"></div>
 
   <!-- Loading state -->
   <div id="loading-overlay">
@@ -507,6 +555,149 @@ function renderActivity(top) {
     </tr>`).join('');
 }
 
+// ── Forecast ──────────────────────────────────────────────────────────────────
+const FORECAST_SYMBOLS = ['SPY', 'QQQ', 'ES=F', 'GC=F'];
+const FORECAST_LABELS  = { 'SPY': 'S&P 500 ETF', 'QQQ': 'Nasdaq ETF', 'ES=F': 'S&P Futures', 'GC=F': 'Gold Futures' };
+const fCharts = {};
+
+function forecastCardHTML(sym) {
+  const id = sym.replace(/[^a-z0-9]/gi, '_');
+  return `
+    <div class="forecast-card" id="fc-${id}">
+      <div class="forecast-card-header">
+        <span>${sym} <span style="font-weight:400;font-size:.75rem;color:var(--muted);">${FORECAST_LABELS[sym]||''}</span></span>
+        <span id="fc-sig-${id}"></span>
+      </div>
+      <div class="forecast-chart" id="fc-chart-${id}"></div>
+      <table class="forecast-table">
+        <thead><tr>
+          <th>Horizon</th><th>Signal</th><th>P(UP)</th>
+          <th>Magnitude</th><th>Target Price</th>
+        </tr></thead>
+        <tbody id="fc-rows-${id}">
+          <tr><td colspan="5" style="color:var(--muted);padding:.8rem;text-align:center;">
+            <span class="spinner"></span> Computing…
+          </td></tr>
+        </tbody>
+      </table>
+    </div>`;
+}
+
+function buildForecastChart(sym, candles) {
+  const id      = sym.replace(/[^a-z0-9]/gi, '_');
+  const chartEl = document.getElementById(`fc-chart-${id}`);
+  if (!chartEl || !candles || !candles.length) return;
+
+  const chart = LightweightCharts.createChart(chartEl, {
+    autoSize: true,
+    layout: { background: { type: 'solid', color: '#0f172a' }, textColor: '#94a3b8' },
+    grid:    { vertLines: { color: '#1e293b' }, horzLines: { color: '#1e293b' } },
+    timeScale: { borderColor: '#1e293b', timeVisible: false, fixLeftEdge: true, fixRightEdge: true },
+    rightPriceScale: { borderColor: '#1e293b' },
+    crosshair: { mode: 1 },
+    handleScroll: false, handleScale: false,
+  });
+  const cs = chart.addCandlestickSeries({
+    upColor: '#4ade80', downColor: '#f87171',
+    borderUpColor: '#4ade80', borderDownColor: '#f87171',
+    wickUpColor: '#4ade80', wickDownColor: '#f87171',
+  });
+  cs.setData(candles);
+  chart.timeScale().fitContent();
+  fCharts[sym] = { chart, cs };
+}
+
+function renderForecastRows(sym, forecasts) {
+  const id     = sym.replace(/[^a-z0-9]/gi, '_');
+  const rowsEl = document.getElementById(`fc-rows-${id}`);
+  const sigEl  = document.getElementById(`fc-sig-${id}`);
+  if (!rowsEl) return;
+
+  const horizons = [
+    { key: '1d', label: 'Next Day'   },
+    { key: '1w', label: 'Next Week'  },
+    { key: '1m', label: 'Next Month' },
+  ];
+
+  rowsEl.innerHTML = horizons.map(h => {
+    const fc = forecasts[h.key];
+    if (!fc) return `<tr><td colspan="5" class="horizon-label" style="padding:.5rem .8rem;">${h.label}: insufficient data</td></tr>`;
+    const mag    = fc.pred_magnitude_pct || 0;
+    const magCls = mag > 0 ? 'val-up' : mag < 0 ? 'val-down' : '';
+    const pCls   = fc.signal === 'BUY' ? 'val-up' : fc.signal === 'SELL' ? 'val-down' : '';
+    return `<tr>
+      <td class="horizon-label">${h.label}</td>
+      <td>${sigChip(fc.signal)}</td>
+      <td><span class="${pCls}">${(fc.prob_up * 100).toFixed(1)}%</span></td>
+      <td><span class="${magCls}">${mag >= 0 ? '+' : ''}${mag.toFixed(2)}%</span></td>
+      <td style="font-variant-numeric:tabular-nums;">${fmtPrice(fc.predicted_close)}</td>
+    </tr>`;
+  }).join('');
+
+  if (sigEl && forecasts['1d']) sigEl.innerHTML = sigChip(forecasts['1d'].signal);
+}
+
+function buildForecastNarrative(sym, forecasts) {
+  const id  = sym.replace(/[^a-z0-9]/gi, '_');
+  const f1d = forecasts['1d'];
+  const f1w = forecasts['1w'];
+  const f1m = forecasts['1m'];
+  if (!f1d) return '';
+
+  const dirWord = sig => sig === 'BUY' ? 'bullish' : sig === 'SELL' ? 'bearish' : 'neutral';
+  const colorSig = sig => sig === 'BUY' ? '#4ade80' : sig === 'SELL' ? '#f87171' : '#fbbf24';
+
+  const parts = [];
+  if (f1d) parts.push(`<strong style="color:${colorSig(f1d.signal)};">Short-term (1D):</strong> ${dirWord(f1d.signal).charAt(0).toUpperCase()+dirWord(f1d.signal).slice(1)} — ML assigns ${(f1d.prob_up*100).toFixed(0)}% probability of an up move; forecast magnitude <strong>${f1d.pred_magnitude_pct >= 0 ? '+' : ''}${f1d.pred_magnitude_pct.toFixed(2)}%</strong>, targeting <strong>$${fmtPrice(f1d.predicted_close)}</strong>.`);
+  if (f1w) parts.push(`<strong style="color:${colorSig(f1w.signal)};">Medium-term (1W):</strong> ${dirWord(f1w.signal).charAt(0).toUpperCase()+dirWord(f1w.signal).slice(1)} — P(UP) ${(f1w.prob_up*100).toFixed(0)}%, expected move <strong>${f1w.pred_magnitude_pct >= 0 ? '+' : ''}${f1w.pred_magnitude_pct.toFixed(2)}%</strong>, target <strong>$${fmtPrice(f1w.predicted_close)}</strong>.`);
+  if (f1m) parts.push(`<strong style="color:${colorSig(f1m.signal)};">Long-term (1M):</strong> ${dirWord(f1m.signal).charAt(0).toUpperCase()+dirWord(f1m.signal).slice(1)} — P(UP) ${(f1m.prob_up*100).toFixed(0)}%, expected move <strong>${f1m.pred_magnitude_pct >= 0 ? '+' : ''}${f1m.pred_magnitude_pct.toFixed(2)}%</strong>, target <strong>$${fmtPrice(f1m.predicted_close)}</strong>.`);
+
+  return `
+    <div class="forecast-summary">
+      <div style="font-weight:800;font-size:.88rem;margin-bottom:.5rem;">${sym} — ${FORECAST_LABELS[sym]||sym}</div>
+      ${parts.join('<br>')}
+    </div>`;
+}
+
+async function loadForecast(sym) {
+  try {
+    const r = await fetch(`${API}/api/forecast/${encodeURIComponent(sym)}`, { signal: AbortSignal.timeout(45000) });
+    if (!r.ok) throw new Error(r.statusText);
+    return await r.json();
+  } catch(e) {
+    console.warn(`[forecast] ${sym}:`, e.message);
+    return null;
+  }
+}
+
+async function loadAllForecasts() {
+  const grid = document.getElementById('forecast-cards');
+  grid.innerHTML = FORECAST_SYMBOLS.map(forecastCardHTML).join('');
+  grid.style.display = 'grid';
+  document.getElementById('forecast-loading').style.display = 'none';
+
+  const summaries = [];
+
+  await Promise.all(FORECAST_SYMBOLS.map(async sym => {
+    const data = await loadForecast(sym);
+    if (!data) {
+      const id = sym.replace(/[^a-z0-9]/gi, '_');
+      const el = document.getElementById(`fc-rows-${id}`);
+      if (el) el.innerHTML = '<tr><td colspan="5" style="color:#f87171;padding:.8rem;">Failed to load data</td></tr>';
+      return;
+    }
+    buildForecastChart(sym, data.candles);
+    renderForecastRows(sym, data.forecasts || {});
+    summaries.push({ sym, forecasts: data.forecasts || {} });
+  }));
+
+  const summaryEl = document.getElementById('forecast-summaries');
+  if (summaries.length) {
+    summaryEl.innerHTML = summaries.map(s => buildForecastNarrative(s.sym, s.forecasts)).join('');
+    summaryEl.style.display = 'grid';
+  }
+}
+
 // ── Main load / render ────────────────────────────────────────────────────────
 async function reload(nocache = false) {
   document.getElementById('loading-overlay').style.display = 'block';
@@ -545,8 +736,9 @@ async function reload(nocache = false) {
 }
 
 window.addEventListener('load', () => {
+  loadAllForecasts();
   reload();
-  setInterval(reload, 300000);   // auto-refresh every 5 minutes
+  setInterval(() => { loadAllForecasts(); reload(); }, 300000);  // refresh every 5 min
 });
 </script>
 

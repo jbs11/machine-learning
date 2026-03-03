@@ -875,6 +875,134 @@ def multi_signal(symbols: str):
     return jsonify(results)
 
 
+# ── Daily candles + multi-horizon forecast ────────────────────────────────────
+DAILY_FEAT_COLS = [
+    'sma20_ratio', 'sma50_ratio', 'macd', 'macd_signal', 'macd_hist',
+    'rsi', 'stoch_k', 'bb_width', 'bb_pos', 'vol_ratio',
+    'ret1', 'ret5', 'ret20', 'atr_pct', 'oc_range', 'hl_range',
+]
+
+
+def get_daily_candles(symbol: str, period: str = '2y') -> pd.DataFrame:
+    """Download daily OHLCV bars from yfinance."""
+    try:
+        tk = yf.Ticker(symbol)
+        df = tk.history(period=period, interval='1d')
+        if df.empty:
+            return pd.DataFrame()
+        if df.index.tz is not None:
+            df.index = df.index.tz_localize(None)
+        return df[['Open', 'High', 'Low', 'Close', 'Volume']].copy()
+    except Exception as e:
+        print(f"[daily candles] {symbol}: {e}")
+        return pd.DataFrame()
+
+
+def forecast_multi_horizon(symbol: str, asset_type: str = 'stock') -> dict | None:
+    """
+    Train lightweight GBM models for 1-day, 5-day, and 20-day forward return
+    targets using daily bars.  Returns per-horizon forecasts plus a 1-year
+    daily OHLCV array for charting.
+    """
+    ck = cache_key(symbol, 'forecast')
+    cached = cache_get(ck)
+    if cached:
+        return cached
+
+    try:
+        df_raw = get_daily_candles(symbol, period='2y')
+        if df_raw.empty or len(df_raw) < 120:
+            return None
+
+        df = compute_features(df_raw)
+        missing = [c for c in DAILY_FEAT_COLS if c not in df.columns]
+        if missing:
+            print(f"[forecast] {symbol} missing daily cols: {missing}")
+            return None
+
+        df = df.dropna(subset=DAILY_FEAT_COLS)
+        if len(df) < 80:
+            return None
+
+        close     = df['Close']
+        forecasts: dict[str, dict] = {}
+        horizons   = {'1d': 1, '1w': 5, '1m': 20}
+        thresholds = {'1d': (0.60, 0.40), '1w': (0.58, 0.42), '1m': (0.55, 0.45)}
+
+        for label, n in horizons.items():
+            fwd_pct   = (close.shift(-n) / close - 1)
+            direction = (fwd_pct > 0).astype(int)
+            d = df.copy()
+            d['_dir'] = direction
+            d['_mag'] = fwd_pct
+            d = d.dropna(subset=['_dir', '_mag'])
+            if len(d) < 60:
+                continue
+
+            scaler = StandardScaler()
+            X_tr   = scaler.fit_transform(d[DAILY_FEAT_COLS].values)
+            y_dir  = d['_dir'].values
+            y_mag  = d['_mag'].values
+
+            clf = GradientBoostingClassifier(n_estimators=100, max_depth=4,
+                                             learning_rate=0.05, subsample=0.8, random_state=42)
+            reg = GradientBoostingRegressor(n_estimators=100, max_depth=4,
+                                            learning_rate=0.05, subsample=0.8, random_state=42)
+            clf.fit(X_tr, y_dir)
+            reg.fit(X_tr, y_mag)
+
+            X_lat    = scaler.transform([df.iloc[-1][DAILY_FEAT_COLS].values])
+            prob_up  = float(clf.predict_proba(X_lat)[0][1])
+            pred_mag = float(reg.predict(X_lat)[0])
+            cur      = float(close.iloc[-1])
+
+            buy_t, sell_t = thresholds[label]
+            sig = 'BUY' if prob_up >= buy_t else ('SELL' if prob_up <= sell_t else 'HOLD')
+
+            forecasts[label] = {
+                'signal':             sig,
+                'prob_up':            round(prob_up, 4),
+                'prob_down':          round(1 - prob_up, 4),
+                'pred_magnitude_pct': round(pred_mag * 100, 3),
+                'predicted_close':    round(cur * (1 + pred_mag), 4),
+                'current_close':      round(cur, 4),
+            }
+
+        if not forecasts:
+            return None
+
+        # Build 1-year daily candle array for the chart
+        chart_df = df_raw.iloc[-252:]
+        candles = [
+            {
+                'time':  int(pd.Timestamp(ts).timestamp()),
+                'open':  round(float(row['Open']),  4),
+                'high':  round(float(row['High']),  4),
+                'low':   round(float(row['Low']),   4),
+                'close': round(float(row['Close']), 4),
+            }
+            for ts, row in chart_df.iterrows()
+        ]
+
+        result = {'symbol': symbol, 'forecasts': forecasts, 'candles': candles}
+        cache_set(ck, result)
+        return result
+
+    except Exception as e:
+        print(f"[forecast] {symbol}: {e}")
+        return None
+
+
+@app.route('/api/forecast/<path:symbol>')
+def forecast_endpoint(symbol: str):
+    symbol    = symbol.upper()
+    asset_type = _asset_type_for(symbol)
+    result    = forecast_multi_horizon(symbol, asset_type)
+    if result is None:
+        return jsonify({'error': 'insufficient data or model failed'}), 404
+    return jsonify(result)
+
+
 # ── Market Summary helpers ────────────────────────────────────────────────────
 def quick_signal(symbol: str, asset_type: str) -> dict | None:
     """
