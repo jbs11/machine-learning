@@ -5,8 +5,8 @@ scikit-learn>=1.4.0
 pandas>=2.1.0
 numpy>=1.26.0
 
-# Upgrade to live data — uncomment when using Interactive Brokers:
-# ib_async>=2.0.0         # pip install ib_async (active fork of ib_insync)
+# Upgrade to live data — Interactive Brokers (INSTALLED):
+ib_async>=2.0.0           # pip install ib_async (active fork of ib_insync)
 
 # Or for Schwab/TD Ameritrade (stocks + options + futures):
 # schwab-py>=1.4.0        # pip install schwab-py
