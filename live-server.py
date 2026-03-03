@@ -39,6 +39,7 @@ import warnings
 warnings.filterwarnings('ignore')
 
 import threading
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 import yfinance as yf
@@ -542,7 +543,8 @@ def train_and_predict(df: pd.DataFrame, asset_type: str = 'stock'):
     pred_mag = float(reg.predict(X_latest_sc)[0])
     close    = float(latest['Close'])
     atr      = float(latest['atr'])
-    vol_reg  = int(latest.get('vol_regime', 1))
+    vol_reg   = int(latest.get('vol_regime', 1))
+    vol_ratio = float(latest.get('vol_ratio', 1.0))
 
     # ── Dynamic signal thresholds based on volatility regime ─────────────────
     buy_thresh  = 0.62 if vol_reg == 2 else 0.60
@@ -610,6 +612,7 @@ def train_and_predict(df: pd.DataFrame, asset_type: str = 'stock'):
         'asset_type':         asset_type,
         'vol_regime':         vol_reg,
         'vol_regime_label':   vol_regime_label,
+        'vol_ratio':          round(vol_ratio, 3),
         'features_used':      feat_cols,
         'signal_markers':     signal_markers,
         'timestamp':          datetime.now().isoformat()
@@ -870,6 +873,347 @@ def multi_signal(symbols: str):
         else:
             results[sym] = {'error': 'model failed'}
     return jsonify(results)
+
+
+# ── Market Summary helpers ────────────────────────────────────────────────────
+def quick_signal(symbol: str, asset_type: str) -> dict | None:
+    """
+    Lightweight signal for batch/summary use — 100-tree GBM only, no CV,
+    no ExtraTrees.  Uses the in-memory cache when available.
+    """
+    ck = cache_key(symbol, 'signal')
+    cached = cache_get(ck)
+    if cached:
+        # Return a slimmed copy (drop heavy arrays not needed for summary)
+        skip = {'signal_markers', 'features_used'}
+        return {k: v for k, v in cached.items() if k not in skip}
+
+    feat_cols = _ASSET_FEATURE_MAP.get(asset_type, STOCK_FEATURE_COLS)
+    try:
+        df_4h = get_4h_candles(symbol, period='120d')
+        if df_4h.empty or len(df_4h) < 80:
+            return None
+        df = compute_features(df_4h)
+
+        d = df.copy()
+        d['future_ret'] = d['Close'].pct_change(1).shift(-1)
+        d['direction']  = (d['future_ret'] > 0).astype(int)
+        d = d.dropna(subset=feat_cols + ['direction', 'future_ret'])
+        if len(d) < 80:
+            return None
+
+        X     = d[feat_cols].values
+        y_dir = d['direction'].values
+        y_mag = d['future_ret'].values
+
+        scaler = StandardScaler()
+        X_sc   = scaler.fit_transform(X)
+
+        clf = GradientBoostingClassifier(n_estimators=100, max_depth=4,
+                                         learning_rate=0.05, subsample=0.8, random_state=42)
+        reg = GradientBoostingRegressor(n_estimators=100, max_depth=4,
+                                         learning_rate=0.05, subsample=0.8, random_state=42)
+        clf.fit(X_sc, y_dir)
+        reg.fit(X_sc, y_mag)
+
+        latest      = df.iloc[-1]
+        X_lat       = scaler.transform(np.array([[latest[c] for c in feat_cols]]))
+        prob_up     = float(clf.predict_proba(X_lat)[0][1])
+        pred_mag    = float(reg.predict(X_lat)[0])
+        close       = float(latest['Close'])
+        atr         = float(latest['atr'])
+        vol_reg     = int(latest.get('vol_regime', 1))
+        vol_ratio_v = float(latest.get('vol_ratio', 1.0))
+
+        buy_t  = 0.62 if vol_reg == 2 else 0.60
+        sell_t = 0.38 if vol_reg == 2 else 0.40
+        sig    = 'BUY' if prob_up >= buy_t else ('SELL' if prob_up <= sell_t else 'HOLD')
+
+        r = {
+            'symbol':             symbol,
+            'label':              SYMBOL_LABELS.get(symbol, symbol),
+            'close':              round(close, 4),
+            'prob_up':            round(prob_up, 4),
+            'prob_down':          round(1 - prob_up, 4),
+            'pred_magnitude_pct': round(pred_mag * 100, 3),
+            'signal':             sig,
+            'atr':                round(atr, 4),
+            'atr_pct':            round(atr / close * 100, 3),
+            'vol_regime':         vol_reg,
+            'vol_regime_label':   {0: 'Low', 1: 'Normal', 2: 'High'}.get(vol_reg, 'Normal'),
+            'vol_ratio':          round(vol_ratio_v, 3),
+            'entry':              round(close, 4),
+            'stop_long':          round(close - 1.5 * atr, 4),
+            'target_long':        round(close + abs(pred_mag) * close, 4),
+            'stop_short':         round(close + 1.5 * atr, 4),
+            'target_short':       round(close - abs(pred_mag) * close, 4),
+            'risk_per_unit':      round(1.5 * atr, 4),
+            'reward_per_unit':    round(abs(pred_mag) * close, 4),
+            'rr_ratio':           round(abs(pred_mag) * close / (1.5 * atr + 1e-9), 2),
+            'asset_type':         asset_type,
+            'timestamp':          datetime.now().isoformat(),
+        }
+        if symbol in FUTURES_MULTIPLIERS:
+            mult = FUTURES_MULTIPLIERS[symbol]
+            r['futures_multiplier'] = mult
+            r['risk_dollars']       = round(r['risk_per_unit'] * mult, 2)
+            r['reward_dollars']     = round(r['reward_per_unit'] * mult, 2)
+        return r
+    except Exception as e:
+        print(f"[quick_signal] {symbol}: {e}")
+        return None
+
+
+def generate_market_notes(sym_results: dict) -> list:
+    """Auto-generate market events and insights from ML signal data."""
+    notes = []
+    all_r = list(sym_results.values())
+
+    # ── VIX analysis ──────────────────────────────────────────────────────────
+    vix = sym_results.get('^VIX')
+    if vix:
+        vc = vix.get('close', 20)
+        vs = vix.get('signal', 'HOLD')
+        if vc >= 30:
+            notes.append({'type': 'danger', 'icon': '⚠',
+                'title': f'VIX Extreme Fear ({vc:.1f})',
+                'body':  'VIX above 30 — high fear. Options premiums very expensive. '
+                         'Reduce leverage, widen stops. Contrarian long opportunities may emerge near capitulation.'})
+        elif vc >= 20:
+            notes.append({'type': 'warning', 'icon': '📊',
+                'title': f'Elevated VIX ({vc:.1f}) — Options Premium Inflated',
+                'body':  f'VIX at {vc:.1f}: above-average fear. Favor credit spreads / iron condors '
+                         f'over debit spreads. ML signal for VIX: {vs}.'})
+        elif vc < 13:
+            notes.append({'type': 'info', 'icon': '😴',
+                'title': f'Low VIX Complacency ({vc:.1f})',
+                'body':  'VIX below 13 — complacency; cheap options. Good time to buy protection. '
+                         'Low-vol regimes end abruptly — stay hedged.'})
+        if vs == 'BUY':
+            notes.append({'type': 'warning', 'icon': '🔺',
+                'title': 'VIX Breakout — Volatility Expansion Expected',
+                'body':  'ML signals VIX moving higher. Expect wider intraday swings. '
+                         'Scale down position sizes and consider long-vol strategies (straddles, strangles).'})
+        elif vs == 'SELL':
+            notes.append({'type': 'bullish', 'icon': '📉',
+                'title': 'VIX Declining — Fear Subsiding',
+                'body':  'ML signals VIX dropping. Risk-on environment expected. '
+                         'Selling premium strategies (iron condors, covered calls) benefit from declining vol.'})
+
+    # ── Index futures direction ────────────────────────────────────────────────
+    es = sym_results.get('ES=F')
+    nq = sym_results.get('NQ=F')
+    if es and nq:
+        es_s, nq_s = es.get('signal'), nq.get('signal')
+        if es_s == 'BUY' and nq_s == 'BUY':
+            notes.append({'type': 'bullish', 'icon': '🚀',
+                'title': 'Index Futures: Broad Bullish Setup',
+                'body':  f'ES P(UP)={es["prob_up"]*100:.0f}% (BUY), NQ P(UP)={nq["prob_up"]*100:.0f}% (BUY). '
+                         f'Broad upside expected — favor longs across stocks & ETFs. '
+                         f'Magnitude forecast: ES {es["pred_magnitude_pct"]:+.2f}%, NQ {nq["pred_magnitude_pct"]:+.2f}%.'})
+        elif es_s == 'SELL' and nq_s == 'SELL':
+            notes.append({'type': 'bearish', 'icon': '🌧',
+                'title': 'Index Futures: Broad Bearish Setup',
+                'body':  f'ES P(UP)={es["prob_up"]*100:.0f}% (SELL), NQ P(UP)={nq["prob_up"]*100:.0f}% (SELL). '
+                         f'Broad downside — reduce long exposure, consider hedges. '
+                         f'Risk per ES contract: ${es.get("risk_dollars","—")}.'})
+        elif es_s != nq_s:
+            notes.append({'type': 'info', 'icon': '🔄',
+                'title': 'S&P vs NASDAQ Divergence — Sector Rotation',
+                'body':  f'ES is {es_s} while NQ is {nq_s}. Divergence suggests rotation '
+                         f'between value (S&P heavy) and growth (NASDAQ heavy). Watch sector ETFs.'})
+
+    # ── Gold / Oil signals ─────────────────────────────────────────────────────
+    gc = sym_results.get('GC=F')
+    cl = sym_results.get('CL=F')
+    if gc and gc.get('signal') == 'BUY':
+        notes.append({'type': 'info', 'icon': '🥇',
+            'title': f'Gold Bullish — Safe-Haven Demand (P(UP)={gc["prob_up"]*100:.0f}%)',
+            'body':  f'Gold futures ML signal: BUY. Forecast {gc["pred_magnitude_pct"]:+.2f}%. '
+                     f'Rising gold signals inflation concerns or risk-off. Watch USD correlation.'})
+    if cl and cl.get('signal') != 'HOLD':
+        notes.append({'type': 'info', 'icon': '🛢',
+            'title': f'Crude Oil: {cl["signal"]} (P(UP)={cl["prob_up"]*100:.0f}%)',
+            'body':  f'WTI Crude forecast {cl["pred_magnitude_pct"]:+.2f}%. '
+                     f'Oil moves impact energy stocks (XOM, CVX) and inflation expectations.'})
+
+    # ── Market breadth ────────────────────────────────────────────────────────
+    stk = [r for r in all_r if r.get('asset_type') in ('stock', 'index')]
+    if stk:
+        bp = sum(1 for r in stk if r.get('signal') == 'BUY')  / len(stk) * 100
+        sp = sum(1 for r in stk if r.get('signal') == 'SELL') / len(stk) * 100
+        if bp >= 70:
+            notes.append({'type': 'bullish', 'icon': '📈',
+                'title': f'Strong Bullish Breadth — {bp:.0f}% BUY',
+                'body':  f'{bp:.0f}% of tracked stocks & indices show BUY signals — '
+                         f'broad market participation. Favorable for momentum strategies.'})
+        elif sp >= 70:
+            notes.append({'type': 'bearish', 'icon': '📉',
+                'title': f'Strong Bearish Breadth — {sp:.0f}% SELL',
+                'body':  f'{sp:.0f}% of tracked stocks & indices show SELL signals — '
+                         f'widespread selling pressure. Defensive positioning recommended.'})
+
+    # ── High-vol regime stocks ────────────────────────────────────────────────
+    hv = [r for r in all_r if r.get('vol_regime') == 2 and r.get('asset_type') == 'stock']
+    if len(hv) >= 3:
+        top_hv = ', '.join(r['symbol'] for r in sorted(hv, key=lambda x: x.get('atr_pct', 0), reverse=True)[:6])
+        notes.append({'type': 'warning', 'icon': '⚡',
+            'title': f'Elevated Volatility: {len(hv)} Stocks in High-Vol Regime',
+            'body':  f'ATR well above recent history: {top_hv}. '
+                     f'Use 1.5–2× wider stops and smaller position sizes to keep dollar risk constant.'})
+
+    # ── Unusual volume ────────────────────────────────────────────────────────
+    high_act = [r for r in all_r if r.get('vol_ratio', 1) > 2.0]
+    if high_act:
+        syms = ', '.join(f'{r["symbol"]} ({r["vol_ratio"]:.1f}×)' for r in
+                         sorted(high_act, key=lambda x: x.get('vol_ratio', 1), reverse=True)[:5])
+        notes.append({'type': 'info', 'icon': '🔥',
+            'title': 'Unusual Trading Volume',
+            'body':  f'Volume significantly above 20-bar average: {syms}. '
+                     f'High volume often precedes breakouts or reversals — confirm price action before entering.'})
+
+    # ── Mag 7 consensus ───────────────────────────────────────────────────────
+    m7 = ['AAPL', 'MSFT', 'NVDA', 'GOOGL', 'AMZN', 'META', 'TSLA']
+    m7r = [sym_results[s] for s in m7 if s in sym_results]
+    if m7r:
+        mb = sum(1 for r in m7r if r.get('signal') == 'BUY')
+        ms = sum(1 for r in m7r if r.get('signal') == 'SELL')
+        if mb >= 5:
+            notes.append({'type': 'bullish', 'icon': '💎',
+                'title': f'Mag 7 Bullish Consensus ({mb}/7 BUY)',
+                'body':  f'{mb} of 7 mega-cap tech stocks show BUY — '
+                         f'tech sector leading the rally. QQQ and NQ futures likely to follow.'})
+        elif ms >= 5:
+            notes.append({'type': 'bearish', 'icon': '💔',
+                'title': f'Mag 7 Bearish Consensus ({ms}/7 SELL)',
+                'body':  f'{ms} of 7 mega-cap tech stocks show SELL — '
+                         f'tech headwinds dragging on indices. QQQ and NQ likely underperformers.'})
+
+    # ── Largest magnitude forecast ─────────────────────────────────────────────
+    top_mag = max(all_r, key=lambda r: abs(r.get('pred_magnitude_pct', 0)), default=None)
+    if top_mag and abs(top_mag.get('pred_magnitude_pct', 0)) > 0.8:
+        m = top_mag['pred_magnitude_pct']
+        tgt = top_mag['target_long'] if m > 0 else top_mag['target_short']
+        stp = top_mag['stop_long']   if m > 0 else top_mag['stop_short']
+        notes.append({'type': 'bullish' if m > 0 else 'bearish', 'icon': '🎯',
+            'title': f'Largest Forecast Move: {top_mag["symbol"]} ({m:+.2f}%)',
+            'body':  f'{top_mag["label"]} — ML signal: {top_mag["signal"]} '
+                     f'(P(UP)={top_mag["prob_up"]*100:.0f}%). '
+                     f'Entry ${top_mag["entry"]}, stop ${stp}, target ${tgt}. R/R {top_mag["rr_ratio"]:.1f}:1.'})
+
+    # ── Options context note ──────────────────────────────────────────────────
+    opt_r = [r for r in all_r if r.get('asset_type') == 'options']
+    if opt_r:
+        vix_val = vix.get('close', 20) if vix else 20
+        strategy = ('credit spreads / iron condors (sell premium)' if vix_val > 20
+                    else 'debit spreads / directional options (buy premium)')
+        hv_opts = sum(1 for r in opt_r if r.get('vol_regime') == 2)
+        notes.append({'type': 'info', 'icon': '📋',
+            'title': 'Options Strategy Context',
+            'body':  f'VIX at {vix_val:.1f} — environment favors <strong>{strategy}</strong>. '
+                     f'{hv_opts}/{len(opt_r)} options underlyings in high-vol regime. '
+                     f'Always check IV rank: IV > 50th pct → sell; IV < 30th pct → buy.'})
+
+    if not notes:
+        notes.append({'type': 'info', 'icon': 'ℹ',
+            'title': 'Signals Computing',
+            'body':  'Loading fresh signals for all assets — check back in a moment.'})
+    return notes
+
+
+@app.route('/api/market-summary')
+def market_summary_endpoint():
+    """
+    Aggregate ML signals across all unique symbols to produce a market overview.
+    Uses cached signals where available; falls back to quick_signal() for missing ones.
+    Returns sentiment breadth, top movers, auto-generated notes, and per-group tables.
+    """
+    # Build unique (symbol, asset_type) pairs with primary group label
+    sym_map: dict[str, tuple[str, str, str]] = {}  # key → (symbol, group, asset_type)
+    for group in ['sp500', 'mag7', 'bluechip', 'futures', 'indices']:
+        for sym in SYMBOLS.get(group, []):
+            atype = _asset_type_for(sym)
+            if sym not in sym_map:
+                sym_map[sym] = (sym, group, atype)
+    # Options get a separate entry with asset_type='options'
+    for sym in SYMBOLS.get('options', []):
+        key = f'{sym}:opts'
+        if key not in sym_map:
+            sym_map[key] = (sym, 'options', 'options')
+
+    results: dict[str, dict] = {}
+
+    def fetch_one(key: str) -> tuple[str, dict | None]:
+        sym, group, atype = sym_map[key]
+        r = quick_signal(sym, atype)
+        if r:
+            r['group'] = group
+        return key, r
+
+    with ThreadPoolExecutor(max_workers=6) as ex:
+        futs = {ex.submit(fetch_one, k): k for k in sym_map}
+        for fut in as_completed(futs, timeout=120):
+            try:
+                key, r = fut.result()
+                if r:
+                    results[key] = r
+            except Exception as e:
+                print(f"[market-summary] {futs[fut]}: {e}")
+
+    all_r = list(results.values())
+    buy_c = sum(1 for r in all_r if r.get('signal') == 'BUY')
+    sel_c = sum(1 for r in all_r if r.get('signal') == 'SELL')
+    hld_c = sum(1 for r in all_r if r.get('signal') == 'HOLD')
+    total = len(all_r) or 1
+    bull_pct = buy_c / total * 100
+    bear_pct = sel_c / total * 100
+
+    if bull_pct >= 60:   direction = 'BULLISH'
+    elif bear_pct >= 60: direction = 'BEARISH'
+    elif bull_pct >= 45: direction = 'SLIGHTLY BULLISH'
+    elif bear_pct >= 45: direction = 'SLIGHTLY BEARISH'
+    else:                direction = 'NEUTRAL'
+
+    avg_mag = sum(r.get('pred_magnitude_pct', 0) for r in all_r) / total
+
+    by_group: dict[str, list] = {}
+    for r in all_r:
+        g = r.get('group', 'stocks')
+        by_group.setdefault(g, []).append(r)
+    for g in by_group:
+        by_group[g].sort(key=lambda r: r.get('vol_ratio', 1), reverse=True)
+
+    top_magnitude = sorted(all_r, key=lambda r: abs(r.get('pred_magnitude_pct', 0)), reverse=True)[:12]
+    top_activity  = sorted(all_r, key=lambda r: r.get('vol_ratio', 1), reverse=True)[:12]
+    strong_signals = sorted(
+        [r for r in all_r if r.get('signal') != 'HOLD'],
+        key=lambda r: abs(r.get('prob_up', 0.5) - 0.5), reverse=True
+    )[:10]
+
+    # Deduplicate by symbol for notes (keep highest-confidence entry per symbol)
+    sym_results: dict[str, dict] = {}
+    for r in all_r:
+        sym = r.get('symbol', '')
+        if sym not in sym_results or (abs(r.get('prob_up', 0.5) - 0.5) >
+                                      abs(sym_results[sym].get('prob_up', 0.5) - 0.5)):
+            sym_results[sym] = r
+
+    notes = generate_market_notes(sym_results)
+
+    return jsonify({
+        'market_direction':   direction,
+        'sentiment':          {'buy': buy_c, 'sell': sel_c, 'hold': hld_c,
+                               'bull_pct': round(bull_pct, 1), 'bear_pct': round(bear_pct, 1),
+                               'total': total},
+        'avg_magnitude_pct':  round(avg_mag, 3),
+        'top_magnitude':      top_magnitude,
+        'top_activity':       top_activity,
+        'strong_signals':     strong_signals,
+        'by_group':           by_group,
+        'notes':              notes,
+        'symbols_computed':   len(results),
+        'timestamp':          datetime.now().isoformat(),
+    })
 
 
 # ── Startup ───────────────────────────────────────────────────────────────────

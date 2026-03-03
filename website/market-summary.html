@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Market Summary — ML Trading Dashboard</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    /* ── Page Layout ── */
+    .page-wrap { max-width: 1400px; margin: 0 auto; padding: 1.5rem 1.5rem 3rem; }
+
+    /* ── Top Nav ── */
+    .page-nav {
+      display: flex; align-items: center; gap: 1rem;
+      padding: .6rem 1.5rem; background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      font-size: .83rem; margin-bottom: 0;
+    }
+    .page-nav a {
+      color: var(--muted); text-decoration: none; padding: .3rem .7rem;
+      border-radius: 5px; transition: color .15s, background .15s;
+    }
+    .page-nav a:hover { color: var(--text); background: rgba(255,255,255,.06); }
+    .page-nav a.active { color: var(--accent); font-weight: 700; }
+    .page-nav-sep { color: var(--border); user-select: none; }
+
+    /* ── Server bar ── */
+    .server-bar {
+      display: flex; align-items: center; gap: .75rem;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 8px; padding: .6rem 1.2rem;
+      margin: 1.2rem 0; font-size: .85rem;
+    }
+    .server-dot { width:10px; height:10px; border-radius:50%; background:#f87171; flex-shrink:0; transition:background .3s; }
+    .server-dot.online { background:#4ade80; }
+    .server-msg { color:var(--muted); flex:1; }
+    .refresh-btn {
+      background: transparent; border: 1px solid var(--border);
+      color: var(--muted); padding: .3rem .8rem; border-radius: 6px;
+      cursor: pointer; font-size: .8rem; transition: border-color .2s, color .2s;
+    }
+    .refresh-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* ── Page header ── */
+    .summary-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 1.5rem; flex-wrap: wrap; gap: .5rem;
+    }
+    .summary-header h2 { font-size: 1.5rem; font-weight: 800; }
+    .summary-header .ts { font-size: .75rem; color: var(--muted); }
+
+    /* ── Loading overlay ── */
+    #loading-overlay {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; padding: 3rem 2rem; text-align: center;
+      color: var(--muted);
+    }
+    .spinner {
+      display: inline-block; width: 20px; height: 20px;
+      border: 3px solid rgba(255,255,255,.1); border-top-color: var(--accent);
+      border-radius: 50%; animation: spin .7s linear infinite;
+      vertical-align: middle; margin-right: .5rem;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Overview cards ── */
+    .overview-grid {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    @media (max-width: 900px) { .overview-grid { grid-template-columns: repeat(2,1fr); } }
+    @media (max-width: 500px) { .overview-grid { grid-template-columns: 1fr; } }
+    .ov-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; padding: 1.1rem 1.2rem;
+    }
+    .ov-label { font-size: .72rem; font-weight: 700; text-transform: uppercase;
+                letter-spacing: .07em; color: var(--muted); margin-bottom: .45rem; }
+    .ov-value { font-size: 1.6rem; font-weight: 900; line-height: 1.1; }
+    .ov-sub   { font-size: .75rem; color: var(--muted); margin-top: .3rem; }
+    .dir-BULLISH          { color: #4ade80; }
+    .dir-BEARISH          { color: #f87171; }
+    .dir-NEUTRAL          { color: #fbbf24; }
+    .dir-SLIGHTLY\.BULLISH { color: #86efac; }
+    .dir-SLIGHTLY\.BEARISH { color: #fca5a5; }
+    .dir-SLIGHTLY-BULLISH { color: #86efac; }
+    .dir-SLIGHTLY-BEARISH { color: #fca5a5; }
+
+    /* Breadth bar */
+    .breadth-bar { height: 10px; background: rgba(255,255,255,.08); border-radius: 5px;
+                   overflow: hidden; margin-top: .6rem; position: relative; }
+    .breadth-buy  { height: 100%; background: #4ade80; float: left; border-radius: 5px 0 0 5px; }
+    .breadth-sell { height: 100%; background: #f87171; float: right; border-radius: 0 5px 5px 0; }
+
+    /* ── Notes / Events ── */
+    .section-title {
+      font-size: 1rem; font-weight: 800; letter-spacing: .04em;
+      margin: 1.8rem 0 .9rem; display: flex; align-items: center; gap: .5rem;
+    }
+    .section-title::after { content:''; flex:1; height:1px; background:var(--border); }
+    .notes-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 1rem; margin-bottom: 1.5rem;
+    }
+    .note-card {
+      border-radius: 10px; padding: 1rem 1.1rem;
+      border-left: 4px solid var(--border);
+    }
+    .note-card.bullish { background: rgba(74,222,128,.07);  border-color: #4ade80; }
+    .note-card.bearish { background: rgba(248,113,113,.07); border-color: #f87171; }
+    .note-card.warning { background: rgba(251,191,36,.07);  border-color: #fbbf24; }
+    .note-card.danger  { background: rgba(239,68,68,.12);   border-color: #ef4444; }
+    .note-card.info    { background: rgba(148,163,184,.06); border-color: #475569; }
+    .note-icon { font-size: 1.1rem; margin-right: .35rem; }
+    .note-title { font-size: .85rem; font-weight: 800; margin-bottom: .35rem; }
+    .note-body  { font-size: .77rem; color: var(--muted); line-height: 1.55; }
+    .note-body strong { color: var(--text); }
+
+    /* ── Signal tables ── */
+    .tables-grid {
+      display: grid; grid-template-columns: repeat(3,1fr); gap: 1.2rem;
+      margin-bottom: 1.5rem;
+    }
+    @media (max-width: 1100px) { .tables-grid { grid-template-columns: 1fr; } }
+    .table-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; overflow: hidden;
+    }
+    .table-card-header {
+      padding: .8rem 1rem; border-bottom: 1px solid var(--border);
+      font-size: .82rem; font-weight: 800; text-transform: uppercase;
+      letter-spacing: .06em; display: flex; align-items: center; gap: .5rem;
+    }
+    .tbl { width: 100%; border-collapse: collapse; font-size: .78rem; }
+    .tbl th {
+      text-align: left; padding: .45rem .8rem;
+      font-size: .68rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .07em; color: var(--muted);
+      border-bottom: 1px solid var(--border);
+    }
+    .tbl td { padding: .42rem .8rem; border-bottom: 1px solid rgba(255,255,255,.04); }
+    .tbl tr:last-child td { border-bottom: none; }
+    .tbl tr:hover td { background: rgba(255,255,255,.03); }
+    .sig-chip {
+      display: inline-block; font-size: .68rem; font-weight: 800;
+      padding: .15rem .45rem; border-radius: 4px; letter-spacing: .04em;
+    }
+    .sig-BUY  { background: rgba(74,222,128,.18); color:#4ade80; border:1px solid #4ade80; }
+    .sig-SELL { background: rgba(248,113,113,.18); color:#f87171; border:1px solid #f87171; }
+    .sig-HOLD { background: rgba(251,191,36,.12);  color:#fbbf24; border:1px solid #fbbf24; }
+    .vr-chip {
+      display: inline-block; font-size: .65rem; font-weight: 700;
+      padding: .1rem .35rem; border-radius: 3px;
+    }
+    .vr-0 { background:rgba(56,189,248,.12); color:#38bdf8; }
+    .vr-1 { background:rgba(251,191,36,.1);  color:#fbbf24; }
+    .vr-2 { background:rgba(248,113,113,.15);color:#f87171; }
+    .val-up   { color: #4ade80; font-weight: 700; }
+    .val-down { color: #f87171; font-weight: 700; }
+    .sym-link { color: var(--accent); text-decoration: none; font-weight: 700; }
+    .sym-link:hover { text-decoration: underline; }
+
+    /* ── Indices mini-grid ── */
+    .indices-grid {
+      display: grid; grid-template-columns: repeat(6,1fr); gap: .8rem;
+      margin-bottom: 1.5rem;
+    }
+    @media (max-width: 1000px) { .indices-grid { grid-template-columns: repeat(3,1fr); } }
+    @media (max-width:  500px) { .indices-grid { grid-template-columns: repeat(2,1fr); } }
+    .idx-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 10px; padding: .75rem .9rem; text-align: center;
+    }
+    .idx-sym  { font-size: .7rem; font-weight: 700; text-transform: uppercase;
+                color: var(--muted); margin-bottom: .2rem; }
+    .idx-close { font-size: 1.1rem; font-weight: 800; margin-bottom: .3rem; }
+    .idx-mag  { font-size: .72rem; }
+
+    /* ── Dual-table grid ── */
+    .dual-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; margin-bottom: 1.5rem; }
+    @media (max-width: 900px) { .dual-grid { grid-template-columns: 1fr; } }
+
+    /* ── Strong signals ── */
+    .strong-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem;
+      margin-bottom: 1.5rem;
+    }
+    @media (max-width: 800px) { .strong-grid { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+
+<!-- ── Top Navigation ────────────────────────────────────────────────────── -->
+<nav class="page-nav">
+  <a href="live-trading.html">← Live Trading</a>
+  <span class="page-nav-sep">|</span>
+  <a href="market-summary.html" class="active">Market Summary</a>
+</nav>
+
+<div class="page-wrap">
+
+  <!-- Server status bar -->
+  <div class="server-bar">
+    <div class="server-dot" id="server-dot"></div>
+    <span class="server-msg" id="server-msg">
+      <span class="spinner" id="spinner"></span>Connecting to live-server.py…
+    </span>
+    <span id="last-update" style="font-size:.75rem;color:var(--muted);"></span>
+    <button class="refresh-btn" onclick="reload(true)">↻ Refresh All</button>
+  </div>
+
+  <!-- Page header -->
+  <div class="summary-header">
+    <h2>Market Summary</h2>
+    <span class="ts" id="data-ts"></span>
+  </div>
+
+  <!-- Loading state -->
+  <div id="loading-overlay">
+    <span class="spinner"></span>
+    Running ML models across all assets — this takes 15–60 seconds on first load.
+    Subsequent loads use the 4-minute cache and are near-instant.
+  </div>
+
+  <!-- Main content (hidden until loaded) -->
+  <div id="main-content" style="display:none;">
+
+    <!-- ── Overview cards ─────────────────────────────────────────────── -->
+    <div class="overview-grid">
+      <div class="ov-card">
+        <div class="ov-label">Market Direction</div>
+        <div class="ov-value" id="ov-direction">—</div>
+        <div class="ov-sub" id="ov-dir-sub"></div>
+      </div>
+      <div class="ov-card">
+        <div class="ov-label">Signal Breadth</div>
+        <div class="ov-value" id="ov-breadth">—</div>
+        <div class="ov-sub" id="ov-breadth-sub"></div>
+        <div class="breadth-bar">
+          <div class="breadth-buy"  id="bb-buy"></div>
+          <div class="breadth-sell" id="bb-sell"></div>
+        </div>
+      </div>
+      <div class="ov-card">
+        <div class="ov-label">Avg Magnitude Forecast</div>
+        <div class="ov-value" id="ov-mag">—</div>
+        <div class="ov-sub">Next 4H bar, all assets</div>
+      </div>
+      <div class="ov-card">
+        <div class="ov-label">Symbols Analyzed</div>
+        <div class="ov-value" id="ov-count">—</div>
+        <div class="ov-sub">Stocks · Options · Futures · Indices</div>
+      </div>
+    </div>
+
+    <!-- ── Market Events & Notes ──────────────────────────────────────── -->
+    <div class="section-title">Market Events &amp; Insights</div>
+    <div class="notes-grid" id="notes-grid"></div>
+
+    <!-- ── Indices Snapshot ───────────────────────────────────────────── -->
+    <div class="section-title">Index Snapshot</div>
+    <div class="indices-grid" id="indices-grid"></div>
+
+    <!-- ── Per-asset-type tables ──────────────────────────────────────── -->
+    <div class="section-title">Largest Trading Activity by Asset Type</div>
+    <div class="tables-grid">
+
+      <!-- Stocks -->
+      <div class="table-card">
+        <div class="table-card-header" style="color:#38bdf8;">📈 Stocks</div>
+        <table class="tbl">
+          <thead><tr>
+            <th>Symbol</th><th>Price</th><th>Signal</th>
+            <th>Magnitude</th><th>Vol</th><th>Regime</th>
+          </tr></thead>
+          <tbody id="tbl-stocks"></tbody>
+        </table>
+      </div>
+
+      <!-- Options -->
+      <div class="table-card">
+        <div class="table-card-header" style="color:#a78bfa;">🎯 Options Underlyings</div>
+        <table class="tbl">
+          <thead><tr>
+            <th>Symbol</th><th>Price</th><th>Signal</th>
+            <th>Magnitude</th><th>Vol</th><th>Regime</th>
+          </tr></thead>
+          <tbody id="tbl-options"></tbody>
+        </table>
+      </div>
+
+      <!-- Futures -->
+      <div class="table-card">
+        <div class="table-card-header" style="color:#f59e0b;">⚡ Futures</div>
+        <table class="tbl">
+          <thead><tr>
+            <th>Symbol</th><th>Price</th><th>Signal</th>
+            <th>Magnitude</th><th>Risk $</th><th>Regime</th>
+          </tr></thead>
+          <tbody id="tbl-futures"></tbody>
+        </table>
+      </div>
+
+    </div><!-- /.tables-grid -->
+
+    <!-- ── Strong signals + top magnitude ────────────────────────────── -->
+    <div class="section-title">Strongest ML Signals</div>
+    <div class="dual-grid">
+
+      <div class="table-card">
+        <div class="table-card-header" style="color:#4ade80;">🎯 Highest Confidence Signals</div>
+        <table class="tbl">
+          <thead><tr>
+            <th>Symbol</th><th>Type</th><th>Signal</th>
+            <th>P(UP)</th><th>Magnitude</th><th>R/R</th>
+          </tr></thead>
+          <tbody id="tbl-strong"></tbody>
+        </table>
+      </div>
+
+      <div class="table-card">
+        <div class="table-card-header" style="color:#f97316;">📊 Largest Forecast Moves</div>
+        <table class="tbl">
+          <thead><tr>
+            <th>Symbol</th><th>Type</th><th>Signal</th>
+            <th>Magnitude</th><th>Entry</th><th>Target</th>
+          </tr></thead>
+          <tbody id="tbl-magnitude"></tbody>
+        </table>
+      </div>
+
+    </div><!-- /.dual-grid -->
+
+    <!-- ── Top activity ───────────────────────────────────────────────── -->
+    <div class="section-title">Highest Trading Activity (Volume vs 20-bar Avg)</div>
+    <div class="table-card" style="margin-bottom:1.5rem;">
+      <div class="table-card-header" style="color:#fbbf24;">🔥 Most Active — All Assets</div>
+      <table class="tbl">
+        <thead><tr>
+          <th>Symbol</th><th>Name</th><th>Type</th><th>Signal</th>
+          <th>Vol Ratio</th><th>Regime</th><th>Magnitude</th><th>P(UP)</th>
+        </tr></thead>
+        <tbody id="tbl-activity"></tbody>
+      </table>
+    </div>
+
+  </div><!-- /#main-content -->
+
+</div><!-- /.page-wrap -->
+
+<script>
+const API = 'http://localhost:5050';
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+function sigChip(s)  { return `<span class="sig-chip sig-${s}">${s === 'BUY' ? '▲' : s === 'SELL' ? '▼' : '◆'} ${s}</span>`; }
+function vrChip(r)   { const l = r.vol_regime_label || ['Low','Normal','High'][r.vol_regime] || 'Normal'; return `<span class="vr-chip vr-${r.vol_regime}">${l}</span>`; }
+function magCell(m)  { const cls = m > 0 ? 'val-up' : m < 0 ? 'val-down' : ''; return `<span class="${cls}">${m > 0 ? '+' : ''}${m.toFixed(3)}%</span>`; }
+function fmtPrice(p) { return p >= 1000 ? p.toFixed(2) : p >= 100 ? p.toFixed(2) : p.toFixed(4); }
+
+function setServerOnline(online) {
+  document.getElementById('server-dot').className = 'server-dot' + (online ? ' online' : '');
+  const sp = document.getElementById('spinner');
+  if (sp) sp.style.display = 'none';
+  document.getElementById('server-msg').textContent = online
+    ? 'Connected to live-server.py — data refreshes every 4 minutes'
+    : '⚠ Server offline — run python live-server.py';
+  document.getElementById('last-update').textContent = 'Updated: ' + new Date().toLocaleTimeString();
+}
+
+// ── Render functions ─────────────────────────────────────────────────────────
+function renderOverview(d) {
+  const dir  = d.market_direction || 'NEUTRAL';
+  const sent = d.sentiment || {};
+  const mag  = d.avg_magnitude_pct || 0;
+
+  const dirEl = document.getElementById('ov-direction');
+  dirEl.textContent = dir;
+  const key = dir.replace(' ', '-');
+  dirEl.className = `ov-value dir-${key}`;
+
+  document.getElementById('ov-dir-sub').textContent =
+    `${sent.bull_pct?.toFixed(0)}% bullish · ${sent.bear_pct?.toFixed(0)}% bearish`;
+
+  document.getElementById('ov-breadth').textContent =
+    `${sent.buy} BUY · ${sent.sell} SELL · ${sent.hold} HOLD`;
+  document.getElementById('ov-breadth-sub').textContent = `of ${sent.total} signals`;
+
+  document.getElementById('bb-buy').style.width  = (sent.bull_pct || 0) + '%';
+  document.getElementById('bb-sell').style.width = (sent.bear_pct || 0) + '%';
+
+  const magEl = document.getElementById('ov-mag');
+  magEl.textContent = `${mag >= 0 ? '+' : ''}${mag.toFixed(3)}%`;
+  magEl.className = `ov-value ${mag > 0 ? 'val-up' : mag < 0 ? 'val-down' : ''}`;
+
+  document.getElementById('ov-count').textContent = d.symbols_computed || '—';
+  document.getElementById('data-ts').textContent =
+    d.timestamp ? 'as of ' + new Date(d.timestamp).toLocaleTimeString() : '';
+}
+
+function renderNotes(notes) {
+  const el = document.getElementById('notes-grid');
+  if (!notes || !notes.length) { el.innerHTML = '<p style="color:var(--muted)">No notes available.</p>'; return; }
+  el.innerHTML = notes.map(n => `
+    <div class="note-card ${n.type}">
+      <div class="note-title"><span class="note-icon">${n.icon}</span>${n.title}</div>
+      <div class="note-body">${n.body}</div>
+    </div>`).join('');
+}
+
+function renderIndices(byGroup) {
+  const indices = byGroup.indices || [];
+  const grid = document.getElementById('indices-grid');
+  if (!indices.length) { grid.innerHTML = '<p style="color:var(--muted)">No index data.</p>'; return; }
+  const ORDER = ['^GSPC','^DJI','^IXIC','^NDX','^RUT','^VIX'];
+  const sorted = ORDER.map(s => indices.find(r => r.symbol === s)).filter(Boolean);
+  const rest   = indices.filter(r => !ORDER.includes(r.symbol));
+  grid.innerHTML = [...sorted, ...rest].map(r => {
+    const mag = r.pred_magnitude_pct || 0;
+    const sigColor = r.signal === 'BUY' ? '#4ade80' : r.signal === 'SELL' ? '#f87171' : '#fbbf24';
+    return `
+    <div class="idx-card" style="border-color:${sigColor}33;">
+      <div class="idx-sym">${r.symbol.replace('^','')}</div>
+      <div class="idx-close">${fmtPrice(r.close)}</div>
+      <div>${sigChip(r.signal)}</div>
+      <div class="idx-mag" style="margin-top:.3rem;">${magCell(mag)}</div>
+    </div>`;
+  }).join('');
+}
+
+function assetTableRows(arr, type) {
+  if (!arr || !arr.length) return '<tr><td colspan="6" style="color:var(--muted);padding:1rem;">No data</td></tr>';
+  return arr.slice(0, 12).map(r => {
+    const mag = r.pred_magnitude_pct || 0;
+    const extra = type === 'futures'
+      ? `<td>$${r.risk_dollars?.toFixed(0) ?? '—'}</td>`
+      : `<td>${(r.vol_ratio || 1).toFixed(2)}×</td>`;
+    return `<tr>
+      <td><a class="sym-link" href="live-trading.html?sym=${encodeURIComponent(r.symbol)}">${r.symbol}</a></td>
+      <td style="font-variant-numeric:tabular-nums;">${fmtPrice(r.close)}</td>
+      <td>${sigChip(r.signal)}</td>
+      <td>${magCell(mag)}</td>
+      ${extra}
+      <td>${vrChip(r)}</td>
+    </tr>`;
+  }).join('');
+}
+
+function renderTables(d) {
+  const bg = d.by_group || {};
+
+  // Stocks (sp500 + mag7 + bluechip, sorted by vol_ratio)
+  const stocks = [...(bg.sp500||[]), ...(bg.mag7||[]), ...(bg.bluechip||[])]
+    .filter((r,i,a) => a.findIndex(x => x.symbol === r.symbol) === i)
+    .sort((a,b) => (b.vol_ratio||1) - (a.vol_ratio||1));
+  document.getElementById('tbl-stocks').innerHTML   = assetTableRows(stocks,  'stock');
+  document.getElementById('tbl-options').innerHTML  = assetTableRows(bg.options||[], 'options');
+  document.getElementById('tbl-futures').innerHTML  = assetTableRows(bg.futures||[], 'futures');
+}
+
+function renderStrong(strong) {
+  const el = document.getElementById('tbl-strong');
+  if (!strong || !strong.length) { el.innerHTML = '<tr><td colspan="6" style="color:var(--muted);padding:1rem;">No strong signals</td></tr>'; return; }
+  el.innerHTML = strong.map(r => {
+    const p = (r.prob_up * 100).toFixed(1);
+    const pCls = r.signal === 'BUY' ? 'val-up' : r.signal === 'SELL' ? 'val-down' : '';
+    return `<tr>
+      <td><a class="sym-link" href="live-trading.html?sym=${encodeURIComponent(r.symbol)}">${r.symbol}</a></td>
+      <td style="font-size:.72rem;color:var(--muted);">${r.asset_type}</td>
+      <td>${sigChip(r.signal)}</td>
+      <td><span class="${pCls}">${p}%</span></td>
+      <td>${magCell(r.pred_magnitude_pct||0)}</td>
+      <td style="color:var(--muted);">${r.rr_ratio?.toFixed(1)||'—'}:1</td>
+    </tr>`;
+  }).join('');
+}
+
+function renderMagnitude(top) {
+  const el = document.getElementById('tbl-magnitude');
+  if (!top || !top.length) { el.innerHTML = '<tr><td colspan="6" style="color:var(--muted);padding:1rem;">No data</td></tr>'; return; }
+  el.innerHTML = top.map(r => {
+    const m   = r.pred_magnitude_pct || 0;
+    const tgt = m > 0 ? r.target_long : r.target_short;
+    return `<tr>
+      <td><a class="sym-link" href="live-trading.html?sym=${encodeURIComponent(r.symbol)}">${r.symbol}</a></td>
+      <td style="font-size:.72rem;color:var(--muted);">${r.asset_type}</td>
+      <td>${sigChip(r.signal)}</td>
+      <td>${magCell(m)}</td>
+      <td style="font-variant-numeric:tabular-nums;">${fmtPrice(r.entry||r.close)}</td>
+      <td style="font-variant-numeric:tabular-nums;color:${m>0?'#4ade80':'#f87171'};">${fmtPrice(tgt||0)}</td>
+    </tr>`;
+  }).join('');
+}
+
+function renderActivity(top) {
+  const el = document.getElementById('tbl-activity');
+  if (!top || !top.length) { el.innerHTML = '<tr><td colspan="8" style="color:var(--muted);padding:1rem;">No data</td></tr>'; return; }
+  el.innerHTML = top.map(r => `
+    <tr>
+      <td><a class="sym-link" href="live-trading.html?sym=${encodeURIComponent(r.symbol)}">${r.symbol}</a></td>
+      <td style="font-size:.72rem;color:var(--muted);max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${(r.label||r.symbol).replace(/ *\(.*\)$/,'')}</td>
+      <td style="font-size:.72rem;color:var(--muted);">${r.asset_type}</td>
+      <td>${sigChip(r.signal)}</td>
+      <td style="font-weight:700;color:${(r.vol_ratio||1)>2?'#f97316':(r.vol_ratio||1)>1.5?'#fbbf24':'var(--muted)'};">${(r.vol_ratio||1).toFixed(2)}×</td>
+      <td>${vrChip(r)}</td>
+      <td>${magCell(r.pred_magnitude_pct||0)}</td>
+      <td style="color:var(--muted);">${(r.prob_up*100).toFixed(1)}%</td>
+    </tr>`).join('');
+}
+
+// ── Main load / render ────────────────────────────────────────────────────────
+async function reload(nocache = false) {
+  document.getElementById('loading-overlay').style.display = 'block';
+  document.getElementById('main-content').style.display   = 'none';
+  const sp = document.getElementById('spinner');
+  if (sp) sp.style.display = 'inline-block';
+  document.getElementById('server-msg').innerHTML =
+    '<span class="spinner" id="spinner"></span>Running ML models across all assets…';
+
+  try {
+    const url = `${API}/api/market-summary${nocache ? '?nocache=1' : ''}`;
+    const r   = await fetch(url, { signal: AbortSignal.timeout(150000) });
+    if (!r.ok) throw new Error(r.statusText);
+    const d = await r.json();
+
+    renderOverview(d);
+    renderNotes(d.notes);
+    renderIndices(d.by_group || {});
+    renderTables(d);
+    renderStrong(d.strong_signals);
+    renderMagnitude(d.top_magnitude);
+    renderActivity(d.top_activity);
+
+    document.getElementById('loading-overlay').style.display = 'none';
+    document.getElementById('main-content').style.display   = 'block';
+    setServerOnline(true);
+  } catch(e) {
+    setServerOnline(false);
+    document.getElementById('server-msg').textContent =
+      '⚠ Failed to load — is python live-server.py running? (' + e.message + ')';
+    document.getElementById('loading-overlay').innerHTML =
+      `<span style="color:#f87171;">⚠ Could not load market summary.<br>
+      <small>Make sure <code>python live-server.py</code> is running.</small><br>
+      <small style="color:#64748b;">${e.message}</small></span>`;
+  }
+}
+
+window.addEventListener('load', () => {
+  reload();
+  setInterval(reload, 300000);   // auto-refresh every 5 minutes
+});
+</script>
+
+</body>
+</html>
