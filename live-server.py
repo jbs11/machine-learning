@@ -392,6 +392,57 @@ def health():
     return jsonify({'status': 'ok', 'time': datetime.now().isoformat()})
 
 
+@app.route('/api/ibkr-connect', methods=['POST'])
+def ibkr_connect():
+    """
+    Connect (or reconnect) to IBKR TWS/Gateway with caller-supplied settings.
+    Body JSON: { "host": "127.0.0.1", "port": 7497, "clientId": 10 }
+    """
+    global _ib, _ib_connected, _ib_error
+    if not IB_AVAILABLE:
+        return jsonify({'success': False, 'error': 'ib_async not installed — pip install ib_async'}), 400
+
+    body = request.get_json(silent=True) or {}
+    host      = str(body.get('host',     '127.0.0.1'))
+    port      = int(body.get('port',     7497))
+    client_id = int(body.get('clientId', 10))
+
+    with _ib_lock:
+        # Disconnect existing connection if any
+        if _ib is not None:
+            try:
+                _ib.disconnect()
+            except Exception:
+                pass
+            _ib = None
+        _ib_connected = False
+        _ib_error = ''
+
+        try:
+            ib = IB()
+            ib.connect(host, port, clientId=client_id, timeout=5)
+            if ib.isConnected():
+                _ib = ib
+                _ib_connected = True
+                print(f"[IBKR] Connected via POST /api/ibkr-connect → {host}:{port} cid={client_id}")
+                return jsonify({
+                    'success':     True,
+                    'connected':   True,
+                    'host':        host,
+                    'port':        port,
+                    'clientId':    client_id,
+                    'data_source': 'IBKR real-time',
+                    'time':        datetime.now().isoformat()
+                })
+            else:
+                _ib_error = f'Connection to {host}:{port} established but isConnected() = False'
+                return jsonify({'success': False, 'error': _ib_error}), 500
+        except Exception as e:
+            _ib_error = str(e)
+            print(f"[IBKR] /api/ibkr-connect failed: {e}")
+            return jsonify({'success': False, 'error': str(e)}), 500
+
+
 @app.route('/api/ibkr-status')
 def ibkr_status():
     """Report Interactive Brokers connection state."""

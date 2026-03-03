@@ -1,14 +1,7 @@
 import {
-  AbsoluteFill, Sequence, useCurrentFrame, useVideoConfig,
+  AbsoluteFill, Html5Audio, Sequence, useCurrentFrame, useVideoConfig,
   interpolate, spring, staticFile
 } from "remotion";
-
-// ── Audio helper ─────────────────────────────────────────────────────────────
-const Html5Audio = ({ src, startFrom = 0 }) => (
-  <audio src={src} autoPlay style={{ display: "none" }}>
-    <source src={src} />
-  </audio>
-);
 
 // ── Constants ────────────────────────────────────────────────────────────────
 export const LIVE_DURATION = 14058;
@@ -1275,7 +1268,7 @@ export const LiveTrading = () => {
     <AbsoluteFill style={{ background: BG, fontFamily: "'Inter','Segoe UI',sans-serif" }}>
       {/* Audio */}
       {LIVE_CLIPS.map(c => (
-        <Sequence key={c.id} from={c.start} durationInFrames={c.dur + 30}>
+        <Sequence key={c.id} from={c.start}>
           <Html5Audio src={staticFile(`audio/${c.id}.mp3`)} />
         </Sequence>
       ))}
