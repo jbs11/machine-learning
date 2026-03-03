@@ -615,7 +615,11 @@
             <span class="chart-title" id="chart-symbol-title">AAPL — 4H Candlestick</span>
             <div class="chart-meta" id="chart-ohlc-display"></div>
           </div>
-          <span class="chart-meta" id="chart-candle-count"></span>
+          <div style="display:flex; align-items:center; gap:.9rem;">
+            <span style="font-size:.72rem; color:#4ade80; font-weight:700;">▲ BUY</span>
+            <span style="font-size:.72rem; color:#f87171; font-weight:700;">▼ SELL</span>
+            <span class="chart-meta" id="chart-candle-count"></span>
+          </div>
         </div>
         <div class="chart-wrap">
           <div id="chart-container"></div>
@@ -1080,6 +1084,7 @@ async function loadCandles(symbol, nocache = false) {
     candleSeries.setData(clean.map(c => ({
       time: c.time, open: c.open, high: c.high, low: c.low, close: c.close
     })));
+    candleSeries.setMarkers([]);   // clear stale markers from previous symbol
     volumeSeries.setData(clean.map(c => ({
       time: c.time, value: c.volume,
       color: c.close >= c.open ? 'rgba(74,222,128,.25)' : 'rgba(248,113,113,.25)'
@@ -1098,6 +1103,22 @@ async function loadCandles(symbol, nocache = false) {
        </span>`
     );
   }
+}
+
+// ── Chart signal markers ─────────────────────────────────────────────────────
+function applySignalMarkers(markers) {
+  if (!candleSeries || !Array.isArray(markers)) return;
+  const formatted = markers
+    .filter(m => m.signal === 'BUY' || m.signal === 'SELL')
+    .map(m => ({
+      time:     m.time,
+      position: m.signal === 'BUY' ? 'belowBar' : 'aboveBar',
+      color:    m.signal === 'BUY' ? '#4ade80'  : '#f87171',
+      shape:    m.signal === 'BUY' ? 'arrowUp'  : 'arrowDown',
+      text:     `${m.signal} ${(m.prob_up * 100).toFixed(0)}%`,
+    }))
+    .sort((a, b) => a.time - b.time);
+  candleSeries.setMarkers(formatted);
 }
 
 // ── Load ML signal ──────────────────────────────────────────────────────────
@@ -1207,6 +1228,9 @@ function renderSignal(s, type, symbol) {
   } else {
     optRow.style.display = 'none';
   }
+
+  // Chart markers — BUY/SELL arrows on candlestick chart
+  applySignalMarkers(s.signal_markers || []);
 
   // Feature importance
   renderFeatureImportance(s.feature_importance || {});

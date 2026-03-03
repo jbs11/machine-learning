@@ -562,6 +562,29 @@ def train_and_predict(df: pd.DataFrame, asset_type: str = 'stock'):
 
     vol_regime_label = {0: 'Low', 1: 'Normal', 2: 'High'}.get(vol_reg, 'Normal')
 
+    # ── Historical signal markers (BUY/SELL onsets across all training bars) ──
+    all_probs   = clf.predict_proba(X_sc)[:, 1]
+    all_signals = np.where(all_probs >= buy_thresh, 'BUY',
+                  np.where(all_probs <= sell_thresh, 'SELL', 'HOLD'))
+
+    # Convert DatetimeIndex to Unix seconds
+    try:
+        unix_ts = d.index.astype(np.int64) // 10 ** 9
+    except Exception:
+        unix_ts = [int(pd.Timestamp(t).timestamp()) for t in d.index]
+
+    # Emit only the first bar of each consecutive BUY / SELL run
+    signal_markers = []
+    prev_sig = 'HOLD'
+    for ts, sig, prob in zip(unix_ts, all_signals, all_probs):
+        if sig != 'HOLD' and sig != prev_sig:
+            signal_markers.append({
+                'time':    int(ts),
+                'signal':  sig,
+                'prob_up': round(float(prob), 3),
+            })
+        prev_sig = sig
+
     return {
         'symbol':             latest.name if hasattr(latest, 'name') else '',
         'close':              round(close, 4),
@@ -588,6 +611,7 @@ def train_and_predict(df: pd.DataFrame, asset_type: str = 'stock'):
         'vol_regime':         vol_reg,
         'vol_regime_label':   vol_regime_label,
         'features_used':      feat_cols,
+        'signal_markers':     signal_markers,
         'timestamp':          datetime.now().isoformat()
     }
 
