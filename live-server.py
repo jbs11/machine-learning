@@ -225,7 +225,9 @@ def ib_symbol_to_contract(symbol: str):
 
 def get_4h_candles_ibkr(symbol: str, period_days: int = 90) -> pd.DataFrame:
     """Fetch 1H bars from Interactive Brokers and resample to 4H candles."""
-    ib = get_ib_connection()
+    # auto_probe=False: only use IBKR if already connected (set via /api/ibkr-connect).
+    # Never attempt a new connection here — each failed probe blocks 8 s per symbol.
+    ib = get_ib_connection(auto_probe=False)
     if ib is None:
         return pd.DataFrame()
     try:
@@ -565,9 +567,13 @@ def train_and_predict(df: pd.DataFrame, asset_type: str = 'stock'):
     vol_regime_label = {0: 'Low', 1: 'Normal', 2: 'High'}.get(vol_reg, 'Normal')
 
     # ── Historical signal markers (BUY/SELL onsets across all training bars) ──
+    # Use a fixed 0.58 / 0.42 threshold for annotations so arrows appear even in
+    # high-vol regimes (where the trading threshold is 0.62 / 0.38).
     all_probs   = clf.predict_proba(X_sc)[:, 1]
-    all_signals = np.where(all_probs >= buy_thresh, 'BUY',
-                  np.where(all_probs <= sell_thresh, 'SELL', 'HOLD'))
+    marker_buy  = 0.58
+    marker_sell = 0.42
+    all_signals = np.where(all_probs >= marker_buy,  'BUY',
+                  np.where(all_probs <= marker_sell, 'SELL', 'HOLD'))
 
     # Convert DatetimeIndex to Unix seconds
     try:
@@ -1093,159 +1099,337 @@ def quick_signal(symbol: str, asset_type: str) -> dict | None:
 
 
 def generate_market_notes(sym_results: dict) -> list:
-    """Auto-generate market events and insights from ML signal data."""
+    """Auto-generate comprehensive market events and insights from ML signal data."""
     notes = []
     all_r = list(sym_results.values())
 
-    # ── VIX analysis ──────────────────────────────────────────────────────────
-    vix = sym_results.get('^VIX')
+    vix  = sym_results.get('^VIX')
+    es   = sym_results.get('ES=F')
+    nq   = sym_results.get('NQ=F')
+    gc   = sym_results.get('GC=F')
+    cl   = sym_results.get('CL=F')
+    si   = sym_results.get('SI=F')
+    zb   = sym_results.get('ZB=F')
+    spy  = sym_results.get('SPY')
+    qqq  = sym_results.get('QQQ')
+    iwm  = sym_results.get('IWM')
+    vix_val = vix.get('close', 20) if vix else 20
+
+    # ── 1. VIX / Fear regime ───────────────────────────────────────────────────
     if vix:
-        vc = vix.get('close', 20)
+        vc = vix_val
         vs = vix.get('signal', 'HOLD')
-        if vc >= 30:
+        if vc >= 35:
+            notes.append({'type': 'danger', 'icon': '🚨',
+                'title': f'VIX Panic Zone ({vc:.1f}) — Extreme Market Fear',
+                'body':  f'VIX at {vc:.1f} signals extreme fear and potential capitulation. '
+                         f'Historically, VIX spikes above 35 precede sharp reversals within days-to-weeks. '
+                         f'Avoid new shorts; this is a contrarian long setup for disciplined traders. '
+                         f'Options buyers: consider buying cheap protection now before vol mean-reverts. '
+                         f'ML signal on VIX itself: <strong>{vs}</strong>.'})
+        elif vc >= 25:
             notes.append({'type': 'danger', 'icon': '⚠',
-                'title': f'VIX Extreme Fear ({vc:.1f})',
-                'body':  'VIX above 30 — high fear. Options premiums very expensive. '
-                         'Reduce leverage, widen stops. Contrarian long opportunities may emerge near capitulation.'})
-        elif vc >= 20:
+                'title': f'VIX Elevated ({vc:.1f}) — High Fear, Wide Spreads',
+                'body':  f'VIX at {vc:.1f} indicates above-average market stress. '
+                         f'Options premiums are expensive — credit spreads / iron condors outperform. '
+                         f'Reduce leverage, widen stops to 1.5–2× normal. '
+                         f'Key level: VIX < 20 would confirm risk-on return.'})
+        elif vc >= 18:
             notes.append({'type': 'warning', 'icon': '📊',
-                'title': f'Elevated VIX ({vc:.1f}) — Options Premium Inflated',
-                'body':  f'VIX at {vc:.1f}: above-average fear. Favor credit spreads / iron condors '
-                         f'over debit spreads. ML signal for VIX: {vs}.'})
+                'title': f'VIX Cautious Zone ({vc:.1f}) — Options Premium Above Average',
+                'body':  f'VIX at {vc:.1f}: borderline elevated. Favor credit spreads over debit spreads. '
+                         f'Market moving toward risk-off — watch for breakdown below key support levels. '
+                         f'ML signal on VIX: <strong>{vs}</strong>.'})
         elif vc < 13:
             notes.append({'type': 'info', 'icon': '😴',
-                'title': f'Low VIX Complacency ({vc:.1f})',
-                'body':  'VIX below 13 — complacency; cheap options. Good time to buy protection. '
-                         'Low-vol regimes end abruptly — stay hedged.'})
+                'title': f'VIX Complacency ({vc:.1f}) — Options Cheap, Market Calm',
+                'body':  f'VIX at {vc:.1f} signals extreme complacency. Buy options protection cheaply now — '
+                         f'low-vol regimes end abruptly. Consider straddles or cheap OTM puts. '
+                         f'Avoid selling naked options — reward/risk is poor when IV this low.'})
+        else:
+            notes.append({'type': 'info', 'icon': '📊',
+                'title': f'VIX Normal Range ({vc:.1f}) — Balanced Conditions',
+                'body':  f'VIX at {vc:.1f} indicates balanced market sentiment — neither fearful nor complacent. '
+                         f'Directional plays (debit spreads, long calls/puts) work well in this range. '
+                         f'ML direction on VIX: <strong>{vs}</strong> — '
+                         f'{"expect vol expansion" if vs == "BUY" else "expect vol contraction" if vs == "SELL" else "vol likely to stay range-bound"}.'})
+
         if vs == 'BUY':
             notes.append({'type': 'warning', 'icon': '🔺',
-                'title': 'VIX Breakout — Volatility Expansion Expected',
-                'body':  'ML signals VIX moving higher. Expect wider intraday swings. '
-                         'Scale down position sizes and consider long-vol strategies (straddles, strangles).'})
+                'title': 'VIX Breakout Signal — Volatility Expansion Ahead',
+                'body':  f'ML assigns {vix["prob_up"]*100:.0f}% probability VIX moves higher. '
+                         f'Action: reduce gross exposure by 20–30%, widen stops to 1.5× ATR minimum, '
+                         f'hedge long positions with OTM puts on SPY or QQQ. '
+                         f'Long straddles on high-beta names become attractive.'})
         elif vs == 'SELL':
             notes.append({'type': 'bullish', 'icon': '📉',
-                'title': 'VIX Declining — Fear Subsiding',
-                'body':  'ML signals VIX dropping. Risk-on environment expected. '
-                         'Selling premium strategies (iron condors, covered calls) benefit from declining vol.'})
+                'title': 'VIX Declining Signal — Risk-On Environment',
+                'body':  f'ML assigns {(1-vix["prob_up"])*100:.0f}% probability VIX moves lower. '
+                         f'Fear subsiding → ideal for selling premium (iron condors, covered calls, cash-secured puts). '
+                         f'Momentum stocks and small caps tend to outperform in falling-VIX environments.'})
 
-    # ── Index futures direction ────────────────────────────────────────────────
-    es = sym_results.get('ES=F')
-    nq = sym_results.get('NQ=F')
+    # ── 2. Index Futures Analysis ──────────────────────────────────────────────
+    if es:
+        notes.append({'type': 'bullish' if es.get('signal')=='BUY' else 'bearish' if es.get('signal')=='SELL' else 'info',
+            'icon': '📈' if es.get('signal')=='BUY' else '📉' if es.get('signal')=='SELL' else '↔',
+            'title': f'E-mini S&P 500 (ES): {es.get("signal","—")} — '
+                     f'P(UP) {es["prob_up"]*100:.0f}%',
+            'body':  f'ES futures at ${es["close"]:,.2f}. ML forecasts {es["pred_magnitude_pct"]:+.2f}% move. '
+                     f'Entry: ${es["entry"]:,.2f} | '
+                     f'{"Long stop" if es.get("signal")=="BUY" else "Short stop"}: '
+                     f'${es["stop_long"] if es.get("signal")!="SELL" else es["stop_short"]:,.2f} | '
+                     f'Target: ${es["target_long"] if es.get("signal")!="SELL" else es["target_short"]:,.2f}. '
+                     f'Contract value: $50/pt. Risk per contract: ${es.get("risk_dollars","—")}. '
+                     f'Vol regime: <strong>{es["vol_regime_label"]}</strong>.'})
+
+    if nq:
+        notes.append({'type': 'bullish' if nq.get('signal')=='BUY' else 'bearish' if nq.get('signal')=='SELL' else 'info',
+            'icon': '💻',
+            'title': f'E-mini Nasdaq-100 (NQ): {nq.get("signal","—")} — '
+                     f'P(UP) {nq["prob_up"]*100:.0f}%',
+            'body':  f'NQ futures at ${nq["close"]:,.2f}. ML forecasts {nq["pred_magnitude_pct"]:+.2f}% move. '
+                     f'Risk per contract (${nq["futures_multiplier"]}/pt): ${nq.get("risk_dollars","—")}. '
+                     f'Target: ${nq["target_long"] if nq.get("signal")!="SELL" else nq["target_short"]:,.2f}. '
+                     f'Vol regime: <strong>{nq["vol_regime_label"]}</strong>. '
+                     f'{"NQ bullish → favors AAPL, MSFT, NVDA, GOOGL long setups." if nq.get("signal")=="BUY" else "NQ bearish → tech headwinds; reduce tech exposure." if nq.get("signal")=="SELL" else "NQ neutral → no directional edge in tech futures."}'})
+
     if es and nq:
         es_s, nq_s = es.get('signal'), nq.get('signal')
         if es_s == 'BUY' and nq_s == 'BUY':
             notes.append({'type': 'bullish', 'icon': '🚀',
-                'title': 'Index Futures: Broad Bullish Setup',
-                'body':  f'ES P(UP)={es["prob_up"]*100:.0f}% (BUY), NQ P(UP)={nq["prob_up"]*100:.0f}% (BUY). '
-                         f'Broad upside expected — favor longs across stocks & ETFs. '
-                         f'Magnitude forecast: ES {es["pred_magnitude_pct"]:+.2f}%, NQ {nq["pred_magnitude_pct"]:+.2f}%.'})
+                'title': 'Broad Market Bullish Alignment — ES + NQ Both BUY',
+                'body':  f'Both S&P 500 and Nasdaq futures signal upside: '
+                         f'ES {es["pred_magnitude_pct"]:+.2f}%, NQ {nq["pred_magnitude_pct"]:+.2f}%. '
+                         f'This alignment suggests broad institutional buying — best conditions for momentum longs. '
+                         f'Favor SPY calls, QQQ calls, and long Mag 7 names. '
+                         f'Sector ETFs (XLK, XLY, XLF) likely to outperform. '
+                         f'Scale into longs at market open or on first 30-min consolidation.'})
         elif es_s == 'SELL' and nq_s == 'SELL':
             notes.append({'type': 'bearish', 'icon': '🌧',
-                'title': 'Index Futures: Broad Bearish Setup',
-                'body':  f'ES P(UP)={es["prob_up"]*100:.0f}% (SELL), NQ P(UP)={nq["prob_up"]*100:.0f}% (SELL). '
-                         f'Broad downside — reduce long exposure, consider hedges. '
-                         f'Risk per ES contract: ${es.get("risk_dollars","—")}.'})
+                'title': 'Broad Market Bearish Alignment — ES + NQ Both SELL',
+                'body':  f'Both S&P 500 and Nasdaq futures signal downside: '
+                         f'ES {es["pred_magnitude_pct"]:+.2f}%, NQ {nq["pred_magnitude_pct"]:+.2f}%. '
+                         f'Reduce gross long exposure. Defensive sectors (XLU, XLRE, XLP) may outperform. '
+                         f'Consider SPY puts, inverse ETFs (SH, PSQ), or short high-beta names. '
+                         f'Stop any new long entries until breadth improves.'})
         elif es_s != nq_s:
             notes.append({'type': 'info', 'icon': '🔄',
-                'title': 'S&P vs NASDAQ Divergence — Sector Rotation',
-                'body':  f'ES is {es_s} while NQ is {nq_s}. Divergence suggests rotation '
-                         f'between value (S&P heavy) and growth (NASDAQ heavy). Watch sector ETFs.'})
+                'title': f'ES vs NQ Divergence: ES={es_s}, NQ={nq_s} — Sector Rotation',
+                'body':  f'S&P ({es_s}) and Nasdaq ({nq_s}) are diverging. '
+                         f'{"ES bullish + NQ bearish → value/cyclicals outperforming growth; watch XLF, XLE, XLI." if es_s=="BUY" else "ES bearish + NQ bullish → tech leading while broader market lags; watch FAANG names."} '
+                         f'Divergence often resolves within 3–5 sessions — monitor for convergence.'})
 
-    # ── Gold / Oil signals ─────────────────────────────────────────────────────
-    gc = sym_results.get('GC=F')
-    cl = sym_results.get('CL=F')
-    if gc and gc.get('signal') == 'BUY':
-        notes.append({'type': 'info', 'icon': '🥇',
-            'title': f'Gold Bullish — Safe-Haven Demand (P(UP)={gc["prob_up"]*100:.0f}%)',
-            'body':  f'Gold futures ML signal: BUY. Forecast {gc["pred_magnitude_pct"]:+.2f}%. '
-                     f'Rising gold signals inflation concerns or risk-off. Watch USD correlation.'})
-    if cl and cl.get('signal') != 'HOLD':
-        notes.append({'type': 'info', 'icon': '🛢',
-            'title': f'Crude Oil: {cl["signal"]} (P(UP)={cl["prob_up"]*100:.0f}%)',
-            'body':  f'WTI Crude forecast {cl["pred_magnitude_pct"]:+.2f}%. '
-                     f'Oil moves impact energy stocks (XOM, CVX) and inflation expectations.'})
+    # ── 3. S&P 500 / ETF analysis ──────────────────────────────────────────────
+    if spy:
+        notes.append({'type': 'bullish' if spy.get('signal')=='BUY' else 'bearish' if spy.get('signal')=='SELL' else 'info',
+            'icon': '🏛',
+            'title': f'SPY S&P 500 ETF: {spy.get("signal","—")} @ ${spy["close"]:.2f}',
+            'body':  f'ML P(UP)={spy["prob_up"]*100:.1f}%, predicted move {spy["pred_magnitude_pct"]:+.2f}%. '
+                     f'ATR: ${spy["atr"]:.2f} ({spy["atr_pct"]:.2f}% of price). '
+                     f'Vol regime: <strong>{spy["vol_regime_label"]}</strong>. '
+                     f'Stop: ${spy["stop_long"] if spy.get("signal")!="SELL" else spy["stop_short"]:.2f} | '
+                     f'Target: ${spy["target_long"] if spy.get("signal")!="SELL" else spy["target_short"]:.2f}. '
+                     f'R/R: {spy["rr_ratio"]:.1f}:1.'})
 
-    # ── Market breadth ────────────────────────────────────────────────────────
+    # ── 4. Small Cap (IWM / Russell 2000) ─────────────────────────────────────
+    if iwm:
+        risk_on = iwm.get('signal') == 'BUY'
+        notes.append({'type': 'bullish' if risk_on else 'bearish' if iwm.get('signal')=='SELL' else 'info',
+            'icon': '🏪',
+            'title': f'Russell 2000 (IWM): {iwm.get("signal","—")} — Small Cap {"Risk-On" if risk_on else "Risk-Off" if iwm.get("signal")=="SELL" else "Neutral"}',
+            'body':  f'IWM at ${iwm["close"]:.2f}. Small caps are a leading indicator of risk appetite. '
+                     f'{"IWM BUY → risk-on environment; aggressive positioning in small/mid-cap names justified." if risk_on else "IWM SELL → risk-off rotation to large caps and defensives." if iwm.get("signal")=="SELL" else "IWM neutral → indecision in risk appetite; stick to large caps."} '
+                     f'P(UP) {iwm["prob_up"]*100:.1f}%, forecast {iwm["pred_magnitude_pct"]:+.2f}%.'})
+
+    # ── 5. Gold / Silver / Safe-haven analysis ────────────────────────────────
+    if gc:
+        gc_s = gc.get('signal', 'HOLD')
+        notes.append({'type': 'bullish' if gc_s=='BUY' else 'bearish' if gc_s=='SELL' else 'info',
+            'icon': '🥇',
+            'title': f'Gold (GC): {gc_s} @ ${gc["close"]:,.2f} — '
+                     f'{"Safe-Haven Demand Rising" if gc_s=="BUY" else "Safe-Haven Selling" if gc_s=="SELL" else "Gold Neutral"}',
+            'body':  f'Gold ML P(UP)={gc["prob_up"]*100:.1f}%, forecast {gc["pred_magnitude_pct"]:+.2f}%. '
+                     f'{"Rising gold signals: inflation expectations up, USD weakening, or geopolitical risk. Watch GDX (gold miners) for leverage." if gc_s=="BUY" else "Declining gold suggests: USD strengthening or risk-on rotation away from safety. May signal equity rally ahead." if gc_s=="SELL" else "Gold is consolidating — no clear macro signal from metals at this time."} '
+                     f'Contract risk: ${gc.get("risk_dollars","—")} (100 oz × ${gc["risk_per_unit"]:.2f}/oz).'})
+    if si and si.get('signal') != 'HOLD':
+        notes.append({'type': 'bullish' if si.get('signal')=='BUY' else 'bearish', 'icon': '🥈',
+            'title': f'Silver (SI): {si.get("signal","—")} — Industrial + Monetary Metal',
+            'body':  f'Silver at ${si["close"]:,.2f}. Forecast {si["pred_magnitude_pct"]:+.2f}%. '
+                     f'Silver is more volatile than gold and combines monetary and industrial demand. '
+                     f'{"Silver BUY → confirm with gold signal; aligned metals = strong macro move." if si.get("signal")=="BUY" else "Silver SELL → watch for industrial slowdown signal."}'})
+    if gc and si:
+        gc_s, si_s = gc.get('signal'), si.get('signal')
+        if gc_s == 'BUY' and si_s == 'BUY':
+            notes.append({'type': 'bullish', 'icon': '💛',
+                'title': 'Gold + Silver Both Bullish — Strong Metals Rally',
+                'body':  'Both gold and silver signaling upside. This dual-metals rally typically signals: '
+                         'inflation concerns, USD weakness, or broad risk-off rotation. '
+                         'Consider: long GLD/SLV ETFs, gold miners (GDX/GDXJ), or direct futures exposure.'})
+
+    # ── 6. Oil / Energy analysis ──────────────────────────────────────────────
+    if cl:
+        cl_s = cl.get('signal', 'HOLD')
+        notes.append({'type': 'bullish' if cl_s=='BUY' else 'bearish' if cl_s=='SELL' else 'info',
+            'icon': '🛢',
+            'title': f'WTI Crude Oil (CL): {cl_s} @ ${cl["close"]:.2f}',
+            'body':  f'Crude ML P(UP)={cl["prob_up"]*100:.1f}%, forecast {cl["pred_magnitude_pct"]:+.2f}%. '
+                     f'{"Rising oil: bullish for XOM, CVX, PSX, VLO and energy sector ETF (XLE). Watch inflation impact on Fed policy." if cl_s=="BUY" else "Falling oil: bearish for energy stocks; bullish for airlines (AAL, DAL), trucking, consumer. Disinflationary signal." if cl_s=="SELL" else "Oil consolidating — energy stocks likely to trade sideways."} '
+                     f'CL contract: 1,000 barrels. Risk per contract: ${cl.get("risk_dollars","—")}.'})
+
+    # ── 7. Bonds (ZB=F — 30-Year T-Bond) ──────────────────────────────────────
+    if zb:
+        zb_s = zb.get('signal', 'HOLD')
+        notes.append({'type': 'bullish' if zb_s=='BUY' else 'bearish' if zb_s=='SELL' else 'info',
+            'icon': '🏦',
+            'title': f'30-Year T-Bond (ZB): {zb_s} — '
+                     f'{"Bond Rally / Rates Falling" if zb_s=="BUY" else "Bond Selloff / Rates Rising" if zb_s=="SELL" else "Bonds Neutral"}',
+            'body':  f'ZB at ${zb["close"]:.2f}. Forecast {zb["pred_magnitude_pct"]:+.2f}%. '
+                     f'{"Bond BUY (prices up, yields down) → risk-off; favors growth stocks, utilities (XLU), REITs (XLRE). Fed likely done hiking." if zb_s=="BUY" else "Bond SELL (prices down, yields up) → risk-on or inflation fears; favors banks (XLF), cyclicals (XLI). Value over growth." if zb_s=="SELL" else "Bonds neutral — no clear rate direction signal."} '
+                     f'Watch 10Y yield alongside ZB futures for macro confirmation.'})
+
+    # ── 8. Market breadth ─────────────────────────────────────────────────────
     stk = [r for r in all_r if r.get('asset_type') in ('stock', 'index')]
     if stk:
-        bp = sum(1 for r in stk if r.get('signal') == 'BUY')  / len(stk) * 100
-        sp = sum(1 for r in stk if r.get('signal') == 'SELL') / len(stk) * 100
-        if bp >= 70:
-            notes.append({'type': 'bullish', 'icon': '📈',
-                'title': f'Strong Bullish Breadth — {bp:.0f}% BUY',
-                'body':  f'{bp:.0f}% of tracked stocks & indices show BUY signals — '
-                         f'broad market participation. Favorable for momentum strategies.'})
-        elif sp >= 70:
-            notes.append({'type': 'bearish', 'icon': '📉',
-                'title': f'Strong Bearish Breadth — {sp:.0f}% SELL',
-                'body':  f'{sp:.0f}% of tracked stocks & indices show SELL signals — '
-                         f'widespread selling pressure. Defensive positioning recommended.'})
+        bp  = sum(1 for r in stk if r.get('signal') == 'BUY')  / len(stk) * 100
+        sp  = sum(1 for r in stk if r.get('signal') == 'SELL') / len(stk) * 100
+        hp  = 100 - bp - sp
+        notes.append({'type': 'bullish' if bp>=55 else 'bearish' if sp>=55 else 'info',
+            'icon': '🌡',
+            'title': f'Market Breadth: {bp:.0f}% BUY · {sp:.0f}% SELL · {hp:.0f}% HOLD '
+                     f'({len(stk)} stocks + indices)',
+            'body':  f'Breadth across {len(stk)} tracked equities and indices. '
+                     f'{"Strong bullish breadth — broad participation confirms the uptrend. Favorable for momentum strategies across sectors." if bp>=70 else "Majority bullish — healthy market but not extreme. Focus on highest-conviction BUY setups." if bp>=55 else "Bearish breadth majority — widespread selling pressure. Defensive positioning and hedges recommended." if sp>=55 else "Mixed breadth signals — selective market. Stock-picking over index plays."} '
+                     f'Historically, breadth > 70% BUY precedes +2-5% index moves over the following 2 weeks.'})
 
-    # ── High-vol regime stocks ────────────────────────────────────────────────
-    hv = [r for r in all_r if r.get('vol_regime') == 2 and r.get('asset_type') == 'stock']
-    if len(hv) >= 3:
-        top_hv = ', '.join(r['symbol'] for r in sorted(hv, key=lambda x: x.get('atr_pct', 0), reverse=True)[:6])
-        notes.append({'type': 'warning', 'icon': '⚡',
-            'title': f'Elevated Volatility: {len(hv)} Stocks in High-Vol Regime',
-            'body':  f'ATR well above recent history: {top_hv}. '
-                     f'Use 1.5–2× wider stops and smaller position sizes to keep dollar risk constant.'})
-
-    # ── Unusual volume ────────────────────────────────────────────────────────
-    high_act = [r for r in all_r if r.get('vol_ratio', 1) > 2.0]
-    if high_act:
-        syms = ', '.join(f'{r["symbol"]} ({r["vol_ratio"]:.1f}×)' for r in
-                         sorted(high_act, key=lambda x: x.get('vol_ratio', 1), reverse=True)[:5])
-        notes.append({'type': 'info', 'icon': '🔥',
-            'title': 'Unusual Trading Volume',
-            'body':  f'Volume significantly above 20-bar average: {syms}. '
-                     f'High volume often precedes breakouts or reversals — confirm price action before entering.'})
-
-    # ── Mag 7 consensus ───────────────────────────────────────────────────────
+    # ── 9. Magnificent 7 tech leadership ──────────────────────────────────────
     m7 = ['AAPL', 'MSFT', 'NVDA', 'GOOGL', 'AMZN', 'META', 'TSLA']
-    m7r = [sym_results[s] for s in m7 if s in sym_results]
+    m7r = {s: sym_results[s] for s in m7 if s in sym_results}
     if m7r:
-        mb = sum(1 for r in m7r if r.get('signal') == 'BUY')
-        ms = sum(1 for r in m7r if r.get('signal') == 'SELL')
-        if mb >= 5:
-            notes.append({'type': 'bullish', 'icon': '💎',
-                'title': f'Mag 7 Bullish Consensus ({mb}/7 BUY)',
-                'body':  f'{mb} of 7 mega-cap tech stocks show BUY — '
-                         f'tech sector leading the rally. QQQ and NQ futures likely to follow.'})
-        elif ms >= 5:
-            notes.append({'type': 'bearish', 'icon': '💔',
-                'title': f'Mag 7 Bearish Consensus ({ms}/7 SELL)',
-                'body':  f'{ms} of 7 mega-cap tech stocks show SELL — '
-                         f'tech headwinds dragging on indices. QQQ and NQ likely underperformers.'})
+        mb    = sum(1 for r in m7r.values() if r.get('signal') == 'BUY')
+        ms    = sum(1 for r in m7r.values() if r.get('signal') == 'SELL')
+        mh    = len(m7r) - mb - ms
+        m7txt = ', '.join(f'{s} ({r["signal"]})' for s,r in m7r.items())
+        notes.append({'type': 'bullish' if mb>=5 else 'bearish' if ms>=5 else 'info',
+            'icon': '💎',
+            'title': f'Magnificent 7: {mb} BUY · {ms} SELL · {mh} HOLD — '
+                     f'{"Tech Leading" if mb>=5 else "Tech Lagging" if ms>=5 else "Mixed Tech"}',
+            'body':  f'{m7txt}. '
+                     f'{"Mag 7 consensus BUY → NASDAQ-heavy portfolios favored. QQQ calls, NQ futures long." if mb>=5 else "Mag 7 consensus SELL → tech sector headwinds. Rotate to value (XLV, XLF, XLE) or reduce tech exposure." if ms>=5 else "Mag 7 split — no tech sector consensus. Best approach: individual stock selection over index plays."} '
+                     f'Mag 7 companies represent ~30% of S&P 500 weight.'})
 
-    # ── Largest magnitude forecast ─────────────────────────────────────────────
-    top_mag = max(all_r, key=lambda r: abs(r.get('pred_magnitude_pct', 0)), default=None)
-    if top_mag and abs(top_mag.get('pred_magnitude_pct', 0)) > 0.8:
-        m = top_mag['pred_magnitude_pct']
-        tgt = top_mag['target_long'] if m > 0 else top_mag['target_short']
-        stp = top_mag['stop_long']   if m > 0 else top_mag['stop_short']
+    # ── 10. Volatility regime analysis ────────────────────────────────────────
+    hv_all  = [r for r in all_r if r.get('vol_regime') == 2]
+    lv_all  = [r for r in all_r if r.get('vol_regime') == 0]
+    hv_stk  = [r for r in hv_all if r.get('asset_type') == 'stock']
+    if hv_all:
+        top_hv = ', '.join(r['symbol'] for r in
+                           sorted(hv_all, key=lambda x: x.get('atr_pct', 0), reverse=True)[:8])
+        notes.append({'type': 'warning', 'icon': '⚡',
+            'title': f'{len(hv_all)} Assets in High-Vol Regime — Position Sizing Alert',
+            'body':  f'High-volatility regime (ATR >> 50-bar median): {top_hv}. '
+                     f'Required action: reduce position size by 30–50% to maintain fixed dollar risk. '
+                     f'Formula: shares = (account_risk_$) / (1.5 × ATR). '
+                     f'Widen stops to 1.5–2× ATR. '
+                     f'{"Many stocks in high-vol — use sector ETFs instead of individual names for safer exposure." if len(hv_stk)>=5 else ""}'})
+    if len(lv_all) >= 5:
+        top_lv = ', '.join(r['symbol'] for r in
+                           sorted(lv_all, key=lambda x: x.get('atr_pct', 0))[:5])
+        notes.append({'type': 'info', 'icon': '😴',
+            'title': f'{len(lv_all)} Assets in Low-Vol Regime — Premium Selling Opportunities',
+            'body':  f'Low-volatility consolidation: {top_lv}. '
+                     f'Low ATR = cheap options premiums → avoid buying straddles here. '
+                     f'These names may be building energy for a breakout — watch volume surge as trigger.'})
+
+    # ── 11. Unusual volume spikes ──────────────────────────────────────────────
+    high_act = sorted([r for r in all_r if r.get('vol_ratio', 1) > 1.8],
+                      key=lambda x: x.get('vol_ratio', 1), reverse=True)
+    if high_act:
+        syms = ', '.join(f'<strong>{r["symbol"]}</strong> ({r["vol_ratio"]:.1f}×)' for r in high_act[:6])
+        notes.append({'type': 'info', 'icon': '🔥',
+            'title': f'Unusual Volume — {len(high_act)} Assets Surging',
+            'body':  f'Volume well above 20-bar average: {syms}. '
+                     f'High volume authenticates price moves — a breakout on 2×+ volume is far more reliable. '
+                     f'{"Top mover: " + high_act[0]["symbol"] + " at " + str(round(high_act[0]["vol_ratio"],1)) + "x normal volume — watch for follow-through." if high_act else ""} '
+                     f'Low volume on breakouts should be treated with skepticism.'})
+
+    # ── 12. Largest magnitude forecasts ───────────────────────────────────────
+    top3_mag = sorted(all_r, key=lambda r: abs(r.get('pred_magnitude_pct', 0)), reverse=True)[:3]
+    for r in top3_mag:
+        m = r.get('pred_magnitude_pct', 0)
+        if abs(m) < 0.5:
+            break
+        tgt = r['target_long'] if m > 0 else r['target_short']
+        stp = r['stop_long']   if m > 0 else r['stop_short']
         notes.append({'type': 'bullish' if m > 0 else 'bearish', 'icon': '🎯',
-            'title': f'Largest Forecast Move: {top_mag["symbol"]} ({m:+.2f}%)',
-            'body':  f'{top_mag["label"]} — ML signal: {top_mag["signal"]} '
-                     f'(P(UP)={top_mag["prob_up"]*100:.0f}%). '
-                     f'Entry ${top_mag["entry"]}, stop ${stp}, target ${tgt}. R/R {top_mag["rr_ratio"]:.1f}:1.'})
+            'title': f'Trade Setup: {r["symbol"]} {r["signal"]} — Forecast {m:+.2f}%',
+            'body':  f'{r.get("label", r["symbol"])}. '
+                     f'ML P(UP)={r["prob_up"]*100:.1f}%, signal: <strong>{r["signal"]}</strong>. '
+                     f'Entry: ${r["entry"]:,.4f} | Stop: ${stp:,.4f} | Target: ${tgt:,.4f}. '
+                     f'Risk/Reward: {r["rr_ratio"]:.1f}:1. '
+                     f'ATR: ${r["atr"]:.4f} ({r["atr_pct"]:.2f}%). '
+                     f'Vol regime: {r["vol_regime_label"]}. '
+                     f'{"Risk dollars: $" + str(r.get("risk_dollars","—")) + " per contract." if r.get("risk_dollars") else ""}'})
 
-    # ── Options context note ──────────────────────────────────────────────────
+    # ── 13. Sector performance snapshot ──────────────────────────────────────
+    sectors = {
+        'Technology': ['AAPL','MSFT','NVDA','GOOGL','META'],
+        'Finance':    ['JPM','BAC','V'],
+        'Energy':     ['XOM','CVX'],
+        'Healthcare': ['JNJ','UNH'],
+        'Consumer':   ['AMZN','WMT','HD','TSLA'],
+    }
+    sector_notes = []
+    for sec_name, sec_syms in sectors.items():
+        sec_r = [sym_results[s] for s in sec_syms if s in sym_results]
+        if len(sec_r) >= 2:
+            sb = sum(1 for r in sec_r if r.get('signal')=='BUY')
+            ss = sum(1 for r in sec_r if r.get('signal')=='SELL')
+            avg_m = sum(r.get('pred_magnitude_pct',0) for r in sec_r) / len(sec_r)
+            icon = '▲' if sb > ss else '▼' if ss > sb else '↔'
+            sector_notes.append(f'{sec_name}: {icon} {sb}B/{ss}S (avg {avg_m:+.2f}%)')
+    if sector_notes:
+        notes.append({'type': 'info', 'icon': '🏢',
+            'title': 'Sector Snapshot — ML Direction by Sector',
+            'body':  ' &nbsp;|&nbsp; '.join(sector_notes) + '. '
+                     'Strongest sector: consider sector ETFs (XLK, XLF, XLE, XLV, XLY) for diversified exposure.'})
+
+    # ── 14. Options strategy context ──────────────────────────────────────────
     opt_r = [r for r in all_r if r.get('asset_type') == 'options']
     if opt_r:
-        vix_val = vix.get('close', 20) if vix else 20
-        strategy = ('credit spreads / iron condors (sell premium)' if vix_val > 20
-                    else 'debit spreads / directional options (buy premium)')
-        hv_opts = sum(1 for r in opt_r if r.get('vol_regime') == 2)
+        hv_opts  = sum(1 for r in opt_r if r.get('vol_regime') == 2)
+        buy_opts = sum(1 for r in opt_r if r.get('signal') == 'BUY')
+        sel_opts = sum(1 for r in opt_r if r.get('signal') == 'SELL')
+        if vix_val > 25:
+            strategy = 'credit spreads / iron condors (sell elevated premium)'
+            ev_note  = 'High VIX = expensive options. Selling premium has positive expected value.'
+        elif vix_val > 18:
+            strategy = 'vertical debit spreads (defined risk directional)'
+            ev_note  = 'Moderate IV — directional spreads offer good risk/reward.'
+        else:
+            strategy = 'long calls / puts or debit spreads (cheap premium, defined risk)'
+            ev_note  = 'Low IV = cheap options. Buy defined-risk directional plays.'
         notes.append({'type': 'info', 'icon': '📋',
-            'title': 'Options Strategy Context',
-            'body':  f'VIX at {vix_val:.1f} — environment favors <strong>{strategy}</strong>. '
-                     f'{hv_opts}/{len(opt_r)} options underlyings in high-vol regime. '
-                     f'Always check IV rank: IV > 50th pct → sell; IV < 30th pct → buy.'})
+            'title': f'Options Strategy — VIX {vix_val:.1f}: Favor {strategy}',
+            'body':  f'{ev_note} '
+                     f'Of {len(opt_r)} options underlyings: {buy_opts} BUY, {sel_opts} SELL, '
+                     f'{hv_opts} in high-vol regime. '
+                     f'Always check IV rank before entering: IV > 50th pct → sell premium; '
+                     f'IV < 30th pct → buy options. '
+                     f'Avoid naked short options — use spreads to cap risk in all regimes.'})
 
-    if not notes:
-        notes.append({'type': 'info', 'icon': 'ℹ',
-            'title': 'Signals Computing',
-            'body':  'Loading fresh signals for all assets — check back in a moment.'})
+    # ── 15. Position sizing / risk management ─────────────────────────────────
+    hv_count = len([r for r in all_r if r.get('vol_regime') == 2])
+    avg_atr  = sum(r.get('atr_pct', 1) for r in all_r) / max(len(all_r), 1)
+    notes.append({'type': 'info', 'icon': '🔒',
+        'title': 'Risk Management — Today\'s Position Sizing Guide',
+        'body':  f'Average ATR across all tracked assets: {avg_atr:.2f}% of price. '
+                 f'{hv_count} assets in high-vol regime. '
+                 f'Recommended stop: 1.5× ATR from entry (wider in high-vol). '
+                 f'Max risk per trade: 1–2% of account. '
+                 f'Formula: position size = (account × 0.01) ÷ (1.5 × ATR in $). '
+                 f'Never risk more than 5% of account in correlated positions simultaneously. '
+                 f'In high-vol regimes: reduce size by 50%, widen stops by 50%.'})
+
     return notes
 
 
@@ -1278,7 +1462,7 @@ def market_summary_endpoint():
             r['group'] = group
         return key, r
 
-    with ThreadPoolExecutor(max_workers=6) as ex:
+    with ThreadPoolExecutor(max_workers=12) as ex:
         futs = {ex.submit(fetch_one, k): k for k in sym_map}
         for fut in as_completed(futs, timeout=120):
             try:
@@ -1328,6 +1512,44 @@ def market_summary_endpoint():
 
     notes = generate_market_notes(sym_results)
 
+    # ── Build a plain-English market commentary paragraph ─────────────────────
+    vix_r    = sym_results.get('^VIX')
+    vix_lev  = vix_r.get('close', 20) if vix_r else 20
+    es_r     = sym_results.get('ES=F')
+    nq_r     = sym_results.get('NQ=F')
+    gc_r     = sym_results.get('GC=F')
+    vr_label = {0:'Low-volatility', 1:'Normal-volatility', 2:'High-volatility'}
+    # pick most common vol regime across all assets
+    from statistics import mode as _mode
+    try:
+        dom_regime = _mode(r.get('vol_regime', 1) for r in all_r)
+    except Exception:
+        dom_regime = 1
+    commentary_parts = [
+        f"Market direction as of {datetime.now().strftime('%b %d, %Y %H:%M')} is "
+        f"<strong class=\"dir-{direction.replace(' ','-')}\">{direction}</strong> "
+        f"({buy_c} BUY / {sel_c} SELL / {hld_c} HOLD across {total} signals). ",
+        f"VIX at <strong>{vix_lev:.1f}</strong> — "
+        f"{'extreme fear' if vix_lev>=30 else 'elevated fear' if vix_lev>=20 else 'normal range' if vix_lev>=15 else 'complacency'}. ",
+    ]
+    if es_r:
+        commentary_parts.append(
+            f"E-mini S&P (ES) is <strong>{es_r.get('signal','—')}</strong> "
+            f"(P(UP)={es_r['prob_up']*100:.0f}%, target {es_r['pred_magnitude_pct']:+.2f}%). ")
+    if nq_r:
+        commentary_parts.append(
+            f"Nasdaq futures (NQ) is <strong>{nq_r.get('signal','—')}</strong> "
+            f"(P(UP)={nq_r['prob_up']*100:.0f}%, target {nq_r['pred_magnitude_pct']:+.2f}%). ")
+    commentary_parts.append(
+        f"The dominant volatility regime across tracked assets is "
+        f"<strong>{vr_label.get(dom_regime,'Normal')}</strong>. "
+        f"Average forecast magnitude: <strong>{avg_mag:+.3f}%</strong> per 4H bar. ")
+    if gc_r:
+        commentary_parts.append(
+            f"Gold (GC) is <strong>{gc_r.get('signal','—')}</strong> at ${gc_r['close']:,.2f} "
+            f"— {'safe-haven demand' if gc_r.get('signal')=='BUY' else 'risk-on rotation' if gc_r.get('signal')=='SELL' else 'consolidating'}. ")
+    market_commentary = ''.join(commentary_parts)
+
     return jsonify({
         'market_direction':   direction,
         'sentiment':          {'buy': buy_c, 'sell': sel_c, 'hold': hld_c,
@@ -1339,6 +1561,7 @@ def market_summary_endpoint():
         'strong_signals':     strong_signals,
         'by_group':           by_group,
         'notes':              notes,
+        'market_commentary':  market_commentary,
         'symbols_computed':   len(results),
         'timestamp':          datetime.now().isoformat(),
     })

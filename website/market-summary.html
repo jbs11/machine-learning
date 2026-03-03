@@ -255,6 +255,13 @@
     <span class="ts" id="data-ts"></span>
   </div>
 
+  <!-- ── Market Commentary ─────────────────────────────────────────────── -->
+  <div id="market-commentary" style="
+    background:var(--surface); border:1px solid var(--border); border-radius:12px;
+    padding:1rem 1.3rem; margin-bottom:1.3rem; font-size:.85rem; line-height:1.8;
+    color:var(--muted); display:none;">
+  </div>
+
   <!-- ── Multi-Horizon Forecast Section ────────────────────────────────── -->
   <div class="section-title">📅 Multi-Horizon Market Forecast</div>
   <div id="forecast-loading" style="text-align:center;color:var(--muted);padding:1.5rem 0 .5rem;">
@@ -443,6 +450,12 @@ function renderOverview(d) {
   document.getElementById('ov-count').textContent = d.symbols_computed || '—';
   document.getElementById('data-ts').textContent =
     d.timestamp ? 'as of ' + new Date(d.timestamp).toLocaleTimeString() : '';
+
+  const commEl = document.getElementById('market-commentary');
+  if (commEl && d.market_commentary) {
+    commEl.innerHTML = d.market_commentary;
+    commEl.style.display = 'block';
+  }
 }
 
 function renderNotes(notes) {
