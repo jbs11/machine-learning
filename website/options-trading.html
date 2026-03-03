@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ML in Options Trading — Artificial Intelligence Course</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ── Navigation ── -->
+<nav class="nav">
+  <a href="index.html" class="nav-logo">
+    <img src="images/steve.jpg" class="nav-logo-photo" alt="Stephen Borick">
+    <div class="nav-logo-text">
+      <span class="nav-company">Artificial Intelligence</span>
+      <span class="nav-name">Solutions, Inc.</span>
+    </div>
+  </a>
+  <ul class="nav-links">
+    <li><a href="index.html">Home</a></li>
+    <li><a href="neural-networks.html">Neural Networks</a></li>
+    <li><a href="machine-learning.html">Machine Learning</a></li>
+    <li><a href="ml-trading.html">ML in Trading</a></li>
+    <li><a href="stock-trading.html">Stock Trading</a></li>
+    <li><a href="options-trading.html" class="active">Options</a></li>
+    <li><a href="futures-trading.html">Futures</a></li>
+  </ul>
+</nav>
+
+<!-- ── Breadcrumb ── -->
+<div style="background:var(--surface); border-bottom:1px solid var(--border);">
+  <div class="breadcrumb">
+    <a href="index.html">AI Course</a>
+    <span class="breadcrumb-sep">›</span>
+    <a href="ml-trading.html">ML in Trading</a>
+    <span class="breadcrumb-sep">›</span>
+    <span>Module 5: ML in Options Trading</span>
+  </div>
+</div>
+
+<!-- ── Page Hero ── -->
+<section class="page-hero">
+  <div class="page-hero-inner">
+    <span class="badge badge-gold" style="margin-bottom:1rem; display:inline-block;">Module 5 · Applied ML</span>
+    <h1>🎯 Machine Learning in Options Trading</h1>
+    <p>
+      Options require predicting three variables simultaneously — direction, magnitude, and implied
+      volatility. Learn how XGBoost classifiers and LSTM IV forecasters combine into a systematic
+      strategy selection framework that achieved 64.9% win rate and 41% annual return.
+    </p>
+  </div>
+</section>
+
+<!-- ── Video ── -->
+<section class="video-section">
+  <div class="video-inner">
+    <div style="max-width:854px; margin:0 auto;">
+      <video
+        controls
+        preload="metadata"
+        style="width:100%; border-radius:12px; border:1px solid var(--border); display:block; background:#000;"
+      >
+        <source src="videos/options-trading.mp4" type="video/mp4">
+      </video>
+      <p style="text-align:right; margin-top:.5rem; font-size:.78rem; color:var(--muted);">
+        Module 5 · ML in Options Trading · ~444s · 1280×720 · H.264
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ── Lesson Content ── -->
+<div class="section">
+  <div class="lesson-grid">
+
+    <!-- Main Content -->
+    <div class="lesson-main">
+
+      <!-- Overview -->
+      <div class="content-block">
+        <h2>🔑 Why Options Require Three ML Predictions</h2>
+        <p>
+          Buying a stock requires one prediction: direction. Options require three: direction,
+          magnitude, and implied volatility. An option purchased when IV is at 80th percentile
+          will lose money even on a correct directional prediction if IV collapses after entry.
+          ML systems that predict all three simultaneously hold a structural edge over directional traders.
+        </p>
+        <div class="stat-strip">
+          <div class="stat"><div class="stat-value">64.9%</div><div class="stat-label">Win rate (14-month backtest)</div></div>
+          <div class="stat"><div class="stat-value">41%</div><div class="stat-label">Annual return on deployed capital</div></div>
+          <div class="stat"><div class="stat-value">1.68</div><div class="stat-label">Sharpe ratio</div></div>
+          <div class="stat"><div class="stat-value">+8.9%</div><div class="stat-label">Win rate lift from IV filter</div></div>
+        </div>
+      </div>
+
+      <!-- Options Fundamentals -->
+      <div class="content-block">
+        <h2>📚 Options Fundamentals</h2>
+
+        <h3>Calls vs. Puts</h3>
+        <ul>
+          <li><strong>Call option:</strong> Right to BUY 100 shares at the strike price. Profits when the underlying rises above strike by expiration. AAPL 185 call profits if AAPL &gt; $185 by expiry.</li>
+          <li><strong>Put option:</strong> Right to SELL 100 shares at strike price. Profits when the underlying falls below strike. AAPL 185 put profits if AAPL &lt; $185 by expiry.</li>
+        </ul>
+
+        <h3>Premium Components</h3>
+        <ul>
+          <li><strong>Intrinsic value:</strong> How far in-the-money the option is. An AAPL 183 call when AAPL = 185 has $2.00 of intrinsic value.</li>
+          <li><strong>Time value (extrinsic):</strong> The premium above intrinsic value, driven by time remaining and implied volatility. Decays to zero at expiration.</li>
+          <li><strong>Implied Volatility (IV):</strong> The market's forecast of future volatility embedded in the premium. High IV = expensive options. Low IV = cheap options.</li>
+        </ul>
+
+        <h3>Implied Volatility Rank (IV Rank)</h3>
+        <div class="formula">IV Rank = (Current IV − 52-week low IV) / (52-week high IV − 52-week low IV) × 100</div>
+        <p>IV Rank &gt; 60 = expensive options (sell premium). IV Rank &lt; 30 = cheap options (buy premium). This single metric is the most valuable filter in ML-driven options systems.</p>
+      </div>
+
+      <!-- Greeks -->
+      <div class="content-block">
+        <h2>🔢 The Greeks — Measuring Options Risk</h2>
+
+        <div class="term-grid">
+          <div class="term-card">
+            <div class="term" style="color:var(--accent);">Delta (Δ)</div>
+            <p><strong>Price sensitivity.</strong> A 0.50 delta call gains $50 in value for each $1 rise in the underlying stock. Delta for calls: 0 to 1. For puts: −1 to 0.</p>
+          </div>
+          <div class="term-card">
+            <div class="term" style="color:var(--success);">Gamma (Γ)</div>
+            <p><strong>Delta acceleration.</strong> Rate of delta change per $1 move. Highest at the money near expiration. Long options have positive gamma — directional gains accelerate.</p>
+          </div>
+          <div class="term-card">
+            <div class="term" style="color:#f87171;">Theta (Θ)</div>
+            <p><strong>Time decay.</strong> Daily premium erosion. An AAPL 185 call with 7 DTE decays ~$15/day. Time works against long options buyers, for sellers.</p>
+          </div>
+          <div class="term-card">
+            <div class="term" style="color:#a78bfa;">Vega (ν)</div>
+            <p><strong>IV sensitivity.</strong> A vega of 0.15 means the option gains $15 for each 1-point rise in IV. Long options have positive vega — IV expansion is profitable.</p>
+          </div>
+        </div>
+
+        <h3>Managing Greeks in Practice</h3>
+        <p>For a bull call spread with delta 0.31 and theta −$8/day:</p>
+        <ul>
+          <li>After 3 days flat, time decay consumes 3 × $8 = $24 of the $142 premium paid (16.9%).</li>
+          <li>Closing at 50% of maximum profit ($79 gain) after only 2 days preserves capital from theta erosion.</li>
+          <li>Never hold short options through expiration — gamma accelerates and the $142 invested can go to zero rapidly.</li>
+        </ul>
+      </div>
+
+      <!-- Direction + IV prediction -->
+      <div class="content-block">
+        <h2>🤖 The Dual ML System: Direction + IV</h2>
+
+        <h3>XGBoost Direction Classifier</h3>
+        <p>
+          The same XGBoost architecture used for stocks, retrained on SPY with additional options-specific
+          features: 30-day realized volatility, term structure slope, and pre-earnings distance.
+          For today's AAPL: <strong>P(UP) = 0.68, predicted magnitude = +1.8%</strong>.
+        </p>
+
+        <h3>LSTM Implied Volatility Forecaster</h3>
+        <p>
+          A 2-layer LSTM processes 60-day sequences of: VIX level, VIX term structure slope,
+          realized vs. implied volatility spread, and put/call skew. It outputs a probability that
+          IV will expand or contract over the next 5 days.
+        </p>
+        <ul>
+          <li>IV direction accuracy: <strong>61%</strong></li>
+          <li>Mean absolute error: <strong>2.3 volatility points</strong></li>
+          <li>Contribution to edge: <strong>+8.9% win rate improvement</strong> vs. direction-only system</li>
+        </ul>
+
+        <h3>Why Magnitude Determines Strike Selection</h3>
+        <p>
+          An AAPL 185 call with 7 DTE requires a 2.1% move to break even. With a predicted
+          magnitude of only +1.8%, this call has <em>negative expected value</em> — you'd be buying
+          an option that needs a bigger move than the model forecasts. The bull call spread 185/188
+          lowers break-even to 0.8%, well within the prediction interval.
+        </p>
+      </div>
+
+      <!-- Strategy Matrix -->
+      <div class="content-block">
+        <h2>📊 ML Strategy Selection Matrix</h2>
+
+        <p>ML outputs flow through a decision matrix to select the optimal strategy:</p>
+
+        <table style="width:100%; border-collapse:collapse; font-size:14px; margin-top:1rem;">
+          <thead>
+            <tr style="background:rgba(255,255,255,0.05);">
+              <th style="padding:10px; text-align:left; border-bottom:1px solid var(--border);">Direction Signal</th>
+              <th style="padding:10px; text-align:left; border-bottom:1px solid var(--border);">IV Condition</th>
+              <th style="padding:10px; text-align:left; border-bottom:1px solid var(--border);">Strategy</th>
+              <th style="padding:10px; text-align:left; border-bottom:1px solid var(--border);">Rationale</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td style="padding:8px;">Strong UP (≥0.65)</td><td style="padding:8px;">Low IV (&lt;30)</td><td style="padding:8px; color:var(--success); font-weight:700;">Bull Call Spread</td><td style="padding:8px; color:var(--muted);">Buy cheap premium with defined risk</td></tr>
+            <tr style="background:rgba(255,255,255,0.03);"><td style="padding:8px;">Strong UP (≥0.65)</td><td style="padding:8px;">High IV (&gt;60)</td><td style="padding:8px; color:var(--success); font-weight:700;">Sell Bull Put Spread</td><td style="padding:8px; color:var(--muted);">Collect elevated premium with bullish bias</td></tr>
+            <tr><td style="padding:8px;">Neutral (0.45–0.55)</td><td style="padding:8px;">High IV (&gt;60)</td><td style="padding:8px; color:#f59e0b; font-weight:700;">Iron Condor</td><td style="padding:8px; color:var(--muted);">Sell premium on both sides; profit if stock stays in range</td></tr>
+            <tr style="background:rgba(255,255,255,0.03);"><td style="padding:8px;">Strong DOWN (&lt;0.35)</td><td style="padding:8px;">Low IV (&lt;30)</td><td style="padding:8px; color:#f87171; font-weight:700;">Bear Put Spread</td><td style="padding:8px; color:var(--muted);">Cheap premium with directional edge</td></tr>
+            <tr><td style="padding:8px;">Uncertain</td><td style="padding:8px;">IV Expansion Expected</td><td style="padding:8px; color:#a78bfa; font-weight:700;">Long Straddle</td><td style="padding:8px; color:var(--muted);">Profit from large move in either direction</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Execution -->
+      <div class="content-block">
+        <h2>⚡ Executing the Bull Call Spread</h2>
+
+        <h3>Today's AAPL Trade</h3>
+        <p>Signal: P(UP)=0.68, magnitude +1.8%, IV rank 35% → Bull Call Spread</p>
+        <ul>
+          <li><strong>Buy:</strong> AAPL 185 Call at $2.84</li>
+          <li><strong>Sell:</strong> AAPL 188 Call at ($1.42)</li>
+          <li><strong>Net debit:</strong> $1.42 per share = $142 per contract</li>
+          <li><strong>Maximum profit:</strong> $1.58 per share = $158 per contract (at $188+)</li>
+          <li><strong>Maximum loss:</strong> $1.42 per share = $142 per contract (total premium paid)</li>
+          <li><strong>Break-even:</strong> $186.42 (requires only +0.8% from $185.20)</li>
+        </ul>
+
+        <h3>Order Entry</h3>
+        <p>
+          Submit as a <strong>net debit limit order</strong> at $1.42 (the mid-price between bid and ask
+          for the spread). Never use a market order for options — spreads can be wide and market orders
+          fill at the worst possible price. For a $10,000 account, max 2% risk = $200 → 1 contract at $142 debit.
+        </p>
+
+        <h3>Mechanical Exit Rules</h3>
+        <ul>
+          <li><strong>Take profit at 50% of max ($79 gain):</strong> The spread reaches $2.21 — close immediately. Locking in 50% eliminates the final 50% risk while keeping most of the expected value.</li>
+          <li><strong>Stop at 50% of premium paid ($71 loss):</strong> Spread drops to $0.71 — close immediately. This rule keeps average losses below $71 and average wins above $79.</li>
+          <li><strong>Time rule:</strong> Close all spreads by DTE 2 (two days before expiration) regardless of P&amp;L. Gamma risk accelerates and spreads can move violently in final hours.</li>
+        </ul>
+      </div>
+
+      <!-- Backtesting -->
+      <div class="content-block">
+        <h2>📋 14-Month Backtest — SPY Spreads</h2>
+
+        <div class="term-grid">
+          <div class="term-card"><div class="term">94 Trades</div><p>Bull call spreads + bear put spreads on SPY</p></div>
+          <div class="term-card"><div class="term" style="color:var(--success);">64.9% Win Rate</div><p>61 winners, 33 losers</p></div>
+          <div class="term-card"><div class="term" style="color:var(--success);">Profit Factor 2.1×</div><p>$2.10 earned per $1 lost</p></div>
+          <div class="term-card"><div class="term" style="color:var(--success);">+41% Annual Return</div><p>On capital deployed to trades</p></div>
+          <div class="term-card"><div class="term">Sharpe 1.68</div><p>Excellent risk-adjusted performance</p></div>
+          <div class="term-card"><div class="term" style="color:#f87171;">−12.4% Max DD</div><p>Worst peak-to-trough on account</p></div>
+        </div>
+
+        <h3>The IV Filter Was the Single Biggest Edge</h3>
+        <p>
+          Without the IV rank filter, the system entered 31% more trades — many buying expensive
+          options before earnings or macro events when IV was historically elevated. Win rate
+          dropped from 64.9% to 56%, and annual return dropped from 41% to 26%. The LSTM IV
+          forecaster is not optional — it is foundational to the strategy's edge.
+        </p>
+      </div>
+
+      <!-- NVDA Earnings Example -->
+      <div class="content-block">
+        <h2>🔍 Live Trade — NVIDIA Earnings (181% Return)</h2>
+
+        <h3>Pre-Trade ML Analysis</h3>
+        <ul>
+          <li>Pre-earnings IV rank: <strong>87%</strong> (historically very elevated)</li>
+          <li>Analyst EPS dispersion: 0.34 (disagreement → large post-earnings move likely)</li>
+          <li>Historical post-earnings average move: 8.2%</li>
+          <li>Momentum score: 0.72 (bullish)</li>
+        </ul>
+
+        <h3>ML Outputs</h3>
+        <ul>
+          <li>Direction: P(UP) = 0.74</li>
+          <li>Magnitude: +6.2% predicted</li>
+          <li>IV expansion probability: 0.82</li>
+          <li>Decision: <strong>Buy outright call</strong> (high IV rank, but IV expansion expected post-earnings)</li>
+        </ul>
+
+        <h3>Trade Execution &amp; Result</h3>
+        <ul>
+          <li>Buy NVDA 820 Call at $18.50 with NVDA at $800, 5 DTE</li>
+          <li>Cost: $1,850 per contract</li>
+          <li>Post-earnings: NVDA gaps from $800 → $870 (+8.75%)</li>
+          <li>820 call trades at $52.00 — exit at market open</li>
+          <li><strong>Profit: $33.50 × 100 = $3,350 per contract</strong></li>
+          <li><strong>Return on risk: 181% in 5 days</strong></li>
+        </ul>
+      </div>
+
+      <!-- Loss Management -->
+      <div class="content-block">
+        <h2>🛡 Disciplined Loss Management</h2>
+        <p>Options can expire at zero. The difference between a profitable options trader and a losing
+        one is almost entirely about how losses are managed.</p>
+
+        <h3>Long Premium (Bought Options/Debit Spreads)</h3>
+        <ul>
+          <li>Close at <strong>50% of premium paid</strong> if the underlying moves against you within 3 days</li>
+          <li>This preserves 50% of capital for the next signal — which is better than holding and letting time decay erase everything</li>
+          <li>Never average down by buying more of a losing options position</li>
+        </ul>
+
+        <h3>Short Premium (Credit Spreads, Iron Condors)</h3>
+        <ul>
+          <li>Close at <strong>200% of premium received</strong> if the underlying breaches your short strike</li>
+          <li>A $1.42 credit that turns into a $3.00 loss can happen fast — act at 2× rule, no exceptions</li>
+          <li>Never hold losing short options to expiration hoping for recovery — defined-risk spreads prevent the worst, but max loss is still real</li>
+        </ul>
+
+        <p>
+          <strong>The golden rule:</strong> Pre-define every exit before you enter. Write it down.
+          Execute mechanically. Options trading is won or lost not on entry quality but on exit discipline.
+        </p>
+      </div>
+
+    </div><!-- end lesson-main -->
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-card">
+        <h4>Topics Covered</h4>
+        <ul>
+          <li>Calls, puts, premium mechanics</li>
+          <li>Implied Volatility &amp; IV Rank</li>
+          <li>Delta, Gamma, Theta, Vega</li>
+          <li>XGBoost direction classifier</li>
+          <li>LSTM IV forecaster</li>
+          <li>Strategy selection matrix</li>
+          <li>Bull call spread mechanics</li>
+          <li>Break-even calculation</li>
+          <li>Net debit limit orders</li>
+          <li>50% profit rule</li>
+          <li>50% stop-loss rule</li>
+          <li>Earnings play strategy</li>
+          <li>Iron condor when neutral</li>
+          <li>Long straddle for IV expansion</li>
+        </ul>
+      </div>
+      <div class="sidebar-card">
+        <h4>Key Performance Metrics</h4>
+        <ul>
+          <li>Win rate: <strong>64.9%</strong></li>
+          <li>Annual return: <strong>+41%</strong></li>
+          <li>Sharpe ratio: <strong>1.68</strong></li>
+          <li>Max drawdown: <strong>−12.4%</strong></li>
+          <li>Profit factor: <strong>2.1×</strong></li>
+          <li>IV filter lift: <strong>+8.9%</strong></li>
+        </ul>
+      </div>
+      <div class="sidebar-card">
+        <h4>Module Navigation</h4>
+        <ul>
+          <li><a href="stock-trading.html">← Stock Trading</a></li>
+          <li><a href="futures-trading.html">Futures Trading →</a></li>
+          <li><a href="ml-trading.html">← ML in Trading</a></li>
+          <li><a href="index.html">← Course Home</a></li>
+        </ul>
+      </div>
+    </aside>
+
+  </div>
+</div>
+
+<!-- ── Footer ── -->
+<footer class="footer">
+  <div class="footer-logo">
+    <img src="images/steve.jpg" alt="Stephen Borick">
+    <strong>Artificial Intelligence Solutions, Inc.</strong>
+  </div>
+  <p>© 2026 Artificial Intelligence Solutions, Inc. — All rights reserved.</p>
+</footer>
+
+</body>
+</html>

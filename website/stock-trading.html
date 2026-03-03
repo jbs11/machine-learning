@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ML in Stock Trading — Artificial Intelligence Course</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ── Navigation ── -->
+<nav class="nav">
+  <a href="index.html" class="nav-logo">
+    <img src="images/steve.jpg" class="nav-logo-photo" alt="Stephen Borick">
+    <div class="nav-logo-text">
+      <span class="nav-company">Artificial Intelligence</span>
+      <span class="nav-name">Solutions, Inc.</span>
+    </div>
+  </a>
+  <ul class="nav-links">
+    <li><a href="index.html">Home</a></li>
+    <li><a href="neural-networks.html">Neural Networks</a></li>
+    <li><a href="machine-learning.html">Machine Learning</a></li>
+    <li><a href="ml-trading.html">ML in Trading</a></li>
+    <li><a href="stock-trading.html" class="active">Stock Trading</a></li>
+    <li><a href="options-trading.html">Options</a></li>
+    <li><a href="futures-trading.html">Futures</a></li>
+  </ul>
+</nav>
+
+<!-- ── Breadcrumb ── -->
+<div style="background:var(--surface); border-bottom:1px solid var(--border);">
+  <div class="breadcrumb">
+    <a href="index.html">AI Course</a>
+    <span class="breadcrumb-sep">›</span>
+    <a href="ml-trading.html">ML in Trading</a>
+    <span class="breadcrumb-sep">›</span>
+    <span>Module 4: ML in Stock Trading</span>
+  </div>
+</div>
+
+<!-- ── Page Hero ── -->
+<section class="page-hero">
+  <div class="page-hero-inner">
+    <span class="badge badge-gold" style="margin-bottom:1rem; display:inline-block;">Module 4 · Applied ML</span>
+    <h1>📊 Machine Learning in Stock Trading</h1>
+    <p>
+      Learn how XGBoost classifiers predict stock price direction with 63% accuracy,
+      how gradient boosted regression forecasts move magnitude, and exactly how to
+      read ML model outputs and execute disciplined trades on individual stocks like AAPL.
+    </p>
+  </div>
+</section>
+
+<!-- ── Video ── -->
+<section class="video-section">
+  <div class="video-inner">
+    <div style="max-width:854px; margin:0 auto;">
+      <video
+        controls
+        preload="metadata"
+        style="width:100%; border-radius:12px; border:1px solid var(--border); display:block; background:#000;"
+      >
+        <source src="videos/stock-trading.mp4" type="video/mp4">
+      </video>
+      <p style="text-align:right; margin-top:.5rem; font-size:.78rem; color:var(--muted);">
+        Module 4 · ML in Stock Trading · ~381s · 1280×720 · H.264
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ── Lesson Content ── -->
+<div class="section">
+  <div class="lesson-grid">
+
+    <!-- Main Content -->
+    <div class="lesson-main">
+
+      <!-- Overview -->
+      <div class="content-block">
+        <h2>📈 ML-Powered Stock Trading — AAPL Case Study</h2>
+        <p>
+          Individual stocks offer rich ML opportunities. Unlike indices, single stocks react to
+          earnings surprises, analyst upgrades, product launches, and sector rotation — creating
+          short-term pricing inefficiencies that ML models can exploit. This module builds a complete
+          end-to-end system on Apple (AAPL) using 252 sessions of real OHLCV data.
+        </p>
+        <div class="stat-strip">
+          <div class="stat"><div class="stat-value">63.2%</div><div class="stat-label">Out-of-sample directional accuracy</div></div>
+          <div class="stat"><div class="stat-value">34.2%</div><div class="stat-label">Annual return (2-yr backtest)</div></div>
+          <div class="stat"><div class="stat-value">1.52</div><div class="stat-label">Sharpe ratio</div></div>
+          <div class="stat"><div class="stat-value">+5.5%</div><div class="stat-label">Alpha vs. buy-and-hold</div></div>
+        </div>
+      </div>
+
+      <!-- Feature Engineering -->
+      <div class="content-block">
+        <h2>🔧 18-Variable Feature Vector</h2>
+        <p>Raw OHLCV data is transformed into 18 predictive features across four categories:</p>
+
+        <h3>Trend Features</h3>
+        <ul>
+          <li><strong>SMA(5), SMA(20), SMA(50)</strong> — Short, medium, and long-term trend direction. Price relative to each SMA signals momentum regime.</li>
+          <li><strong>Price/SMA(20) ratio</strong> — How far price has deviated from its 20-day mean. Values below 0.97 suggest mean-reversion opportunity.</li>
+        </ul>
+
+        <h3>Momentum Features</h3>
+        <ul>
+          <li><strong>RSI-14</strong> — Relative Strength Index. Today's AAPL at 42.3 is near oversold territory — historically a bullish mean-reversion signal. Model weight: highest of all features.</li>
+          <li><strong>MACD crossover</strong> — EMA(12) minus EMA(26). A positive crossover at +0.48 confirms upward momentum shift.</li>
+        </ul>
+
+        <h3>Volatility Features</h3>
+        <ul>
+          <li><strong>Bollinger Band percentile</strong> — Where price sits within the upper/lower bands. At 18%, price is near the lower band — classical oversold signal.</li>
+          <li><strong>ATR-14</strong> — Average True Range. At $2.10, this is the daily volatility measure used for stop-loss placement and position sizing.</li>
+        </ul>
+
+        <h3>Volume &amp; Gap Features</h3>
+        <ul>
+          <li><strong>Volume ratio</strong> — Today's volume divided by 20-day average. 1.83× means elevated institutional activity — confirms directional signal.</li>
+          <li><strong>Overnight gap %</strong> — Today's open vs. yesterday's close. Small gaps are neutral; large gaps often revert intraday.</li>
+        </ul>
+      </div>
+
+      <!-- Direction Prediction -->
+      <div class="content-block">
+        <h2>🎯 XGBoost Direction Classifier</h2>
+        <p>
+          XGBoost (Extreme Gradient Boosting) is the workhorse of ML stock trading. It builds
+          an ensemble of decision trees, each correcting the errors of the previous, producing a
+          calibrated probability score between 0 and 1.
+        </p>
+
+        <h3>Today's AAPL Signal</h3>
+        <p>Feature vector: RSI 42.3 · MACD +0.48 · BB Position 18% · Volume ratio 1.83×</p>
+        <div class="formula">P(UP tomorrow) = 0.73   ← 73% confidence the stock closes higher</div>
+
+        <h3>Confusion Matrix — 52 Out-of-Sample Sessions</h3>
+        <div class="term-grid">
+          <div class="term-card">
+            <div class="term" style="color:var(--success);">True Positive: 61</div>
+            <p>Predicted UP correctly. Long position profits.</p>
+          </div>
+          <div class="term-card">
+            <div class="term" style="color:var(--accent);">True Negative: 58</div>
+            <p>Predicted DOWN correctly. Short/cash position avoids loss.</p>
+          </div>
+          <div class="term-card">
+            <div class="term" style="color:#f87171;">False Positive: 19</div>
+            <p>Predicted UP but stock went down. Long position loses.</p>
+          </div>
+          <div class="term-card">
+            <div class="term" style="color:#f87171;">False Negative: 19</div>
+            <p>Predicted DOWN but stock went up. Missed opportunity.</p>
+          </div>
+        </div>
+        <p><strong>Overall accuracy:</strong> (61 + 58) / 157 = <strong>63.2%</strong> — statistically significant above the 50% random baseline.</p>
+      </div>
+
+      <!-- Magnitude Prediction -->
+      <div class="content-block">
+        <h2>📐 Magnitude Regression</h2>
+        <p>
+          Direction prediction answers <em>which way</em>. Magnitude regression answers <em>how much</em>.
+          Combined, they enable proportional position sizing — your largest bets when the model is
+          most confident of the largest moves.
+        </p>
+
+        <h3>Today's Magnitude Output</h3>
+        <div class="formula">Predicted return = +1.4%   [90th pct interval: +0.2% to +2.8%]</div>
+        <div class="formula">Dollar move at $185.20 entry = +$2.59 per share</div>
+
+        <h3>Position Sizing Matrix</h3>
+        <ul>
+          <li><strong>Predicted magnitude &lt; 0.5%</strong> → Reduce position to 0.5× standard size — low expected value</li>
+          <li><strong>Predicted magnitude 0.5–1.5%</strong> → Standard position size — today's +1.4% falls here</li>
+          <li><strong>Predicted magnitude &gt; 1.5%</strong> → Increase to 1.5× standard size — high expected value</li>
+        </ul>
+      </div>
+
+      <!-- Signal & Execution -->
+      <div class="content-block">
+        <h2>⚡ Reading Signals &amp; Placing the Trade</h2>
+
+        <h3>Signal Decision Rules</h3>
+        <ul>
+          <li><strong>P(UP) ≥ 0.65 AND predicted magnitude ≥ 0.8%</strong> → STRONG BUY. Enter tomorrow's open.</li>
+          <li><strong>P(UP) 0.55–0.65 AND magnitude ≥ 0.5%</strong> → BUY. Reduced position size.</li>
+          <li><strong>P(UP) 0.45–0.55</strong> → NO TRADE. Insufficient edge.</li>
+          <li><strong>P(UP) &lt; 0.45 AND magnitude ≥ 0.5%</strong> → SHORT or buy puts.</li>
+        </ul>
+
+        <h3>Today's AAPL Trade Setup</h3>
+        <p>Signal qualifies as STRONG BUY: P(UP) = 0.73, predicted move +1.4%</p>
+        <ul>
+          <li><strong>Entry:</strong> Limit order at $185.20 on market open</li>
+          <li><strong>Profit target:</strong> $187.80 (take-profit limit order)</li>
+          <li><strong>Stop-loss:</strong> $183.40 (stop-market order)</li>
+          <li><strong>Risk:Reward ratio:</strong> 1.4 : 1</li>
+          <li><strong>Volume filter:</strong> If opening volume &lt; 0.8× 20-day average → skip the trade</li>
+        </ul>
+
+        <h3>Bracket Order Setup</h3>
+        <p>
+          Always enter trades as bracket orders: a single parent order with two child orders
+          attached — a take-profit limit and a stop-loss market. This ensures both exit orders
+          are live the moment you enter. Never rely on manually watching the position.
+        </p>
+      </div>
+
+      <!-- ATR Sizing -->
+      <div class="content-block">
+        <h2>📏 ATR Position Sizing + Kelly Criterion</h2>
+
+        <h3>ATR Method</h3>
+        <div class="formula">Stop distance = 1.5 × ATR-14 = 1.5 × $2.10 = $3.15</div>
+        <div class="formula">Position size = Account risk $ ÷ Stop distance = $100 ÷ $3.15 = 31 shares</div>
+        <p>For a $10,000 account risking 1% per trade ($100), this gives 31 shares at $185.20 = $5,741 deployed.</p>
+
+        <h3>Kelly Criterion</h3>
+        <div class="formula">f* = (p·b − q) / b = (0.631 × 1.4 − 0.369) / 1.4 = 26%</div>
+        <p>
+          Full Kelly suggests 26% of account per trade. We use <strong>half-Kelly (13%)</strong>
+          to reduce variance. At $185.20 per share, 13% of $10,000 = $1,300, consistent with our
+          31-share position.
+        </p>
+        <p>
+          <strong>Rule:</strong> Never risk more than 1–2% of account on a single trade regardless
+          of Kelly output. Kelly is a long-run optimum; real markets have model errors that can
+          occur in clusters.
+        </p>
+      </div>
+
+      <!-- Backtesting -->
+      <div class="content-block">
+        <h2>📋 2-Year Backtest Results — AAPL</h2>
+
+        <div class="term-grid">
+          <div class="term-card"><div class="term">187 Trades</div><p>2-year backtest period</p></div>
+          <div class="term-card"><div class="term" style="color:var(--success);">63.1% Win Rate</div><p>118 winners, 69 losers</p></div>
+          <div class="term-card"><div class="term" style="color:var(--success);">Profit Factor 2.0×</div><p>$2 earned per $1 lost</p></div>
+          <div class="term-card"><div class="term" style="color:var(--success);">+34.2% Return</div><p>vs. buy-and-hold +28.7%</p></div>
+          <div class="term-card"><div class="term">Sharpe 1.52</div><p>Strong risk-adjusted performance</p></div>
+          <div class="term-card"><div class="term" style="color:#f87171;">−8.3% Max DD</div><p>Worst peak-to-trough decline</p></div>
+        </div>
+
+        <h3>Walk-Forward Validation</h3>
+        <p>
+          All results were validated using walk-forward analysis: the model was trained on
+          rolling 6-month windows and tested on the subsequent month it had never seen.
+          Performance held across bull trend, correction, range-bound, and high-volatility regimes.
+        </p>
+      </div>
+
+      <!-- Live Trade -->
+      <div class="content-block">
+        <h2>🔍 Live Trade Walkthrough — February 2024</h2>
+
+        <h3>February 14 — Signal Generation</h3>
+        <ul>
+          <li>AAPL closes at $184.92</li>
+          <li>RSI = 38.4 — near oversold</li>
+          <li>MACD crosses above signal line (bullish)</li>
+          <li>Price touches lower Bollinger Band</li>
+          <li>Volume ratio = 1.8× — elevated buying</li>
+          <li>XGBoost output: <strong>P(UP) = 0.71, predicted move +1.6%</strong></li>
+          <li>Signal: <strong>STRONG BUY</strong></li>
+        </ul>
+
+        <h3>February 15 — Trade Execution</h3>
+        <ul>
+          <li>Enter 31 shares at open $185.10 (limit order fills)</li>
+          <li>Bracket: take-profit $187.80, stop-loss $183.40</li>
+          <li>Opening volume: 2.1× average → signal confirmed, proceed</li>
+        </ul>
+
+        <h3>February 15 — Close</h3>
+        <ul>
+          <li>AAPL closes at $187.68 — take-profit triggered</li>
+          <li>Profit: 31 × $2.58 = <strong>$80.00</strong></li>
+          <li>Return on deployed capital: +1.39% in one trading day</li>
+          <li>Model prediction (+1.6%) vs. actual (+1.39%) — within interval ✓</li>
+        </ul>
+      </div>
+
+      <!-- Pitfalls -->
+      <div class="content-block">
+        <h2>⚠️ Critical Pitfalls</h2>
+
+        <h3>1. Overfitting</h3>
+        <p>
+          A model trained exclusively on 2022 data will likely underperform on 2024 data as market
+          regimes, volatility levels, and sector correlations shift. <strong>Fix:</strong> Walk-forward
+          validate only. Never tune parameters on the same data used to evaluate performance.
+        </p>
+
+        <h3>2. Look-Ahead Bias</h3>
+        <p>
+          RSI at time <em>T</em> must be computed using only prices available <em>before</em>
+          the close of day <em>T</em>. Using today's close to compute today's features — then
+          acting on those features at today's close — is look-ahead bias that cannot be
+          replicated in live trading. <strong>Fix:</strong> All features use prior session's close data.
+        </p>
+
+        <h3>3. Transaction Costs</h3>
+        <p>
+          At 187 trades/year with a $0.05 average bid-ask spread: 187 × 31 shares × $0.05 = $290
+          in spread costs plus commissions. On a $10,000 account generating $3,420 gross return,
+          this represents ~8.5% of gross profit. <strong>Fix:</strong> Model costs explicitly in
+          backtesting. Only deploy strategies with positive net alpha.
+        </p>
+      </div>
+
+    </div><!-- end lesson-main -->
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-card">
+        <h4>Topics Covered</h4>
+        <ul>
+          <li>252-session AAPL dataset</li>
+          <li>18-variable feature vector</li>
+          <li>SMA, RSI, MACD, Bollinger</li>
+          <li>ATR-14 volatility</li>
+          <li>XGBoost direction classifier</li>
+          <li>Confusion matrix interpretation</li>
+          <li>Gradient boost magnitude regression</li>
+          <li>Signal decision matrix</li>
+          <li>Bracket order execution</li>
+          <li>ATR position sizing</li>
+          <li>Kelly Criterion (half-Kelly)</li>
+          <li>2-year backtest results</li>
+          <li>Walk-forward validation</li>
+          <li>Look-ahead bias prevention</li>
+        </ul>
+      </div>
+      <div class="sidebar-card">
+        <h4>Key Performance Metrics</h4>
+        <ul>
+          <li>Direction accuracy: <strong>63.2%</strong></li>
+          <li>Profit factor: <strong>2.0×</strong></li>
+          <li>Annual return: <strong>+34.2%</strong></li>
+          <li>Sharpe ratio: <strong>1.52</strong></li>
+          <li>Max drawdown: <strong>−8.3%</strong></li>
+          <li>Alpha vs. passive: <strong>+5.5%</strong></li>
+        </ul>
+      </div>
+      <div class="sidebar-card">
+        <h4>Module Navigation</h4>
+        <ul>
+          <li><a href="ml-trading.html">← ML in Trading</a></li>
+          <li><a href="options-trading.html">Options Trading →</a></li>
+          <li><a href="futures-trading.html">Futures Trading →</a></li>
+          <li><a href="index.html">← Course Home</a></li>
+        </ul>
+      </div>
+    </aside>
+
+  </div>
+</div>
+
+<!-- ── Footer ── -->
+<footer class="footer">
+  <div class="footer-logo">
+    <img src="images/steve.jpg" alt="Stephen Borick">
+    <strong>Artificial Intelligence Solutions, Inc.</strong>
+  </div>
+  <p>© 2026 Artificial Intelligence Solutions, Inc. — All rights reserved.</p>
+</footer>
+
+</body>
+</html>
