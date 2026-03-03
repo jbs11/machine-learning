@@ -514,6 +514,7 @@
     <span id="ibkr-status-badge" style="font-size:.73rem; font-weight:700; color:var(--muted); margin-right:.25rem;"></span>
     <span id="last-update" style="font-size:.75rem; color:var(--muted);"></span>
     <button class="ibkr-toggle-btn" onclick="toggleIBKRPanel()" title="Interactive Brokers connection settings">🔌 IBKR Login</button>
+    <a href="market-summary.html" class="refresh-btn" style="text-decoration:none; display:inline-flex; align-items:center; gap:.3rem;" title="View aggregated ML signals, market events, and top movers">📊 Market Summary</a>
     <button class="refresh-btn" onclick="refreshAll()">↻ Refresh</button>
   </div>
 
@@ -722,6 +723,19 @@
           <div style="color:var(--muted); font-size:.8rem;">Loading ML model…</div>
         </div>
       </div>
+
+      <!-- Market Summary link card -->
+      <a href="market-summary.html" style="text-decoration:none;">
+        <div class="signal-card" style="background:linear-gradient(135deg,rgba(99,102,241,.13),rgba(16,185,129,.10));border-color:rgba(99,102,241,.4);cursor:pointer;transition:border-color .2s;" onmouseover="this.style.borderColor='#6366f1'" onmouseout="this.style.borderColor='rgba(99,102,241,.4)'">
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <div>
+              <div style="font-size:.78rem;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:#a5b4fc;margin-bottom:.4rem;">📊 Market Summary</div>
+              <div style="font-size:.8rem;color:var(--muted);line-height:1.45;">Aggregated ML signals across all stocks, options &amp; futures — market direction, top movers, events &amp; insights.</div>
+            </div>
+            <span style="font-size:1.3rem;color:#6366f1;margin-left:.8rem;flex-shrink:0;">→</span>
+          </div>
+        </div>
+      </a>
 
     </div>
   </div>
