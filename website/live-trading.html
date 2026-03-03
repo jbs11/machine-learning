@@ -335,6 +335,20 @@
     }
     .ibkr-btn-connect:hover { background: #34d399; }
     .ibkr-btn-connect:disabled { background: #374151; color: #6b7280; cursor: not-allowed; }
+    .ibkr-btn-disconnect {
+      background: transparent;
+      color: #f87171;
+      border: 1px solid #f87171;
+      padding: .42rem 1rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: .82rem;
+      font-weight: 600;
+      transition: background .15s;
+      white-space: nowrap;
+    }
+    .ibkr-btn-disconnect:hover { background: rgba(248,113,113,.12); }
+    .ibkr-btn-disconnect:disabled { opacity: .45; cursor: not-allowed; }
     .ibkr-toggle-btn {
       background: transparent;
       border: 1px solid rgba(16,185,129,.5);
@@ -515,8 +529,9 @@
         <label>Client ID</label>
         <input type="number" id="ibkr-clientid" value="10" min="1" max="999">
       </div>
-      <div class="ibkr-field" style="justify-content:flex-end;">
+      <div class="ibkr-field" style="justify-content:flex-end; gap:.5rem;">
         <button class="ibkr-btn-connect" id="ibkr-connect-btn" onclick="connectIBKR()">Connect to IBKR</button>
+        <button class="ibkr-btn-disconnect" id="ibkr-disconnect-btn" onclick="disconnectIBKR()">Disconnect</button>
       </div>
     </div>
     <div id="ibkr-result" style="display:none;" class="ibkr-result"></div>
@@ -1026,11 +1041,12 @@ function hideChartLoading() {
 }
 
 // ── Load candles ────────────────────────────────────────────────────────────
-async function loadCandles(symbol) {
+async function loadCandles(symbol, nocache = false) {
   showChartLoading('<span class="spinner"></span>&nbsp;Downloading market data…');
+  const qp = `period=90d${nocache ? '&nocache=1' : ''}`;
   try {
-    const r = await fetch(`${API}/api/candles/${symbol}?period=90d`,
-                          { signal: AbortSignal.timeout(20000) });
+    const r = await fetch(`${API}/api/candles/${symbol}?${qp}`,
+                          { signal: AbortSignal.timeout(25000) });
     if (!r.ok) throw new Error(r.statusText);
     const data = await r.json();
     if (!Array.isArray(data) || data.length === 0) throw new Error('No candles returned');
@@ -1065,13 +1081,17 @@ async function loadCandles(symbol) {
 }
 
 // ── Load ML signal ──────────────────────────────────────────────────────────
-async function loadSignal(symbol, type) {
+async function loadSignal(symbol, type, nocache = false) {
+  const qp = nocache ? '?nocache=1' : '';
   try {
-    const r = await fetch(`${API}/api/signal/${symbol}`);
+    const r = await fetch(`${API}/api/signal/${symbol}${qp}`,
+                          { signal: AbortSignal.timeout(30000) });
     if (!r.ok) throw new Error(r.statusText);
     const s = await r.json();
     renderSignal(s, type, symbol);
     setServerOnline(true);
+    // If server just came online and auto-refresh isn't running, start it
+    if (!autoRefreshTimer) startAutoRefresh();
   } catch(e) {
     setServerOnline(false);
     renderSignalError(symbol);
@@ -1261,10 +1281,13 @@ function loadAll(symbol, type) {
 }
 
 async function refreshAll() {
-  document.getElementById('spinner').style.display = '';
+  // Preserve id="spinner" so setServerOnline() can still find it
   document.getElementById('server-msg').innerHTML =
-    '<span class="spinner"></span>Refreshing…';
-  loadAll(currentSymbol, currentType);
+    '<span class="spinner" id="spinner"></span>Refreshing…';
+  await Promise.all([
+    loadCandles(currentSymbol, false),
+    loadSignal(currentSymbol, currentType, false)
+  ]);
 }
 
 // ── IBKR Panel ───────────────────────────────────────────────────────────────
@@ -1295,21 +1318,25 @@ async function connectIBKR() {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
       body:    JSON.stringify({ host, port, clientId }),
-      signal:  AbortSignal.timeout(8000)
+      signal:  AbortSignal.timeout(12000)
     });
     const data = await r.json();
     result.style.display = 'block';
     if (data.success) {
+      const acct = data.account && data.account !== 'unknown' ? ` (${data.account})` : '';
       result.innerHTML =
-        `<span style="color:#4ade80;">✓ Connected to IBKR on ${host}:${port}
-         — real-time data is now active.</span>`;
+        `<span style="color:#4ade80;">✓ Connected to IBKR on ${host}:${port}${acct}
+         — real-time data active.</span>`;
       // Save to localStorage
       localStorage.setItem('ibkr_host',     host);
       localStorage.setItem('ibkr_port',     port);
       localStorage.setItem('ibkr_clientid', clientId);
-      // Update badge and refresh data
-      updateIBKRBadge(true);
-      refreshAll();
+      // Update badge and force-reload fresh IBKR data (bypass cache)
+      updateIBKRBadge(true, 'IBKR real-time');
+      await Promise.all([
+        loadCandles(currentSymbol, true),
+        loadSignal(currentSymbol, currentType, true)
+      ]);
     } else {
       result.innerHTML =
         `<span style="color:#f87171;">✗ ${data.error}</span><br>
@@ -1325,13 +1352,37 @@ async function connectIBKR() {
   }
 }
 
-function updateIBKRBadge(connected) {
+function updateIBKRBadge(connected, dataSource) {
   const badge = document.getElementById('ibkr-status-badge');
   if (!badge) return;
   if (connected) {
     badge.innerHTML = '<span style="color:#4ade80;">● IBKR Live</span>';
   } else {
-    badge.innerHTML = '<span style="color:#64748b;">● IBKR Offline</span>';
+    const src = dataSource || 'yfinance delayed';
+    badge.innerHTML = `<span style="color:#64748b;" title="${src}">● yfinance</span>`;
+  }
+}
+
+async function disconnectIBKR() {
+  const btn    = document.getElementById('ibkr-disconnect-btn');
+  const result = document.getElementById('ibkr-result');
+  if (btn) { btn.disabled = true; btn.textContent = 'Disconnecting…'; }
+  result.style.display = 'none';
+  try {
+    const r    = await fetch(`${API}/api/ibkr-disconnect`, {
+      method: 'POST', signal: AbortSignal.timeout(5000)
+    });
+    const data = await r.json();
+    result.style.display = 'block';
+    if (data.success) {
+      result.innerHTML = '<span style="color:#fbbf24;">✓ Disconnected — using yfinance (15-20 min delayed)</span>';
+      updateIBKRBadge(false);
+    }
+  } catch(e) {
+    result.style.display = 'block';
+    result.innerHTML = `<span style="color:#f87171;">✗ ${e.message}</span>`;
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Disconnect'; }
   }
 }
 
@@ -1340,7 +1391,7 @@ async function checkIBKRStatus() {
     const r = await fetch(`${API}/api/ibkr-status`, { signal: AbortSignal.timeout(3000) });
     if (r.ok) {
       const d = await r.json();
-      updateIBKRBadge(d.connected);
+      updateIBKRBadge(d.connected, d.data_source);
       return d;
     }
   } catch(e) {}

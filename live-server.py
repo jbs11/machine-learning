@@ -136,40 +136,66 @@ FUTURES_IB_MAP = {
     'ZB=F': ('ZB',  'CBOT'),
 }
 
+# yfinance symbols that differ from IBKR ticker format
+STOCK_IB_MAP = {
+    'BRK-B': 'BRK B',   # Berkshire B: yfinance uses hyphen, IBKR uses space
+    'BRK-A': 'BRK A',
+}
 
-def get_ib_connection():
+# Stores the host:port used by the most recent successful connection
+_ib_connection_info: dict = {}
+
+
+def get_ib_connection(auto_probe: bool = True):
     """
-    Return an active IB connection, or None if TWS is not reachable.
-    Uses a singleton; reconnects automatically if the connection dropped.
-    Thread-safe via _ib_lock.
+    Return an active IB connection singleton, or None.
+
+    auto_probe=True  (default) — attempt to connect if not already connected.
+    auto_probe=False           — only check current state, no blocking I/O.
     """
     global _ib, _ib_connected, _ib_error
     if not IB_AVAILABLE:
         return None
+
+    # Fast non-blocking check — avoids lock when already connected
+    if _ib is not None and _ib.isConnected():
+        return _ib
+
+    if not auto_probe:
+        # Report current state without attempting a new connection
+        if _ib is not None:
+            _ib_connected = False
+            _ib_error = 'Connection dropped'
+        return None
+
+    # Blocking auto-probe under lock (prevents concurrent connect races)
     with _ib_lock:
-        try:
-            if _ib is not None and _ib.isConnected():
-                return _ib
-            # Try paper-trading port first (7497), then live port (7496)
-            for port in (7497, 7496):
-                try:
-                    ib = IB()
-                    ib.connect('127.0.0.1', port, clientId=10, timeout=4)
-                    if ib.isConnected():
-                        _ib = ib
-                        _ib_connected = True
-                        _ib_error = ''
-                        print(f"[IBKR] Connected on port {port}")
-                        return _ib
-                except Exception:
-                    pass
-            _ib_connected = False
-            _ib_error = 'TWS/IB Gateway not running on ports 7496 or 7497'
-            return None
-        except Exception as e:
-            _ib_connected = False
-            _ib_error = str(e)
-            return None
+        # Double-check after acquiring lock
+        if _ib is not None and _ib.isConnected():
+            return _ib
+        # Clean up stale object
+        if _ib is not None:
+            try: _ib.disconnect()
+            except Exception: pass
+            _ib = None
+
+        for port in (7497, 7496):
+            try:
+                ib = IB()
+                ib.connect('127.0.0.1', port, clientId=10, timeout=4)
+                if ib.isConnected():
+                    _ib = ib
+                    _ib_connected = True
+                    _ib_error = ''
+                    _ib_connection_info.update(host='127.0.0.1', port=port, clientId=10)
+                    print(f"[IBKR] Auto-connected on port {port}")
+                    return _ib
+            except Exception:
+                pass
+
+        _ib_connected = False
+        _ib_error = 'TWS/IB Gateway not running on ports 7497 or 7496'
+        return None
 
 
 def ib_symbol_to_contract(symbol: str):
@@ -177,7 +203,8 @@ def ib_symbol_to_contract(symbol: str):
     if symbol in FUTURES_IB_MAP:
         sym, exch = FUTURES_IB_MAP[symbol]
         return Future(sym, '', exch)
-    return Stock(symbol, 'SMART', 'USD')
+    ib_sym = STOCK_IB_MAP.get(symbol, symbol)
+    return Stock(ib_sym, 'SMART', 'USD')
 
 
 def get_4h_candles_ibkr(symbol: str, period_days: int = 90) -> pd.DataFrame:
@@ -436,73 +463,116 @@ def ibkr_connect():
     """
     Connect (or reconnect) to IBKR TWS/Gateway with caller-supplied settings.
     Body JSON: { "host": "127.0.0.1", "port": 7497, "clientId": 10 }
+    On success clears the data cache so the next fetch uses live IBKR data.
     """
-    global _ib, _ib_connected, _ib_error
+    global _ib, _ib_connected, _ib_error, _ib_connection_info
     if not IB_AVAILABLE:
-        return jsonify({'success': False, 'error': 'ib_async not installed — pip install ib_async'}), 400
+        return jsonify({'success': False,
+                        'error': 'ib_async not installed — run: pip install ib_async'}), 400
 
-    body = request.get_json(silent=True) or {}
+    body      = request.get_json(silent=True) or {}
     host      = str(body.get('host',     '127.0.0.1'))
     port      = int(body.get('port',     7497))
     client_id = int(body.get('clientId', 10))
 
     with _ib_lock:
-        # Disconnect existing connection if any
+        # Tear down existing connection
         if _ib is not None:
-            try:
-                _ib.disconnect()
-            except Exception:
-                pass
+            try: _ib.disconnect()
+            except Exception: pass
             _ib = None
         _ib_connected = False
-        _ib_error = ''
+        _ib_error     = ''
 
         try:
             ib = IB()
-            ib.connect(host, port, clientId=client_id, timeout=5)
+            ib.connect(host, port, clientId=client_id, timeout=6)
             if ib.isConnected():
                 _ib = ib
                 _ib_connected = True
-                print(f"[IBKR] Connected via POST /api/ibkr-connect → {host}:{port} cid={client_id}")
+                _ib_connection_info = {'host': host, 'port': port, 'clientId': client_id}
+                # ── Clear stale yfinance cache so next fetch uses IBKR ──
+                _cache.clear()
+                print(f"[IBKR] Connected via /api/ibkr-connect → {host}:{port} cid={client_id}")
+                try:
+                    acct = ib.managedAccounts()
+                    account = acct[0] if acct else 'unknown'
+                except Exception:
+                    account = 'unknown'
                 return jsonify({
                     'success':     True,
                     'connected':   True,
                     'host':        host,
                     'port':        port,
                     'clientId':    client_id,
+                    'account':     account,
                     'data_source': 'IBKR real-time',
                     'time':        datetime.now().isoformat()
                 })
             else:
-                _ib_error = f'Connection to {host}:{port} established but isConnected() = False'
+                _ib_error = f'TCP connected to {host}:{port} but IB handshake failed'
                 return jsonify({'success': False, 'error': _ib_error}), 500
         except Exception as e:
             _ib_error = str(e)
             print(f"[IBKR] /api/ibkr-connect failed: {e}")
-            return jsonify({'success': False, 'error': str(e)}), 500
+            # Provide a helpful message for the most common errors
+            msg = str(e)
+            if 'refused' in msg.lower() or '1225' in msg or '111' in msg:
+                msg = (f'Connection refused on {host}:{port}. '
+                       f'Is TWS or IB Gateway running with API enabled?')
+            elif 'timed out' in msg.lower():
+                msg = (f'Timeout connecting to {host}:{port}. '
+                       f'Check that API socket port matches TWS configuration.')
+            return jsonify({'success': False, 'error': msg}), 500
+
+
+@app.route('/api/ibkr-disconnect', methods=['POST'])
+def ibkr_disconnect():
+    """Disconnect from IBKR and fall back to yfinance."""
+    global _ib, _ib_connected, _ib_error, _ib_connection_info
+    with _ib_lock:
+        if _ib is not None:
+            try: _ib.disconnect()
+            except Exception: pass
+            _ib = None
+        _ib_connected = False
+        _ib_error = ''
+        _ib_connection_info = {}
+    return jsonify({'success': True, 'data_source': 'yfinance (15-20 min delayed)'})
 
 
 @app.route('/api/ibkr-status')
 def ibkr_status():
-    """Report Interactive Brokers connection state."""
-    connected = False
-    info = {}
-    if IB_AVAILABLE:
-        ib = get_ib_connection()
-        connected = (ib is not None and ib.isConnected())
-        if connected:
-            try:
-                info['server_version'] = ib.client.serverVersion()
-            except Exception:
-                pass
+    """
+    Report current IBKR connection state without attempting a new connection.
+    Use POST /api/ibkr-connect to establish a connection.
+    """
+    # auto_probe=False: just read current state, no blocking I/O
+    ib        = get_ib_connection(auto_probe=False)
+    connected = (ib is not None and ib.isConnected())
+    info      = {}
+    if connected:
+        try:
+            info['server_version'] = str(ib.client.serverVersion())
+        except Exception:
+            pass
+        info.update(_ib_connection_info)
     return jsonify({
         'ib_async_installed': IB_AVAILABLE,
         'connected':          connected,
         'error':              _ib_error if not connected else '',
-        'ports_tried':        [7497, 7496],
+        'connection':         info,
         'data_source':        'IBKR real-time' if connected else 'yfinance (15-20 min delayed)',
         'time':               datetime.now().isoformat()
     })
+
+
+@app.route('/api/cache/clear', methods=['POST'])
+def clear_cache():
+    """Force-clear the in-memory data cache so next request fetches fresh data."""
+    count = len(_cache)
+    _cache.clear()
+    return jsonify({'cleared': count, 'time': datetime.now().isoformat()})
 
 
 @app.route('/api/symbols')
@@ -512,12 +582,14 @@ def symbols():
 
 @app.route('/api/candles/<symbol>')
 def candles(symbol: str):
-    symbol = symbol.upper()
-    period = request.args.get('period', '90d')
-    ck = cache_key(symbol, f'candles:{period}')
-    cached = cache_get(ck)
-    if cached:
-        return jsonify(cached)
+    symbol  = symbol.upper()
+    period  = request.args.get('period', '90d')
+    nocache = request.args.get('nocache', '0') == '1'
+    ck      = cache_key(symbol, f'candles:{period}')
+    if not nocache:
+        cached = cache_get(ck)
+        if cached:
+            return jsonify(cached)
 
     df = get_4h_candles(symbol, period=period)
     if df.empty:
@@ -543,11 +615,13 @@ def candles(symbol: str):
 
 @app.route('/api/signal/<symbol>')
 def signal(symbol: str):
-    symbol = symbol.upper()
-    ck = cache_key(symbol, 'signal')
-    cached = cache_get(ck)
-    if cached:
-        return jsonify(cached)
+    symbol  = symbol.upper()
+    nocache = request.args.get('nocache', '0') == '1'
+    ck      = cache_key(symbol, 'signal')
+    if not nocache:
+        cached = cache_get(ck)
+        if cached:
+            return jsonify(cached)
 
     df_4h = get_4h_candles(symbol, period='120d')
     if df_4h.empty or len(df_4h) < 80:
@@ -621,11 +695,14 @@ if __name__ == '__main__':
     print(f"  IBKR (ib_async) : {ib_status}")
     print( "  Data fallback   : yfinance (15-20 min delayed)")
     print()
-    print("  GET /api/candles/<symbol>     — 4H OHLCV candles")
-    print("  GET /api/signal/<symbol>      — ML direction + magnitude")
-    print("  GET /api/multi/AAPL,ES=F      — batch signals")
-    print("  GET /api/symbols              — available symbols list")
-    print("  GET /api/ibkr-status          — IBKR connection info")
-    print("  GET /api/health               — server health check")
+    print("  GET  /api/candles/<symbol>    — 4H OHLCV candles (?nocache=1)")
+    print("  GET  /api/signal/<symbol>     — ML direction + magnitude (?nocache=1)")
+    print("  GET  /api/multi/AAPL,ES=F     — batch signals")
+    print("  GET  /api/symbols             — available symbols list")
+    print("  GET  /api/ibkr-status         — IBKR connection state (no probe)")
+    print("  POST /api/ibkr-connect        — connect IBKR {host,port,clientId}")
+    print("  POST /api/ibkr-disconnect     — disconnect IBKR, revert to yfinance")
+    print("  POST /api/cache/clear         — force-clear data cache")
+    print("  GET  /api/health              — server health check")
     print("=" * 60)
     app.run(host='0.0.0.0', port=5050, debug=False, threaded=True)
