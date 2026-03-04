@@ -203,6 +203,18 @@
       font-size: .88rem; font-weight: 900;
       display: flex; justify-content: space-between; align-items: center;
     }
+    .forecast-tf-bar {
+      display: flex; align-items: center; gap: .25rem;
+      padding: .3rem .75rem; border-bottom: 1px solid var(--border);
+      background: rgba(0,0,0,.1);
+    }
+    .fc-tf-btn {
+      background: transparent; border: 1px solid transparent;
+      color: var(--muted); padding: .15rem .4rem; border-radius: 4px;
+      font-size: .68rem; font-weight: 700; cursor: pointer; transition: all .15s;
+    }
+    .fc-tf-btn:hover { color: var(--text); border-color: var(--border); }
+    .fc-tf-btn.active { background: rgba(34,211,238,.15); border-color: var(--accent); color: var(--accent); }
     .forecast-chart { height: 180px; position: relative; }
     .forecast-table { width: 100%; border-collapse: collapse; font-size: .77rem; }
     .forecast-table th {
@@ -225,6 +237,111 @@
       margin-bottom: 1.5rem;
     }
     @media (max-width: 700px) { .forecast-summary-grid { grid-template-columns: 1fr; } }
+
+    /* ── World Events ── */
+    .events-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
+      gap: 1rem; margin-bottom: 1.5rem;
+    }
+    @media (max-width: 500px) { .events-grid { grid-template-columns: 1fr; } }
+    .event-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; overflow: hidden;
+    }
+    .event-card-header {
+      padding: .7rem 1rem; display: flex; align-items: center;
+      gap: .7rem; flex-wrap: wrap;
+      border-bottom: 1px solid var(--border);
+    }
+    .event-category {
+      font-size: .64rem; font-weight: 800; padding: .18rem .55rem;
+      border-radius: 3px; text-transform: uppercase; letter-spacing: .07em;
+      background: rgba(148,163,184,.1); color: var(--muted);
+    }
+    .event-title {
+      font-size: .86rem; font-weight: 800; flex: 1;
+      min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .impact-chip {
+      font-size: .64rem; font-weight: 800; padding: .18rem .5rem;
+      border-radius: 3px; letter-spacing: .06em; flex-shrink: 0;
+    }
+    .impact-BULLISH { background: rgba(74,222,128,.18);  color:#4ade80; border:1px solid #4ade8055; }
+    .impact-BEARISH { background: rgba(248,113,113,.18); color:#f87171; border:1px solid #f8717155; }
+    .impact-MIXED   { background: rgba(251,191,36,.15);  color:#fbbf24; border:1px solid #fbbf2455; }
+    .impact-NEUTRAL { background: rgba(148,163,184,.12); color:#94a3b8; border:1px solid #94a3b855; }
+    .mag-HIGH   { color:#f87171; }
+    .mag-MEDIUM { color:#fbbf24; }
+    .mag-LOW    { color:#94a3b8; }
+    .event-body { padding: .75rem 1rem; }
+    .event-signal-row {
+      display: flex; align-items: center; gap: .6rem; margin-bottom: .55rem;
+      font-size: .75rem;
+    }
+    .event-signal-label { color: var(--muted); flex-shrink: 0; }
+    .event-signal-val {
+      font-family: monospace; font-size: .76rem; font-weight: 700;
+      color: var(--accent); background: rgba(16,185,129,.1);
+      padding: .1rem .45rem; border-radius: 4px;
+    }
+    .event-desc { font-size: .78rem; color: var(--muted); line-height: 1.6; margin-bottom: .6rem; }
+    .event-action {
+      font-size: .76rem; color: #4ade80; background: rgba(74,222,128,.07);
+      border: 1px solid rgba(74,222,128,.2); border-radius: 6px;
+      padding: .45rem .7rem; line-height: 1.5;
+    }
+    .event-action::before { content: '✓ '; font-weight: 800; }
+    .event-affected {
+      display: flex; gap: .35rem; flex-wrap: wrap; margin-bottom: .55rem;
+    }
+    .affected-chip {
+      font-size: .65rem; padding: .1rem .4rem; border-radius: 3px;
+      background: rgba(255,255,255,.06); color: var(--muted);
+    }
+
+    /* ── ML Ranking ── */
+    .ml-ranking-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.2rem;
+      margin-bottom: 1.5rem;
+    }
+    @media (max-width: 1100px) { .ml-ranking-grid { grid-template-columns: 1fr 1fr; } }
+    @media (max-width:  650px) { .ml-ranking-grid { grid-template-columns: 1fr; } }
+    .ml-rank-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; overflow: hidden;
+    }
+    .ml-rank-header {
+      padding: .7rem 1rem; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+      gap: .5rem;
+    }
+    .ml-rank-title { font-size: .84rem; font-weight: 800; }
+    .ml-feat-count {
+      font-size: .68rem; font-weight: 700; padding: .15rem .45rem;
+      border-radius: 3px;
+    }
+    .ml-rank-row {
+      display: flex; align-items: center; gap: .7rem;
+      padding: .45rem .9rem; border-bottom: 1px solid rgba(255,255,255,.04);
+    }
+    .ml-rank-row:last-child { border-bottom: none; }
+    .ml-rank-num { font-size: .7rem; color: var(--muted); width: 16px; text-align: right; flex-shrink: 0; }
+    .ml-rank-name { font-size: .78rem; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .ml-rank-bar-wrap { width: 80px; height: 6px; background: rgba(255,255,255,.07); border-radius: 3px; flex-shrink: 0; overflow: hidden; }
+    .ml-rank-bar { height: 100%; border-radius: 3px; }
+    .ml-rank-pct { font-size: .7rem; color: var(--muted); width: 36px; text-align: right; flex-shrink: 0; }
+
+    .ml-model-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; padding: 1.1rem 1.3rem; margin-bottom: 1.5rem;
+    }
+    .ml-model-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: .65rem; margin-top: .8rem;
+    }
+    .ml-model-item { font-size: .78rem; line-height: 1.5; }
+    .ml-model-key { color: var(--muted); }
+    .ml-model-val { color: var(--text); font-weight: 600; }
   </style>
   <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
 </head>
@@ -235,6 +352,28 @@
   <a href="live-trading.html">← Live Trading</a>
   <span class="page-nav-sep">|</span>
   <a href="market-summary.html" class="active">Market Summary</a>
+  <span class="page-nav-sep">|</span>
+  <a href="terminology.html">Terminology 📖</a>
+  <span class="page-nav-sep">|</span>
+  <a href="ml-sp500-example.html">ML Example 🧠</a>
+  <span class="page-nav-sep">|</span>
+  <a href="ml-key-assets.html">ML Key Assets 📋</a>
+  <span class="page-nav-sep">|</span>
+  <a href="ml-xgboost-assets.html">XGBoost Charts 📊</a>
+  <span class="page-nav-sep">|</span>
+  <a href="gamma-exposure.html">GEX Charts 🎯</a>
+  <span class="page-nav-sep">|</span>
+  <a href="options-strategy.html">Options Strategy 📈</a>
+  <span class="page-nav-sep">|</span>
+  <a href="option-flows.html">Option Flows 🌊</a>
+  <span class="page-nav-sep">|</span>
+  <a href="options-summary.html">Options Summary 📊</a>
+  <span class="page-nav-sep">|</span>
+  <a href="0dte-options.html">0DTE 🔥</a>
+  <span class="page-nav-sep">|</span>
+  <a href="fundamentals.html">Fundamentals 📋</a>
+  <span class="page-nav-sep">|</span>
+  <a href="institutional-buyers.html">Institutional 🏦</a>
 </nav>
 
 <div class="page-wrap">
@@ -308,8 +447,12 @@
       </div>
     </div>
 
+    <!-- ── World & Economic Events ───────────────────────────────────── -->
+    <div class="section-title">🌍 World &amp; Economic Events</div>
+    <div id="world-events-grid" class="events-grid"></div>
+
     <!-- ── Market Events & Notes ──────────────────────────────────────── -->
-    <div class="section-title">Market Events &amp; Insights</div>
+    <div class="section-title">📋 Market Events &amp; Insights</div>
     <div class="notes-grid" id="notes-grid"></div>
 
     <!-- ── Indices Snapshot ───────────────────────────────────────────── -->
@@ -398,6 +541,21 @@
         <tbody id="tbl-activity"></tbody>
       </table>
     </div>
+
+    <!-- ── ML Methods & Feature Importance Ranking ──────────────────── -->
+    <div class="section-title">🧠 ML Methods &amp; Feature Importance by Asset Type</div>
+
+    <!-- Model metadata card -->
+    <div class="ml-model-card" id="ml-model-info">
+      <div style="font-size:.84rem;font-weight:800;margin-bottom:.1rem;">Ensemble Model Architecture</div>
+      <div style="font-size:.76rem;color:var(--muted);margin-bottom:.6rem;">
+        Feature importance aggregated from GradientBoostingClassifier across all signals computed this session
+      </div>
+      <div class="ml-model-grid" id="ml-model-grid"></div>
+    </div>
+
+    <!-- Per-asset-type feature ranking -->
+    <div class="ml-ranking-grid" id="ml-ranking-grid"></div>
 
   </div><!-- /#main-content -->
 
@@ -568,19 +726,161 @@ function renderActivity(top) {
     </tr>`).join('');
 }
 
+// ── World Events ─────────────────────────────────────────────────────────────
+function renderWorldEvents(events) {
+  const el = document.getElementById('world-events-grid');
+  if (!events || !events.length) {
+    el.innerHTML = '<p style="color:var(--muted);grid-column:1/-1;">No events detected from current market data.</p>';
+    return;
+  }
+
+  const magIcon = m => m === 'HIGH' ? '🔴' : m === 'MEDIUM' ? '🟡' : '🟢';
+
+  el.innerHTML = events.map(ev => `
+    <div class="event-card">
+      <div class="event-card-header">
+        <span class="event-category">${ev.category}</span>
+        <span class="event-title">${ev.event}</span>
+        <span class="impact-chip impact-${ev.impact}">${ev.impact}</span>
+      </div>
+      <div class="event-body">
+        <div class="event-signal-row">
+          <span class="event-signal-label">Market Signal:</span>
+          <span class="event-signal-val">${ev.market_signal}</span>
+          <span style="font-size:.7rem;color:var(--muted);margin-left:auto;">
+            ${magIcon(ev.magnitude)} <span class="mag-${ev.magnitude}">${ev.magnitude} IMPACT</span>
+          </span>
+        </div>
+        <div class="event-affected">
+          ${(ev.affected||[]).map(a => `<span class="affected-chip">${a}</span>`).join('')}
+        </div>
+        <div class="event-desc">${ev.description}</div>
+        <div class="event-action">${ev.action}</div>
+      </div>
+    </div>`).join('');
+}
+
+// ── ML Feature Ranking ────────────────────────────────────────────────────────
+const _TYPE_COLOR = { stock:'#38bdf8', options:'#a78bfa', futures:'#f59e0b', index:'#94a3b8' };
+const _TYPE_LABEL = { stock:'Stocks', options:'Options', futures:'Futures', index:'Indices' };
+
+function renderMLRanking(mlData) {
+  if (!mlData) return;
+
+  // Model info card
+  const info   = mlData.model_info || {};
+  const infoEl = document.getElementById('ml-model-grid');
+  if (infoEl) {
+    const fields = [
+      ['Method',          info.method],
+      ['Ensemble Vote',   info.ensemble],
+      ['Regressor',       info.regressor],
+      ['Validation',      info.cv_method],
+      ['Direction Rule',  info.direction_signal],
+      ['High-Vol Rule',   info.high_vol_signal],
+      ['Stock Features',  info.stocks_features  + ' features'],
+      ['Options Features',info.options_features + ' features'],
+      ['Futures Features',info.futures_features + ' features'],
+      ['Training Window', info.training_window],
+      ['GBM Params',      info.gbm_params],
+      ['ExtraTrees Params', info.et_params],
+    ];
+    infoEl.innerHTML = fields.map(([k,v]) => v
+      ? `<div class="ml-model-item"><span class="ml-model-key">${k}: </span><span class="ml-model-val">${v}</span></div>`
+      : '').join('');
+  }
+
+  // Per-asset-type ranking panels
+  const byType = mlData.by_asset_type || {};
+  const rankEl = document.getElementById('ml-ranking-grid');
+  if (!rankEl) return;
+
+  const order = ['stock', 'options', 'futures', 'index'];
+  const types = order.filter(t => byType[t] && byType[t].length);
+  if (!types.length) {
+    rankEl.innerHTML = '<p style="color:var(--muted);">Feature importance data will appear after ML models have run.</p>';
+    return;
+  }
+
+  rankEl.innerHTML = types.map(atype => {
+    const rows   = byType[atype] || [];
+    const color  = _TYPE_COLOR[atype] || '#94a3b8';
+    const label  = _TYPE_LABEL[atype] || atype;
+    const maxImp = rows[0]?.importance || 1;
+    const featCount = (rows.length > 0)
+      ? `<span class="ml-feat-count" style="background:${color}22;color:${color};">${rows.length} ranked</span>`
+      : '';
+
+    return `
+      <div class="ml-rank-card" style="border-top:3px solid ${color};">
+        <div class="ml-rank-header">
+          <div class="ml-rank-title" style="color:${color};">${label} — Top Features</div>
+          ${featCount}
+        </div>
+        ${rows.map(r => `
+          <div class="ml-rank-row">
+            <span class="ml-rank-num">${r.rank}</span>
+            <span class="ml-rank-name" title="${r.feature}">${r.feature}</span>
+            <div class="ml-rank-bar-wrap">
+              <div class="ml-rank-bar" style="width:${(r.importance/maxImp*100).toFixed(0)}%;background:${color};"></div>
+            </div>
+            <span class="ml-rank-pct">${r.pct}%</span>
+          </div>`).join('')}
+      </div>`;
+  }).join('');
+}
+
 // ── Forecast ──────────────────────────────────────────────────────────────────
 const FORECAST_SYMBOLS = ['SPY', 'QQQ', 'ES=F', 'GC=F'];
 const FORECAST_LABELS  = { 'SPY': 'S&P 500 ETF', 'QQQ': 'Nasdaq ETF', 'ES=F': 'S&P Futures', 'GC=F': 'Gold Futures' };
 const fCharts = {};
+const fTF = {};   // per-symbol current timeframe
+
+async function changeForecastTF(sym, tf) {
+  const id = sym.replace(/[^a-z0-9]/gi, '_');
+  fTF[sym] = tf;
+
+  // Update active button for this card
+  ['1m','5m','15m','30m','1h','4h','1d'].forEach(t => {
+    const btn = document.getElementById(`fc-tf-${id}-${t}`);
+    if (btn) btn.classList.toggle('active', t === tf);
+  });
+
+  // Reload candles for this chart
+  try {
+    const r = await fetch(`${API}/api/candles/${encodeURIComponent(sym)}?interval=${tf}`,
+                          { signal: AbortSignal.timeout(20000) });
+    if (!r.ok) return;
+    const candles = await r.json();
+    if (!Array.isArray(candles) || !candles.length) return;
+    const seen = new Set();
+    const clean = candles
+      .filter(c => { if (seen.has(c.time)) return false; seen.add(c.time); return true; })
+      .sort((a, b) => a.time - b.time);
+    if (fCharts[sym]) {
+      fCharts[sym].cs.setData(clean.map(c => ({
+        time: c.time, open: c.open, high: c.high, low: c.low, close: c.close
+      })));
+      fCharts[sym].chart.timeScale().fitContent();
+    } else {
+      buildForecastChart(sym, clean);
+    }
+  } catch(e) { console.warn(`[changeForecastTF] ${sym}:`, e.message); }
+}
 
 function forecastCardHTML(sym) {
   const id = sym.replace(/[^a-z0-9]/gi, '_');
+  const tfs = ['1m','5m','15m','30m','1h','4h','1d'];
+  const tfBtns = tfs.map(t =>
+    `<button class="fc-tf-btn${t==='1h'?' active':''}" onclick="changeForecastTF('${sym}','${t}')" id="fc-tf-${id}-${t}">${t.toUpperCase()}</button>`
+  ).join('');
   return `
     <div class="forecast-card" id="fc-${id}">
       <div class="forecast-card-header">
         <span>${sym} <span style="font-weight:400;font-size:.75rem;color:var(--muted);">${FORECAST_LABELS[sym]||''}</span></span>
         <span id="fc-sig-${id}"></span>
       </div>
+      <div class="forecast-tf-bar">${tfBtns}</div>
       <div class="forecast-chart" id="fc-chart-${id}"></div>
       <table class="forecast-table">
         <thead><tr>
@@ -689,19 +989,37 @@ async function loadAllForecasts() {
   grid.style.display = 'grid';
   document.getElementById('forecast-loading').style.display = 'none';
 
+  // Initialize TF state to 1H for each symbol
+  FORECAST_SYMBOLS.forEach(s => { fTF[s] = '1h'; });
+
   const summaries = [];
 
   await Promise.all(FORECAST_SYMBOLS.map(async sym => {
-    const data = await loadForecast(sym);
-    if (!data) {
-      const id = sym.replace(/[^a-z0-9]/gi, '_');
+    // Fetch 1H candles for the chart display and forecast rows in parallel
+    const [candleResp, forecastData] = await Promise.all([
+      fetch(`${API}/api/candles/${encodeURIComponent(sym)}?interval=1h`,
+            { signal: AbortSignal.timeout(20000) }).then(r => r.ok ? r.json() : null).catch(() => null),
+      loadForecast(sym)
+    ]);
+
+    const id = sym.replace(/[^a-z0-9]/gi, '_');
+
+    // Build chart from 1H candles
+    if (candleResp && Array.isArray(candleResp) && candleResp.length) {
+      const seen = new Set();
+      const clean = candleResp
+        .filter(c => { if (seen.has(c.time)) return false; seen.add(c.time); return true; })
+        .sort((a, b) => a.time - b.time);
+      buildForecastChart(sym, clean);
+    }
+
+    if (!forecastData) {
       const el = document.getElementById(`fc-rows-${id}`);
-      if (el) el.innerHTML = '<tr><td colspan="5" style="color:#f87171;padding:.8rem;">Failed to load data</td></tr>';
+      if (el) el.innerHTML = '<tr><td colspan="5" style="color:#f87171;padding:.8rem;">Failed to load forecast</td></tr>';
       return;
     }
-    buildForecastChart(sym, data.candles);
-    renderForecastRows(sym, data.forecasts || {});
-    summaries.push({ sym, forecasts: data.forecasts || {} });
+    renderForecastRows(sym, forecastData.forecasts || {});
+    summaries.push({ sym, forecasts: forecastData.forecasts || {} });
   }));
 
   const summaryEl = document.getElementById('forecast-summaries');
@@ -727,12 +1045,14 @@ async function reload(nocache = false) {
     const d = await r.json();
 
     renderOverview(d);
+    renderWorldEvents(d.world_events);
     renderNotes(d.notes);
     renderIndices(d.by_group || {});
     renderTables(d);
     renderStrong(d.strong_signals);
     renderMagnitude(d.top_magnitude);
     renderActivity(d.top_activity);
+    renderMLRanking(d.ml_ranking);
 
     document.getElementById('loading-overlay').style.display = 'none';
     document.getElementById('main-content').style.display   = 'block';
@@ -755,5 +1075,12 @@ window.addEventListener('load', () => {
 });
 </script>
 
+<script>
+window.ibkrOnConnect = function() {
+  if (typeof loadAllForecasts === 'function') loadAllForecasts();
+  if (typeof reload === 'function') reload();
+};
+</script>
+<script src="ibkr-widget.js"></script>
 </body>
 </html>

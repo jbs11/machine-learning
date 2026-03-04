@@ -1,0 +1,1014 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Option Flows — All Assets</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    /* ── Layout ── */
+    .of-wrap { max-width: 1600px; margin: 0 auto; padding: 0 1.5rem 6rem; }
+
+    /* ── Page nav ── */
+    .page-nav {
+      display: flex; align-items: center; gap: 1rem;
+      padding: .6rem 1.5rem; background: var(--surface);
+      border-bottom: 1px solid var(--border); font-size: .83rem; flex-wrap: wrap;
+    }
+    .page-nav a { color: var(--muted); text-decoration: none; padding: .3rem .7rem; border-radius: 5px; transition: color .15s, background .15s; }
+    .page-nav a:hover { color: var(--text); background: rgba(255,255,255,.06); }
+    .page-nav a.active { color: #38bdf8; font-weight: 700; }
+    .page-nav-sep { color: var(--border); }
+
+    /* ── Hero ── */
+    .of-hero {
+      padding: 3.5rem 1.5rem 2.5rem; text-align: center;
+      background: radial-gradient(ellipse 80% 55% at 50% -5%, rgba(56,189,248,.11) 0%, transparent 65%), var(--bg);
+      border-bottom: 1px solid var(--border);
+    }
+    .of-hero h1 {
+      font-size: clamp(1.8rem, 4vw, 3rem); font-weight: 900;
+      letter-spacing: -.03em; line-height: 1.15; margin-bottom: .8rem;
+      background: linear-gradient(135deg, #38bdf8 0%, #7dd3fc 40%, #fff 80%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    .of-hero p { color: var(--muted); font-size: 1.05rem; max-width: 760px; margin: 0 auto 1.5rem; line-height: 1.7; }
+    .of-badge {
+      display: inline-flex; align-items: center; gap: .5rem;
+      padding: .3rem 1rem; background: rgba(56,189,248,.1);
+      border: 1px solid rgba(56,189,248,.25); border-radius: 999px;
+      color: #38bdf8; font-size: .78rem; font-weight: 600;
+      letter-spacing: .08em; text-transform: uppercase; margin-bottom: 1rem;
+    }
+
+    /* ── Stats strip ── */
+    .stats-strip { display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr));
+      gap:1px; background:var(--border); border-top:1px solid var(--border); border-bottom:1px solid var(--border); }
+    .stat-cell { background:var(--surface); padding:1rem 1.2rem; text-align:center; }
+    .stat-val { font-size:1.4rem; font-weight:900; margin-bottom:.1rem; }
+    .stat-lbl { font-size:.7rem; font-weight:600; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); }
+
+    /* ── Server bar ── */
+    .server-bar { display:flex;align-items:center;gap:.75rem;background:var(--surface);
+      border:1px solid var(--border);border-radius:8px;padding:.55rem 1.1rem;
+      margin:1.2rem 0;font-size:.85rem; }
+    .sdot { width:9px;height:9px;border-radius:50%;background:#f87171;flex-shrink:0;transition:background .3s; }
+    .sdot.on { background:#4ade80; } .sdot.loading { background:#fbbf24;animation:pulse 1s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1}50%{opacity:.35} }
+    .smsg { color:var(--muted); flex:1; }
+    .rbtn { background:transparent;border:1px solid var(--border);color:var(--muted);
+      padding:.28rem .75rem;border-radius:6px;cursor:pointer;font-size:.8rem;transition:border-color .2s,color .2s; }
+    .rbtn:hover { border-color:#38bdf8;color:#38bdf8; }
+
+    /* ── Filter bar ── */
+    .filter-bar { display:flex;flex-wrap:wrap;align-items:center;gap:.6rem;margin:1.2rem 0; }
+    .filter-pill { padding:.3rem .85rem;border-radius:99px;border:1px solid var(--border);
+      background:transparent;color:var(--muted);font-size:.78rem;font-weight:700;cursor:pointer;transition:all .15s; }
+    .filter-pill.active { background:rgba(56,189,248,.12);border-color:#38bdf8;color:#38bdf8; }
+    .filter-pill.active-bull { background:rgba(34,197,94,.12);border-color:#22c55e;color:#22c55e; }
+    .filter-pill.active-bear { background:rgba(248,113,113,.12);border-color:#f87171;color:#f87171; }
+    .filter-pill.active-neut { background:rgba(251,191,36,.12);border-color:#fbbf24;color:#fbbf24; }
+    .filter-pill:hover:not(.active):not(.active-bull):not(.active-bear):not(.active-neut) { border-color:var(--muted);color:var(--text); }
+    .filter-sep { width:1px;height:20px;background:var(--border);flex-shrink:0; }
+
+    /* ── Group header ── */
+    .grp-hdr {
+      font-size:.72rem; font-weight:700; text-transform:uppercase; letter-spacing:.1em;
+      color:#38bdf8; padding:.6rem 0 .4rem;
+      border-bottom:1px solid rgba(56,189,248,.18); margin-bottom:.7rem; margin-top:1.4rem;
+      display:flex; align-items:center; gap:.75rem;
+    }
+    .grp-hdr:first-child { margin-top:.3rem; }
+    .grp-count { font-weight:400; color:var(--muted); font-size:.7rem; }
+
+    /* ── Cards grid ── */
+    .cards-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(520px,1fr)); gap:1.2rem; }
+    @media(max-width:600px) { .cards-grid { grid-template-columns:1fr; } }
+
+    /* ── Flow Card ── */
+    .flow-card { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; transition:border-color .2s,box-shadow .2s; }
+    .flow-card:hover { border-color:rgba(56,189,248,.35); box-shadow:0 4px 24px rgba(0,0,0,.25); }
+
+    /* Card header */
+    .fc-head { padding:.75rem 1rem .6rem; display:flex; align-items:flex-start; gap:.65rem; }
+    .fc-sym { font-family:'Consolas',monospace; font-size:1.05rem; font-weight:900; color:var(--text); }
+    .fc-label { font-size:.73rem; color:var(--muted); margin-top:.1rem; }
+    .fc-meta { margin-left:auto; text-align:right; }
+    .sentiment-badge { font-size:.72rem; font-weight:800; padding:.2rem .65rem; border-radius:6px; display:inline-block; }
+    .s-bull { background:rgba(34,197,94,.15);  color:#22c55e; border:1px solid rgba(34,197,94,.3); }
+    .s-bear { background:rgba(248,113,113,.15); color:#f87171; border:1px solid rgba(248,113,113,.3); }
+    .s-neut { background:rgba(251,191,36,.15);  color:#fbbf24; border:1px solid rgba(251,191,36,.3); }
+    .fc-spot { font-size:.75rem; color:var(--muted); margin-top:.25rem; }
+    .fc-spot span { font-weight:700; color:var(--text); }
+    .dte0-chip { display:inline-block;font-size:.62rem;font-weight:700;letter-spacing:.06em;
+      padding:.1rem .45rem;border-radius:4px;margin-top:.2rem;margin-left:.3rem; }
+    .has-0dte { background:rgba(56,189,248,.15);color:#38bdf8;border:1px solid rgba(56,189,248,.3); }
+    .no-0dte  { background:rgba(100,116,139,.1);color:#64748b;border:1px solid rgba(100,116,139,.2); }
+    .type-chip { display:inline-block;font-size:.62rem;font-weight:700;letter-spacing:.06em;
+      padding:.1rem .45rem;border-radius:4px;margin-top:.2rem; }
+    .t-stock   { background:rgba(34,211,238,.12);color:#22d3ee; }
+    .t-futures { background:rgba(251,191,36,.12);color:#fbbf24; }
+
+    /* Stats row */
+    .fc-stats { display:flex;flex-wrap:wrap;gap:0;border-top:1px solid var(--border);border-bottom:1px solid var(--border); }
+    .fc-stat { flex:1;min-width:80px;padding:.5rem .8rem;text-align:center;border-right:1px solid var(--border); }
+    .fc-stat:last-child { border-right:none; }
+    .fcs-val { font-size:.88rem;font-weight:800;font-family:'Consolas',monospace; }
+    .fcs-lbl { font-size:.62rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em; }
+
+    /* Canvas charts */
+    .fc-chart-wrap { background:#070d18; position:relative; }
+    canvas.fc-cv { display:block; width:100%; }
+    .chart-title { font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;
+      color:var(--muted);padding:.45rem 1rem .2rem; }
+
+    /* Expiry pills */
+    .fc-expiries { display:flex;flex-wrap:wrap;gap:.4rem;padding:.5rem 1rem;border-bottom:1px solid var(--border); }
+    .exp-pill { font-size:.65rem;font-weight:700;padding:.18rem .5rem;border-radius:4px;
+      background:rgba(56,189,248,.08);color:#38bdf8;border:1px solid rgba(56,189,248,.2); }
+    .exp-pill.dte0 { background:rgba(168,85,247,.12);color:#c084fc;border-color:rgba(168,85,247,.3); }
+
+    /* Unusual activity table */
+    .fc-unusual { padding:.5rem 1rem .7rem;border-top:1px solid var(--border); }
+    .fc-unusual-title { font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:.4rem; }
+    .u-table { width:100%;border-collapse:collapse;font-size:.73rem; }
+    .u-table th { color:var(--muted);font-weight:600;text-align:right;padding:.2rem .4rem;font-size:.65rem;text-transform:uppercase;border-bottom:1px solid var(--border); }
+    .u-table th:first-child { text-align:left; }
+    .u-table td { padding:.25rem .4rem;text-align:right;font-family:'Consolas',monospace; }
+    .u-table td:first-child { text-align:left; }
+    .u-table tr:hover td { background:rgba(255,255,255,.025); }
+    .u-call { color:#22c55e;font-weight:700; }
+    .u-put  { color:#f87171;font-weight:700; }
+    .u-ratio { color:#fbbf24;font-weight:700; }
+
+    /* Description */
+    .fc-desc { padding:.65rem 1rem .85rem; font-size:.82rem; color:var(--muted); line-height:1.7; border-top:1px solid var(--border); }
+
+    /* No-options card */
+    .fc-noopts { padding:1.5rem 1rem; text-align:center; color:var(--muted); font-size:.85rem; }
+
+    /* ── Chart legend ── */
+    .fc-legend { display:flex;gap:1rem;padding:.4rem 1rem;border-top:1px solid var(--border);flex-wrap:wrap; }
+    .fl-item { display:flex;align-items:center;gap:.35rem;font-size:.7rem;color:var(--muted); }
+    .fl-green  { width:10px;height:10px;background:rgba(34,197,94,.7);border-radius:2px;flex-shrink:0; }
+    .fl-red    { width:10px;height:10px;background:rgba(248,113,113,.7);border-radius:2px;flex-shrink:0; }
+    .fl-yellow { width:12px;height:2px;background:#fbbf24;flex-shrink:0; }
+    .fl-blue   { width:10px;height:10px;background:rgba(56,189,248,.6);border-radius:2px;flex-shrink:0; }
+    .fl-orange { width:10px;height:10px;background:rgba(251,146,60,.6);border-radius:2px;flex-shrink:0; }
+    .fl-purple { width:12px;height:2px;background:#a78bfa;flex-shrink:0;border-top:1px dashed #a78bfa; }
+
+    /* ── Institutional pressure ── */
+    .inst-pressure { padding:.55rem 1rem .75rem; border-top:1px solid var(--border); }
+    .ip-title { font-size:.68rem; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:#f59e0b; margin-bottom:.4rem; }
+    .ip-body  { font-size:.82rem; color:var(--muted); line-height:1.7; margin-bottom:.5rem; }
+    .ip-metrics { display:flex; flex-wrap:wrap; gap:.45rem; }
+    .ip-chip  { font-size:.7rem; font-weight:700; padding:.22rem .65rem; border-radius:6px; }
+    .ip-bull  { background:rgba(34,197,94,.12);   color:#22c55e; border:1px solid rgba(34,197,94,.25); }
+    .ip-bear  { background:rgba(248,113,113,.12); color:#f87171; border:1px solid rgba(248,113,113,.25); }
+    .ip-warn  { background:rgba(245,158,11,.12);  color:#f59e0b; border:1px solid rgba(245,158,11,.25); }
+    .ip-purple{ background:rgba(167,139,250,.12); color:#a78bfa; border:1px solid rgba(167,139,250,.25); }
+    .ip-neut  { background:rgba(148,163,184,.12); color:#94a3b8; border:1px solid rgba(148,163,184,.25); }
+
+    /* ── Explanation section ── */
+    .explain-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(270px,1fr)); gap:.9rem; margin:1.2rem 0; }
+    .ex-card { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:1rem 1.1rem; }
+    .ex-icon { font-size:1.3rem; margin-bottom:.4rem; }
+    .ex-title { font-weight:800; font-size:.88rem; color:var(--text); margin-bottom:.4rem; }
+    .ex-body  { font-size:.8rem; color:var(--muted); line-height:1.65; }
+
+    /* ── Empty state ── */
+    .empty-state { text-align:center; padding:4rem; color:var(--muted); grid-column:1/-1; }
+
+    @media(max-width:800px) { .of-hero h1{font-size:1.6rem;} }
+  </style>
+</head>
+<body>
+
+<!-- ── Main Nav ── -->
+<nav class="nav">
+  <a href="index.html" class="nav-logo">
+    <img src="images/steve.jpg" class="nav-logo-photo" alt="Stephen Borick">
+    <div class="nav-logo-text">
+      <span class="nav-company">Artificial Intelligence</span>
+      <span class="nav-name">Solutions, Inc.</span>
+    </div>
+  </a>
+  <ul class="nav-links">
+    <li><a href="index.html">Home</a></li>
+    <li><a href="neural-networks.html">Neural Networks</a></li>
+    <li><a href="machine-learning.html">Machine Learning</a></li>
+    <li><a href="ml-trading.html">ML in Trading</a></li>
+    <li><a href="ml-sp500-example.html">ML Example</a></li>
+    <li><a href="stock-trading.html">Stock Trading</a></li>
+    <li><a href="options-trading.html">Options</a></li>
+    <li><a href="futures-trading.html">Futures</a></li>
+    <li><a href="live-trading.html">Live Trading</a></li>
+  </ul>
+</nav>
+
+<!-- ── Page Nav ── -->
+<nav class="page-nav">
+  <a href="live-trading.html">← Live Trading</a>
+  <span class="page-nav-sep">|</span>
+  <a href="market-summary.html">Market Summary</a>
+  <span class="page-nav-sep">|</span>
+  <a href="terminology.html">Terminology 📖</a>
+  <span class="page-nav-sep">|</span>
+  <a href="ml-sp500-example.html">ML Example 🧠</a>
+  <span class="page-nav-sep">|</span>
+  <a href="ml-key-assets.html">ML Key Assets 📋</a>
+  <span class="page-nav-sep">|</span>
+  <a href="ml-xgboost-assets.html">XGBoost Charts 📊</a>
+  <span class="page-nav-sep">|</span>
+  <a href="gamma-exposure.html">GEX Charts 🎯</a>
+  <span class="page-nav-sep">|</span>
+  <a href="options-strategy.html">Options Strategy 📈</a>
+  <span class="page-nav-sep">|</span>
+  <a href="option-flows.html" class="active">Option Flows 🌊</a>
+  <span class="page-nav-sep">|</span>
+  <a href="options-summary.html">Options Summary 📊</a>
+  <span class="page-nav-sep">|</span>
+  <a href="0dte-options.html">0DTE 🔥</a>
+  <span class="page-nav-sep">|</span>
+  <a href="fundamentals.html">Fundamentals 📋</a>
+  <span class="page-nav-sep">|</span>
+  <a href="institutional-buyers.html">Institutional 🏦</a>
+</nav>
+
+<!-- ── Hero ── -->
+<section class="of-hero">
+  <div class="of-badge">🌊 Options · Real-Time Flow · 0DTE + Weekly</div>
+  <h1>Option Flows<br>All Assets</h1>
+  <p>
+    <strong style="color:var(--text);">Options order flow</strong> across every tracked stock, ETF, and index —
+    aggregated from <strong style="color:var(--text);">0DTE and 1–7 DTE expiries</strong>.
+    The <span style="color:#22c55e;font-weight:700;">green tornado bars</span> show call volume per strike;
+    <span style="color:#f87171;font-weight:700;">red bars</span> show put volume.
+    The <strong style="color:#fbbf24;">yellow line</strong> marks current spot.
+    Net premium (call $ − put $) reveals whether smart money is positioned bullish or bearish at each strike.
+  </p>
+</section>
+
+<!-- ── Stats Strip ── -->
+<div class="stats-strip" id="statsStrip">
+  <div class="stat-cell"><div class="stat-val" id="statTotal" style="color:#38bdf8;">—</div><div class="stat-lbl">Assets</div></div>
+  <div class="stat-cell"><div class="stat-val" id="statBull"  style="color:#22c55e;">—</div><div class="stat-lbl">Bullish Flow</div></div>
+  <div class="stat-cell"><div class="stat-val" id="statBear"  style="color:#f87171;">—</div><div class="stat-lbl">Bearish Flow</div></div>
+  <div class="stat-cell"><div class="stat-val" id="statNeut"  style="color:#fbbf24;">—</div><div class="stat-lbl">Neutral Flow</div></div>
+  <div class="stat-cell"><div class="stat-val" id="statCallM" style="color:#22c55e;">—</div><div class="stat-lbl">Total Call $M</div></div>
+  <div class="stat-cell"><div class="stat-val" id="statPutM"  style="color:#f87171;">—</div><div class="stat-lbl">Total Put $M</div></div>
+  <div class="stat-cell"><div class="stat-val" id="statTs"    style="color:#7fa3be;font-size:.85rem;">—</div><div class="stat-lbl">Last Updated</div></div>
+</div>
+
+<div class="of-wrap" style="padding-top:1.2rem;">
+
+  <!-- Server bar -->
+  <div class="server-bar">
+    <div class="sdot loading" id="sdot"></div>
+    <span class="smsg" id="smsg">Fetching options chains and aggregating flow data…</span>
+    <button class="rbtn" onclick="loadData(true)">↻ Refresh</button>
+    <a href="live-trading.html" class="rbtn" style="text-decoration:none;">📡 Live Trading</a>
+  </div>
+
+  <!-- Filter bar -->
+  <div class="filter-bar" id="filterBar">
+    <button class="filter-pill active" data-filter-group="all" onclick="setGroupFilter('all',this)">All Groups</button>
+    <button class="filter-pill" data-filter-group="ETFs" onclick="setGroupFilter('ETFs',this)">ETFs</button>
+    <button class="filter-pill" data-filter-group="Mag 7" onclick="setGroupFilter('Mag 7',this)">Mag 7</button>
+    <button class="filter-pill" data-filter-group="Blue Chips" onclick="setGroupFilter('Blue Chips',this)">Blue Chips</button>
+    <button class="filter-pill" data-filter-group="Futures" onclick="setGroupFilter('Futures',this)">Futures</button>
+    <div class="filter-sep"></div>
+    <button class="filter-pill active" data-filter-sent="all" onclick="setSentFilter('all',this)">All Flows</button>
+    <button class="filter-pill" data-filter-sent="BULLISH" onclick="setSentFilter('BULLISH',this)">🟢 Bullish</button>
+    <button class="filter-pill" data-filter-sent="BEARISH" onclick="setSentFilter('BEARISH',this)">🔴 Bearish</button>
+    <button class="filter-pill" data-filter-sent="NEUTRAL" onclick="setSentFilter('NEUTRAL',this)">🟡 Neutral</button>
+  </div>
+
+  <!-- Cards container -->
+  <div id="cardsContainer"></div>
+
+  <!-- ── Explanation section ── -->
+  <div style="margin-top:3rem;">
+    <div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#38bdf8;margin-bottom:.8rem;">
+      📘 Options Flow Concepts
+    </div>
+    <div class="explain-grid">
+      <div class="ex-card">
+        <div class="ex-icon">🌊</div>
+        <div class="ex-title">What is Options Flow?</div>
+        <div class="ex-body">Options flow tracks the volume and premium dollars traded in the options market per strike and expiry. Large institutional orders — often called "smart money" — leave footprints in the flow data. Calls-heavy flow typically signals bullish positioning; puts-heavy flow signals hedging or bearish conviction.</div>
+      </div>
+      <div class="ex-card">
+        <div class="ex-icon">🌀</div>
+        <div class="ex-title">Tornado Chart</div>
+        <div class="ex-body">The tornado chart displays per-strike options volume: <strong style="color:#22c55e;">calls extend right (green)</strong> and <strong style="color:#f87171;">puts extend left (red)</strong>. Each horizontal bar represents a strike price. Wide green bars at strikes above spot suggest call buying; wide red bars below spot suggest put accumulation. The <strong style="color:#fbbf24;">yellow line</strong> marks current spot price.</div>
+      </div>
+      <div class="ex-card">
+        <div class="ex-icon">⚡</div>
+        <div class="ex-title">0DTE (Zero Days to Expiry)</div>
+        <div class="ex-body">0DTE options expire the same day they are traded. These ultra-short-dated contracts are dominated by retail day traders and institutional gamma scalpers. High 0DTE call volume at a strike above spot signals intraday bullish momentum bets. Heavy 0DTE put volume near current spot suggests hedging or downside speculation for the same session.</div>
+      </div>
+      <div class="ex-card">
+        <div class="ex-icon">🚨</div>
+        <div class="ex-title">Unusual Activity</div>
+        <div class="ex-body">An options trade is flagged unusual when volume exceeds 3× open interest AND volume > 500 contracts. This pattern indicates fresh positioning — the contracts weren't already open — which is the hallmark of a new institutional directional bet. The vol/OI ratio (shown as "×OI") measures how much stronger today's flow is versus existing positions.</div>
+      </div>
+      <div class="ex-card">
+        <div class="ex-icon">📊</div>
+        <div class="ex-title">Put/Call Ratio</div>
+        <div class="ex-body">The Put/Call (P/C) ratio compares put volume or premium to calls. P/C vol &lt; 0.8 = bullish skew; P/C vol &gt; 1.2 = bearish skew. The premium-based P/C is more reliable: heavy put premium can indicate institutional downside hedging even when put volume is lower than calls, because large puts are more expensive per contract.</div>
+      </div>
+      <div class="ex-card">
+        <div class="ex-icon">💵</div>
+        <div class="ex-title">Net Premium (Call$ − Put$)</div>
+        <div class="ex-body">Net premium per strike = total call dollar premium − total put dollar premium at that strike. <strong style="color:#22c55e;">Positive (green)</strong> means more call money flowed into that strike — bullish. <strong style="color:#f87171;">Negative (red)</strong> means more put premium — bearish. Clusters of positive net premium above spot are the strongest bullish signals; negative clusters below spot signal strong hedging demand.</div>
+      </div>
+      <div class="ex-card">
+        <div class="ex-icon">🔄</div>
+        <div class="ex-title">Delta Hedging Mechanics</div>
+        <div class="ex-body">When a market maker sells an option, they take on directional risk (delta). To remain market-neutral, they immediately buy or sell the underlying stock proportional to the option's delta. <strong style="color:#22c55e;">Selling calls → dealers buy stock</strong> (bullish pressure). <strong style="color:#f87171;">Selling puts → dealers sell stock</strong> (bearish pressure). The <em>Dealer Delta Hedge Pressure</em> chart shows the estimated dollar value of stock dealers must transact at each strike, based on Black-Scholes delta weighted by traded volume.</div>
+      </div>
+      <div class="ex-card">
+        <div class="ex-icon">🚀</div>
+        <div class="ex-title">Gamma Squeeze</div>
+        <div class="ex-body">Gamma is the rate of change of delta. When price moves toward a strike with heavy call open interest, the delta of those calls increases — forcing dealers to buy <em>more</em> stock to maintain their hedge. This accelerating buy demand creates a self-reinforcing rally: higher price → higher delta → more dealer buying → even higher price. The most violent squeezes occur when dealers are short large amounts of near-expiry calls with the spot price approaching the strike. <strong style="color:#f59e0b;">🔺 Squeeze badges</strong> identify assets at risk.</div>
+      </div>
+      <div class="ex-card">
+        <div class="ex-icon">📍</div>
+        <div class="ex-title">Max Pain &amp; Pin Risk</div>
+        <div class="ex-body">Max pain is the strike price at which the total dollar value of expiring options (calls + puts) reaches its minimum — i.e., where option buyers collectively lose the most. Since dealers and market makers are net short options, price gravitating to max pain maximizes their profit. <strong style="color:#a78bfa;">The purple line</strong> on the dealer delta chart marks this level. <em>Pin risk</em> describes the tendency for price to be "pinned" at high-OI strikes near expiry as dealers repeatedly hedge and de-hedge, dampening volatility near expiry.</div>
+      </div>
+      <div class="ex-card">
+        <div class="ex-icon">🏦</div>
+        <div class="ex-title">Institutional Pressure &amp; Direction</div>
+        <div class="ex-body">Institutional options orders are rarely about pure speculation — they reflect portfolio hedging, structured product creation, and risk management. Large call sweeps above spot from institutional desks create systematic dealer buy pressure. Large put blocks suggest institutions are hedging long equity exposure, creating sell pressure. The combination of flow sentiment, net dealer delta, unusual activity ratios, and premium skew gives the most reliable read on institutional directional conviction and expected price movement magnitude.</div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /of-wrap -->
+
+<script src="ibkr-widget.js"></script>
+<script>
+'use strict';
+
+const API = 'http://localhost:5050';
+let allData = [];
+let groupFilter = 'all';
+let sentFilter  = 'all';
+
+/* ── Filter logic ── */
+function setGroupFilter(val, btn) {
+  groupFilter = val;
+  document.querySelectorAll('[data-filter-group]').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderCards();
+}
+function setSentFilter(val, btn) {
+  sentFilter = val;
+  document.querySelectorAll('[data-filter-sent]').forEach(b => {
+    b.classList.remove('active','active-bull','active-bear','active-neut');
+  });
+  if (val === 'BULLISH') btn.classList.add('active-bull');
+  else if (val === 'BEARISH') btn.classList.add('active-bear');
+  else if (val === 'NEUTRAL') btn.classList.add('active-neut');
+  else btn.classList.add('active');
+  renderCards();
+}
+
+/* ── Fetch ── */
+async function loadData(nocache = false) {
+  const dot = document.getElementById('sdot');
+  const msg = document.getElementById('smsg');
+  dot.className = 'sdot loading';
+  msg.textContent = 'Fetching options chains and aggregating flow data…';
+
+  try {
+    const url = `${API}/api/option-flows${nocache ? '?nocache=1' : ''}`;
+    const res = await fetch(url, { signal: AbortSignal.timeout(120000) });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const json = await res.json();
+    allData = json.assets || [];
+
+    dot.className = 'sdot on';
+    const ts = json.timestamp ? new Date(json.timestamp).toLocaleTimeString() : '—';
+    msg.textContent = `Loaded ${json.count} assets  ·  ${ts}`;
+
+    updateStats(allData, json.timestamp);
+    renderCards();
+  } catch (e) {
+    dot.className = 'sdot';
+    msg.textContent = `Error: ${e.message}`;
+  }
+}
+
+/* ── Stats strip ── */
+function updateStats(rows, ts) {
+  const withOpts  = rows.filter(r => !r.no_options);
+  const bull = withOpts.filter(r => r.flow_sentiment === 'BULLISH').length;
+  const bear = withOpts.filter(r => r.flow_sentiment === 'BEARISH').length;
+  const neut = withOpts.filter(r => r.flow_sentiment === 'NEUTRAL').length;
+  const callM = withOpts.reduce((s, r) => s + (r.total_call_prem_m || 0), 0);
+  const putM  = withOpts.reduce((s, r) => s + (r.total_put_prem_m  || 0), 0);
+
+  document.getElementById('statTotal').textContent = rows.length;
+  document.getElementById('statBull').textContent  = bull;
+  document.getElementById('statBear').textContent  = bear;
+  document.getElementById('statNeut').textContent  = neut;
+  document.getElementById('statCallM').textContent = '$' + callM.toFixed(1) + 'M';
+  document.getElementById('statPutM').textContent  = '$' + putM.toFixed(1) + 'M';
+  document.getElementById('statTs').textContent    = ts ? new Date(ts).toLocaleTimeString() : '—';
+}
+
+/* ── Render cards ── */
+function renderCards() {
+  const container = document.getElementById('cardsContainer');
+  const filtered = allData.filter(r => {
+    if (groupFilter !== 'all' && r.group !== groupFilter) return false;
+    if (sentFilter !== 'all') {
+      if (r.no_options) return false;
+      if (r.flow_sentiment !== sentFilter) return false;
+    }
+    return true;
+  });
+
+  if (!filtered.length) {
+    container.innerHTML = '<div class="cards-grid"><div class="empty-state">No assets match the selected filters.</div></div>';
+    return;
+  }
+
+  const groups = [];
+  const seen = {};
+  filtered.forEach(r => {
+    if (!seen[r.group]) { seen[r.group] = []; groups.push({ name: r.group, rows: seen[r.group] }); }
+    seen[r.group].push(r);
+  });
+
+  container.innerHTML = groups.map(g => `
+    <div class="grp-hdr">${g.name} <span class="grp-count">${g.rows.length} asset${g.rows.length !== 1 ? 's' : ''}</span></div>
+    <div class="cards-grid">${g.rows.map(r => buildCard(r)).join('')}</div>
+  `).join('');
+
+  // Draw all canvases after DOM update
+  requestAnimationFrame(() => {
+    filtered.forEach(r => {
+      if (!r.no_options && r.strikes && r.strikes.length) {
+        drawTornado(r);
+        drawNetPrem(r);
+        drawDealerDelta(r);
+      }
+    });
+  });
+}
+
+/* ── Build card HTML ── */
+function buildCard(r) {
+  if (r.no_options) return buildNoOptsCard(r);
+
+  const sent = r.flow_sentiment || 'NEUTRAL';
+  const sentClass = sent === 'BULLISH' ? 's-bull' : sent === 'BEARISH' ? 's-bear' : 's-neut';
+  const sentLabel = sent === 'BULLISH' ? '🟢 Bullish Flow' : sent === 'BEARISH' ? '🔴 Bearish Flow' : '🟡 Neutral Flow';
+  const typeClass = r.asset_type === 'futures' ? 't-futures' : 't-stock';
+  const typeLabel = r.asset_type === 'futures' ? 'FUTURES' : 'STOCK';
+  const dte0Class = r.has_0dte ? 'has-0dte' : 'no-0dte';
+  const dte0Label = r.has_0dte ? '0DTE' : 'No 0DTE';
+
+  const callM  = (r.total_call_prem_m || 0).toFixed(2);
+  const putM   = (r.total_put_prem_m  || 0).toFixed(2);
+  const pcrV   = (r.pcr_vol  || 0).toFixed(2);
+  const pcrP   = (r.pcr_prem || 0).toFixed(2);
+  const dte0C  = (r.dte0_call_vol || 0).toLocaleString();
+  const dte0P  = (r.dte0_put_vol  || 0).toLocaleString();
+  const spot   = fmtSpot(r.spot);
+
+  // Delta hedge stats
+  const ndm      = r.net_dealer_delta_m || 0;
+  const ndmFmt   = (ndm >= 0 ? '+' : '−') + fmtMillions(ndm);
+  const ndmColor = ndm >= 0 ? '#22c55e' : '#f87171';
+  const maxPain  = r.max_pain_strike > 0 ? fmtSpot(r.max_pain_strike) : '—';
+  const pinRisk  = r.pin_risk_strike > 0 ? fmtSpot(r.pin_risk_strike) : '—';
+
+  // Squeeze / crash badges
+  const squeezeBadge = r.squeeze_potential
+    ? `<span class="dte0-chip" style="background:rgba(245,158,11,.15);color:#f59e0b;border:1px solid rgba(245,158,11,.35);">🔺 Squeeze</span>` : '';
+  const crashBadge = r.crash_potential
+    ? `<span class="dte0-chip" style="background:rgba(248,113,113,.15);color:#f87171;border:1px solid rgba(248,113,113,.35);">🔻 Cascade</span>` : '';
+
+  const expiries = (r.flow_expiries || []).map(([e, d]) =>
+    `<span class="exp-pill${d === 0 ? ' dte0' : ''}">${e} (${d === 0 ? '0DTE' : d + 'd'})</span>`
+  ).join('');
+
+  const unusualHtml = buildUnusualTable(r.unusual || []);
+  const instHtml    = buildInstPressure(r);
+
+  return `
+  <div class="flow-card" data-sym="${r.symbol}">
+    <div class="fc-head">
+      <div>
+        <div class="fc-sym">${r.symbol}</div>
+        <div class="fc-label">${r.label}</div>
+        <div style="margin-top:.3rem;display:flex;gap:.3rem;flex-wrap:wrap;align-items:center;">
+          <span class="type-chip ${typeClass}">${typeLabel}</span>
+          <span class="dte0-chip ${dte0Class}">${dte0Label}</span>
+          ${squeezeBadge}${crashBadge}
+        </div>
+      </div>
+      <div class="fc-meta">
+        <div class="sentiment-badge ${sentClass}">${sentLabel}</div>
+        <div class="fc-spot">Spot: <span>${spot}</span></div>
+        <div class="fc-spot" style="margin-top:.15rem;">Max Pain: <span style="color:#a78bfa;">${maxPain}</span></div>
+      </div>
+    </div>
+
+    <!-- Expiry pills -->
+    <div class="fc-expiries">${expiries || '<span style="color:var(--muted);font-size:.72rem;">No near-term expiries</span>'}</div>
+
+    <!-- Stats row -->
+    <div class="fc-stats">
+      <div class="fc-stat">
+        <div class="fcs-val" style="color:#22c55e;">$${callM}M</div>
+        <div class="fcs-lbl">Call Prem</div>
+      </div>
+      <div class="fc-stat">
+        <div class="fcs-val" style="color:#f87171;">$${putM}M</div>
+        <div class="fcs-lbl">Put Prem</div>
+      </div>
+      <div class="fc-stat">
+        <div class="fcs-val" style="color:#a78bfa;">${pcrV}</div>
+        <div class="fcs-lbl">P/C Vol</div>
+      </div>
+      <div class="fc-stat">
+        <div class="fcs-val" style="color:#a78bfa;">${pcrP}</div>
+        <div class="fcs-lbl">P/C Prem</div>
+      </div>
+      <div class="fc-stat">
+        <div class="fcs-val" style="color:${ndmColor};">${ndmFmt}</div>
+        <div class="fcs-lbl">Dealer Δ</div>
+      </div>
+      <div class="fc-stat">
+        <div class="fcs-val" style="color:#a78bfa;">${maxPain}</div>
+        <div class="fcs-lbl">Max Pain</div>
+      </div>
+      <div class="fc-stat">
+        <div class="fcs-val" style="color:#22c55e;">${dte0C}</div>
+        <div class="fcs-lbl">0DTE Calls</div>
+      </div>
+      <div class="fc-stat">
+        <div class="fcs-val" style="color:#f87171;">${dte0P}</div>
+        <div class="fcs-lbl">0DTE Puts</div>
+      </div>
+    </div>
+
+    <!-- Tornado chart -->
+    <div class="chart-title">Volume per Strike — Tornado</div>
+    <div class="fc-chart-wrap">
+      <canvas class="fc-cv" id="tornado-${r.symbol}" height="280"></canvas>
+    </div>
+    <div class="fc-legend">
+      <div class="fl-item"><div class="fl-green"></div>Call Volume</div>
+      <div class="fl-item"><div class="fl-red"></div>Put Volume</div>
+      <div class="fl-item"><div class="fl-yellow"></div>Spot Price</div>
+    </div>
+
+    <!-- Net premium chart -->
+    <div class="chart-title" style="border-top:1px solid var(--border);">Net Premium per Strike (Call$ − Put$, $K)</div>
+    <div class="fc-chart-wrap">
+      <canvas class="fc-cv" id="netprem-${r.symbol}" height="120"></canvas>
+    </div>
+    <div class="fc-legend">
+      <div class="fl-item"><div class="fl-blue"></div>Net Positive (Calls Win)</div>
+      <div class="fl-item"><div class="fl-orange"></div>Net Negative (Puts Win)</div>
+    </div>
+
+    <!-- Dealer delta hedge pressure chart -->
+    <div class="chart-title" style="border-top:1px solid var(--border);">Dealer Delta Hedge Pressure per Strike ($K stock to buy/sell)</div>
+    <div class="fc-chart-wrap">
+      <canvas class="fc-cv" id="ddhp-${r.symbol}" height="120"></canvas>
+    </div>
+    <div class="fc-legend" style="border-bottom:1px solid var(--border);">
+      <div class="fl-item"><div class="fl-green"></div>Buy Pressure (bullish)</div>
+      <div class="fl-item"><div class="fl-red"></div>Sell Pressure (bearish)</div>
+      <div class="fl-item"><div class="fl-yellow"></div>Spot</div>
+      <div class="fl-item"><div class="fl-purple"></div>Max Pain</div>
+    </div>
+
+    ${instHtml}
+
+    ${unusualHtml}
+
+    <div class="fc-desc">${r.description || ''}</div>
+  </div>`;
+}
+
+function buildNoOptsCard(r) {
+  const typeClass = r.asset_type === 'futures' ? 't-futures' : 't-stock';
+  const typeLabel = r.asset_type === 'futures' ? 'FUTURES' : 'STOCK';
+  return `
+  <div class="flow-card" data-sym="${r.symbol}">
+    <div class="fc-head">
+      <div>
+        <div class="fc-sym">${r.symbol}</div>
+        <div class="fc-label">${r.label}</div>
+        <span class="type-chip ${typeClass}" style="margin-top:.3rem;display:inline-block;">${typeLabel}</span>
+      </div>
+      <div class="fc-meta">
+        <div class="fc-spot">Spot: <span>${fmtSpot(r.spot)}</span></div>
+      </div>
+    </div>
+    <div class="fc-noopts">⚡ No near-term options data available for this asset.</div>
+  </div>`;
+}
+
+function buildUnusualTable(unusual) {
+  if (!unusual || !unusual.length) return '';
+  const rows = unusual.map(u => {
+    const typeClass = u.type === 'CALL' ? 'u-call' : 'u-put';
+    return `<tr>
+      <td><span class="${typeClass}">${u.type}</span> @$${u.strike}</td>
+      <td>${u.vol.toLocaleString()}</td>
+      <td>${u.oi.toLocaleString()}</td>
+      <td class="u-ratio">${u.ratio}×</td>
+      <td>$${u.premium_k}K</td>
+      <td>${u.expiry}</td>
+      <td>${u.dte === 0 ? '<span style="color:#c084fc;font-weight:700;">0DTE</span>' : u.dte + 'd'}</td>
+    </tr>`;
+  }).join('');
+  return `
+  <div class="fc-unusual">
+    <div class="fc-unusual-title">🚨 Unusual Activity</div>
+    <table class="u-table">
+      <thead><tr><th>Strike/Type</th><th>Vol</th><th>OI</th><th>Ratio</th><th>Prem</th><th>Expiry</th><th>DTE</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+  </div>`;
+}
+
+/* ── Format spot ── */
+function fmtSpot(v) {
+  if (!v) return '—';
+  if (v > 10000) return '$' + v.toLocaleString('en-US', { maximumFractionDigits: 0 });
+  if (v > 100) return '$' + v.toFixed(2);
+  return '$' + v.toFixed(4);
+}
+
+/* ── Format $M value with B/M suffix ── */
+function fmtMillions(m) {
+  const a = Math.abs(m);
+  if (a >= 1000) return '$' + (a / 1000).toFixed(1) + 'B';
+  if (a >= 1)    return '$' + a.toFixed(1) + 'M';
+  return '$' + (a * 1000).toFixed(0) + 'K';
+}
+
+/* ── Tornado chart (horizontal bar) ── */
+function drawTornado(r) {
+  const cv = document.getElementById('tornado-' + r.symbol);
+  if (!cv) return;
+  const dpr = window.devicePixelRatio || 1;
+  const W = cv.offsetWidth || cv.parentElement.clientWidth || 520;
+  const H = 280;
+  cv.width  = W * dpr;
+  cv.height = H * dpr;
+  cv.style.width  = W + 'px';
+  cv.style.height = H + 'px';
+  const ctx = cv.getContext('2d');
+  ctx.scale(dpr, dpr);
+
+  const strikes   = r.strikes;
+  const callVol   = r.call_vol;
+  const putVol    = r.put_vol;
+  const spot      = r.spot;
+  const n = strikes.length;
+  if (!n) return;
+
+  const PAD_L = 52, PAD_R = 12, PAD_T = 12, PAD_B = 12;
+  const chartW = W - PAD_L - PAD_R;
+  const chartH = H - PAD_T - PAD_B;
+  const rowH   = chartH / n;
+
+  // Max volume for symmetric x-scale
+  const maxVol = Math.max(1, ...callVol, ...putVol);
+
+  // Background
+  ctx.fillStyle = '#070d18';
+  ctx.fillRect(0, 0, W, H);
+
+  // Center line (x=0)
+  const cx = PAD_L + chartW / 2;
+
+  // Grid lines
+  ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+  ctx.lineWidth = 1;
+  [0.25, 0.5, 0.75, 1].forEach(f => {
+    const x1 = PAD_L + (chartW / 2) * (1 - f);
+    const x2 = PAD_L + (chartW / 2) * (1 + f);
+    ctx.beginPath(); ctx.moveTo(x1, PAD_T); ctx.lineTo(x1, H - PAD_B); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x2, PAD_T); ctx.lineTo(x2, H - PAD_B); ctx.stroke();
+  });
+
+  // Bars — strikes sorted low→high in array, display high→low on screen
+  for (let i = 0; i < n; i++) {
+    const displayRow = n - 1 - i; // flip: highest strike at top
+    const y = PAD_T + displayRow * rowH;
+    const bh = Math.max(1, rowH - 2);
+
+    const cw = (callVol[i] / maxVol) * (chartW / 2);
+    const pw = (putVol[i]  / maxVol) * (chartW / 2);
+
+    // Call bar (right)
+    ctx.fillStyle = 'rgba(34,197,94,0.65)';
+    ctx.fillRect(cx, y + 1, cw, bh);
+
+    // Put bar (left)
+    ctx.fillStyle = 'rgba(248,113,113,0.65)';
+    ctx.fillRect(cx - pw, y + 1, pw, bh);
+
+    // Strike label
+    ctx.fillStyle = 'rgba(148,163,184,0.8)';
+    ctx.font = `${Math.min(10, rowH - 2)}px Consolas, monospace`;
+    ctx.textAlign = 'right';
+    const lbl = strikes[i] > 100 ? '$' + strikes[i].toFixed(0) : '$' + strikes[i].toFixed(2);
+    ctx.fillText(lbl, PAD_L - 3, y + rowH * 0.65);
+  }
+
+  // Spot price horizontal line
+  if (spot > 0 && spot >= strikes[0] && spot <= strikes[n - 1]) {
+    const spotFrac = (spot - strikes[0]) / (strikes[n - 1] - strikes[0]);
+    // spot at the bottom of chart = index 0 (low strikes), top = index n-1 (high strikes)
+    // display is flipped: row 0 is highest strike at top, row n-1 is lowest at bottom
+    const sy = PAD_T + (1 - spotFrac) * chartH;
+    ctx.strokeStyle = '#fbbf24';
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([5, 4]);
+    ctx.beginPath();
+    ctx.moveTo(PAD_L, sy);
+    ctx.lineTo(W - PAD_R, sy);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    // Label
+    ctx.fillStyle = '#fbbf24';
+    ctx.font = 'bold 9px Consolas, monospace';
+    ctx.textAlign = 'left';
+    ctx.fillText('SPOT', W - PAD_R - 30, sy - 3);
+  }
+
+  // Center axis line
+  ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([]);
+  ctx.beginPath();
+  ctx.moveTo(cx, PAD_T);
+  ctx.lineTo(cx, H - PAD_B);
+  ctx.stroke();
+
+  // Axis labels
+  ctx.fillStyle = 'rgba(148,163,184,0.5)';
+  ctx.font = '9px Consolas, monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('← PUTS', PAD_L + chartW / 4, H - 2);
+  ctx.fillText('CALLS →', PAD_L + chartW * 3 / 4, H - 2);
+}
+
+/* ── Net premium chart (vertical bar) ── */
+function drawNetPrem(r) {
+  const cv = document.getElementById('netprem-' + r.symbol);
+  if (!cv) return;
+  const dpr = window.devicePixelRatio || 1;
+  const W = cv.offsetWidth || cv.parentElement.clientWidth || 520;
+  const H = 120;
+  cv.width  = W * dpr;
+  cv.height = H * dpr;
+  cv.style.width  = W + 'px';
+  cv.style.height = H + 'px';
+  const ctx = cv.getContext('2d');
+  ctx.scale(dpr, dpr);
+
+  const strikes  = r.strikes;
+  const netPrem  = r.net_prem_k;
+  const spot     = r.spot;
+  const n = strikes.length;
+  if (!n) return;
+
+  const PAD_L = 52, PAD_R = 12, PAD_T = 8, PAD_B = 16;
+  const chartW = W - PAD_L - PAD_R;
+  const chartH = H - PAD_T - PAD_B;
+
+  const maxAbs = Math.max(1, ...netPrem.map(Math.abs));
+  const barW   = Math.max(1, (chartW / n) - 1);
+  const cy     = PAD_T + chartH / 2; // zero line
+
+  // Background
+  ctx.fillStyle = '#070d18';
+  ctx.fillRect(0, 0, W, H);
+
+  // Zero line
+  ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([3, 3]);
+  ctx.beginPath(); ctx.moveTo(PAD_L, cy); ctx.lineTo(W - PAD_R, cy); ctx.stroke();
+  ctx.setLineDash([]);
+
+  for (let i = 0; i < n; i++) {
+    const v  = netPrem[i];
+    const x  = PAD_L + i * (chartW / n) + 0.5;
+    const bh = Math.abs(v) / maxAbs * (chartH / 2);
+
+    ctx.fillStyle = v >= 0 ? 'rgba(56,189,248,0.65)' : 'rgba(251,146,60,0.65)';
+    if (v >= 0) {
+      ctx.fillRect(x, cy - bh, barW, bh);
+    } else {
+      ctx.fillRect(x, cy, barW, bh);
+    }
+  }
+
+  // Spot vertical line
+  if (spot > 0 && n > 1) {
+    const spotFrac = (spot - strikes[0]) / (strikes[n - 1] - strikes[0]);
+    const sx = PAD_L + spotFrac * chartW;
+    ctx.strokeStyle = '#fbbf24';
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([4, 3]);
+    ctx.beginPath(); ctx.moveTo(sx, PAD_T); ctx.lineTo(sx, H - PAD_B); ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  // Y-axis labels
+  ctx.fillStyle = 'rgba(148,163,184,0.5)';
+  ctx.font = '9px Consolas, monospace';
+  ctx.textAlign = 'right';
+  ctx.fillText('+$' + maxAbs.toFixed(0) + 'K', PAD_L - 3, PAD_T + 9);
+  ctx.fillText('$0', PAD_L - 3, cy + 4);
+  ctx.fillText('-$' + maxAbs.toFixed(0) + 'K', PAD_L - 3, H - PAD_B);
+
+  // X-axis: first & last strike
+  ctx.textAlign = 'left';
+  ctx.fillText('$' + strikes[0].toFixed(0), PAD_L, H - 1);
+  ctx.textAlign = 'right';
+  ctx.fillText('$' + strikes[n - 1].toFixed(0), W - PAD_R, H - 1);
+}
+
+/* ── Institutional Pressure narrative ── */
+function buildInstPressure(r) {
+  const ndm = r.net_dealer_delta_m || 0;
+  const absNdm = Math.abs(ndm);
+  const mp  = r.max_pain_strike || 0;
+  const spot = r.spot || 0;
+
+  // Direction narrative
+  let dirNarr = '';
+  const dirWord   = ndm >= 0 ? 'BUY' : 'SELL';
+  const pressWord = ndm >= 0 ? 'upward' : 'downward';
+  const ndmFmtIP  = fmtMillions(absNdm);
+  if (absNdm < 0.5) {
+    dirNarr = `Delta hedging pressure is minimal (${ndmFmtIP} net), suggesting balanced positioning with little directional force from options market makers.`;
+  } else if (absNdm < 50) {
+    dirNarr = `Market makers must ${dirWord} approximately <strong style="color:${ndm>=0?'#22c55e':'#f87171'};">${ndmFmtIP}</strong> in stock to remain delta-neutral — creating moderate ${pressWord} price pressure.`;
+  } else {
+    dirNarr = `Strong institutional flow: dealers must ${dirWord} approximately <strong style="color:${ndm>=0?'#22c55e':'#f87171'};">${ndmFmtIP}</strong> in stock to hedge across active strikes — a significant ${pressWord} force on spot prices driven by options positioning.`;
+  }
+
+  // Max pain narrative
+  let mpNarr = '';
+  if (mp > 0 && spot > 0) {
+    const dist = ((mp - spot) / spot * 100);
+    const distAbs = Math.abs(dist).toFixed(1);
+    const distDir = dist > 0 ? 'above' : 'below';
+    if (Math.abs(dist) < 0.5) {
+      mpNarr = `Max pain ($${mp.toFixed(0)}) is nearly at current spot — price is already at the "gravity well" where options market makers face minimal expiry losses.`;
+    } else {
+      mpNarr = `Max pain at <strong style="color:#a78bfa;">$${mp.toFixed(0)}</strong> (${distAbs}% ${distDir} spot) — the strike where options sellers face minimum losses. As expiry approaches, natural hedging tends to push price toward this level.`;
+    }
+  }
+
+  // Squeeze/cascade
+  let sqNarr = '';
+  if (r.squeeze_potential && r.squeeze_strike) {
+    sqNarr = `<strong style="color:#f59e0b;">Gamma squeeze risk:</strong> Heavy call OI at <strong>$${r.squeeze_strike.toFixed(0)}</strong> means dealers are short significant gamma above spot. If price approaches this level, dealers must accelerate stock purchases — potentially triggering a self-reinforcing rally as delta-hedging demand intensifies with each tick higher.`;
+  }
+  if (r.crash_potential && r.crash_strike) {
+    const castxt = `<strong style="color:#f87171;">Put cascade risk:</strong> Large put OI at <strong>$${r.crash_strike.toFixed(0)}</strong> means dealers are short significant negative gamma below spot. If price breaks through this level, forced short-delta hedging (selling stock) accelerates — creating a potential self-reinforcing selloff.`;
+    sqNarr = sqNarr ? sqNarr + ' ' + castxt : castxt;
+  }
+
+  // Pin risk
+  const pinStr = r.pin_risk_strike > 0 ? `<strong style="color:#38bdf8;">$${r.pin_risk_strike.toFixed(0)}</strong>` : '—';
+
+  // Build chips
+  const dirChip = ndm >= 0
+    ? `<span class="ip-chip ip-bull">▲ ${fmtMillions(Math.abs(ndm))} Dealer Buy</span>`
+    : `<span class="ip-chip ip-bear">▼ ${fmtMillions(Math.abs(ndm))} Dealer Sell</span>`;
+  const mpChip  = mp > 0 ? `<span class="ip-chip ip-purple">📍 Max Pain $${mp.toFixed(0)}</span>` : '';
+  const pinChip = r.pin_risk_strike > 0 ? `<span class="ip-chip ip-neut">📌 Pin Risk $${r.pin_risk_strike.toFixed(0)}</span>` : '';
+  const sqChip  = r.squeeze_potential ? `<span class="ip-chip ip-warn">🔺 Squeeze $${(r.squeeze_strike||0).toFixed(0)}</span>` : '';
+  const crChip  = r.crash_potential  ? `<span class="ip-chip ip-bear">🔻 Cascade $${(r.crash_strike||0).toFixed(0)}</span>` : '';
+
+  const bodyParts = [dirNarr, mpNarr, sqNarr].filter(Boolean);
+
+  return `
+  <div class="inst-pressure">
+    <div class="ip-title">⚡ Institutional Pressure Analysis</div>
+    <div class="ip-body">${bodyParts.join(' ')}</div>
+    <div class="ip-metrics">${dirChip}${mpChip}${pinChip}${sqChip}${crChip}</div>
+  </div>`;
+}
+
+/* ── Dealer Delta Hedge Pressure chart ── */
+function drawDealerDelta(r) {
+  const cv = document.getElementById('ddhp-' + r.symbol);
+  if (!cv) return;
+  const dealerDelta = r.dealer_delta_k;
+  if (!dealerDelta || !dealerDelta.length) return;
+
+  const dpr = window.devicePixelRatio || 1;
+  const W = cv.offsetWidth || cv.parentElement.clientWidth || 520;
+  const H = 120;
+  cv.width  = W * dpr;
+  cv.height = H * dpr;
+  cv.style.width  = W + 'px';
+  cv.style.height = H + 'px';
+  const ctx = cv.getContext('2d');
+  ctx.scale(dpr, dpr);
+
+  const strikes = r.strikes;
+  const spot    = r.spot;
+  const maxPain = r.max_pain_strike || 0;
+  const n = strikes.length;
+
+  const PAD_L = 52, PAD_R = 12, PAD_T = 8, PAD_B = 16;
+  const chartW = W - PAD_L - PAD_R;
+  const chartH = H - PAD_T - PAD_B;
+
+  const maxAbs = Math.max(1, ...dealerDelta.map(Math.abs));
+  const barW   = Math.max(1, (chartW / n) - 1);
+  const cy     = PAD_T + chartH / 2;
+
+  // Background
+  ctx.fillStyle = '#070d18';
+  ctx.fillRect(0, 0, W, H);
+
+  // Zero line
+  ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([3, 3]);
+  ctx.beginPath(); ctx.moveTo(PAD_L, cy); ctx.lineTo(W - PAD_R, cy); ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Bars
+  for (let i = 0; i < n; i++) {
+    const v  = dealerDelta[i];
+    const x  = PAD_L + i * (chartW / n) + 0.5;
+    const bh = Math.abs(v) / maxAbs * (chartH / 2);
+    ctx.fillStyle = v >= 0 ? 'rgba(34,197,94,0.65)' : 'rgba(248,113,113,0.65)';
+    if (v >= 0) ctx.fillRect(x, cy - bh, barW, bh);
+    else        ctx.fillRect(x, cy, barW, bh);
+  }
+
+  // Spot vertical line (yellow dashed)
+  if (spot > 0 && n > 1) {
+    const spotFrac = (spot - strikes[0]) / (strikes[n - 1] - strikes[0]);
+    const sx = PAD_L + spotFrac * chartW;
+    ctx.strokeStyle = '#fbbf24';
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([4, 3]);
+    ctx.beginPath(); ctx.moveTo(sx, PAD_T); ctx.lineTo(sx, H - PAD_B); ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  // Max pain vertical line (purple dashed)
+  if (maxPain > 0 && n > 1 && maxPain >= strikes[0] && maxPain <= strikes[n - 1]) {
+    const mpFrac = (maxPain - strikes[0]) / (strikes[n - 1] - strikes[0]);
+    const mx = PAD_L + mpFrac * chartW;
+    ctx.strokeStyle = '#a78bfa';
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([3, 4]);
+    ctx.beginPath(); ctx.moveTo(mx, PAD_T); ctx.lineTo(mx, H - PAD_B); ctx.stroke();
+    ctx.setLineDash([]);
+    // Label
+    ctx.fillStyle = '#a78bfa';
+    ctx.font = 'bold 8px Consolas, monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('MP', mx, PAD_T + 8);
+  }
+
+  // Y-axis labels
+  ctx.fillStyle = 'rgba(148,163,184,0.5)';
+  ctx.font = '9px Consolas, monospace';
+  ctx.textAlign = 'right';
+  ctx.fillText('+$' + (maxAbs >= 1000 ? (maxAbs/1000).toFixed(1)+'M' : maxAbs.toFixed(0)+'K'), PAD_L - 3, PAD_T + 9);
+  ctx.fillText('$0', PAD_L - 3, cy + 4);
+  ctx.fillText('-$' + (maxAbs >= 1000 ? (maxAbs/1000).toFixed(1)+'M' : maxAbs.toFixed(0)+'K'), PAD_L - 3, H - PAD_B);
+
+  // X-axis: first & last strike
+  ctx.textAlign = 'left';
+  ctx.fillText('$' + strikes[0].toFixed(0), PAD_L, H - 1);
+  ctx.textAlign = 'right';
+  ctx.fillText('$' + strikes[n - 1].toFixed(0), W - PAD_R, H - 1);
+}
+
+/* ── On load ── */
+window.loadData = loadData;
+window.ibkrOnConnect = () => loadData(true);
+
+loadData();
+</script>
+</body>
+</html>

@@ -116,6 +116,25 @@
     }
     /* chart-wrap / chart-container / chart-loading defined below in IBKR section */
 
+    /* ── Timeframe selector ── */
+    .tf-bar {
+      display: flex; align-items: center; gap: .3rem;
+      padding: .5rem 1.2rem; border-bottom: 1px solid var(--border);
+      background: rgba(0,0,0,.15);
+    }
+    .tf-btn {
+      background: transparent; border: 1px solid transparent;
+      color: var(--muted); padding: .2rem .55rem; border-radius: 5px;
+      font-size: .75rem; font-weight: 700; cursor: pointer;
+      letter-spacing: .04em; transition: all .15s;
+    }
+    .tf-btn:hover { color: var(--text); border-color: var(--border); }
+    .tf-btn.active {
+      background: rgba(34,211,238,.15); border-color: var(--accent);
+      color: var(--accent);
+    }
+    .tf-sep { color: var(--border); margin: 0 .2rem; user-select: none; }
+
     /* ── Signal Panel ── */
     .signal-panel {
       display: flex;
@@ -256,129 +275,6 @@
     }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* ── IBKR Login Panel ── */
-    .ibkr-panel {
-      background: rgba(16,185,129,.06);
-      border: 1px solid rgba(16,185,129,.35);
-      border-radius: 10px;
-      padding: 1rem 1.2rem 1.1rem;
-      margin-bottom: 1.5rem;
-      animation: slideDown .2s ease;
-    }
-    @keyframes slideDown {
-      from { opacity: 0; transform: translateY(-8px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
-    .ibkr-panel-title {
-      font-size: .88rem;
-      font-weight: 800;
-      color: #10b981;
-      margin-bottom: .8rem;
-      letter-spacing: .04em;
-    }
-    .ibkr-form-row {
-      display: flex;
-      gap: 1.1rem;
-      align-items: flex-end;
-      flex-wrap: wrap;
-      margin-bottom: .8rem;
-    }
-    .ibkr-field {
-      display: flex;
-      flex-direction: column;
-      gap: .28rem;
-    }
-    .ibkr-field label {
-      font-size: .7rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: .07em;
-      color: var(--muted);
-    }
-    .ibkr-field input[type="text"],
-    .ibkr-field input[type="number"] {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      color: var(--text);
-      padding: .35rem .75rem;
-      border-radius: 6px;
-      font-size: .85rem;
-      font-family: monospace;
-      width: 140px;
-      transition: border-color .15s;
-    }
-    .ibkr-field input[type="number"].port-field { width: 90px; }
-    .ibkr-field input:focus {
-      outline: none;
-      border-color: #10b981;
-      box-shadow: 0 0 0 2px rgba(16,185,129,.15);
-    }
-    .ibkr-port-row {
-      display: flex;
-      gap: .5rem;
-      align-items: center;
-      font-size: .78rem;
-      color: var(--muted);
-    }
-    .ibkr-port-row label { display: flex; align-items: center; gap: .25rem; cursor: pointer; }
-    .ibkr-btn-connect {
-      background: #10b981;
-      color: #000;
-      border: none;
-      padding: .42rem 1.25rem;
-      border-radius: 6px;
-      font-weight: 800;
-      font-size: .83rem;
-      cursor: pointer;
-      transition: background .15s;
-      white-space: nowrap;
-      letter-spacing: .02em;
-    }
-    .ibkr-btn-connect:hover { background: #34d399; }
-    .ibkr-btn-connect:disabled { background: #374151; color: #6b7280; cursor: not-allowed; }
-    .ibkr-btn-disconnect {
-      background: transparent;
-      color: #f87171;
-      border: 1px solid #f87171;
-      padding: .42rem 1rem;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: .82rem;
-      font-weight: 600;
-      transition: background .15s;
-      white-space: nowrap;
-    }
-    .ibkr-btn-disconnect:hover { background: rgba(248,113,113,.12); }
-    .ibkr-btn-disconnect:disabled { opacity: .45; cursor: not-allowed; }
-    .ibkr-toggle-btn {
-      background: transparent;
-      border: 1px solid rgba(16,185,129,.5);
-      color: #10b981;
-      padding: .28rem .75rem;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: .75rem;
-      font-weight: 700;
-      letter-spacing: .04em;
-      transition: all .15s;
-      white-space: nowrap;
-    }
-    .ibkr-toggle-btn:hover { background: rgba(16,185,129,.12); }
-    .ibkr-result {
-      padding: .6rem 1rem;
-      background: rgba(255,255,255,.04);
-      border-radius: 6px;
-      font-size: .8rem;
-      line-height: 1.5;
-      margin-top: .5rem;
-    }
-    .ibkr-hint {
-      font-size: .72rem;
-      color: var(--muted);
-      margin-top: .55rem;
-      line-height: 1.5;
-    }
-
     /* ── Chart wrapper fix ── */
     .chart-wrap {
       position: relative;
@@ -496,9 +392,19 @@
 
 <!-- ── Page Navigation ── -->
 <nav style="display:flex;align-items:center;gap:1rem;padding:.6rem 1.5rem;background:var(--surface);border-bottom:1px solid var(--border);font-size:.83rem;">
-  <a href="live-trading.html"   style="color:var(--accent);font-weight:700;text-decoration:none;">Live Trading</a>
-  <span style="color:var(--border);">|</span>
-  <a href="market-summary.html" style="color:var(--muted);text-decoration:none;padding:.3rem .7rem;border-radius:5px;transition:color .15s;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">Market Summary →</a>
+  <a href="live-trading.html"   style="color:var(--accent);font-weight:700;text-decoration:none;">Live Trading</a>|</span>
+  <a href="market-summary.html" style="color:var(--muted);text-decoration:none;padding:.3rem .7rem;border-radius:5px;transition:color .15s;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">Market Summary →</a>|</span>
+  <a href="terminology.html" style="color:var(--muted);text-decoration:none;padding:.3rem .7rem;border-radius:5px;transition:color .15s;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">Terminology 📖</a>|</span>
+  <a href="ml-sp500-example.html" style="color:var(--muted);text-decoration:none;padding:.3rem .7rem;border-radius:5px;transition:color .15s;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">ML Example 🧠</a>|</span>
+  <a href="ml-key-assets.html" style="color:var(--muted);text-decoration:none;padding:.3rem .7rem;border-radius:5px;transition:color .15s;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">ML Key Assets 📋</a>|</span>
+  <a href="ml-xgboost-assets.html" style="color:var(--muted);text-decoration:none;padding:.3rem .7rem;border-radius:5px;transition:color .15s;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">XGBoost Charts 📊</a>|</span>
+  <a href="gamma-exposure.html" style="color:var(--muted);text-decoration:none;padding:.3rem .7rem;border-radius:5px;transition:color .15s;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">GEX Charts 🎯</a>|</span>
+  <a href="options-strategy.html" style="color:var(--muted);text-decoration:none;padding:.3rem .7rem;border-radius:5px;transition:color .15s;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">Options Strategy 📈</a>|</span>
+  <a href="option-flows.html" style="color:var(--muted);text-decoration:none;padding:.3rem .7rem;border-radius:5px;transition:color .15s;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">Option Flows 🌊</a>|</span>
+  <a href="options-summary.html" style="color:var(--muted);text-decoration:none;padding:.3rem .7rem;border-radius:5px;transition:color .15s;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">Options Summary 📊</a>|</span>
+  <a href="0dte-options.html" style="color:var(--muted);text-decoration:none;padding:.3rem .7rem;border-radius:5px;transition:color .15s;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">0DTE 🔥</a>|</span>
+  <a href="fundamentals.html" style="color:var(--muted);text-decoration:none;padding:.3rem .7rem;border-radius:5px;transition:color .15s;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">Fundamentals 📋</a>|</span>
+  <a href="institutional-buyers.html" style="color:var(--muted);text-decoration:none;padding:.3rem .7rem;border-radius:5px;transition:color .15s;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">Institutional 🏦</a>
 </nav>
 
 <!-- ── Live Dashboard ── -->
@@ -513,42 +419,9 @@
     </span>
     <span id="ibkr-status-badge" style="font-size:.73rem; font-weight:700; color:var(--muted); margin-right:.25rem;"></span>
     <span id="last-update" style="font-size:.75rem; color:var(--muted);"></span>
-    <button class="ibkr-toggle-btn" onclick="toggleIBKRPanel()" title="Interactive Brokers connection settings">🔌 IBKR Login</button>
+    <button class="refresh-btn" onclick="ibkrWidget.open()" title="Interactive Brokers connection settings" style="border-color:rgba(16,185,129,.5);color:#10b981;">🔌 IBKR</button>
     <a href="market-summary.html" class="refresh-btn" style="text-decoration:none; display:inline-flex; align-items:center; gap:.3rem;" title="View aggregated ML signals, market events, and top movers">📊 Market Summary</a>
     <button class="refresh-btn" onclick="refreshAll()">↻ Refresh</button>
-  </div>
-
-  <!-- IBKR Login Panel (hidden by default) -->
-  <div id="ibkr-panel" class="ibkr-panel" style="display:none;">
-    <div class="ibkr-panel-title">🔌 Interactive Brokers — TWS Connection</div>
-    <div class="ibkr-form-row">
-      <div class="ibkr-field">
-        <label>TWS Host</label>
-        <input type="text" id="ibkr-host" value="127.0.0.1" placeholder="127.0.0.1">
-      </div>
-      <div class="ibkr-field">
-        <label>Port</label>
-        <div class="ibkr-port-row">
-          <label><input type="radio" name="ibkr-port-radio" value="7497" checked onchange="document.getElementById('ibkr-port').value=this.value"> 7497 Paper</label>
-          <label><input type="radio" name="ibkr-port-radio" value="7496" onchange="document.getElementById('ibkr-port').value=this.value"> 7496 Live</label>
-        </div>
-        <input type="number" id="ibkr-port" value="7497" min="1024" max="65535" class="port-field"
-               oninput="syncPortRadio(this.value)">
-      </div>
-      <div class="ibkr-field">
-        <label>Client ID</label>
-        <input type="number" id="ibkr-clientid" value="10" min="1" max="999">
-      </div>
-      <div class="ibkr-field" style="justify-content:flex-end; gap:.5rem;">
-        <button class="ibkr-btn-connect" id="ibkr-connect-btn" onclick="connectIBKR()">Connect to IBKR</button>
-        <button class="ibkr-btn-disconnect" id="ibkr-disconnect-btn" onclick="disconnectIBKR()">Disconnect</button>
-      </div>
-    </div>
-    <div id="ibkr-result" style="display:none;" class="ibkr-result"></div>
-    <div class="ibkr-hint">
-      ⓘ &nbsp;TWS or IB Gateway must be running and logged in first. &nbsp;Enable API: <strong>File → Global Configuration → API → Settings</strong> → check "Enable ActiveX and Socket Clients" → set port to 7497 (paper) or 7496 (live) → allow localhost connections.
-      Settings are saved automatically in your browser.
-    </div>
   </div>
 
   <!-- Asset selector -->
@@ -604,12 +477,12 @@
 
     <!-- Market Indices -->
     <span class="asset-group-label" style="margin-left:.5rem;">Indices</span>
-    <button class="asset-btn idx" data-symbol="^GSPC" data-type="stock" onclick="selectAsset(this)">S&amp;P 500</button>
-    <button class="asset-btn idx" data-symbol="^DJI"  data-type="stock" onclick="selectAsset(this)">DJIA</button>
-    <button class="asset-btn idx" data-symbol="^IXIC" data-type="stock" onclick="selectAsset(this)">NASDAQ</button>
-    <button class="asset-btn idx" data-symbol="^NDX"  data-type="stock" onclick="selectAsset(this)">NDX-100</button>
-    <button class="asset-btn idx" data-symbol="^RUT"  data-type="stock" onclick="selectAsset(this)">Russell</button>
-    <button class="asset-btn idx" data-symbol="^VIX"  data-type="stock" onclick="selectAsset(this)">VIX</button>
+    <button class="asset-btn idx" data-symbol="^GSPC" data-type="index" onclick="selectAsset(this)">S&amp;P 500</button>
+    <button class="asset-btn idx" data-symbol="^DJI"  data-type="index" onclick="selectAsset(this)">DJIA</button>
+    <button class="asset-btn idx" data-symbol="^IXIC" data-type="index" onclick="selectAsset(this)">NASDAQ</button>
+    <button class="asset-btn idx" data-symbol="^NDX"  data-type="index" onclick="selectAsset(this)">NDX-100</button>
+    <button class="asset-btn idx" data-symbol="^RUT"  data-type="index" onclick="selectAsset(this)">Russell</button>
+    <button class="asset-btn idx" data-symbol="^VIX"  data-type="index" onclick="selectAsset(this)">VIX</button>
   </div>
 
   <!-- Main grid -->
@@ -620,7 +493,7 @@
       <div class="chart-card">
         <div class="chart-header">
           <div>
-            <span class="chart-title" id="chart-symbol-title">AAPL — 4H Candlestick</span>
+            <span class="chart-title" id="chart-symbol-title">SPY — 1H Candlestick</span>
             <div class="chart-meta" id="chart-ohlc-display"></div>
           </div>
           <div style="display:flex; align-items:center; gap:.9rem;">
@@ -628,6 +501,18 @@
             <span style="font-size:.72rem; color:#f87171; font-weight:700;">▼ SELL</span>
             <span class="chart-meta" id="chart-candle-count"></span>
           </div>
+        </div>
+        <!-- Timeframe selector -->
+        <div class="tf-bar" id="tf-bar">
+          <span style="font-size:.7rem;color:var(--muted);margin-right:.3rem;font-weight:700;">TF</span>
+          <button class="tf-btn" onclick="setTF('1m')">1m</button>
+          <button class="tf-btn" onclick="setTF('5m')">5m</button>
+          <button class="tf-btn" onclick="setTF('15m')">15m</button>
+          <button class="tf-btn" onclick="setTF('30m')">30m</button>
+          <button class="tf-btn active" id="tf-1h" onclick="setTF('1h')">1H</button>
+          <span class="tf-sep">|</span>
+          <button class="tf-btn" onclick="setTF('4h')">4H</button>
+          <button class="tf-btn" onclick="setTF('1d')">1D</button>
         </div>
         <div class="chart-wrap">
           <div id="chart-container"></div>
@@ -981,7 +866,22 @@ let candleSeries   = null;
 let volumeSeries   = null;
 let currentSymbol  = 'SPY';
 let currentType    = 'stock';
+let currentTF      = '1h';
 let autoRefreshTimer = null;
+
+const TF_LABELS = {
+  '1m': '1m', '5m': '5m', '15m': '15m', '30m': '30m',
+  '1h': '1H', '4h': '4H', '1d': '1D'
+};
+
+function setTF(tf) {
+  currentTF = tf;
+  // Update active button
+  document.querySelectorAll('.tf-btn').forEach(b => {
+    b.classList.toggle('active', b.textContent === TF_LABELS[tf]);
+  });
+  loadCandles(currentSymbol, false);
+}
 
 const SYMBOL_LABELS = {
   // S&P 500 ETFs
@@ -1088,7 +988,8 @@ function hideChartLoading() {
 // ── Load candles ────────────────────────────────────────────────────────────
 async function loadCandles(symbol, nocache = false) {
   showChartLoading('<span class="spinner"></span>&nbsp;Downloading market data…');
-  const qp = `period=90d${nocache ? '&nocache=1' : ''}`;
+  const tf = currentTF;
+  const qp = `interval=${tf}${nocache ? '&nocache=1' : ''}`;
   try {
     const r = await fetch(`${API}/api/candles/${encodeURIComponent(symbol)}?${qp}`,
                           { signal: AbortSignal.timeout(25000) });
@@ -1105,15 +1006,16 @@ async function loadCandles(symbol, nocache = false) {
     candleSeries.setData(clean.map(c => ({
       time: c.time, open: c.open, high: c.high, low: c.low, close: c.close
     })));
-    candleSeries.setMarkers([]);   // clear stale markers from previous symbol
+    candleSeries.setMarkers([]);   // clear stale markers; signal load will re-apply them
     volumeSeries.setData(clean.map(c => ({
       time: c.time, value: c.volume,
       color: c.close >= c.open ? 'rgba(74,222,128,.25)' : 'rgba(248,113,113,.25)'
     })));
     chartInstance.timeScale().fitContent();
-    document.getElementById('chart-candle-count').textContent = `${clean.length} × 4H bars`;
+    document.getElementById('chart-candle-count').textContent =
+      `${clean.length} × ${TF_LABELS[tf]} bars`;
     document.getElementById('chart-symbol-title').textContent =
-      `${SYMBOL_LABELS[symbol] || symbol} — 4H Candlestick`;
+      `${SYMBOL_LABELS[symbol] || symbol} — ${TF_LABELS[tf]} Candlestick`;
     hideChartLoading();
   } catch(e) {
     showChartLoading(
@@ -1382,69 +1284,6 @@ async function refreshAll() {
 }
 
 // ── IBKR Panel ───────────────────────────────────────────────────────────────
-function toggleIBKRPanel() {
-  const panel   = document.getElementById('ibkr-panel');
-  const visible = getComputedStyle(panel).display !== 'none';
-  panel.style.display = visible ? 'none' : 'block';
-}
-
-function syncPortRadio(val) {
-  document.querySelectorAll('input[name="ibkr-port-radio"]').forEach(r => {
-    r.checked = (r.value === String(val));
-  });
-}
-
-async function connectIBKR() {
-  const host     = (document.getElementById('ibkr-host').value || '127.0.0.1').trim();
-  const port     = parseInt(document.getElementById('ibkr-port').value) || 7497;
-  const clientId = parseInt(document.getElementById('ibkr-clientid').value) || 10;
-
-  const btn    = document.getElementById('ibkr-connect-btn');
-  const result = document.getElementById('ibkr-result');
-  btn.disabled = true;
-  btn.textContent = 'Connecting…';
-  result.style.display = 'none';
-
-  try {
-    const r = await fetch(`${API}/api/ibkr-connect`, {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ host, port, clientId }),
-      signal:  AbortSignal.timeout(15000)
-    });
-    const data = await r.json();
-    result.style.display = 'block';
-    if (data.success) {
-      const acct = data.account && data.account !== 'unknown' ? ` (${data.account})` : '';
-      result.innerHTML =
-        `<span style="color:#4ade80;">✓ Connected to IBKR on ${host}:${port}${acct}
-         — real-time data active.</span>`;
-      // Save to localStorage
-      localStorage.setItem('ibkr_host',     host);
-      localStorage.setItem('ibkr_port',     port);
-      localStorage.setItem('ibkr_clientid', clientId);
-      // Auto-close panel, update badge and force-reload fresh IBKR data
-      setTimeout(() => { document.getElementById('ibkr-panel').style.display = 'none'; }, 1200);
-      updateIBKRBadge(true, 'IBKR real-time');
-      await Promise.all([
-        loadCandles(currentSymbol, true),
-        loadSignal(currentSymbol, currentType, true)
-      ]);
-    } else {
-      result.innerHTML =
-        `<span style="color:#f87171;">✗ ${data.error}</span><br>
-         <small style="color:var(--muted);">Make sure TWS or IB Gateway is running
-         with API enabled on port ${port}.</small>`;
-    }
-  } catch(e) {
-    result.style.display = 'block';
-    result.innerHTML = `<span style="color:#f87171;">✗ ${e.message}</span>`;
-  } finally {
-    btn.disabled = false;
-    btn.textContent = 'Connect to IBKR';
-  }
-}
-
 function updateIBKRBadge(connected, dataSource) {
   const badge = document.getElementById('ibkr-status-badge');
   if (!badge) return;
@@ -1453,34 +1292,6 @@ function updateIBKRBadge(connected, dataSource) {
   } else {
     const src = dataSource || 'yfinance delayed';
     badge.innerHTML = `<span style="color:#64748b;" title="${src}">● yfinance</span>`;
-  }
-}
-
-async function disconnectIBKR() {
-  const btn    = document.getElementById('ibkr-disconnect-btn');
-  const result = document.getElementById('ibkr-result');
-  if (btn) { btn.disabled = true; btn.textContent = 'Disconnecting…'; }
-  result.style.display = 'none';
-  try {
-    const r    = await fetch(`${API}/api/ibkr-disconnect`, {
-      method: 'POST', signal: AbortSignal.timeout(5000)
-    });
-    const data = await r.json();
-    result.style.display = 'block';
-    if (data.success) {
-      result.innerHTML = '<span style="color:#fbbf24;">✓ Disconnected — switching to yfinance (15-20 min delayed)</span>';
-      updateIBKRBadge(false);
-      // Reload chart + signal so yfinance data shows immediately
-      await Promise.all([
-        loadCandles(currentSymbol, true),
-        loadSignal(currentSymbol, currentType, true)
-      ]);
-    }
-  } catch(e) {
-    result.style.display = 'block';
-    result.innerHTML = `<span style="color:#f87171;">✗ ${e.message}</span>`;
-  } finally {
-    if (btn) { btn.disabled = false; btn.textContent = 'Disconnect'; }
   }
 }
 
@@ -1514,39 +1325,74 @@ function startAutoRefresh() {
 
 // ── Boot ─────────────────────────────────────────────────────────────────────
 window.addEventListener('load', async () => {
-  // Restore saved IBKR settings
-  const savedHost     = localStorage.getItem('ibkr_host');
-  const savedPort     = localStorage.getItem('ibkr_port');
-  const savedClientId = localStorage.getItem('ibkr_clientid');
-  if (savedHost)     document.getElementById('ibkr-host').value     = savedHost;
-  if (savedPort) {
-    document.getElementById('ibkr-port').value = savedPort;
-    syncPortRadio(savedPort);
+  // Pre-select symbol from URL ?sym= parameter (e.g. links from market-summary)
+  const urlSym = new URLSearchParams(window.location.search).get('sym');
+  if (urlSym) {
+    const btn = document.querySelector(`.asset-btn[data-symbol="${CSS.escape(urlSym)}"]`);
+    if (btn) {
+      document.querySelectorAll('.asset-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentSymbol = btn.dataset.symbol;
+      currentType   = btn.dataset.type;
+    }
   }
-  if (savedClientId) document.getElementById('ibkr-clientid').value = savedClientId;
 
   initChart();
 
-  const online = await checkServer();
-  if (!online) {
-    setServerOnline(false);
-    showChartLoading(
-      `<span style="color:#f87171; text-align:center;">
-         Server offline<br>
-         <small>Run <code>python live-server.py</code> from the project folder</small><br>
-         <small style="color:#64748b;">Charts load automatically when server starts</small>
-       </span>`
-    );
-  } else {
-    // Check IBKR connection status
-    await checkIBKRStatus();
-    loadAll(currentSymbol, currentType);
-    startAutoRefresh();
-    // Periodic IBKR health check — detects dropped TWS connections within 1 min
-    setInterval(checkIBKRStatus, 60000);
+  let _retryTimer = null;
+
+  async function tryConnect() {
+    const online = await checkServer();
+    if (!online) {
+      setServerOnline(false);
+      let dots = 0;
+      showChartLoading(
+        `<span style="color:#f87171; text-align:center;" id="offline-msg">
+           ⏳ Connecting to server…<br>
+           <small style="color:#64748b;">Retrying every 5 seconds</small>
+         </span>`
+      );
+      if (!_retryTimer) {
+        _retryTimer = setInterval(async () => {
+          const up = await checkServer();
+          if (up) {
+            clearInterval(_retryTimer);
+            _retryTimer = null;
+            setServerOnline(true);
+            await checkIBKRStatus();
+            loadAll(currentSymbol, currentType);
+            startAutoRefresh();
+            setInterval(checkIBKRStatus, 60000);
+          } else {
+            dots = (dots + 1) % 4;
+            const el = document.getElementById('offline-msg');
+            if (el) el.innerHTML =
+              `⏳ Connecting to server${'…'.repeat(dots + 1)}<br>
+               <small style="color:#64748b;">Run <code>python live-server.py</code></small>`;
+          }
+        }, 5000);
+      }
+    } else {
+      if (_retryTimer) { clearInterval(_retryTimer); _retryTimer = null; }
+      // Check IBKR connection status
+      await checkIBKRStatus();
+      loadAll(currentSymbol, currentType);
+      startAutoRefresh();
+      // Periodic IBKR health check — detects dropped TWS connections within 1 min
+      setInterval(checkIBKRStatus, 60000);
+    }
   }
+
+  tryConnect();
 });
 </script>
 
+<script>
+// After IBKR connects, reload chart + signal with fresh IBKR data
+window.ibkrOnConnect = function() {
+  if (typeof loadAll === 'function' && currentSymbol) loadAll(currentSymbol, currentType, true);
+};
+</script>
+<script src="ibkr-widget.js"></script>
 </body>
 </html>

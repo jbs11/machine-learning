@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Options Strategy Advisor — All Assets</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .os-wrap { max-width: 1600px; margin: 0 auto; padding: 0 1.5rem 6rem; }
+
+    /* ── Page nav ── */
+    .page-nav {
+      display: flex; align-items: center; gap: 1rem;
+      padding: .6rem 1.5rem; background: var(--surface);
+      border-bottom: 1px solid var(--border); font-size: .83rem; flex-wrap: wrap;
+    }
+    .page-nav a { color: var(--muted); text-decoration: none; padding: .3rem .7rem; border-radius: 5px; transition: color .15s, background .15s; }
+    .page-nav a:hover { color: var(--text); background: rgba(255,255,255,.06); }
+    .page-nav a.active { color: #a78bfa; font-weight: 700; }
+    .page-nav-sep { color: var(--border); }
+
+    /* ── Hero ── */
+    .os-hero {
+      padding: 3.5rem 1.5rem 2.5rem; text-align: center;
+      background: radial-gradient(ellipse 80% 55% at 50% -5%, rgba(34,197,94,.10) 0%, transparent 65%), var(--bg);
+      border-bottom: 1px solid var(--border);
+    }
+    .os-hero h1 { font-size: clamp(1.8rem, 4vw, 3rem); font-weight: 900; margin: .7rem 0 .5rem; }
+    .os-hero p { color: var(--muted); max-width: 700px; margin: 0 auto 1.5rem; font-size: .95rem; line-height: 1.6; }
+    .os-badge {
+      display: inline-block; background: rgba(34,197,94,.12); border: 1px solid rgba(34,197,94,.3);
+      color: #4ade80; padding: .35rem 1rem; border-radius: 50px;
+      font-size: .78rem; font-weight: 700; letter-spacing: .06em; margin-bottom: .8rem; text-transform: uppercase;
+    }
+
+    /* ── Stats strip ── */
+    .os-stats {
+      display: flex; justify-content: center; flex-wrap: wrap; gap: 1rem 2.5rem;
+      padding: 1.2rem 1.5rem; background: var(--surface); border-bottom: 1px solid var(--border);
+    }
+    .os-stat { text-align: center; }
+    .os-stat-val { font-size: 1.5rem; font-weight: 900; }
+    .os-stat-lbl { font-size: .72rem; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin-top: .1rem; }
+    .stat-bull { color: #4ade80; }
+    .stat-bear { color: #f87171; }
+    .stat-neut { color: #a78bfa; }
+    .stat-credit { color: #4ade80; }
+
+    /* ── Filter bar ── */
+    .os-filter {
+      display: flex; flex-wrap: wrap; gap: .5rem;
+      padding: .9rem 1.5rem; background: var(--surface); border-bottom: 1px solid var(--border); align-items: center;
+    }
+    .os-filter label { font-size: .78rem; color: var(--muted); margin-right: .1rem; }
+    .filter-btn {
+      background: var(--bg); border: 1px solid var(--border); color: var(--muted);
+      padding: .28rem .75rem; border-radius: 5px; cursor: pointer; font-size: .77rem; transition: all .15s;
+    }
+    .filter-btn:hover, .filter-btn.active {
+      background: rgba(34,197,94,.15); border-color: rgba(34,197,94,.4); color: #4ade80;
+    }
+    .filter-sep { width: 1px; height: 20px; background: var(--border); margin: 0 .3rem; }
+
+    /* ── Group header ── */
+    .os-group-hdr {
+      font-size: .95rem; font-weight: 700; color: var(--muted); text-transform: uppercase;
+      letter-spacing: .1em; margin: 2rem 0 1rem;
+      padding-bottom: .4rem; border-bottom: 1px solid var(--border);
+    }
+
+    /* ── Grid ── */
+    .os-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(540px, 1fr)); gap: 1.5rem; }
+
+    /* ── Card ── */
+    .os-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; overflow: hidden;
+      transition: box-shadow .2s, transform .2s;
+    }
+    .os-card:hover { box-shadow: 0 8px 32px rgba(0,0,0,.45); transform: translateY(-2px); }
+    .os-card.hidden { display: none; }
+
+    /* card header */
+    .os-card-hdr {
+      display: flex; align-items: flex-start; gap: .7rem;
+      padding: .85rem 1rem; border-bottom: 1px solid var(--border);
+      background: rgba(255,255,255,.02);
+    }
+    .os-card-sym { font-size: 1.05rem; font-weight: 900; color: var(--text); }
+    .os-card-lbl { font-size: .75rem; color: var(--muted); }
+    .os-card-badges { margin-left: auto; display: flex; gap: .4rem; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
+
+    .badge { display: inline-block; padding: .2rem .55rem; border-radius: 4px; font-size: .7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
+    .badge-bull { background: rgba(34,197,94,.15); color: #4ade80; border: 1px solid rgba(34,197,94,.3); }
+    .badge-bear { background: rgba(239,68,68,.15); color: #f87171; border: 1px solid rgba(239,68,68,.3); }
+    .badge-neut { background: rgba(167,139,250,.15); color: #c4b5fd; border: 1px solid rgba(167,139,250,.3); }
+    .badge-strat { background: rgba(251,191,36,.1); color: #fbbf24; border: 1px solid rgba(251,191,36,.25); }
+    .badge-vol  { background: rgba(99,179,237,.1);  color: #63b3ed; border: 1px solid rgba(99,179,237,.25); }
+
+    /* chart canvases */
+    .os-chart-wrap { position: relative; width: 100%; height: 210px; background: #0e1117; }
+    .os-chart-wrap canvas { display: block; }
+    .os-chart-label {
+      position: absolute; top: 6px; left: 8px;
+      font-size: .68rem; color: rgba(255,255,255,.45); font-weight: 600; text-transform: uppercase; letter-spacing: .05em;
+      pointer-events: none;
+    }
+
+    .os-pnl-wrap { position: relative; width: 100%; height: 145px; background: #0e1117; border-top: 1px solid var(--border); }
+    .os-pnl-wrap canvas { display: block; }
+
+    /* Legs table */
+    .os-legs { padding: .7rem 1rem; border-top: 1px solid var(--border); overflow-x: auto; }
+    .os-legs-title { font-size: .7rem; color: var(--muted); text-transform: uppercase; letter-spacing: .07em; margin-bottom: .4rem; font-weight: 700; }
+    .os-legs-table { width: 100%; border-collapse: collapse; font-size: .76rem; }
+    .os-legs-table th { color: var(--muted); font-weight: 600; text-align: left; padding: .2rem .4rem; border-bottom: 1px solid var(--border); white-space: nowrap; }
+    .os-legs-table td { padding: .25rem .4rem; border-bottom: 1px solid rgba(255,255,255,.04); white-space: nowrap; }
+    .action-buy  { color: #4ade80; font-weight: 700; }
+    .action-sell { color: #f87171; font-weight: 700; }
+
+    /* Metrics strip */
+    .os-metrics {
+      display: flex; flex-wrap: wrap; gap: .5rem 1.5rem;
+      padding: .75rem 1rem; border-top: 1px solid var(--border);
+      background: rgba(255,255,255,.015);
+    }
+    .os-metric-val { font-size: .88rem; font-weight: 700; }
+    .os-metric-lbl { font-size: .64rem; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+    .val-profit { color: #4ade80; }
+    .val-loss   { color: #f87171; }
+    .val-credit { color: #4ade80; }
+    .val-debit  { color: #fbbf24; }
+    .val-be     { color: #c4b5fd; }
+
+    /* Description */
+    .os-desc { padding: .75rem 1rem; border-top: 1px solid var(--border); font-size: .8rem; color: var(--muted); line-height: 1.65; }
+
+    /* No options */
+    .os-no-opts { padding: 2.5rem; text-align: center; color: var(--muted); font-size: .85rem; }
+
+    /* ── Explanation section ── */
+    .os-explain { margin-top: 4rem; padding: 2.5rem 1.5rem; border-top: 1px solid var(--border); }
+    .os-explain h2 { text-align: center; font-size: 1.6rem; font-weight: 900; margin-bottom: 2rem; }
+    .explain-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.5rem; }
+    .explain-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1.2rem; }
+    .explain-card h3 { font-size: .95rem; font-weight: 700; margin-bottom: .5rem; }
+    .explain-card p { font-size: .82rem; color: var(--muted); line-height: 1.65; }
+
+    .os-refresh { text-align: center; padding: .7rem; font-size: .75rem; color: var(--muted); margin-top: .5rem; }
+  </style>
+</head>
+<body>
+
+<!-- ── Main Nav ── -->
+<nav class="nav">
+  <a href="index.html" class="nav-logo">
+    <img src="images/steve.jpg" class="nav-logo-photo" alt="Stephen Borick">
+    <div class="nav-logo-text">
+      <span class="nav-company">Artificial Intelligence</span>
+      <span class="nav-name">Solutions, Inc.</span>
+    </div>
+  </a>
+  <ul class="nav-links">
+    <li><a href="index.html">Home</a></li>
+  </ul>
+</nav>
+
+<!-- ── Page Nav ── -->
+<nav class="page-nav">
+  <a href="live-trading.html">← Live Trading</a>
+  <span class="page-nav-sep">|</span>
+  <a href="market-summary.html">Market Summary</a>
+  <span class="page-nav-sep">|</span>
+  <a href="terminology.html">Terminology 📖</a>
+  <span class="page-nav-sep">|</span>
+  <a href="ml-sp500-example.html">ML Example 🧠</a>
+  <span class="page-nav-sep">|</span>
+  <a href="ml-key-assets.html">ML Key Assets 📋</a>
+  <span class="page-nav-sep">|</span>
+  <a href="ml-xgboost-assets.html">XGBoost Charts 📊</a>
+  <span class="page-nav-sep">|</span>
+  <a href="gamma-exposure.html">GEX Charts 🎯</a>
+  <span class="page-nav-sep">|</span>
+  <a href="options-strategy.html" class="active">Options Strategy 📈</a>
+  <span class="page-nav-sep">|</span>
+  <a href="option-flows.html">Option Flows 🌊</a>
+  <span class="page-nav-sep">|</span>
+  <a href="options-summary.html">Options Summary 📊</a>
+  <span class="page-nav-sep">|</span>
+  <a href="0dte-options.html">0DTE 🔥</a>
+  <span class="page-nav-sep">|</span>
+  <a href="fundamentals.html">Fundamentals 📋</a>
+  <span class="page-nav-sep">|</span>
+  <a href="institutional-buyers.html">Institutional 🏦</a>
+</nav>
+
+<!-- ── Hero ── -->
+<section class="os-hero">
+  <div class="os-badge">📈 Options · ML Signal · Strategy Advisor</div>
+  <h1>Options Strategy Advisor<br>All Assets</h1>
+  <p>ML-driven directional signal (Bullish / Bearish / Neutral) selects the optimal options strategy per asset.
+     Candlestick charts overlay strike levels; P&amp;L diagrams show payoff at expiration.
+     Full leg details — premium, IV, delta, contract symbol, DTE — included for all 27 assets.</p>
+</section>
+
+<!-- ── Stats strip ── -->
+<div class="os-stats">
+  <div class="os-stat"><div class="os-stat-val" id="stat-total">—</div><div class="os-stat-lbl">Assets</div></div>
+  <div class="os-stat"><div class="os-stat-val stat-bull" id="stat-bull">—</div><div class="os-stat-lbl">Bullish</div></div>
+  <div class="os-stat"><div class="os-stat-val stat-bear" id="stat-bear">—</div><div class="os-stat-lbl">Bearish</div></div>
+  <div class="os-stat"><div class="os-stat-val stat-neut" id="stat-neut">—</div><div class="os-stat-lbl">Neutral</div></div>
+  <div class="os-stat"><div class="os-stat-val" id="stat-calls">—</div><div class="os-stat-lbl">Long Calls / Puts</div></div>
+  <div class="os-stat"><div class="os-stat-val" id="stat-spreads">—</div><div class="os-stat-lbl">Credit Spreads</div></div>
+  <div class="os-stat"><div class="os-stat-val" id="stat-condors">—</div><div class="os-stat-lbl">Iron Condors</div></div>
+  <div class="os-stat"><div class="os-stat-val stat-credit" id="stat-avgcredit">—</div><div class="os-stat-lbl">Avg Net Credit</div></div>
+</div>
+
+<!-- ── Filter bar ── -->
+<div class="os-filter">
+  <label>Group:</label>
+  <button class="filter-btn active" data-group="all">All</button>
+  <button class="filter-btn" data-group="ETFs">ETFs</button>
+  <button class="filter-btn" data-group="Mag 7">Mag 7</button>
+  <button class="filter-btn" data-group="Blue Chips">Blue Chips</button>
+  <button class="filter-btn" data-group="Futures">Futures</button>
+  <div class="filter-sep"></div>
+  <label>Direction:</label>
+  <button class="filter-btn active" data-dir="all">All</button>
+  <button class="filter-btn" data-dir="BULLISH">Bullish</button>
+  <button class="filter-btn" data-dir="BEARISH">Bearish</button>
+  <button class="filter-btn" data-dir="NEUTRAL">Neutral</button>
+  <div class="filter-sep"></div>
+  <label>Strategy:</label>
+  <button class="filter-btn active" data-strat="all">All</button>
+  <button class="filter-btn" data-strat="long_call">Long Call</button>
+  <button class="filter-btn" data-strat="long_put">Long Put</button>
+  <button class="filter-btn" data-strat="bull_put_spread">Bull Put Spread</button>
+  <button class="filter-btn" data-strat="bear_call_spread">Bear Call Spread</button>
+  <button class="filter-btn" data-strat="iron_condor">Iron Condor</button>
+</div>
+
+<!-- ── Main content ── -->
+<main class="os-wrap">
+  <div id="loading" style="text-align:center;padding:5rem 1rem;color:var(--muted)">
+    <div style="font-size:1.1rem;margin-bottom:.5rem">⏳ Loading strategies…</div>
+    <div style="font-size:.85rem">Fetching options chains &amp; ML signals for all 27 assets — may take 30–60 seconds</div>
+  </div>
+  <div id="content" style="display:none"></div>
+
+  <!-- ── Explanation ── -->
+  <section class="os-explain">
+    <h2>Options Strategies Explained</h2>
+    <div class="explain-grid">
+      <div class="explain-card">
+        <h3>📈 Long Call</h3>
+        <p>Buy a call at or slightly above the current price. Best when <strong>strongly bullish</strong> in a <strong>low-IV environment</strong> where options are cheaper to buy. Risk is limited to the premium paid; reward is unlimited as the stock rises above the breakeven (strike + premium).</p>
+      </div>
+      <div class="explain-card">
+        <h3>📉 Long Put</h3>
+        <p>Buy a put at or slightly below the current price. Best when <strong>strongly bearish</strong> in a low-IV environment. Risk is limited to the premium paid; max profit is the strike minus premium if the stock falls toward zero.</p>
+      </div>
+      <div class="explain-card">
+        <h3>🐂 Bull Put Spread</h3>
+        <p>Sell an OTM put and buy a further OTM put for a <strong>net credit</strong>. Best when <strong>moderately bullish</strong> with <strong>elevated IV</strong> — collect premium while capping risk. Profit = credit received; max loss = spread width − credit.</p>
+      </div>
+      <div class="explain-card">
+        <h3>🐻 Bear Call Spread</h3>
+        <p>Sell an OTM call and buy a further OTM call for a <strong>net credit</strong>. Best when <strong>moderately bearish</strong> with elevated IV. Max profit if the stock stays below the short call strike; max loss = spread width − credit.</p>
+      </div>
+      <div class="explain-card">
+        <h3>🦅 Iron Condor</h3>
+        <p>Bear call spread + bull put spread = a <strong>net credit</strong> trade. Profit if the stock stays inside both short strikes at expiration. Best in a <strong>neutral, high-IV rangebound</strong> environment — time decay (theta) works in your favor.</p>
+      </div>
+      <div class="explain-card">
+        <h3>🤖 ML Direction Signal</h3>
+        <p>Direction is scored from 4 technical factors: <strong>RSI</strong> (momentum), <strong>MACD histogram</strong> (trend), <strong>SMA20 ratio</strong> (price vs. average), and <strong>Bollinger Band position</strong>. Score ≥ 2 → Bullish; ≤ −2 → Bearish; else Neutral.</p>
+      </div>
+      <div class="explain-card">
+        <h3>📊 Vol Regime</h3>
+        <p>ATR% compared to its 50-bar rolling median. <strong>Low vol (regime 0)</strong>: buy options — they are cheap. <strong>Normal/High vol (regime 1–2)</strong>: sell credit spreads — collect elevated premium that tends to mean-revert. IV crush after earnings is the classic example.</p>
+      </div>
+      <div class="explain-card">
+        <h3>🎯 Probability of Profit</h3>
+        <p>Derived from the <strong>short leg's Black-Scholes delta</strong>. For credit spreads: 1 − |Δ| ≈ probability the short option expires worthless (your profit). For debit strategies: Δ ≈ approximate probability of expiring in-the-money. These are risk-neutral model estimates.</p>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div class="os-refresh" id="refresh-ts">—</div>
+
+<script>
+const API = 'http://localhost:5050';
+const DPR = window.devicePixelRatio || 1;
+
+// ── Filter state ──────────────────────────────────────────────────────────────
+let activeGroup = 'all', activeDir = 'all', activeStrat = 'all';
+
+document.querySelectorAll('[data-group]').forEach(b => b.addEventListener('click', () => {
+  document.querySelectorAll('[data-group]').forEach(x => x.classList.remove('active'));
+  b.classList.add('active'); activeGroup = b.dataset.group; applyFilters();
+}));
+document.querySelectorAll('[data-dir]').forEach(b => b.addEventListener('click', () => {
+  document.querySelectorAll('[data-dir]').forEach(x => x.classList.remove('active'));
+  b.classList.add('active'); activeDir = b.dataset.dir; applyFilters();
+}));
+document.querySelectorAll('[data-strat]').forEach(b => b.addEventListener('click', () => {
+  document.querySelectorAll('[data-strat]').forEach(x => x.classList.remove('active'));
+  b.classList.add('active'); activeStrat = b.dataset.strat; applyFilters();
+}));
+
+function applyFilters() {
+  document.querySelectorAll('.os-card').forEach(c => {
+    const gOk = activeGroup === 'all' || c.dataset.group === activeGroup;
+    const dOk = activeDir   === 'all' || c.dataset.dir   === activeDir;
+    const sOk = activeStrat === 'all' || c.dataset.strat === activeStrat;
+    c.classList.toggle('hidden', !(gOk && dOk && sOk));
+  });
+  document.querySelectorAll('.os-group-hdr').forEach(hdr => {
+    const anyVisible = [...document.querySelectorAll(`.os-card[data-group="${hdr.dataset.group}"]`)]
+      .some(c => !c.classList.contains('hidden'));
+    hdr.style.display = anyVisible ? '' : 'none';
+  });
+}
+
+// ── P&L payoff calculation ────────────────────────────────────────────────────
+function computePnl(strategy, prices) {
+  return prices.map(spot => {
+    let pnl = 0;
+    for (const l of strategy.legs) {
+      const sign = l.action === 'BUY' ? 1 : -1;
+      pnl -= sign * (l.premium || 0);
+      if (l.type === 'call') pnl += sign * Math.max(0, spot - l.strike);
+      else                   pnl += sign * Math.max(0, l.strike - spot);
+    }
+    return pnl * 100; // per contract (100 shares)
+  });
+}
+
+// ── Candlestick chart ─────────────────────────────────────────────────────────
+function drawCandles(canvas, candles, strategy, spot) {
+  if (!candles || candles.length < 2) return;
+  const w = canvas.width, h = canvas.height;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, w, h);
+
+  // Background
+  ctx.fillStyle = '#0e1117';
+  ctx.fillRect(0, 0, w, h);
+
+  const highs  = candles.map(c => c[2]);
+  const lows   = candles.map(c => c[3]);
+  const strikes = strategy?.legs?.map(l => l.strike) || [];
+  const allHi = Math.max(...highs, ...strikes) * 1.008;
+  const allLo = Math.min(...lows,  ...strikes) * 0.992;
+  const pRange = allHi - allLo || 1;
+
+  const PAD = { t: 14, b: 24, l: 6, r: 62 };
+  const cw = w - PAD.l - PAD.r, ch = h - PAD.t - PAD.b;
+  const toY = p => PAD.t + ch * (1 - (p - allLo) / pRange);
+  const n = candles.length;
+  const barW = Math.max(1, Math.floor((cw / n) * 0.72));
+
+  // Grid lines
+  ctx.strokeStyle = 'rgba(255,255,255,.04)';
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= 4; i++) {
+    const y = PAD.t + ch * (i / 4);
+    ctx.beginPath(); ctx.moveTo(PAD.l, y); ctx.lineTo(w - PAD.r, y); ctx.stroke();
+  }
+
+  // Strategy zone shading
+  if (strategy?.legs) {
+    const type = strategy.type;
+    const byAction = (act) => strategy.legs.filter(l => l.action === act);
+    const byType   = (tp)  => strategy.legs.filter(l => l.type   === tp);
+
+    if (type === 'bull_put_spread') {
+      const sk = byAction('SELL')[0]?.strike, bk = byAction('BUY')[0]?.strike;
+      if (sk && bk) {
+        ctx.fillStyle = 'rgba(34,197,94,.07)';
+        ctx.fillRect(PAD.l, PAD.t, cw, toY(sk) - PAD.t);
+        ctx.fillStyle = 'rgba(239,68,68,.07)';
+        ctx.fillRect(PAD.l, toY(bk), cw, PAD.t + ch - toY(bk));
+      }
+    } else if (type === 'bear_call_spread') {
+      const sk = byAction('SELL')[0]?.strike, bk = byAction('BUY')[0]?.strike;
+      if (sk && bk) {
+        ctx.fillStyle = 'rgba(34,197,94,.07)';
+        ctx.fillRect(PAD.l, toY(sk), cw, PAD.t + ch - toY(sk));
+        ctx.fillStyle = 'rgba(239,68,68,.07)';
+        ctx.fillRect(PAD.l, PAD.t, cw, toY(bk) - PAD.t);
+      }
+    } else if (type === 'iron_condor') {
+      const sc = strategy.legs.find(l => l.action === 'SELL' && l.type === 'call');
+      const sp = strategy.legs.find(l => l.action === 'SELL' && l.type === 'put');
+      if (sc && sp) {
+        ctx.fillStyle = 'rgba(34,197,94,.07)';
+        const y1 = toY(sc.strike), y2 = toY(sp.strike);
+        ctx.fillRect(PAD.l, y1, cw, y2 - y1);
+      }
+    }
+
+    // Strike lines
+    for (const l of strategy.legs) {
+      const y = toY(l.strike);
+      const isBuy = l.action === 'BUY';
+      const isCall = l.type === 'call';
+      ctx.strokeStyle = isBuy
+        ? 'rgba(251,191,36,.85)'
+        : (isCall ? 'rgba(239,68,68,.85)' : 'rgba(34,197,94,.85)');
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([5, 3]);
+      ctx.beginPath(); ctx.moveTo(PAD.l, y); ctx.lineTo(w - PAD.r, y); ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Label
+      ctx.fillStyle = isBuy ? '#fbbf24' : (isCall ? '#f87171' : '#4ade80');
+      ctx.font = '9px monospace';
+      ctx.textAlign = 'left';
+      const ly = Math.min(Math.max(y, PAD.t + 8), h - PAD.b - 2);
+      const tag = `${l.action[0]}${l.type[0].toUpperCase()} $${l.strike >= 100 ? l.strike.toFixed(0) : l.strike.toFixed(2)}`;
+      ctx.fillText(tag, w - PAD.r + 3, ly);
+    }
+  }
+
+  // Candles
+  for (let i = 0; i < n; i++) {
+    const xBase = PAD.l + (cw * i / n) + (cw / n - barW) / 2;
+    const [, o, hi, lo, c] = candles[i];
+    const bull = c >= o;
+    ctx.strokeStyle = bull ? '#22c55e' : '#ef4444';
+    ctx.fillStyle   = bull ? '#22c55e' : '#ef4444';
+    const cx = xBase + barW / 2;
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(cx, toY(hi)); ctx.lineTo(cx, toY(lo)); ctx.stroke();
+    const bodyY = Math.min(toY(o), toY(c));
+    const bodyH = Math.max(Math.abs(toY(o) - toY(c)), 1);
+    ctx.fillRect(xBase, bodyY, barW, bodyH);
+  }
+
+  // Current price dashed line
+  const lcy = toY(spot);
+  ctx.strokeStyle = 'rgba(255,255,255,.28)'; ctx.lineWidth = 1; ctx.setLineDash([2, 4]);
+  ctx.beginPath(); ctx.moveTo(PAD.l, lcy); ctx.lineTo(w - PAD.r, lcy); ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Price axis
+  ctx.fillStyle = 'rgba(255,255,255,.4)';
+  ctx.font = '9px monospace'; ctx.textAlign = 'left';
+  [allLo, (allLo + allHi) / 2, allHi, spot].forEach(p => {
+    const y = toY(p);
+    if (y >= PAD.t && y <= h - PAD.b) {
+      ctx.fillText('$' + (p >= 100 ? p.toFixed(0) : p.toFixed(2)), w - PAD.r + 3, y + 4);
+    }
+  });
+
+  // Date axis (first, mid, last)
+  ctx.fillStyle = 'rgba(255,255,255,.3)'; ctx.textAlign = 'center';
+  [[0, PAD.l], [Math.floor(n/2), PAD.l + cw/2], [n-1, PAD.l + cw]].forEach(([idx, x]) => {
+    if (!candles[idx]) return;
+    const d = new Date(candles[idx][0] * 1000);
+    ctx.fillText(`${d.getMonth()+1}/${d.getDate()}`, x, h - 4);
+  });
+}
+
+// ── P&L diagram ──────────────────────────────────────────────────────────────
+function drawPnl(canvas, strategy, spot) {
+  if (!strategy?.legs) return;
+  const w = canvas.width, h = canvas.height;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, w, h);
+  ctx.fillStyle = '#0e1117'; ctx.fillRect(0, 0, w, h);
+
+  const PAD = { t: 8, b: 20, l: 52, r: 8 };
+  const cw = w - PAD.l - PAD.r, ch = h - PAD.t - PAD.b;
+
+  const pLo = spot * 0.82, pHi = spot * 1.18;
+  const STEPS = 140;
+  const prices = Array.from({length: STEPS}, (_, i) => pLo + (pHi - pLo) * i / (STEPS - 1));
+  const pnls = computePnl(strategy, prices);
+
+  const maxPnl = Math.max(...pnls, 0);
+  const minPnl = Math.min(...pnls, 0);
+  const pnlRange = maxPnl - minPnl || 1;
+
+  const toX = p => PAD.l + cw * (p - pLo) / (pHi - pLo);
+  const toY = v => PAD.t + ch * (1 - (v - minPnl) / pnlRange);
+
+  // Grid
+  ctx.strokeStyle = 'rgba(255,255,255,.04)'; ctx.lineWidth = 1;
+  for (let i = 0; i <= 3; i++) {
+    const y = PAD.t + ch * (i / 3);
+    ctx.beginPath(); ctx.moveTo(PAD.l, y); ctx.lineTo(w - PAD.r, y); ctx.stroke();
+  }
+
+  // Zero line
+  const zy = toY(0);
+  ctx.strokeStyle = 'rgba(255,255,255,.18)'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(PAD.l, zy); ctx.lineTo(w - PAD.r, zy); ctx.stroke();
+
+  // Profit fill (green above zero line)
+  ctx.beginPath();
+  ctx.moveTo(PAD.l, zy);
+  for (let i = 0; i < STEPS; i++) ctx.lineTo(toX(prices[i]), toY(Math.max(0, pnls[i])));
+  ctx.lineTo(PAD.l + cw, zy); ctx.closePath();
+  ctx.fillStyle = 'rgba(34,197,94,.15)'; ctx.fill();
+
+  // Loss fill (red below zero line)
+  ctx.beginPath();
+  ctx.moveTo(PAD.l, zy);
+  for (let i = 0; i < STEPS; i++) ctx.lineTo(toX(prices[i]), toY(Math.min(0, pnls[i])));
+  ctx.lineTo(PAD.l + cw, zy); ctx.closePath();
+  ctx.fillStyle = 'rgba(239,68,68,.15)'; ctx.fill();
+
+  // P&L curve
+  ctx.beginPath();
+  ctx.strokeStyle = '#a78bfa'; ctx.lineWidth = 2;
+  for (let i = 0; i < STEPS; i++) {
+    const x = toX(prices[i]), y = toY(pnls[i]);
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+
+  // Current spot line
+  const sx = toX(spot);
+  ctx.strokeStyle = 'rgba(255,230,0,.55)'; ctx.lineWidth = 1.5; ctx.setLineDash([3, 3]);
+  ctx.beginPath(); ctx.moveTo(sx, PAD.t); ctx.lineTo(sx, h - PAD.b); ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Breakeven dots
+  if (strategy.breakeven) {
+    for (const be of strategy.breakeven) {
+      if (be >= pLo && be <= pHi) {
+        const bx = toX(be);
+        ctx.fillStyle = '#fbbf24';
+        ctx.beginPath(); ctx.arc(bx, zy, 4, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#fbbf24'; ctx.font = '9px monospace'; ctx.textAlign = 'center';
+        ctx.fillText('BE', bx, zy - 7);
+      }
+    }
+  }
+
+  // Y-axis
+  ctx.font = '8px monospace'; ctx.textAlign = 'right';
+  [maxPnl, 0, minPnl].forEach(v => {
+    const y = toY(v);
+    if (y >= PAD.t && y <= h - PAD.b) {
+      const abs = Math.abs(v);
+      const lbl = abs >= 1000 ? `$${(v / 1000).toFixed(1)}k` : `$${v.toFixed(0)}`;
+      ctx.fillStyle = v > 0 ? '#4ade80' : v < 0 ? '#f87171' : 'rgba(255,255,255,.4)';
+      ctx.fillText(lbl, PAD.l - 3, y + 4);
+    }
+  });
+
+  // X-axis label
+  ctx.fillStyle = 'rgba(255,255,255,.3)'; ctx.font = '8px monospace'; ctx.textAlign = 'center';
+  ctx.fillText(`P&L at Expiry  ·  Current: $${spot.toFixed(2)}`, PAD.l + cw / 2, h - 4);
+}
+
+// ── Badge helpers ─────────────────────────────────────────────────────────────
+function dirBadge(d) {
+  const cls  = d === 'BULLISH' ? 'badge-bull' : d === 'BEARISH' ? 'badge-bear' : 'badge-neut';
+  const icon = d === 'BULLISH' ? '↑' : d === 'BEARISH' ? '↓' : '↔';
+  return `<span class="badge ${cls}">${icon} ${d}</span>`;
+}
+function volBadge(v) {
+  const lbl = v === 0 ? 'Low Vol' : v === 2 ? 'High Vol' : 'Normal Vol';
+  return `<span class="badge badge-vol">${lbl}</span>`;
+}
+function stratBadge(name) {
+  return `<span class="badge badge-strat">${name}</span>`;
+}
+
+// ── Build card HTML ───────────────────────────────────────────────────────────
+function buildCard(a) {
+  const id = `card-${a.symbol.replace(/[^a-z0-9]/gi, '_')}`;
+
+  if (a.no_options) {
+    return `<div class="os-card" id="${id}" data-group="${a.group}" data-dir="${a.direction}" data-strat="none">
+      <div class="os-card-hdr">
+        <div><div class="os-card-sym">${a.symbol}</div><div class="os-card-lbl">${a.label || ''} &middot; $${(a.spot||0).toFixed(2)}</div></div>
+        <div class="os-card-badges">${dirBadge(a.direction)}<span class="badge badge-vol">No Options</span></div>
+      </div>
+      <div class="os-chart-wrap" style="height:200px">
+        <canvas id="cv-${id}"></canvas>
+        <span class="os-chart-label">90d Daily · No Listed Options</span>
+      </div>
+      <div class="os-no-opts">⚠️ No listed options data available for this asset via yfinance</div>
+    </div>`;
+  }
+
+  const s = a.strategy;
+  const netHtml = s.net_credit != null
+    ? `<span class="val-credit">+$${(s.net_credit * 100).toFixed(0)}/contract</span>`
+    : `<span class="val-debit">-$${((s.net_debit || 0) * 100).toFixed(0)}/contract</span>`;
+
+  const legsRows = (s.legs || []).map(l => {
+    const actCls = l.action === 'BUY' ? 'action-buy' : 'action-sell';
+    const strikeFmt = l.strike >= 100 ? l.strike.toFixed(0) : l.strike.toFixed(2);
+    return `<tr>
+      <td class="${actCls}">${l.action}</td>
+      <td>${l.type.toUpperCase()}</td>
+      <td>$${strikeFmt}</td>
+      <td>${l.expiry}</td>
+      <td>${l.dte}d</td>
+      <td>$${(l.premium || 0).toFixed(2)}</td>
+      <td>${(l.iv || 0).toFixed(1)}%</td>
+      <td>${(l.delta || 0).toFixed(3)}</td>
+      <td style="font-size:.65rem;color:var(--muted)">${(l.contract || '').slice(0, 20)}</td>
+    </tr>`;
+  }).join('');
+
+  const maxPStr = s.max_profit != null ? `$${s.max_profit.toFixed(0)}` : '∞';
+  const beStr   = (s.breakeven || []).map(b => `$${b.toFixed(2)}`).join(' / ') || '—';
+  const ppStr   = s.prob_profit != null ? `${(s.prob_profit * 100).toFixed(0)}%` : '—';
+
+  return `<div class="os-card" id="${id}" data-group="${a.group}" data-dir="${a.direction}" data-strat="${s.type}">
+    <div class="os-card-hdr">
+      <div>
+        <div class="os-card-sym">${a.symbol}</div>
+        <div class="os-card-lbl">${a.label || ''} &middot; $${a.spot.toFixed(2)}</div>
+      </div>
+      <div class="os-card-badges">${dirBadge(a.direction)}${stratBadge(s.name)}${volBadge(a.vol_regime)}</div>
+    </div>
+    <div class="os-chart-wrap">
+      <canvas id="cv-${id}"></canvas>
+      <span class="os-chart-label">90d Daily · Strike Levels</span>
+    </div>
+    <div class="os-pnl-wrap">
+      <canvas id="pnl-${id}"></canvas>
+    </div>
+    <div class="os-legs">
+      <div class="os-legs-title">Option Legs</div>
+      <table class="os-legs-table">
+        <thead><tr><th>Action</th><th>Type</th><th>Strike</th><th>Expiry</th><th>DTE</th><th>Premium</th><th>IV</th><th>Delta</th><th>Contract</th></tr></thead>
+        <tbody>${legsRows}</tbody>
+      </table>
+    </div>
+    <div class="os-metrics">
+      <div class="os-metric"><div class="os-metric-val">${netHtml}</div><div class="os-metric-lbl">Net Premium</div></div>
+      <div class="os-metric"><div class="os-metric-val val-profit">${maxPStr}</div><div class="os-metric-lbl">Max Profit</div></div>
+      <div class="os-metric"><div class="os-metric-val val-loss">-$${(s.max_loss || 0).toFixed(0)}</div><div class="os-metric-lbl">Max Loss</div></div>
+      <div class="os-metric"><div class="os-metric-val val-be">${beStr}</div><div class="os-metric-lbl">Breakeven(s)</div></div>
+      <div class="os-metric"><div class="os-metric-val">${ppStr}</div><div class="os-metric-lbl">Prob Profit</div></div>
+    </div>
+    <div class="os-desc">${s.description || ''}</div>
+  </div>`;
+}
+
+// ── Render all canvases ───────────────────────────────────────────────────────
+function renderCharts(assets) {
+  for (const a of assets) {
+    const id = `card-${a.symbol.replace(/[^a-z0-9]/gi, '_')}`;
+
+    // Candlestick (shown for all including no_options)
+    const cv = document.getElementById(`cv-${id}`);
+    if (cv) {
+      const wrap = cv.parentElement;
+      cv.width  = wrap.clientWidth * DPR;
+      cv.height = wrap.clientHeight * DPR;
+      cv.style.width  = wrap.clientWidth  + 'px';
+      cv.style.height = wrap.clientHeight + 'px';
+      drawCandles(cv, a.candles, a.strategy || null, a.spot);
+    }
+
+    if (a.no_options) continue;
+
+    // P&L diagram
+    const pv = document.getElementById(`pnl-${id}`);
+    if (pv) {
+      const wrap = pv.parentElement;
+      pv.width  = wrap.clientWidth * DPR;
+      pv.height = wrap.clientHeight * DPR;
+      pv.style.width  = wrap.clientWidth  + 'px';
+      pv.style.height = wrap.clientHeight + 'px';
+      drawPnl(pv, a.strategy, a.spot);
+    }
+  }
+}
+
+// ── Stats strip ───────────────────────────────────────────────────────────────
+function updateStats(assets) {
+  const bull = assets.filter(a => a.direction === 'BULLISH').length;
+  const bear = assets.filter(a => a.direction === 'BEARISH').length;
+  const neut = assets.filter(a => a.direction === 'NEUTRAL').length;
+  const valid = assets.filter(a => !a.no_options && a.strategy);
+  const calls   = valid.filter(a => ['long_call', 'long_put'].includes(a.strategy.type)).length;
+  const spreads = valid.filter(a => ['bull_put_spread', 'bear_call_spread'].includes(a.strategy.type)).length;
+  const condors = valid.filter(a => a.strategy.type === 'iron_condor').length;
+  const credits = valid.filter(a => a.strategy.net_credit != null).map(a => a.strategy.net_credit * 100);
+  const avgCredit = credits.length ? credits.reduce((a, b) => a + b, 0) / credits.length : 0;
+
+  document.getElementById('stat-total').textContent    = assets.length;
+  document.getElementById('stat-bull').textContent     = bull;
+  document.getElementById('stat-bear').textContent     = bear;
+  document.getElementById('stat-neut').textContent     = neut;
+  document.getElementById('stat-calls').textContent    = calls;
+  document.getElementById('stat-spreads').textContent  = spreads;
+  document.getElementById('stat-condors').textContent  = condors;
+  document.getElementById('stat-avgcredit').textContent = `$${avgCredit.toFixed(0)}`;
+}
+
+// ── Main load ─────────────────────────────────────────────────────────────────
+async function loadData(nocache = false) {
+  try {
+    const url = `${API}/api/options-strategy${nocache ? '?nocache=1' : ''}`;
+    const res = await fetch(url, { signal: AbortSignal.timeout(120000) });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('content').style.display = '';
+
+    const assets = data.assets || [];
+    updateStats(assets);
+
+    const groups = {};
+    for (const a of assets) {
+      if (!groups[a.group]) groups[a.group] = [];
+      groups[a.group].push(a);
+    }
+
+    const groupOrder = ['ETFs', 'Mag 7', 'Blue Chips', 'Futures'];
+    let html = '';
+    for (const grp of groupOrder) {
+      const ga = groups[grp] || [];
+      if (!ga.length) continue;
+      html += `<div class="os-group-hdr" data-group="${grp}">${grp}</div>`;
+      html += `<div class="os-grid">${ga.map(buildCard).join('')}</div>`;
+    }
+    document.getElementById('content').innerHTML = html;
+
+    requestAnimationFrame(() => {
+      renderCharts(assets);
+      applyFilters();
+    });
+
+    document.getElementById('refresh-ts').textContent =
+      `Data as of ${new Date(data.timestamp || Date.now()).toLocaleString()} · Auto-refreshes every 10 min`;
+
+  } catch (e) {
+    document.getElementById('loading').innerHTML =
+      `<div style="color:#f87171;font-size:1rem">⚠️ Failed to load: ${e.message}</div>
+       <div style="font-size:.82rem;color:var(--muted);margin-top:.5rem">Make sure <code>python live-server.py</code> is running on port 5050</div>`;
+  }
+}
+
+loadData();
+setInterval(() => loadData(), 10 * 60 * 1000);
+</script>
+<script src="ibkr-widget.js"></script>
+</body>
+</html>

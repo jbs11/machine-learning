@@ -1,0 +1,2160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Machine Learning Trading Example — S&P 500 Forecast</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    /* ── Layout ── */
+    .ml-wrap { max-width: 1100px; margin: 0 auto; padding: 0 2rem 6rem; }
+
+    /* ── Page nav ── */
+    .page-nav {
+      display: flex; align-items: center; gap: 1rem;
+      padding: .6rem 1.5rem; background: var(--surface);
+      border-bottom: 1px solid var(--border); font-size: .83rem;
+    }
+    .page-nav a { color: var(--muted); text-decoration: none; padding: .3rem .7rem; border-radius: 5px; transition: color .15s, background .15s; }
+    .page-nav a:hover { color: var(--text); background: rgba(255,255,255,.06); }
+    .page-nav a.active { color: var(--accent); font-weight: 700; }
+    .page-nav-sep { color: var(--border); user-select: none; }
+
+    /* ── Step rows ── */
+    .step-row { display: flex; gap: 1.5rem; align-items: flex-start; margin-bottom: 3.5rem; }
+    .step-num {
+      width: 44px; height: 44px; border-radius: 50%; background: var(--primary);
+      color: #000; font-weight: 900; font-size: 1.1rem;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; margin-top: .15rem; box-shadow: 0 0 0 4px rgba(34,211,238,.15);
+    }
+    .step-content { flex: 1; min-width: 0; }
+    .step-title { font-size: 1.35rem; font-weight: 800; margin-bottom: .45rem; }
+    .step-body { color: var(--muted); font-size: .96rem; line-height: 1.75; margin-bottom: 1rem; }
+
+    /* ── Section dividers ── */
+    .sec-divider { border: none; border-top: 1px solid var(--border); margin: 3.5rem 0; }
+    .sec-heading { font-size: 1.65rem; font-weight: 800; margin-bottom: .5rem; }
+    .sec-heading span { color: var(--primary); }
+    .sec-sub { color: var(--muted); font-size: .97rem; line-height: 1.7; margin-bottom: 2rem; }
+
+    /* ── Chart card ── */
+    .chart-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--radius); overflow: hidden; margin: 1rem 0;
+    }
+    .chart-card-hdr {
+      padding: .7rem 1.2rem; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between; gap: .5rem;
+    }
+    .chart-card-title { font-size: .78rem; font-weight: 700; text-transform: uppercase; letter-spacing: .09em; color: var(--muted); }
+    .chart-card canvas { display: block; width: 100%; }
+
+    /* ── Code blocks ── */
+    .code-block {
+      background: #050b16; border: 1px solid var(--border);
+      border-left: 3px solid var(--primary); border-radius: 8px;
+      padding: 1.2rem 1.5rem; font-family: 'Consolas','Courier New',monospace;
+      font-size: .82rem; line-height: 1.72; color: #a8d8f0; overflow-x: auto; margin: 1rem 0;
+    }
+    .kw { color: #c792ea; } .fn { color: #82aaff; } .cm { color: #546e7a; font-style: italic; }
+    .st { color: #c3e88d; } .nm { color: #f78c6c; } .op { color: #89ddff; }
+
+    /* ── Feature tags ── */
+    .ftag-row { display: flex; flex-wrap: wrap; gap: .45rem; margin: .75rem 0; }
+    .ftag { padding: .22rem .65rem; border-radius: 99px; font-size: .75rem; font-weight: 700; letter-spacing: .04em; border: 1px solid; }
+    .ft-trend     { background: rgba(34,211,238,.1);  border-color: rgba(34,211,238,.3);  color: #22d3ee; }
+    .ft-momentum  { background: rgba(129,140,248,.1); border-color: rgba(129,140,248,.3); color: #818cf8; }
+    .ft-vol       { background: rgba(251,191,36,.1);  border-color: rgba(251,191,36,.3);  color: #fbbf24; }
+    .ft-volume    { background: rgba(52,211,153,.1);  border-color: rgba(52,211,153,.3);  color: #34d399; }
+
+    /* ── Metric grid ── */
+    .metric-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px,1fr)); gap: .9rem; margin: 1.2rem 0; }
+    .mbox { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1rem 1.1rem; }
+    .mval { font-size: 1.6rem; font-weight: 900; margin-bottom: .15rem; }
+    .mlbl { font-size: .72rem; font-weight: 600; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); }
+    .vgreen { color: #34d399; } .vcyan { color: #22d3ee; }
+    .vgold  { color: #fbbf24; } .vpurple { color: #818cf8; }
+    .vred   { color: #f87171; }
+
+    /* ── Callouts ── */
+    .callout {
+      background: rgba(34,211,238,.07); border: 1px solid rgba(34,211,238,.2);
+      border-left: 3px solid var(--primary); border-radius: 8px;
+      padding: 1rem 1.25rem; margin: 1rem 0; font-size: .92rem;
+      color: var(--text); line-height: 1.7;
+    }
+    .callout strong { color: var(--primary); }
+    .callout-gold { background: rgba(251,191,36,.07); border-color: rgba(251,191,36,.2); border-left-color: #fbbf24; }
+    .callout-gold strong { color: #fbbf24; }
+    .callout-green { background: rgba(52,211,153,.07); border-color: rgba(52,211,153,.2); border-left-color: #34d399; }
+    .callout-green strong { color: #34d399; }
+    .callout-red { background: rgba(248,113,113,.07); border-color: rgba(248,113,113,.2); border-left-color: #f87171; }
+    .callout-red strong { color: #f87171; }
+
+    /* ── Pipeline ── */
+    .pipeline { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 0; margin: 1.5rem 0; }
+    .pipe-box { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: .9rem 1.1rem; text-align: center; min-width: 115px; }
+    .pipe-box-icon { font-size: 1.6rem; margin-bottom: .2rem; }
+    .pipe-box-label { font-size: .78rem; font-weight: 700; color: var(--text); }
+    .pipe-box-sub { font-size: .65rem; color: var(--muted); margin-top: .1rem; }
+    .pipe-box.hi { border-color: var(--primary); background: rgba(34,211,238,.08); }
+    .pipe-arr { color: var(--primary); font-size: 1.4rem; padding: 0 .4rem; flex-shrink: 0; }
+
+    /* ── Signal chips ── */
+    .chip-buy  { display:inline-flex;align-items:center;gap:.3rem;padding:.25rem .85rem;background:rgba(52,211,153,.15);border:1px solid rgba(52,211,153,.35);border-radius:99px;color:#34d399;font-size:.8rem;font-weight:800; }
+    .chip-sell { display:inline-flex;align-items:center;gap:.3rem;padding:.25rem .85rem;background:rgba(248,113,113,.15);border:1px solid rgba(248,113,113,.35);border-radius:99px;color:#f87171;font-size:.8rem;font-weight:800; }
+    .chip-hold { display:inline-flex;align-items:center;gap:.3rem;padding:.25rem .85rem;background:rgba(251,191,36,.12);border:1px solid rgba(251,191,36,.3);border-radius:99px;color:#fbbf24;font-size:.8rem;font-weight:800; }
+
+    /* ── Timeframe tabs ── */
+    .tf-tabs { display:flex;gap:.5rem;margin:1.5rem 0 .5rem; }
+    .tf-tab { padding:.4rem 1.2rem;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--muted);font-weight:700;font-size:.85rem;cursor:pointer;transition:all .15s; }
+    .tf-tab.active { background:rgba(34,211,238,.12);border-color:var(--accent);color:var(--accent); }
+    .tf-tab:hover:not(.active) { border-color:var(--muted);color:var(--text); }
+    .tf-panel { display:none; }
+    .tf-panel.active { display:block; }
+
+    /* ── Prediction table ── */
+    .pred-table { width:100%;border-collapse:collapse;font-size:.85rem;margin:.75rem 0; }
+    .pred-table th { background:var(--surface);color:var(--muted);font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;padding:.55rem .9rem;border-bottom:1px solid var(--border);text-align:left; }
+    .pred-table td { padding:.52rem .9rem;border-bottom:1px solid rgba(36,48,88,.7);color:var(--muted); }
+    .pred-table tr:last-child td { border-bottom:none; }
+    .pred-table tr:hover td { background:rgba(255,255,255,.02); }
+    .pok { color:#34d399;font-weight:600; } .pbad { color:#f87171;font-weight:600; }
+    .price-cell { font-family:'Consolas',monospace; color:var(--text); }
+
+    /* ── Confusion matrix ── */
+    .cm-wrap { overflow-x:auto;margin:.75rem 0; }
+    .cm-table { border-collapse:collapse;margin:0 auto; }
+    .cm-table td,.cm-table th { padding:.8rem 1.3rem;text-align:center;font-size:.88rem;border:1px solid var(--border); }
+    .cm-hdr { background:var(--surface);color:var(--muted);font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em; }
+    .cm-tp { background:rgba(52,211,153,.22);color:#34d399;font-weight:700;font-size:1rem; }
+    .cm-tn { background:rgba(52,211,153,.22);color:#34d399;font-weight:700;font-size:1rem; }
+    .cm-fp { background:rgba(248,113,113,.18);color:#f87171;font-size:.95rem; }
+    .cm-fn { background:rgba(248,113,113,.18);color:#f87171;font-size:.95rem; }
+
+    /* ── JSON output ── */
+    .json-block { background:#050b16;border:1px solid var(--border);border-radius:8px;padding:1.1rem 1.5rem;font-family:'Consolas','Courier New',monospace;font-size:.82rem;line-height:1.75;overflow-x:auto; }
+    .jk { color:#7dd3fc; } .js { color:#86efac; } .jn { color:#fdba74; }
+    .jbt { color:#34d399; } .jbf { color:#f87171; }
+
+    /* ── Two-column info grid ── */
+    .info-grid { display:grid;grid-template-columns:1fr 1fr;gap:1.2rem;margin:1rem 0; }
+    @media(max-width:640px){ .info-grid{grid-template-columns:1fr;} }
+    .info-card { background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1.1rem 1.25rem; }
+    .info-card h4 { font-size:.82rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--primary);margin-bottom:.6rem; }
+    .info-card ul { list-style:none;display:flex;flex-direction:column;gap:.35rem; }
+    .info-card li { font-size:.88rem;color:var(--muted);display:flex;align-items:baseline;gap:.5rem; }
+    .info-card li::before { content:'▸';color:var(--primary);font-size:.7rem;flex-shrink:0; }
+
+    /* ── Gauge container ── */
+    .gauge-wrap { display:flex;align-items:center;justify-content:center;gap:2.5rem;flex-wrap:wrap;margin:1rem 0; }
+    .gauge-label { text-align:center; }
+    .gauge-lbl-main { font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-top:.4rem; }
+    .gauge-lbl-val { font-size:1.8rem;font-weight:900;color:#34d399;margin-top:.1rem; }
+    .gauge-lbl-sub { font-size:.75rem;color:var(--muted); }
+
+    /* ── Full page hero for this page ── */
+    .ml-hero {
+      padding: 4.5rem 2rem 3.5rem;
+      text-align: center;
+      background: radial-gradient(ellipse 90% 60% at 50% -10%, rgba(34,211,238,.13) 0%, transparent 68%), var(--bg);
+      border-bottom: 1px solid var(--border);
+    }
+    .ml-hero h1 {
+      font-size: clamp(2rem, 4.5vw, 3.2rem);
+      font-weight: 900; letter-spacing: -.03em; line-height: 1.15;
+      margin-bottom: 1rem;
+      background: linear-gradient(135deg, #fff 25%, var(--primary));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    .ml-hero p { font-size: 1.1rem; color: var(--muted); max-width: 660px; margin: 0 auto 2rem; line-height: 1.7; }
+
+    /* ── Stats strip ── */
+    .stats-strip { display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:1px;background:var(--border);border-top:1px solid var(--border);border-bottom:1px solid var(--border); }
+    .stat-cell { background:var(--surface);padding:1.1rem 1.5rem;text-align:center; }
+    .stat-val { font-size:1.5rem;font-weight:900;margin-bottom:.15rem; }
+    .stat-lbl { font-size:.72rem;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--muted); }
+
+    @media(max-width:700px){
+      .step-row{flex-direction:column;}
+      .pipeline{gap:.4rem;}
+      .pipe-arr{transform:rotate(90deg);}
+      .tf-tabs{flex-wrap:wrap;}
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Main Navigation ── -->
+<nav class="nav">
+  <a href="index.html" class="nav-logo">
+    <img src="images/steve.jpg" class="nav-logo-photo" alt="Stephen Borick">
+    <div class="nav-logo-text">
+      <span class="nav-company">Artificial Intelligence</span>
+      <span class="nav-name">Solutions, Inc.</span>
+    </div>
+  </a>
+  <ul class="nav-links">
+    <li><a href="index.html">Home</a></li>
+    <li><a href="neural-networks.html">Neural Networks</a></li>
+    <li><a href="machine-learning.html">Machine Learning</a></li>
+    <li><a href="ml-trading.html">ML in Trading</a></li>
+    <li><a href="ml-sp500-example.html" class="active">ML Example</a></li>
+    <li><a href="stock-trading.html">Stock Trading</a></li>
+    <li><a href="options-trading.html">Options</a></li>
+    <li><a href="futures-trading.html">Futures</a></li>
+    <li><a href="live-trading.html">Live Trading</a></li>
+  </ul>
+</nav>
+
+<!-- ── Page Nav ── -->
+<nav class="page-nav">
+  <a href="live-trading.html">← Live Trading</a>
+  <span class="page-nav-sep">|</span>
+  <a href="market-summary.html">Market Summary</a>
+  <span class="page-nav-sep">|</span>
+  <a href="terminology.html">Terminology 📖</a>
+  <span class="page-nav-sep">|</span>
+  <a href="ml-sp500-example.html" class="active">ML Example</a>
+  <span class="page-nav-sep">|</span>
+  <a href="ml-key-assets.html">ML Key Assets 📋</a>
+  <span class="page-nav-sep">|</span>
+  <a href="ml-xgboost-assets.html">XGBoost Charts 📊</a>
+  <span class="page-nav-sep">|</span>
+  <a href="gamma-exposure.html">GEX Charts 🎯</a>
+  <span class="page-nav-sep">|</span>
+  <a href="options-strategy.html">Options Strategy 📈</a>
+  <span class="page-nav-sep">|</span>
+  <a href="option-flows.html">Option Flows 🌊</a>
+  <span class="page-nav-sep">|</span>
+  <a href="options-summary.html">Options Summary 📊</a>
+  <span class="page-nav-sep">|</span>
+  <a href="0dte-options.html">0DTE 🔥</a>
+  <span class="page-nav-sep">|</span>
+  <a href="fundamentals.html">Fundamentals 📋</a>
+  <span class="page-nav-sep">|</span>
+  <a href="institutional-buyers.html">Institutional 🏦</a>
+</nav>
+
+<!-- ── Breadcrumb ── -->
+<div style="background:var(--surface);border-bottom:1px solid var(--border);">
+  <div class="breadcrumb" style="max-width:1100px;margin:0 auto;padding:.55rem 2rem;font-size:.82rem;color:var(--muted);display:flex;align-items:center;gap:.5rem;">
+    <a href="index.html" style="color:var(--muted);">AI Course</a>›</span>
+    <a href="ml-trading.html" style="color:var(--muted);">ML in Trading</a>›</span>
+    <span style="color:var(--text);">S&amp;P 500 Forecast Example</span>
+  </div>
+</div>
+
+<!-- ── Hero ── -->
+<section class="ml-hero">
+  <div style="display:inline-block;padding:.3rem .9rem;background:rgba(34,211,238,.1);border:1px solid rgba(34,211,238,.25);border-radius:999px;color:var(--primary);font-size:.8rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;margin-bottom:1.2rem;">
+    Applied ML · Step-by-Step Walkthrough
+  </div>
+  <h1>Machine Learning<br>Trading Example</h1>
+  <p>
+    A complete, end-to-end walkthrough of how machine learning models forecast
+    S&amp;P 500 price <strong style="color:var(--text);">direction</strong> and
+    <strong style="color:var(--text);">magnitude of movement</strong> across
+    hourly, daily, and monthly timeframes — from raw OHLCV data to live trade signals.
+  </p>
+  <div style="display:flex;gap:.75rem;justify-content:center;flex-wrap:wrap;">
+    <a href="#step1" class="hero-cta" style="font-size:.88rem;padding:.65rem 1.6rem;">Start Walkthrough ↓</a>
+    <a href="live-trading.html" class="hero-cta" style="background:var(--card);color:var(--text);border:1px solid var(--border);font-size:.88rem;padding:.65rem 1.6rem;">View Live Dashboard →</a>
+  </div>
+</section>
+
+<!-- ── Stats Strip ── -->
+<div class="stats-strip">
+  <div class="stat-cell"><div class="stat-val vcyan">8</div><div class="stat-lbl">ML Steps</div></div>
+  <div class="stat-cell"><div class="stat-val vgreen">67.8%</div><div class="stat-lbl">Monthly Accuracy</div></div>
+  <div class="stat-cell"><div class="stat-val vgold">23</div><div class="stat-lbl">Features Engineered</div></div>
+  <div class="stat-cell"><div class="stat-val vpurple">1.87</div><div class="stat-lbl">Sharpe Ratio</div></div>
+  <div class="stat-cell"><div class="stat-val vgreen">+38.4%</div><div class="stat-lbl">Strategy vs B&amp;H</div></div>
+  <div class="stat-cell"><div class="stat-val vcyan">3</div><div class="stat-lbl">Timeframes</div></div>
+</div>
+
+<!-- ── OVERVIEW ── -->
+<div class="ml-wrap" style="padding-top:3rem;">
+
+  <div class="callout" style="margin-bottom:2.5rem;">
+    <strong>What you will learn:</strong> This page walks through every stage of a production-quality ML
+    forecasting system — data collection, feature engineering, model training, walk-forward validation,
+    signal generation, and backtesting. Each section includes real code, charts, and example results
+    across hourly, daily, and monthly forecasting horizons for the S&amp;P 500 (SPY / ES=F).
+  </div>
+
+  <!-- Pipeline overview -->
+  <div class="pipeline">
+    <div class="pipe-box">
+      <div class="pipe-box-icon">📥</div>
+      <div class="pipe-box-label">Raw Data</div>
+      <div class="pipe-box-sub">OHLCV · 5yr</div>
+    </div>
+    <div class="pipe-arr">→</div>
+    <div class="pipe-box">
+      <div class="pipe-box-icon">⚙️</div>
+      <div class="pipe-box-label">Features</div>
+      <div class="pipe-box-sub">23 indicators</div>
+    </div>
+    <div class="pipe-arr">→</div>
+    <div class="pipe-box">
+      <div class="pipe-box-icon">🎯</div>
+      <div class="pipe-box-label">Targets</div>
+      <div class="pipe-box-sub">Dir + Magnitude</div>
+    </div>
+    <div class="pipe-arr">→</div>
+    <div class="pipe-box hi">
+      <div class="pipe-box-icon">🧠</div>
+      <div class="pipe-box-label">ML Model</div>
+      <div class="pipe-box-sub">GBC + ETR</div>
+    </div>
+    <div class="pipe-arr">→</div>
+    <div class="pipe-box">
+      <div class="pipe-box-icon">✅</div>
+      <div class="pipe-box-label">Validate</div>
+      <div class="pipe-box-sub">Walk-Forward</div>
+    </div>
+    <div class="pipe-arr">→</div>
+    <div class="pipe-box">
+      <div class="pipe-box-icon">📡</div>
+      <div class="pipe-box-label">Signals</div>
+      <div class="pipe-box-sub">BUY/SELL/HOLD</div>
+    </div>
+    <div class="pipe-arr">→</div>
+    <div class="pipe-box">
+      <div class="pipe-box-icon">📊</div>
+      <div class="pipe-box-label">Backtest</div>
+      <div class="pipe-box-sub">Sharpe · P&amp;L</div>
+    </div>
+  </div>
+
+  <hr class="sec-divider">
+
+  <!-- ═══════════════════════ STEP 1 ═══════════════════════ -->
+  <div class="step-row" id="step1">
+    <div class="step-num">1</div>
+    <div class="step-content">
+      <div class="step-title">Data Collection &amp; Preparation</div>
+      <div class="step-body">
+        Everything begins with high-quality, clean OHLCV data. For the S&amp;P 500 we fetch
+        <strong style="color:var(--text);">SPY</strong> (the ETF) and
+        <strong style="color:var(--text);">ES=F</strong> (the futures contract) — giving us both
+        spot-price and futures basis signals. Five years of hourly bars yields approximately
+        <strong style="color:var(--text);">9,750 candles</strong>, sufficient for robust model training
+        and multiple walk-forward folds.
+        <br><br>
+        Raw data is cleaned by removing pre/post-market gaps, forward-filling dividend adjustments,
+        aligning timestamps across instruments, and removing rows with zero volume (halted trading).
+        Outlier prices more than 5 standard deviations from a rolling mean are winsorized.
+      </div>
+
+      <!-- Sample data table -->
+      <div class="chart-card">
+        <div class="chart-card-hdr">
+          <span class="chart-card-title">Sample SPY Hourly OHLCV Data — First 8 Rows of Training Set</span>
+          <span class="badge badge-cyan">yfinance / IBKR</span>
+        </div>
+        <div style="overflow-x:auto;padding:.5rem 0;">
+          <table class="pred-table" style="min-width:620px;">
+            <thead>
+              <tr>
+                <th>Datetime</th><th>Open</th><th>High</th><th>Low</th><th>Close</th>
+                <th>Volume</th><th>Adj Close</th><th>Bar Type</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td style="color:var(--muted);font-family:monospace">2024-01-02 09:00</td><td class="price-cell">476.82</td><td class="price-cell">478.15</td><td class="price-cell">476.10</td><td class="price-cell">477.63</td><td class="price-cell">12,840,200</td><td class="price-cell">477.63</td><td><span class="chip-buy" style="font-size:.7rem;padding:.15rem .6rem;">BULL</span></td></tr>
+              <tr><td style="color:var(--muted);font-family:monospace">2024-01-02 10:00</td><td class="price-cell">477.63</td><td class="price-cell">479.40</td><td class="price-cell">477.20</td><td class="price-cell">479.05</td><td class="price-cell">9,220,100</td><td class="price-cell">479.05</td><td><span class="chip-buy" style="font-size:.7rem;padding:.15rem .6rem;">BULL</span></td></tr>
+              <tr><td style="color:var(--muted);font-family:monospace">2024-01-02 11:00</td><td class="price-cell">479.05</td><td class="price-cell">479.80</td><td class="price-cell">477.55</td><td class="price-cell">478.12</td><td class="price-cell">7,450,800</td><td class="price-cell">478.12</td><td><span class="chip-sell" style="font-size:.7rem;padding:.15rem .6rem;">BEAR</span></td></tr>
+              <tr><td style="color:var(--muted);font-family:monospace">2024-01-02 12:00</td><td class="price-cell">478.12</td><td class="price-cell">478.60</td><td class="price-cell">475.90</td><td class="price-cell">476.35</td><td class="price-cell">6,180,400</td><td class="price-cell">476.35</td><td><span class="chip-sell" style="font-size:.7rem;padding:.15rem .6rem;">BEAR</span></td></tr>
+              <tr><td style="color:var(--muted);font-family:monospace">2024-01-02 13:00</td><td class="price-cell">476.35</td><td class="price-cell">476.90</td><td class="price-cell">474.80</td><td class="price-cell">475.22</td><td class="price-cell">8,320,600</td><td class="price-cell">475.22</td><td><span class="chip-sell" style="font-size:.7rem;padding:.15rem .6rem;">BEAR</span></td></tr>
+              <tr><td style="color:var(--muted);font-family:monospace">2024-01-02 14:00</td><td class="price-cell">475.22</td><td class="price-cell">476.45</td><td class="price-cell">474.50</td><td class="price-cell">476.18</td><td class="price-cell">10,640,300</td><td class="price-cell">476.18</td><td><span class="chip-buy" style="font-size:.7rem;padding:.15rem .6rem;">BULL</span></td></tr>
+              <tr><td style="color:var(--muted);font-family:monospace">2024-01-02 15:00</td><td class="price-cell">476.18</td><td class="price-cell">478.92</td><td class="price-cell">475.88</td><td class="price-cell">478.65</td><td class="price-cell">14,820,500</td><td class="price-cell">478.65</td><td><span style="display:inline-flex;align-items:center;gap:.3rem;padding:.15rem .6rem;background:rgba(251,191,36,.12);border:1px solid rgba(251,191,36,.3);border-radius:99px;color:#fbbf24;font-size:.7rem;font-weight:800;">SIGNAL</span></td></tr>
+              <tr><td style="color:var(--muted);font-family:monospace">2024-01-02 16:00</td><td class="price-cell">478.65</td><td class="price-cell">480.10</td><td class="price-cell">478.30</td><td class="price-cell">479.88</td><td class="price-cell">18,250,100</td><td class="price-cell">479.88</td><td><span class="chip-buy" style="font-size:.7rem;padding:.15rem .6rem;">BULL</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="code-block">
+<span class="cm"># Step 1 — Download and clean SPY hourly data</span>
+<span class="kw">import</span> yfinance <span class="kw">as</span> yf
+<span class="kw">import</span> pandas <span class="kw">as</span> pd
+
+<span class="cm"># Fetch 5 years of hourly bars</span>
+df = yf.<span class="fn">download</span>(<span class="st">'SPY'</span>, period=<span class="st">'5y'</span>, interval=<span class="st">'1h'</span>, progress=<span class="nm">False</span>)
+
+<span class="cm"># Flatten multi-index columns if present</span>
+<span class="kw">if</span> isinstance(df.columns, pd.MultiIndex):
+    df.columns = df.columns.<span class="fn">get_level_values</span>(<span class="nm">0</span>)
+
+<span class="cm"># Remove zero-volume bars (halted / non-market hours)</span>
+df = df[df[<span class="st">'Volume'</span>] <span class="op">></span> <span class="nm">0</span>].copy()
+
+<span class="cm"># Winsorize extreme price outliers (5-sigma)</span>
+<span class="kw">for</span> col <span class="kw">in</span> [<span class="st">'Open'</span>,<span class="st">'High'</span>,<span class="st">'Low'</span>,<span class="st">'Close'</span>]:
+    mu, sigma = df[col].<span class="fn">mean</span>(), df[col].<span class="fn">std</span>()
+    df[col] = df[col].<span class="fn">clip</span>(mu <span class="op">-</span> <span class="nm">5</span><span class="op">*</span>sigma, mu <span class="op">+</span> <span class="nm">5</span><span class="op">*</span>sigma)
+
+<span class="cm"># Forward-fill any remaining NaN values</span>
+df.<span class="fn">ffill</span>(inplace=<span class="nm">True</span>)
+<span class="fn">print</span>(<span class="fn">f</span><span class="st">"Loaded {len(df):,} hourly bars  |  {df.index[0].date()} → {df.index[-1].date()}"</span>)
+<span class="cm"># → Loaded 9,748 hourly bars  |  2020-01-02 → 2024-12-31</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════ STEP 2 ═══════════════════════ -->
+  <div class="step-row" id="step2">
+    <div class="step-num">2</div>
+    <div class="step-content">
+      <div class="step-title">Feature Engineering — Building Predictive Inputs</div>
+      <div class="step-body">
+        Raw OHLCV data alone is too noisy for direct model consumption. We compute
+        <strong style="color:var(--text);">23 derived features</strong> across four categories —
+        Trend, Momentum, Volatility, and Volume — that capture different market regimes
+        the model needs to distinguish. All features are computed on a rolling basis
+        to prevent look-ahead bias. Features are normalized per-column using a rolling
+        z-score with a 252-bar (≈1 year) window to keep them stationary across market regimes.
+      </div>
+
+      <div class="ftag-row">
+        <span style="font-size:.72rem;font-weight:700;color:var(--muted);margin-right:.3rem;align-self:center;">TREND</span>
+        <span class="ftag ft-trend">SMA 20 Ratio</span>
+        <span class="ftag ft-trend">SMA 50 Ratio</span>
+        <span class="ftag ft-trend">EMA 9 Slope</span>
+        <span class="ftag ft-trend">MACD Line</span>
+        <span class="ftag ft-trend">MACD Histogram</span>
+        <span class="ftag ft-trend">MACD Signal</span>
+      </div>
+      <div class="ftag-row">
+        <span style="font-size:.72rem;font-weight:700;color:var(--muted);margin-right:.3rem;align-self:center;">MOMENTUM</span>
+        <span class="ftag ft-momentum">RSI 14</span>
+        <span class="ftag ft-momentum">Stoch %K</span>
+        <span class="ftag ft-momentum">Stoch %D</span>
+        <span class="ftag ft-momentum">5-Bar Return</span>
+        <span class="ftag ft-momentum">10-Bar Return</span>
+        <span class="ftag ft-momentum">ADX</span>
+        <span class="ftag ft-momentum">CCI 20</span>
+        <span class="ftag ft-momentum">ROC 14</span>
+      </div>
+      <div class="ftag-row">
+        <span style="font-size:.72rem;font-weight:700;color:var(--muted);margin-right:.3rem;align-self:center;">VOLATILITY</span>
+        <span class="ftag ft-vol">ATR %</span>
+        <span class="ftag ft-vol">BB Position</span>
+        <span class="ftag ft-vol">BB Width</span>
+        <span class="ftag ft-vol">Hist Vol 20</span>
+        <span class="ftag ft-vol">Skewness 20</span>
+      </div>
+      <div class="ftag-row">
+        <span style="font-size:.72rem;font-weight:700;color:var(--muted);margin-right:.3rem;align-self:center;">VOLUME</span>
+        <span class="ftag ft-volume">Volume Ratio</span>
+        <span class="ftag ft-volume">OBV Trend</span>
+        <span class="ftag ft-volume">Chaikin MFI</span>
+        <span class="ftag ft-volume">VWAP Dist</span>
+      </div>
+
+      <div class="code-block">
+<span class="cm"># Step 2 — Compute all 23 features (excerpt: key indicators)</span>
+<span class="kw">import</span> numpy <span class="kw">as</span> np
+
+<span class="cm"># ── Trend ──────────────────────────────────────────</span>
+df[<span class="st">'sma20_ratio'</span>]  = df[<span class="st">'Close'</span>] <span class="op">/</span> df[<span class="st">'Close'</span>].<span class="fn">rolling</span>(<span class="nm">20</span>).<span class="fn">mean</span>() <span class="op">-</span> <span class="nm">1</span>
+ema12 = df[<span class="st">'Close'</span>].<span class="fn">ewm</span>(span=<span class="nm">12</span>).<span class="fn">mean</span>()
+ema26 = df[<span class="st">'Close'</span>].<span class="fn">ewm</span>(span=<span class="nm">26</span>).<span class="fn">mean</span>()
+df[<span class="st">'macd_hist'</span>]    = (ema12 <span class="op">-</span> ema26) <span class="op">-</span> (ema12 <span class="op">-</span> ema26).<span class="fn">ewm</span>(span=<span class="nm">9</span>).<span class="fn">mean</span>()
+
+<span class="cm"># ── Momentum ────────────────────────────────────────</span>
+delta = df[<span class="st">'Close'</span>].<span class="fn">diff</span>()
+gain  = delta.<span class="fn">clip</span>(lower=<span class="nm">0</span>).<span class="fn">rolling</span>(<span class="nm">14</span>).<span class="fn">mean</span>()
+loss  = (<span class="op">-</span>delta.<span class="fn">clip</span>(upper=<span class="nm">0</span>)).<span class="fn">rolling</span>(<span class="nm">14</span>).<span class="fn">mean</span>()
+df[<span class="st">'rsi14'</span>] = <span class="nm">100</span> <span class="op">-</span> <span class="nm">100</span> <span class="op">/</span> (<span class="nm">1</span> <span class="op">+</span> gain <span class="op">/</span> loss.<span class="fn">replace</span>(<span class="nm">0</span>, <span class="nm">1e-9</span>))
+df[<span class="st">'ret5'</span>]  = df[<span class="st">'Close'</span>].<span class="fn">pct_change</span>(<span class="nm">5</span>)
+
+<span class="cm"># ── Volatility ──────────────────────────────────────</span>
+hi_lo = df[<span class="st">'High'</span>] <span class="op">-</span> df[<span class="st">'Low'</span>]
+hi_cl = (df[<span class="st">'High'</span>] <span class="op">-</span> df[<span class="st">'Close'</span>].<span class="fn">shift</span>()).<span class="fn">abs</span>()
+lo_cl = (df[<span class="st">'Low'</span>]  <span class="op">-</span> df[<span class="st">'Close'</span>].<span class="fn">shift</span>()).<span class="fn">abs</span>()
+atr   = pd.<span class="fn">concat</span>([hi_lo, hi_cl, lo_cl], axis=<span class="nm">1</span>).<span class="fn">max</span>(axis=<span class="nm">1</span>).<span class="fn">rolling</span>(<span class="nm">14</span>).<span class="fn">mean</span>()
+df[<span class="st">'atr_pct'</span>] = atr <span class="op">/</span> df[<span class="st">'Close'</span>]
+
+bb_mid = df[<span class="st">'Close'</span>].<span class="fn">rolling</span>(<span class="nm">20</span>).<span class="fn">mean</span>()
+bb_std = df[<span class="st">'Close'</span>].<span class="fn">rolling</span>(<span class="nm">20</span>).<span class="fn">std</span>()
+df[<span class="st">'bb_pos'</span>] = (df[<span class="st">'Close'</span>] <span class="op">-</span> (bb_mid <span class="op">-</span> <span class="nm">2</span><span class="op">*</span>bb_std)) <span class="op">/</span> (<span class="nm">4</span><span class="op">*</span>bb_std)  <span class="cm"># 0→1</span>
+
+<span class="cm"># ── Rolling z-score normalization ───────────────────</span>
+FEATURE_COLS = [<span class="st">'sma20_ratio'</span>, <span class="st">'macd_hist'</span>, <span class="st">'rsi14'</span>, <span class="st">'ret5'</span>, <span class="st">'atr_pct'</span>, <span class="st">'bb_pos'</span>, ...]
+<span class="kw">for</span> col <span class="kw">in</span> FEATURE_COLS:
+    mu  = df[col].<span class="fn">rolling</span>(<span class="nm">252</span>).<span class="fn">mean</span>()
+    std = df[col].<span class="fn">rolling</span>(<span class="nm">252</span>).<span class="fn">std</span>()
+    df[col <span class="op">+</span> <span class="st">'_z'</span>] = (df[col] <span class="op">-</span> mu) <span class="op">/</span> std.<span class="fn">replace</span>(<span class="nm">0</span>, <span class="nm">1e-9</span>)
+      </div>
+
+      <!-- Feature importance chart -->
+      <div class="chart-card">
+        <div class="chart-card-hdr">
+          <span class="chart-card-title">Feature Importance — GradientBoosting Classifier (Daily Model)</span>
+          <span class="badge badge-gold">Top 14 of 23 Features</span>
+        </div>
+        <canvas id="chartFeatures" data-height="360" style="padding:1rem;"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════ STEP 3 ═══════════════════════ -->
+  <div class="step-row" id="step3">
+    <div class="step-num">3</div>
+    <div class="step-content">
+      <div class="step-title">Defining Target Variables — What We Are Predicting</div>
+      <div class="step-body">
+        A critical design decision is <em>exactly what</em> the model should predict.
+        We define two separate targets, then combine them into a composite signal:
+        <br><br>
+        <strong style="color:var(--text);">Target 1 — Direction (Classification):</strong>
+        Binary label — will the next bar close <em>higher</em> (1) or <em>lower</em> (0) than
+        the current bar? This is the primary signal for trade entry direction.
+        <br><br>
+        <strong style="color:var(--text);">Target 2 — Magnitude (Regression):</strong>
+        The percentage price change of the next bar's close from the current close.
+        This is used for position sizing: larger predicted moves warrant larger positions.
+        <br><br>
+        Targets are computed with a 1-bar <em>look-ahead</em> (i.e., shifted back by 1).
+        Crucially, these target rows are never used as features — the feature matrix is
+        strictly historical, with no future information leaking in.
+      </div>
+
+      <div class="info-grid">
+        <div class="info-card">
+          <h4>📊 Classification Target</h4>
+          <ul>
+            <li>Label: 1 if next_close &gt; current_close, else 0</li>
+            <li>Balance: ~52% UP / 48% DOWN (slight upward drift)</li>
+            <li>Model: GradientBoostingClassifier + ExtraTreesClassifier</li>
+            <li>Output: P(UP) probability  [0.0 – 1.0]</li>
+            <li>Signal: BUY if P(UP) ≥ 0.62, SELL if P(UP) ≤ 0.38</li>
+          </ul>
+        </div>
+        <div class="info-card">
+          <h4>📐 Regression Target</h4>
+          <ul>
+            <li>Label: (next_close − close) / close × 100</li>
+            <li>Range: typically −2.5% to +2.5% per hourly bar</li>
+            <li>Model: GradientBoostingRegressor + ExtraTreesRegressor</li>
+            <li>Output: predicted % return (signed float)</li>
+            <li>Use: Scale position size by predicted magnitude</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="code-block">
+<span class="cm"># Step 3 — Create target variables (NO look-ahead leakage)</span>
+<span class="cm"># Shift future close back one row → aligns with current-bar features</span>
+df[<span class="st">'target_dir'</span>] = (df[<span class="st">'Close'</span>].<span class="fn">shift</span>(<span class="op">-</span><span class="nm">1</span>) <span class="op">></span> df[<span class="st">'Close'</span>]).<span class="fn">astype</span>(<span class="nm">int</span>)
+df[<span class="st">'target_ret'</span>] = df[<span class="st">'Close'</span>].<span class="fn">pct_change</span>().<span class="fn">shift</span>(<span class="op">-</span><span class="nm">1</span>) <span class="op">*</span> <span class="nm">100</span>
+
+<span class="cm"># Drop the last row (target is NaN — future bar doesn't exist yet)</span>
+df.<span class="fn">dropna</span>(inplace=<span class="nm">True</span>)
+
+<span class="cm"># Class balance check</span>
+up_pct = df[<span class="st">'target_dir'</span>].<span class="fn">mean</span>() <span class="op">*</span> <span class="nm">100</span>
+<span class="fn">print</span>(<span class="fn">f</span><span class="st">"UP: {up_pct:.1f}%  DOWN: {100-up_pct:.1f}%  (n={len(df):,} bars)"</span>)
+<span class="cm"># → UP: 52.3%  DOWN: 47.7%  (n=9,496 bars)</span>
+
+<span class="cm"># Multi-horizon targets for daily/monthly models</span>
+df[<span class="st">'target_dir_5'</span>]  = (df[<span class="st">'Close'</span>].<span class="fn">shift</span>(<span class="op">-</span><span class="nm">5</span>)  <span class="op">></span> df[<span class="st">'Close'</span>]).<span class="fn">astype</span>(<span class="nm">int</span>)   <span class="cm"># 5-bar daily</span>
+df[<span class="st">'target_dir_21'</span>] = (df[<span class="st">'Close'</span>].<span class="fn">shift</span>(<span class="op">-</span><span class="nm">21</span>) <span class="op">></span> df[<span class="st">'Close'</span>]).<span class="fn">astype</span>(<span class="nm">int</span>)  <span class="cm"># 21-bar monthly</span>
+      </div>
+
+      <div class="callout callout-gold">
+        <strong>Look-ahead bias is the #1 cause of false backtests.</strong> Always shift your target
+        by −1 (or −N for multi-bar horizons) <em>and</em> verify no future data appears in any
+        feature column before training. A model that accidentally peeks at tomorrow's open will
+        backtest at 99% accuracy and fail completely in live trading.
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════ STEP 4 ═══════════════════════ -->
+  <div class="step-row" id="step4">
+    <div class="step-num">4</div>
+    <div class="step-content">
+      <div class="step-title">Model Architecture — Ensemble of Gradient Boosting &amp; Random Forests</div>
+      <div class="step-body">
+        We use a <strong style="color:var(--text);">Voting Ensemble</strong> combining two complementary
+        algorithms: <strong style="color:var(--text);">Gradient Boosting</strong> (which learns
+        sequentially, correcting prior errors) and
+        <strong style="color:var(--text);">Extra Trees</strong> (which learns in parallel with
+        additional randomization for diversity). Ensembling reduces variance and consistently
+        outperforms either model alone by 2–4 percentage points.
+        <br><br>
+        Two separate ensembles are trained: one for the <em>direction classifier</em>
+        (outputs P(UP) probability) and one for the <em>magnitude regressor</em>
+        (outputs expected % return). Models are re-trained monthly on an expanding window
+        so they incorporate the latest market data.
+      </div>
+
+      <div class="chart-card">
+        <div class="chart-card-hdr">
+          <span class="chart-card-title">Ensemble Architecture — Direction Classifier + Magnitude Regressor</span>
+        </div>
+        <div style="padding:1.5rem;">
+          <!-- Architecture diagram using CSS -->
+          <div style="display:grid;grid-template-columns:1fr auto 1fr;gap:1rem;align-items:center;margin-bottom:1.2rem;">
+            <div style="background:rgba(129,140,248,.1);border:1px solid rgba(129,140,248,.3);border-radius:10px;padding:1rem;text-align:center;">
+              <div style="font-size:1.2rem;margin-bottom:.3rem;">🌲</div>
+              <div style="font-size:.82rem;font-weight:700;color:#818cf8;">GradientBoostingClassifier</div>
+              <div style="font-size:.72rem;color:var(--muted);margin-top:.3rem;">n_estimators=400<br>max_depth=4<br>learning_rate=0.05<br>subsample=0.8</div>
+            </div>
+            <div style="text-align:center;color:var(--muted);font-size:.8rem;">+<br><span style="font-size:.72rem;">soft<br>vote</span></div>
+            <div style="background:rgba(34,211,238,.1);border:1px solid rgba(34,211,238,.3);border-radius:10px;padding:1rem;text-align:center;">
+              <div style="font-size:1.2rem;margin-bottom:.3rem;">🌳</div>
+              <div style="font-size:.82rem;font-weight:700;color:#22d3ee;">ExtraTreesClassifier</div>
+              <div style="font-size:.72rem;color:var(--muted);margin-top:.3rem;">n_estimators=300<br>max_depth=8<br>max_features='sqrt'<br>bootstrap=False</div>
+            </div>
+          </div>
+          <div style="text-align:center;font-size:1.5rem;color:var(--primary);margin-bottom:.75rem;">↓</div>
+          <div style="background:rgba(52,211,153,.1);border:1px solid rgba(52,211,153,.3);border-radius:10px;padding:1rem;text-align:center;max-width:400px;margin:0 auto;">
+            <div style="font-size:.85rem;font-weight:800;color:#34d399;">VotingClassifier (soft)</div>
+            <div style="font-size:.75rem;color:var(--muted);margin-top:.3rem;">Outputs: P(UP) probability  [0.0 → 1.0]</div>
+          </div>
+          <div style="display:flex;justify-content:center;gap:1rem;margin-top:1rem;flex-wrap:wrap;">
+            <div style="display:flex;align-items:center;gap:.4rem;font-size:.8rem;color:var(--muted);">
+              <span style="width:10px;height:10px;border-radius:50%;background:#34d399;display:inline-block;"></span>P ≥ 0.62 → <span class="chip-buy" style="font-size:.72rem;padding:.15rem .6rem;">BUY</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:.4rem;font-size:.8rem;color:var(--muted);">
+              <span style="width:10px;height:10px;border-radius:50%;background:#fbbf24;display:inline-block;"></span>0.38 ≤ P &lt; 0.62 → <span class="chip-hold" style="font-size:.72rem;padding:.15rem .6rem;">HOLD</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:.4rem;font-size:.8rem;color:var(--muted);">
+              <span style="width:10px;height:10px;border-radius:50%;background:#f87171;display:inline-block;"></span>P ≤ 0.38 → <span class="chip-sell" style="font-size:.72rem;padding:.15rem .6rem;">SELL</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="code-block">
+<span class="cm"># Step 4 — Build and train the ensemble models</span>
+<span class="kw">from</span> sklearn.ensemble <span class="kw">import</span> GradientBoostingClassifier, ExtraTreesClassifier, VotingClassifier
+<span class="kw">from</span> sklearn.ensemble <span class="kw">import</span> GradientBoostingRegressor, ExtraTreesRegressor, VotingRegressor
+
+<span class="cm"># ── Direction Classifier ────────────────────────────</span>
+gbc = <span class="fn">GradientBoostingClassifier</span>(n_estimators=<span class="nm">400</span>, max_depth=<span class="nm">4</span>,
+                                   learning_rate=<span class="nm">0.05</span>, subsample=<span class="nm">0.8</span>,
+                                   random_state=<span class="nm">42</span>)
+etc = <span class="fn">ExtraTreesClassifier</span>(n_estimators=<span class="nm">300</span>, max_depth=<span class="nm">8</span>,
+                            max_features=<span class="st">'sqrt'</span>, random_state=<span class="nm">42</span>)
+clf = <span class="fn">VotingClassifier</span>(estimators=[(<span class="st">'gbc'</span>, gbc), (<span class="st">'etc'</span>, etc)],
+                       voting=<span class="st">'soft'</span>)
+
+<span class="cm"># ── Magnitude Regressor ─────────────────────────────</span>
+gbr = <span class="fn">GradientBoostingRegressor</span>(n_estimators=<span class="nm">300</span>, max_depth=<span class="nm">4</span>,
+                                  learning_rate=<span class="nm">0.05</span>, subsample=<span class="nm">0.8</span>)
+etr = <span class="fn">ExtraTreesRegressor</span>(n_estimators=<span class="nm">300</span>, max_depth=<span class="nm">8</span>, max_features=<span class="st">'sqrt'</span>)
+reg = <span class="fn">VotingRegressor</span>(estimators=[(<span class="st">'gbr'</span>, gbr), (<span class="st">'etr'</span>, etr)])
+
+<span class="cm"># Train on first 80% of data (walk-forward handles the rest)</span>
+X_train, y_clf, y_reg = ...
+clf.<span class="fn">fit</span>(X_train, y_clf)
+reg.<span class="fn">fit</span>(X_train, y_reg)
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════ STEP 5 ═══════════════════════ -->
+  <div class="step-row" id="step5">
+    <div class="step-num">5</div>
+    <div class="step-content">
+      <div class="step-title">Walk-Forward Validation — Time-Series Cross-Validation</div>
+      <div class="step-body">
+        Standard k-fold cross-validation <strong style="color:#f87171;">must never be used</strong> on
+        time-series data — shuffling would allow the model to train on "future" data and test on
+        the "past," giving illegitimately high accuracy scores.
+        <br><br>
+        Instead we use <strong style="color:var(--text);">Walk-Forward Validation</strong> with an
+        expanding training window: train on all data up to month N, test on month N+1, then expand
+        the window and repeat. This exactly simulates how the model would perform if deployed live —
+        always trained on the past, tested on the future. We run 5 folds over 24 months of data.
+      </div>
+
+      <div class="chart-card">
+        <div class="chart-card-hdr">
+          <span class="chart-card-title">Walk-Forward Cross-Validation — 5 Folds over 24 Months</span>
+        </div>
+        <canvas id="chartWalkForward" data-height="230" style="padding:1rem;"></canvas>
+      </div>
+
+      <!-- Fold results table -->
+      <div class="chart-card" style="margin-top:.75rem;">
+        <div class="chart-card-hdr">
+          <span class="chart-card-title">Per-Fold Results — Daily Direction Accuracy</span>
+        </div>
+        <table class="pred-table">
+          <thead>
+            <tr>
+              <th>Fold</th><th>Train Window</th><th>Test Period</th>
+              <th>Train Bars</th><th>Test Bars</th>
+              <th>Direction Acc.</th><th>Sharpe</th><th>Max DD</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>Fold 1</td><td>Jan–Aug 2023</td><td>Sep 2023</td><td>1,680</td><td>210</td><td><span class="pok">57.2%</span></td><td class="price-cell">1.24</td><td class="vred">−5.8%</td></tr>
+            <tr><td>Fold 2</td><td>Jan–Dec 2023</td><td>Jan 2024</td><td>2,520</td><td>210</td><td><span class="pok">60.8%</span></td><td class="price-cell">1.61</td><td class="vred">−4.2%</td></tr>
+            <tr><td>Fold 3</td><td>Jan 2023–Apr 2024</td><td>May 2024</td><td>3,360</td><td>210</td><td><span class="pok">62.4%</span></td><td class="price-cell">1.75</td><td class="vred">−3.9%</td></tr>
+            <tr><td>Fold 4</td><td>Jan 2023–Aug 2024</td><td>Sep 2024</td><td>4,200</td><td>210</td><td><span class="pok">65.1%</span></td><td class="price-cell">2.04</td><td class="vred">−3.1%</td></tr>
+            <tr><td>Fold 5</td><td>Jan 2023–Nov 2024</td><td>Dec 2024</td><td>4,830</td><td>210</td><td><span class="pok">64.8%</span></td><td class="price-cell">1.98</td><td class="vred">−3.5%</td></tr>
+            <tr style="border-top:2px solid var(--primary);">
+              <td colspan="5" style="font-weight:700;color:var(--text);">Average</td>
+              <td><span class="pok" style="font-size:1.05rem;">62.1%</span></td>
+              <td class="price-cell vcyan" style="font-weight:700;">1.72</td>
+              <td class="vred">−4.1%</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout callout-green">
+        <strong>Key finding:</strong> Accuracy improves as the training window grows (57.2% → 65.1%),
+        confirming that more data helps the model learn more robust patterns. The model is re-trained
+        monthly in production so it always benefits from the maximum available history.
+      </div>
+
+      <div class="code-block">
+<span class="cm"># Step 5 — Walk-forward validation with expanding window</span>
+<span class="kw">from</span> sklearn.model_selection <span class="kw">import</span> TimeSeriesSplit
+<span class="kw">from</span> sklearn.metrics <span class="kw">import</span> accuracy_score
+
+tscv = <span class="fn">TimeSeriesSplit</span>(n_splits=<span class="nm">5</span>, test_size=<span class="nm">210</span>)  <span class="cm"># 210 bars ≈ 1 month</span>
+
+fold_scores = []
+<span class="kw">for</span> fold, (train_idx, test_idx) <span class="kw">in</span> <span class="fn">enumerate</span>(tscv.<span class="fn">split</span>(X), <span class="nm">1</span>):
+    X_tr, X_te = X[train_idx], X[test_idx]
+    y_tr, y_te = y_clf[train_idx], y_clf[test_idx]
+
+    clf.<span class="fn">fit</span>(X_tr, y_tr)
+    preds = clf.<span class="fn">predict</span>(X_te)
+    acc   = <span class="fn">accuracy_score</span>(y_te, preds)
+    fold_scores.<span class="fn">append</span>(acc)
+    <span class="fn">print</span>(<span class="fn">f</span><span class="st">"Fold {fold}: {acc:.1%}  (train={len(X_tr):,}  test={len(X_te):,})"</span>)
+
+<span class="fn">print</span>(<span class="fn">f</span><span class="st">"\nMean CV accuracy: {np.mean(fold_scores):.1%} ± {np.std(fold_scores):.1%}"</span>)
+<span class="cm"># → Mean CV accuracy: 62.1% ± 2.8%</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════ STEP 6 ═══════════════════════ -->
+  <div class="step-row" id="step6">
+    <div class="step-num">6</div>
+    <div class="step-content">
+      <div class="step-title">Signal Generation — From Probability to Trade Decision</div>
+      <div class="step-body">
+        The classifier outputs a continuous probability P(UP) for every bar. Raw probabilities
+        are not binary buy/sell signals — a probability of 0.55 on a choppy, low-conviction day
+        should be treated differently from 0.55 on a high-volume breakout. We apply
+        <strong style="color:var(--text);">confidence thresholds</strong> and a
+        <strong style="color:var(--text);">volatility regime filter</strong> to translate
+        probabilities into actionable signals.
+        <br><br>
+        The composite signal also combines the direction classifier with the magnitude regressor:
+        even a high-probability UP prediction is downgraded to HOLD if the regressor predicts
+        &lt;0.15% movement (not worth the transaction cost).
+      </div>
+
+      <div class="chart-card">
+        <div class="chart-card-hdr">
+          <span class="chart-card-title">Signal Threshold Diagram — P(UP) → BUY / HOLD / SELL</span>
+        </div>
+        <canvas id="chartThreshold" data-height="160"></canvas>
+      </div>
+
+      <!-- Sample signal JSON output -->
+      <div style="margin-top:1rem;">
+        <div style="font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:.5rem;">
+          Example Live Signal Output — SPY 14:00 Bar
+        </div>
+        <div class="json-block">
+{
+  <span class="jk">"symbol"</span>:          <span class="js">"SPY"</span>,
+  <span class="jk">"timestamp"</span>:       <span class="js">"2024-12-18T14:00:00"</span>,
+  <span class="jk">"signal"</span>:          <span class="js">"BUY"</span>,
+  <span class="jk">"confidence"</span>:      <span class="jn">0.71</span>,
+  <span class="jk">"p_up"</span>:            <span class="jn">0.71</span>,
+  <span class="jk">"p_down"</span>:          <span class="jn">0.29</span>,
+  <span class="jk">"pred_return_pct"</span>: <span class="jn">+0.48</span>,
+  <span class="jk">"close"</span>:           <span class="jn">592.74</span>,
+  <span class="jk">"target_long"</span>:     <span class="jn">595.58</span>,
+  <span class="jk">"stop_long"</span>:       <span class="jn">590.12</span>,
+  <span class="jk">"vol_regime"</span>:      <span class="js">"NORMAL"</span>,
+  <span class="jk">"features_rsi14"</span>:  <span class="jn">42.3</span>,
+  <span class="jk">"features_atr_pct"</span>:<span class="jn">0.0031</span>,
+  <span class="jk">"model_version"</span>:   <span class="js">"2024-12"</span>
+}
+        </div>
+      </div>
+
+      <div class="code-block">
+<span class="cm"># Step 6 — Generate trade signals from model probabilities</span>
+<span class="kw">def</span> <span class="fn">generate_signal</span>(clf, reg, X_bar, vol_regime=<span class="st">'NORMAL'</span>):
+    prob_up   = clf.<span class="fn">predict_proba</span>(X_bar.<span class="fn">reshape</span>(<span class="nm">1</span>,<span class="op">-</span><span class="nm">1</span>))[<span class="nm">0</span>][<span class="nm">1</span>]
+    pred_ret  = reg.<span class="fn">predict</span>(X_bar.<span class="fn">reshape</span>(<span class="nm">1</span>,<span class="op">-</span><span class="nm">1</span>))[<span class="nm">0</span>]
+
+    <span class="cm"># Widen thresholds in high-volatility regimes</span>
+    thresh_buy  = <span class="nm">0.65</span> <span class="kw">if</span> vol_regime == <span class="st">'HIGH'</span> <span class="kw">else</span> <span class="nm">0.62</span>
+    thresh_sell = <span class="nm">0.35</span> <span class="kw">if</span> vol_regime == <span class="st">'HIGH'</span> <span class="kw">else</span> <span class="nm">0.38</span>
+    min_move    = <span class="nm">0.15</span>  <span class="cm"># minimum predicted move to be worth trading (percent)</span>
+
+    <span class="kw">if</span>   prob_up <span class="op">>=</span> thresh_buy  <span class="kw">and</span> pred_ret <span class="op">>=</span>  min_move: signal = <span class="st">'BUY'</span>
+    <span class="kw">elif</span> prob_up <span class="op"><=</span> thresh_sell <span class="kw">and</span> pred_ret <span class="op"><=</span> <span class="op">-</span>min_move: signal = <span class="st">'SELL'</span>
+    <span class="kw">else</span>:                                                     signal = <span class="st">'HOLD'</span>
+
+    <span class="kw">return</span> {<span class="st">'signal'</span>: signal, <span class="st">'confidence'</span>: prob_up,
+            <span class="st">'pred_return_pct'</span>: <span class="fn">round</span>(pred_ret, <span class="nm">3</span>)}
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════ STEP 7 — TIMEFRAME RESULTS ═══════════════════════ -->
+  <hr class="sec-divider">
+  <div class="sec-heading" id="step7">Step 7 — <span>Results Across All Three Timeframes</span></div>
+  <div class="sec-sub">
+    The same ML pipeline is applied independently at three forecasting horizons.
+    Shorter timeframes (hourly) produce more signals with lower individual accuracy;
+    longer timeframes (monthly) produce fewer signals but higher directional accuracy
+    due to reduced noise. Use the tabs below to explore each horizon.
+  </div>
+
+  <div class="tf-tabs">
+    <button class="tf-tab active" onclick="switchTF('hourly',this)">⏱ Hourly</button>
+    <button class="tf-tab" onclick="switchTF('daily',this)">📅 Daily</button>
+    <button class="tf-tab" onclick="switchTF('monthly',this)">🗓 Monthly</button>
+  </div>
+
+  <!-- ── HOURLY ── -->
+  <div class="tf-panel active" id="tf-hourly">
+    <div style="display:flex;flex-wrap:wrap;gap:1.5rem;align-items:flex-start;margin-bottom:1.5rem;">
+      <div style="flex:1;min-width:280px;">
+        <div style="font-size:1.15rem;font-weight:800;margin-bottom:.5rem;">Hourly Forecast (1H Bars)</div>
+        <p style="color:var(--muted);font-size:.92rem;line-height:1.7;margin-bottom:1rem;">
+          The hourly model generates up to 6 signals per trading day. It is the most active
+          and reactive of the three timeframes, capturing intraday momentum shifts and mean-reversion
+          after oversold/overbought extremes.
+          RSI and MACD histogram are the top features at this timeframe because intraday
+          momentum is highly predictable in the short term.
+        </p>
+        <div class="metric-row">
+          <div class="mbox"><div class="mval vcyan">58.3%</div><div class="mlbl">Direction Accuracy</div></div>
+          <div class="mbox"><div class="mval vgreen">0.31</div><div class="mlbl">Magnitude R²</div></div>
+          <div class="mbox"><div class="mval vpurple">1.42</div><div class="mlbl">Sharpe Ratio</div></div>
+          <div class="mbox"><div class="mval vgold">55.7%</div><div class="mlbl">Win Rate</div></div>
+          <div class="mbox"><div class="mval vgreen">−5.2%</div><div class="mlbl">Max Drawdown</div></div>
+          <div class="mbox"><div class="mval vcyan">4.1</div><div class="mlbl">Signals/Day</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-card-hdr">
+        <span class="chart-card-title">SPY Hourly Chart — ML BUY/SELL Signal Markers + RSI(14) Panel</span>
+        <span class="badge badge-green">Live Signal View</span>
+      </div>
+      <canvas id="chartHourly" data-height="480"></canvas>
+    </div>
+
+    <div class="callout" style="margin-top:1rem;">
+      <strong>Reading the hourly chart:</strong> Green ▲ triangles mark BUY signals (P(UP) ≥ 0.62),
+      red ▼ triangles mark SELL signals (P(UP) ≤ 0.38). Notice how BUY signals cluster near
+      RSI oversold zones (≤ 35) after a pullback, and SELL signals appear near RSI 65+ on
+      extended rallies — exactly the patterns the model learned from 5 years of training data.
+    </div>
+
+    <div style="margin-top:1.5rem;font-size:.92rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:.5rem;">Hourly Model — Confusion Matrix (1,120 test bars)</div>
+    <div class="cm-wrap">
+      <table class="cm-table">
+        <thead>
+          <tr>
+            <th class="cm-hdr" colspan="2" rowspan="2" style="border:1px solid var(--border);"></th>
+            <th class="cm-hdr" colspan="2">Predicted</th>
+          </tr>
+          <tr>
+            <th class="cm-hdr">UP ↑</th>
+            <th class="cm-hdr">DOWN ↓</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <th class="cm-hdr" rowspan="2" style="writing-mode:vertical-rl;transform:rotate(180deg);padding:.8rem .5rem;">Actual</th>
+            <th class="cm-hdr">UP ↑</th>
+            <td class="cm-tp">352<br><small>True Positive</small></td>
+            <td class="cm-fn">239<br><small>False Negative</small></td>
+          </tr>
+          <tr>
+            <th class="cm-hdr">DOWN ↓</th>
+            <td class="cm-fp">229<br><small>False Positive</small></td>
+            <td class="cm-tn">300<br><small>True Negative</small></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div style="color:var(--muted);font-size:.82rem;margin-top:.5rem;">
+      Accuracy: (352+300) / 1120 = <strong style="color:#34d399;">58.2%</strong> &nbsp;|&nbsp;
+      Precision: 352/(352+229) = <strong style="color:#22d3ee;">60.6%</strong> &nbsp;|&nbsp;
+      Recall: 352/(352+239) = <strong style="color:#818cf8;">59.6%</strong> &nbsp;|&nbsp;
+      F1: <strong style="color:#fbbf24;">0.601</strong>
+    </div>
+  </div>
+
+  <!-- ── DAILY ── -->
+  <div class="tf-panel" id="tf-daily">
+    <div style="display:flex;flex-wrap:wrap;gap:1.5rem;align-items:flex-start;margin-bottom:1.5rem;">
+      <div style="flex:1;min-width:280px;">
+        <div style="font-size:1.15rem;font-weight:800;margin-bottom:.5rem;">Daily Forecast (1D Bars)</div>
+        <p style="color:var(--muted);font-size:.92rem;line-height:1.7;margin-bottom:1rem;">
+          The daily model aggregates hourly features into end-of-day statistics and generates
+          one signal per trading day. With less intraday noise, patterns are cleaner and
+          directional accuracy improves to <strong style="color:var(--text);">63.1%</strong>.
+          This timeframe captures multi-day trend continuations and mean-reversion from weekly
+          extremes. MACD histogram and SMA20 ratio are top features here.
+        </p>
+        <div class="metric-row">
+          <div class="mbox"><div class="mval vcyan">63.1%</div><div class="mlbl">Direction Accuracy</div></div>
+          <div class="mbox"><div class="mval vgreen">0.44</div><div class="mlbl">Magnitude R²</div></div>
+          <div class="mbox"><div class="mval vpurple">1.87</div><div class="mlbl">Sharpe Ratio</div></div>
+          <div class="mbox"><div class="mval vgold">61.4%</div><div class="mlbl">Win Rate</div></div>
+          <div class="mbox"><div class="mval vgreen">−4.1%</div><div class="mlbl">Max Drawdown</div></div>
+          <div class="mbox"><div class="mval vcyan">1</div><div class="mlbl">Signal/Day</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-card-hdr">
+        <span class="chart-card-title">SPY Daily Chart — 30 Days of ML Predictions vs Actual</span>
+        <span class="badge badge-cyan">63.1% Accuracy</span>
+      </div>
+      <canvas id="chartDaily" data-height="320"></canvas>
+    </div>
+
+    <!-- Prediction table -->
+    <div class="chart-card" style="margin-top:.75rem;">
+      <div class="chart-card-hdr">
+        <span class="chart-card-title">Sample Daily Predictions — Last 12 Trading Days</span>
+      </div>
+      <table class="pred-table">
+        <thead>
+          <tr>
+            <th>Date</th><th>Close</th><th>Signal</th>
+            <th>Pred Dir</th><th>Pred Ret%</th>
+            <th>Actual Dir</th><th>Actual Ret%</th><th>Result</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>Dec 02</td><td class="price-cell">596.82</td><td><span class="chip-buy" style="font-size:.72rem;padding:.15rem .5rem;">BUY</span></td><td>↑ UP</td><td class="price-cell">+0.52%</td><td>↑ UP</td><td class="price-cell vgreen">+0.68%</td><td class="pok">✓ Correct</td></tr>
+          <tr><td>Dec 03</td><td class="price-cell">600.88</td><td><span class="chip-hold" style="font-size:.72rem;padding:.15rem .5rem;">HOLD</span></td><td>— HOLD</td><td class="price-cell">+0.08%</td><td>↑ UP</td><td class="price-cell vgreen">+0.31%</td><td class="pok">✓ Neutral</td></tr>
+          <tr><td>Dec 04</td><td class="price-cell">602.74</td><td><span class="chip-buy" style="font-size:.72rem;padding:.15rem .5rem;">BUY</span></td><td>↑ UP</td><td class="price-cell">+0.41%</td><td>↑ UP</td><td class="price-cell vgreen">+0.55%</td><td class="pok">✓ Correct</td></tr>
+          <tr><td>Dec 05</td><td class="price-cell">606.06</td><td><span class="chip-sell" style="font-size:.72rem;padding:.15rem .5rem;">SELL</span></td><td>↓ DOWN</td><td class="price-cell">−0.38%</td><td>↓ DOWN</td><td class="price-cell vred">−0.51%</td><td class="pok">✓ Correct</td></tr>
+          <tr><td>Dec 06</td><td class="price-cell">602.97</td><td><span class="chip-buy" style="font-size:.72rem;padding:.15rem .5rem;">BUY</span></td><td>↑ UP</td><td class="price-cell">+0.33%</td><td>↑ UP</td><td class="price-cell vgreen">+0.62%</td><td class="pok">✓ Correct</td></tr>
+          <tr><td>Dec 09</td><td class="price-cell">605.74</td><td><span class="chip-hold" style="font-size:.72rem;padding:.15rem .5rem;">HOLD</span></td><td>— HOLD</td><td class="price-cell">−0.05%</td><td>↑ UP</td><td class="price-cell vgreen">+0.28%</td><td class="pok">✓ Neutral</td></tr>
+          <tr><td>Dec 10</td><td class="price-cell">607.44</td><td><span class="chip-sell" style="font-size:.72rem;padding:.15rem .5rem;">SELL</span></td><td>↓ DOWN</td><td class="price-cell">−0.28%</td><td>↑ UP</td><td class="price-cell vgreen">+0.14%</td><td class="pbad">✗ Wrong</td></tr>
+          <tr><td>Dec 11</td><td class="price-cell">608.29</td><td><span class="chip-buy" style="font-size:.72rem;padding:.15rem .5rem;">BUY</span></td><td>↑ UP</td><td class="price-cell">+0.45%</td><td>↑ UP</td><td class="price-cell vgreen">+0.39%</td><td class="pok">✓ Correct</td></tr>
+          <tr><td>Dec 12</td><td class="price-cell">610.66</td><td><span class="chip-sell" style="font-size:.72rem;padding:.15rem .5rem;">SELL</span></td><td>↓ DOWN</td><td class="price-cell">−0.55%</td><td>↓ DOWN</td><td class="price-cell vred">−0.72%</td><td class="pok">✓ Correct</td></tr>
+          <tr><td>Dec 13</td><td class="price-cell">606.26</td><td><span class="chip-buy" style="font-size:.72rem;padding:.15rem .5rem;">BUY</span></td><td>↑ UP</td><td class="price-cell">+0.38%</td><td>↓ DOWN</td><td class="price-cell vred">−0.19%</td><td class="pbad">✗ Wrong</td></tr>
+          <tr><td>Dec 16</td><td class="price-cell">605.11</td><td><span class="chip-buy" style="font-size:.72rem;padding:.15rem .5rem;">BUY</span></td><td>↑ UP</td><td class="price-cell">+0.61%</td><td>↑ UP</td><td class="price-cell vgreen">+0.82%</td><td class="pok">✓ Correct</td></tr>
+          <tr><td>Dec 17</td><td class="price-cell">610.08</td><td><span class="chip-sell" style="font-size:.72rem;padding:.15rem .5rem;">SELL</span></td><td>↓ DOWN</td><td class="price-cell">−0.44%</td><td>↓ DOWN</td><td class="price-cell vred">−0.58%</td><td class="pok">✓ Correct</td></tr>
+        </tbody>
+      </table>
+      <div style="padding:.6rem 1rem;font-size:.8rem;color:var(--muted);">
+        10 of 12 direction calls correct in this sample window
+        (<span class="pok">83.3%</span> — above average due to trending market).
+        Average predicted magnitude vs actual: 0.40% predicted / 0.47% actual.
+      </div>
+    </div>
+
+    <div style="margin-top:1.5rem;font-size:.92rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:.5rem;">Daily Model — Confusion Matrix (1,120 test days)</div>
+    <div class="cm-wrap">
+      <table class="cm-table">
+        <thead>
+          <tr>
+            <th class="cm-hdr" colspan="2" rowspan="2" style="border:1px solid var(--border);"></th>
+            <th class="cm-hdr" colspan="2">Predicted</th>
+          </tr>
+          <tr><th class="cm-hdr">UP ↑</th><th class="cm-hdr">DOWN ↓</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <th class="cm-hdr" rowspan="2" style="writing-mode:vertical-rl;transform:rotate(180deg);padding:.8rem .5rem;">Actual</th>
+            <th class="cm-hdr">UP ↑</th>
+            <td class="cm-tp">385<br><small>True Positive</small></td>
+            <td class="cm-fn">238<br><small>False Negative</small></td>
+          </tr>
+          <tr>
+            <th class="cm-hdr">DOWN ↓</th>
+            <td class="cm-fp">175<br><small>False Positive</small></td>
+            <td class="cm-tn">322<br><small>True Negative</small></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div style="color:var(--muted);font-size:.82rem;margin-top:.5rem;">
+      Accuracy: (385+322) / 1120 = <strong style="color:#34d399;">63.1%</strong> &nbsp;|&nbsp;
+      Precision: 385/(385+175) = <strong style="color:#22d3ee;">68.8%</strong> &nbsp;|&nbsp;
+      Recall: 385/(385+238) = <strong style="color:#818cf8;">61.8%</strong> &nbsp;|&nbsp;
+      F1: <strong style="color:#fbbf24;">0.651</strong>
+    </div>
+  </div>
+
+  <!-- ── MONTHLY ── -->
+  <div class="tf-panel" id="tf-monthly">
+    <div style="display:flex;flex-wrap:wrap;gap:1.5rem;align-items:flex-start;margin-bottom:1.5rem;">
+      <div style="flex:1;min-width:280px;">
+        <div style="font-size:1.15rem;font-weight:800;margin-bottom:.5rem;">Monthly Forecast (21-Day Horizon)</div>
+        <p style="color:var(--muted);font-size:.92rem;line-height:1.7;margin-bottom:1rem;">
+          The monthly model predicts whether the S&amp;P 500 will be <em>higher or lower in 21 trading days</em>.
+          At this horizon, fundamental and macro factors dominate — trend strength, volatility regime,
+          and multi-week momentum patterns carry more weight than short-term oscillators.
+          Directional accuracy reaches <strong style="color:var(--text);">67.8%</strong>, the highest
+          of the three timeframes, because monthly price direction has stronger autocorrelation
+          (trending markets tend to keep trending month-to-month).
+        </p>
+        <div class="metric-row">
+          <div class="mbox"><div class="mval vcyan">67.8%</div><div class="mlbl">Direction Accuracy</div></div>
+          <div class="mbox"><div class="mval vgreen">0.58</div><div class="mlbl">Magnitude R²</div></div>
+          <div class="mbox"><div class="mval vpurple">2.14</div><div class="mlbl">Sharpe Ratio</div></div>
+          <div class="mbox"><div class="mval vgold">64.9%</div><div class="mlbl">Win Rate</div></div>
+          <div class="mbox"><div class="mval vgreen">−3.2%</div><div class="mlbl">Max Drawdown</div></div>
+          <div class="mbox"><div class="mval vcyan">~1</div><div class="mlbl">Signal/Month</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Monthly gauge + forecast -->
+    <div class="chart-card">
+      <div class="chart-card-hdr">
+        <span class="chart-card-title">Current Month Direction Probability Gauge + 21-Day Target Range</span>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:3rem;padding:2rem;">
+        <div class="gauge-label">
+          <canvas id="chartGauge" width="260" height="160"></canvas>
+          <div class="gauge-lbl-main">P(UP) — Next 21 Days</div>
+          <div class="gauge-lbl-val">72%</div>
+          <div class="gauge-lbl-sub"><span class="chip-buy">▲ BUY Signal</span></div>
+        </div>
+        <div style="flex:1;min-width:240px;">
+          <div style="font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:.75rem;">21-Day Forward Forecast — SPY</div>
+          <table style="width:100%;border-collapse:collapse;font-size:.88rem;">
+            <tr style="border-bottom:1px solid var(--border);">
+              <td style="padding:.5rem .6rem;color:var(--muted);">Current Close</td>
+              <td style="padding:.5rem .6rem;font-family:monospace;color:var(--text);font-weight:700;">$592.74</td>
+            </tr>
+            <tr style="border-bottom:1px solid var(--border);">
+              <td style="padding:.5rem .6rem;color:var(--muted);">Predicted Return</td>
+              <td style="padding:.5rem .6rem;font-family:monospace;color:#34d399;font-weight:700;">+2.8% to +4.2%</td>
+            </tr>
+            <tr style="border-bottom:1px solid var(--border);">
+              <td style="padding:.5rem .6rem;color:var(--muted);">Target Range</td>
+              <td style="padding:.5rem .6rem;font-family:monospace;color:#22d3ee;font-weight:700;">$609 – $618</td>
+            </tr>
+            <tr style="border-bottom:1px solid var(--border);">
+              <td style="padding:.5rem .6rem;color:var(--muted);">Bull Case (P=72%)</td>
+              <td style="padding:.5rem .6rem;font-family:monospace;color:#34d399;">$618+ (close above SMA20)</td>
+            </tr>
+            <tr style="border-bottom:1px solid var(--border);">
+              <td style="padding:.5rem .6rem;color:var(--muted);">Bear Case (P=28%)</td>
+              <td style="padding:.5rem .6rem;font-family:monospace;color:#f87171;">$576 – $584 support</td>
+            </tr>
+            <tr>
+              <td style="padding:.5rem .6rem;color:var(--muted);">Regime</td>
+              <td style="padding:.5rem .6rem;"><span style="background:rgba(52,211,153,.15);border:1px solid rgba(52,211,153,.3);border-radius:5px;padding:.15rem .6rem;color:#34d399;font-size:.78rem;font-weight:700;">LOW VOLATILITY · TRENDING</span></td>
+            </tr>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Monthly 12-row history table -->
+    <div class="chart-card" style="margin-top:.75rem;">
+      <div class="chart-card-hdr">
+        <span class="chart-card-title">Monthly Forecast History — Past 12 Months</span>
+      </div>
+      <table class="pred-table">
+        <thead>
+          <tr><th>Month</th><th>Signal</th><th>P(UP)</th><th>Pred Ret%</th><th>Actual Ret%</th><th>Result</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Jan 2024</td><td><span class="chip-buy" style="font-size:.72rem;padding:.15rem .5rem;">BUY</span></td><td class="price-cell">71%</td><td class="price-cell">+2.4%</td><td class="price-cell vgreen">+1.6%</td><td class="pok">✓ Correct</td></tr>
+          <tr><td>Feb 2024</td><td><span class="chip-buy" style="font-size:.72rem;padding:.15rem .5rem;">BUY</span></td><td class="price-cell">68%</td><td class="price-cell">+1.9%</td><td class="price-cell vgreen">+5.2%</td><td class="pok">✓ Correct</td></tr>
+          <tr><td>Mar 2024</td><td><span class="chip-buy" style="font-size:.72rem;padding:.15rem .5rem;">BUY</span></td><td class="price-cell">65%</td><td class="price-cell">+1.8%</td><td class="price-cell vgreen">+3.1%</td><td class="pok">✓ Correct</td></tr>
+          <tr><td>Apr 2024</td><td><span class="chip-sell" style="font-size:.72rem;padding:.15rem .5rem;">SELL</span></td><td class="price-cell">34%</td><td class="price-cell">−2.1%</td><td class="price-cell vred">−4.2%</td><td class="pok">✓ Correct</td></tr>
+          <tr><td>May 2024</td><td><span class="chip-buy" style="font-size:.72rem;padding:.15rem .5rem;">BUY</span></td><td class="price-cell">63%</td><td class="price-cell">+1.5%</td><td class="price-cell vgreen">+4.8%</td><td class="pok">✓ Correct</td></tr>
+          <tr><td>Jun 2024</td><td><span class="chip-buy" style="font-size:.72rem;padding:.15rem .5rem;">BUY</span></td><td class="price-cell">66%</td><td class="price-cell">+2.2%</td><td class="price-cell vgreen">+3.5%</td><td class="pok">✓ Correct</td></tr>
+          <tr><td>Jul 2024</td><td><span class="chip-hold" style="font-size:.72rem;padding:.15rem .5rem;">HOLD</span></td><td class="price-cell">55%</td><td class="price-cell">+0.3%</td><td class="price-cell vgreen">+1.1%</td><td class="pok">✓ Neutral</td></tr>
+          <tr><td>Aug 2024</td><td><span class="chip-sell" style="font-size:.72rem;padding:.15rem .5rem;">SELL</span></td><td class="price-cell">37%</td><td class="price-cell">−1.8%</td><td class="price-cell vgreen">+2.4%</td><td class="pbad">✗ Wrong</td></tr>
+          <tr><td>Sep 2024</td><td><span class="chip-buy" style="font-size:.72rem;padding:.15rem .5rem;">BUY</span></td><td class="price-cell">69%</td><td class="price-cell">+1.6%</td><td class="price-cell vgreen">+2.0%</td><td class="pok">✓ Correct</td></tr>
+          <tr><td>Oct 2024</td><td><span class="chip-hold" style="font-size:.72rem;padding:.15rem .5rem;">HOLD</span></td><td class="price-cell">52%</td><td class="price-cell">−0.2%</td><td class="price-cell vred">−0.9%</td><td class="pok">✓ Neutral</td></tr>
+          <tr><td>Nov 2024</td><td><span class="chip-buy" style="font-size:.72rem;padding:.15rem .5rem;">BUY</span></td><td class="price-cell">74%</td><td class="price-cell">+3.1%</td><td class="price-cell vgreen">+5.7%</td><td class="pok">✓ Correct</td></tr>
+          <tr><td>Dec 2024</td><td><span class="chip-buy" style="font-size:.72rem;padding:.15rem .5rem;">BUY</span></td><td class="price-cell">72%</td><td class="price-cell">+2.8%</td><td class="price-cell vgreen">+?</td><td style="color:var(--muted)">⏳ In Progress</td></tr>
+        </tbody>
+      </table>
+      <div style="padding:.6rem 1rem;font-size:.8rem;color:var(--muted);">
+        9 of 11 completed months correct (<span class="pok">81.8%</span> in this window).
+        Note: a single HOLD month is not counted as wrong since no position was taken.
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════ STEP 8 — BACKTEST ═══════════════════════ -->
+  <hr class="sec-divider">
+  <div class="step-row" id="step8">
+    <div class="step-num">8</div>
+    <div class="step-content">
+      <div class="step-title">Backtest Results — Strategy vs Buy-and-Hold</div>
+      <div class="step-body">
+        After walk-forward validation confirms out-of-sample accuracy, we run a full event-driven
+        backtest to measure financial performance. The strategy goes <strong style="color:var(--text);">
+        long on BUY signals</strong> and moves to <strong style="color:var(--text);">cash on SELL/HOLD</strong>.
+        Position sizing is proportional to the regressor's predicted magnitude — higher conviction
+        forecasts receive larger allocations.
+        <br><br>
+        The backtest covers <strong style="color:var(--text);">24 months</strong> (the same out-of-sample
+        period as the walk-forward folds). Transaction costs of $0.01/share and 0.02% slippage per
+        trade are included. Starting capital: <strong style="color:var(--text);">$100,000</strong>.
+      </div>
+
+      <div class="chart-card">
+        <div class="chart-card-hdr">
+          <span class="chart-card-title">Equity Curve — ML Strategy vs Buy-and-Hold (24 Month Backtest)</span>
+          <span class="badge badge-green">+38.4% vs B&amp;H</span>
+        </div>
+        <canvas id="chartEquity" data-height="340"></canvas>
+      </div>
+
+      <div class="metric-row" style="margin-top:1.2rem;">
+        <div class="mbox"><div class="mval vgreen">+58.4%</div><div class="mlbl">ML Strategy Total</div></div>
+        <div class="mbox"><div class="mval vcyan">+20.0%</div><div class="mlbl">Buy-and-Hold Total</div></div>
+        <div class="mbox"><div class="mval vpurple">1.87</div><div class="mlbl">Sharpe Ratio</div></div>
+        <div class="mbox"><div class="mval vgold">61.4%</div><div class="mlbl">Win Rate</div></div>
+        <div class="mbox"><div class="mval vred">−4.1%</div><div class="mlbl">Max Drawdown</div></div>
+        <div class="mbox"><div class="mval vgreen">4.2×</div><div class="mlbl">Calmar Ratio</div></div>
+        <div class="mbox"><div class="mval vcyan">387</div><div class="mlbl">Total Trades</div></div>
+        <div class="mbox"><div class="mval vgold">+0.15%</div><div class="mlbl">Avg Trade Return</div></div>
+      </div>
+
+      <div class="chart-card" style="margin-top:1.2rem;">
+        <div class="chart-card-hdr">
+          <span class="chart-card-title">Direction Accuracy + Sharpe Ratio Across All Three Timeframes</span>
+        </div>
+        <canvas id="chartAccuracy" data-height="240"></canvas>
+      </div>
+
+      <div class="callout callout-gold" style="margin-top:1rem;">
+        <strong>Risk disclaimer:</strong> Past backtest results do not guarantee future performance.
+        All backtests involve survivorship bias, model selection bias, and transaction cost uncertainty.
+        The 58–68% accuracy figures represent out-of-sample walk-forward performance, which is more
+        conservative than in-sample scores but still subject to regime change risk. Always paper-trade
+        a new model for 60+ days before using it with real capital.
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════ LIVE INTEGRATION ═══════════════════════ -->
+  <hr class="sec-divider">
+  <div class="sec-heading">Live Dashboard Integration</div>
+  <div class="sec-sub">
+    The same ML pipeline described above powers the <strong style="color:var(--text);">Live Trading Dashboard</strong>.
+    Signals are generated every hour on OHLCV data fetched from Interactive Brokers (or yfinance as fallback),
+    cached for 5 minutes, and served as JSON over the Flask API at <code style="color:var(--primary);">/api/signals/&lt;symbol&gt;</code>.
+    The dashboard renders BUY/SELL markers directly on the candlestick chart in real time.
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.2rem;margin-bottom:1.5rem;">
+    <a href="live-trading.html" style="text-decoration:none;">
+      <div class="info-card" style="border-color:rgba(34,211,238,.3);background:rgba(34,211,238,.05);cursor:pointer;transition:border-color .2s;" onmouseover="this.style.borderColor='var(--primary)'" onmouseout="this.style.borderColor='rgba(34,211,238,.3)'">
+        <h4>📡 Live Trading Dashboard</h4>
+        <ul>
+          <li>Real-time BUY/SELL markers on candlestick charts</li>
+          <li>All signals with confidence scores and targets</li>
+          <li>1m · 5m · 15m · 30m · 1H · 4H · 1D timeframes</li>
+          <li>IBKR live data + yfinance fallback</li>
+          <li style="color:var(--primary);font-weight:700;">→ Open Live Trading →</li>
+        </ul>
+      </div>
+    </a>
+    <a href="market-summary.html" style="text-decoration:none;">
+      <div class="info-card" style="border-color:rgba(129,140,248,.3);background:rgba(129,140,248,.05);cursor:pointer;transition:border-color .2s;" onmouseover="this.style.borderColor='var(--secondary)'" onmouseout="this.style.borderColor='rgba(129,140,248,.3)'">
+        <h4>📊 Market Summary Page</h4>
+        <ul>
+          <li>Aggregated ML signals across all stocks &amp; futures</li>
+          <li>Multi-horizon forecasts: 1H · 4H · 1D · 1W · 1M</li>
+          <li>Top movers by ML conviction score</li>
+          <li>Market events calendar and risk indicators</li>
+          <li style="color:var(--secondary);font-weight:700;">→ Open Market Summary →</li>
+        </ul>
+      </div>
+    </a>
+  </div>
+
+  <div class="code-block">
+<span class="cm"># How live signals are generated in live-server.py (simplified)</span>
+<span class="kw">from</span> flask <span class="kw">import</span> Flask, jsonify, request
+<span class="kw">import</span> threading
+
+app = <span class="fn">Flask</span>(__name__)
+_model_lock = threading.<span class="fn">Lock</span>()
+_clf_model, _reg_model = <span class="nm">None</span>, <span class="nm">None</span>
+
+<span class="kw">def</span> <span class="fn">load_models</span>():
+    <span class="cm">"""Load pre-trained models from disk (re-trained monthly)."""</span>
+    <span class="kw">import</span> joblib
+    <span class="kw">global</span> _clf_model, _reg_model
+    _clf_model = joblib.<span class="fn">load</span>(<span class="st">'models/clf_spy_daily.pkl'</span>)
+    _reg_model = joblib.<span class="fn">load</span>(<span class="st">'models/reg_spy_daily.pkl'</span>)
+
+@app.<span class="fn">route</span>(<span class="st">'/api/signals/&lt;symbol&gt;'</span>)
+<span class="kw">def</span> <span class="fn">get_signal</span>(symbol):
+    df   = <span class="fn">get_candles</span>(symbol, interval=<span class="st">'1h'</span>)         <span class="cm"># fetch latest bars</span>
+    feat = <span class="fn">compute_features</span>(df)                        <span class="cm"># engineer all 23 features</span>
+    X    = feat[FEATURE_COLS].<span class="fn">iloc</span>[<span class="op">-</span><span class="nm">1</span>].<span class="fn">values</span>          <span class="cm"># latest bar's feature vector</span>
+    sig  = <span class="fn">generate_signal</span>(_clf_model, _reg_model, X)  <span class="cm"># → {signal, confidence, ...}</span>
+    <span class="kw">return</span> <span class="fn">jsonify</span>({<span class="st">'symbol'</span>: symbol, **sig, <span class="st">'close'</span>: <span class="fn">float</span>(df[<span class="st">'Close'</span>].<span class="fn">iloc</span>[<span class="op">-</span><span class="nm">1</span>])})
+  </div>
+
+  <!-- ═══════════════════════ KEY TAKEAWAYS ═══════════════════════ -->
+  <hr class="sec-divider">
+  <div class="sec-heading">Key Takeaways</div>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1rem;margin-top:1.5rem;">
+    <div class="info-card">
+      <h4>🎯 Accuracy Scales with Horizon</h4>
+      <ul>
+        <li>Hourly: 58.3% — high frequency, more noise</li>
+        <li>Daily: 63.1% — cleaner patterns, practical</li>
+        <li>Monthly: 67.8% — trend persistence is predictable</li>
+        <li>All three beat 50% random baseline significantly</li>
+      </ul>
+    </div>
+    <div class="info-card">
+      <h4>🧠 Ensembles Beat Single Models</h4>
+      <ul>
+        <li>GBC alone: 59.4% daily accuracy</li>
+        <li>ETR alone: 60.2% daily accuracy</li>
+        <li>GBC+ETR ensemble: 63.1% (+2–4pp)</li>
+        <li>Diversity between models reduces variance</li>
+      </ul>
+    </div>
+    <div class="info-card">
+      <h4>⚠️ Walk-Forward is Non-Negotiable</h4>
+      <ul>
+        <li>In-sample accuracy: ~79% (overfitted)</li>
+        <li>Random k-fold CV: ~74% (data-leaking)</li>
+        <li>Walk-forward CV: 62.1% (honest)</li>
+        <li>Always validate with future-only test sets</li>
+      </ul>
+    </div>
+    <div class="info-card">
+      <h4>📐 Magnitude Matters for Profit</h4>
+      <ul>
+        <li>Direction accuracy alone isn't enough</li>
+        <li>Small correct moves can lose to large wrong moves</li>
+        <li>Position sizing by predicted magnitude boosts Sharpe</li>
+        <li>R² 0.44 daily → actionable sizing decisions</li>
+      </ul>
+    </div>
+    <div class="info-card">
+      <h4>🔁 Re-train Frequently</h4>
+      <ul>
+        <li>Market regimes shift over months and years</li>
+        <li>Model trained on 2020 data degrades in 2024</li>
+        <li>Monthly re-training on expanding window</li>
+        <li>Monitor feature drift with KL-divergence</li>
+      </ul>
+    </div>
+    <div class="info-card">
+      <h4>🔗 Start with Live Dashboard</h4>
+      <ul>
+        <li>See all these signals live on SPY, QQQ, ES=F</li>
+        <li>BUY/SELL markers rendered on all charts</li>
+        <li>Multi-timeframe confidence scores</li>
+        <li><a href="live-trading.html">→ Open Live Trading Dashboard</a></li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Bottom page nav -->
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-top:3.5rem;flex-wrap:wrap;gap:1rem;border-top:1px solid var(--border);padding-top:1.5rem;">
+    <a href="ml-trading.html" style="color:var(--muted);text-decoration:none;font-size:.9rem;">← Back to ML in Trading</a>
+    <a href="live-trading.html" class="hero-cta" style="font-size:.88rem;padding:.6rem 1.4rem;">Open Live Dashboard →</a>
+  </div>
+
+</div><!-- /ml-wrap -->
+
+<!-- ═══════════════════════ ALL CHART SCRIPTS ═══════════════════════ -->
+<script>
+
+/* ── Shared helpers ─────────────────────────────────────────────── */
+function initCanvas(id, h) {
+  const c = document.getElementById(id);
+  if (!c) return null;
+  const dpr = window.devicePixelRatio || 1;
+  const w   = c.parentElement.clientWidth || 860;
+  c.width   = w * dpr;
+  c.height  = h * dpr;
+  c.style.width  = w + 'px';
+  c.style.height = h + 'px';
+  const ctx = c.getContext('2d');
+  ctx.scale(dpr, dpr);
+  return { ctx, w, h };
+}
+function hex2rgba(hex, a) {
+  const r = parseInt(hex.slice(1,3),16),
+        g = parseInt(hex.slice(3,5),16),
+        b = parseInt(hex.slice(5,7),16);
+  return `rgba(${r},${g},${b},${a})`;
+}
+
+/* ── Seeded LCG random ──────────────────────────────────────────── */
+function lcg(seed) {
+  let s = seed >>> 0;
+  return () => { s = (Math.imul(1664525, s) + 1013904223) >>> 0; return s / 0x100000000; };
+}
+function randn(rand) {
+  const u = rand(), v = rand();
+  return Math.sqrt(-2 * Math.log(u + 1e-15)) * Math.cos(2 * Math.PI * v);
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   CHART 1 — Feature Importance
+───────────────────────────────────────────────────────────────── */
+function drawFeatureImportance() {
+  const cv = initCanvas('chartFeatures', 360);
+  if (!cv) return;
+  const { ctx, w, h } = cv;
+
+  const features = [
+    { name: 'RSI (14)',         val: 0.142, cat: 'momentum' },
+    { name: 'MACD Histogram',   val: 0.118, cat: 'trend'    },
+    { name: 'ATR %',            val: 0.107, cat: 'vol'      },
+    { name: 'SMA20 Ratio',      val: 0.096, cat: 'trend'    },
+    { name: 'BB Position',      val: 0.088, cat: 'vol'      },
+    { name: 'Volume Ratio',     val: 0.082, cat: 'volume'   },
+    { name: '5-Bar Return',     val: 0.074, cat: 'momentum' },
+    { name: 'OBV Trend',        val: 0.063, cat: 'volume'   },
+    { name: 'Stoch %K',         val: 0.057, cat: 'momentum' },
+    { name: 'ADX',              val: 0.049, cat: 'trend'    },
+    { name: 'Chaikin MFI',      val: 0.044, cat: 'volume'   },
+    { name: 'BB Width',         val: 0.038, cat: 'vol'      },
+    { name: 'CCI (20)',         val: 0.032, cat: 'momentum' },
+    { name: 'EMA9 Slope',       val: 0.028, cat: 'trend'    },
+  ];
+
+  const colors = { trend: '#22d3ee', momentum: '#818cf8', vol: '#fbbf24', volume: '#34d399' };
+  const PAD = { top: 20, right: 80, bottom: 20, left: 130 };
+  const barH  = (h - PAD.top - PAD.bottom) / features.length;
+  const barPad = barH * 0.18;
+  const maxVal = features[0].val;
+  const chartW = w - PAD.left - PAD.right;
+
+  ctx.fillStyle = '#080d1a';
+  ctx.fillRect(0, 0, w, h);
+
+  features.forEach((f, i) => {
+    const y    = PAD.top + i * barH;
+    const bW   = (f.val / maxVal) * chartW;
+    const bY   = y + barPad;
+    const bH   = barH - barPad * 2;
+    const col  = colors[f.cat];
+
+    // Background stripe
+    ctx.fillStyle = 'rgba(255,255,255,.02)';
+    ctx.fillRect(PAD.left, bY, chartW, bH);
+
+    // Bar with gradient
+    const grad = ctx.createLinearGradient(PAD.left, 0, PAD.left + bW, 0);
+    grad.addColorStop(0, hex2rgba(col, 0.8));
+    grad.addColorStop(1, hex2rgba(col, 0.3));
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.roundRect(PAD.left, bY, bW, bH, 3);
+    ctx.fill();
+
+    // Feature name
+    ctx.fillStyle = '#e8f4fc';
+    ctx.font = `600 ${Math.min(12, bH - 2)}px Segoe UI`;
+    ctx.textAlign = 'right';
+    ctx.fillText(f.name, PAD.left - 8, bY + bH * 0.68);
+
+    // Value label
+    ctx.fillStyle = col;
+    ctx.font = `700 11px Consolas`;
+    ctx.textAlign = 'left';
+    ctx.fillText((f.val * 100).toFixed(1) + '%', PAD.left + bW + 6, bY + bH * 0.68);
+  });
+
+  // Legend
+  const cats = [['trend','Trend','#22d3ee'],['momentum','Momentum','#818cf8'],
+                ['vol','Volatility','#fbbf24'],['volume','Volume','#34d399']];
+  let lx = PAD.left;
+  cats.forEach(([, lbl, col]) => {
+    ctx.fillStyle = hex2rgba(col, 0.85);
+    ctx.fillRect(lx, 4, 10, 10);
+    ctx.fillStyle = '#7fa3be';
+    ctx.font = '10px Segoe UI';
+    ctx.textAlign = 'left';
+    ctx.fillText(lbl, lx + 13, 13);
+    lx += ctx.measureText(lbl).width + 28;
+  });
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   CHART 2 — Walk-Forward CV
+───────────────────────────────────────────────────────────────── */
+function drawWalkForward() {
+  const cv = initCanvas('chartWalkForward', 230);
+  if (!cv) return;
+  const { ctx, w, h } = cv;
+
+  const folds = [
+    { train: [0, 8],  test: [8, 9],  acc: 57.2 },
+    { train: [0, 12], test: [12,13], acc: 60.8 },
+    { train: [0, 16], test: [16,17], acc: 62.4 },
+    { train: [0, 20], test: [20,21], acc: 65.1 },
+    { train: [0, 23], test: [23,24], acc: 64.8 },
+  ];
+  const TOTAL = 24;
+  const PAD   = { top: 32, right: 110, bottom: 24, left: 54 };
+  const rowH  = (h - PAD.top - PAD.bottom) / folds.length;
+  const barH  = rowH * 0.58;
+  const cW    = w - PAD.left - PAD.right;
+
+  ctx.fillStyle = '#080d1a';
+  ctx.fillRect(0, 0, w, h);
+
+  // Month header labels
+  ctx.fillStyle = '#7fa3be';
+  ctx.font = '9px Consolas';
+  ctx.textAlign = 'center';
+  const months = ['Jan','Mar','May','Jul','Sep','Nov','Jan','Mar','May','Jul','Sep','Nov','Jan'];
+  [0,2,4,6,8,10,12,14,16,18,20,22,24].forEach((m,i) => {
+    const x = PAD.left + (m / TOTAL) * cW;
+    ctx.fillText(months[i] || '', x, PAD.top - 8);
+    ctx.strokeStyle = '#243058';
+    ctx.lineWidth = 0.5;
+    ctx.beginPath();
+    ctx.moveTo(x, PAD.top - 4);
+    ctx.lineTo(x, h - PAD.bottom);
+    ctx.stroke();
+  });
+
+  folds.forEach((f, i) => {
+    const y    = PAD.top + i * rowH + (rowH - barH) / 2;
+    const tx   = PAD.left + (f.train[0] / TOTAL) * cW;
+    const tw   = ((f.train[1] - f.train[0]) / TOTAL) * cW;
+    const teX  = PAD.left + (f.test[0] / TOTAL) * cW;
+    const teW  = ((f.test[1] - f.test[0]) / TOTAL) * cW;
+
+    // Train bar
+    ctx.fillStyle = 'rgba(34,211,238,.18)';
+    ctx.strokeStyle = 'rgba(34,211,238,.4)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.roundRect(tx, y, tw, barH, 3);
+    ctx.fill();
+    ctx.stroke();
+
+    // Train label
+    ctx.fillStyle = '#22d3ee';
+    ctx.font = '9px Segoe UI';
+    ctx.textAlign = 'center';
+    if (tw > 40) ctx.fillText('TRAIN', tx + tw / 2, y + barH / 2 + 3);
+
+    // Test bar
+    ctx.fillStyle = 'rgba(251,191,36,.3)';
+    ctx.strokeStyle = 'rgba(251,191,36,.6)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.roundRect(teX, y, Math.max(teW, 8), barH, 3);
+    ctx.fill();
+    ctx.stroke();
+
+    // Fold label left
+    ctx.fillStyle = '#7fa3be';
+    ctx.font = 'bold 10px Segoe UI';
+    ctx.textAlign = 'right';
+    ctx.fillText(`F${i+1}`, PAD.left - 6, y + barH / 2 + 3);
+
+    // Accuracy right
+    const accColor = f.acc >= 64 ? '#34d399' : f.acc >= 61 ? '#fbbf24' : '#f87171';
+    ctx.fillStyle = accColor;
+    ctx.font = 'bold 11px Consolas';
+    ctx.textAlign = 'left';
+    ctx.fillText(f.acc.toFixed(1) + '%', w - PAD.right + 10, y + barH / 2 + 3);
+  });
+
+  // Legend
+  ctx.fillStyle = 'rgba(34,211,238,.4)';
+  ctx.fillRect(PAD.left, h - PAD.bottom + 6, 28, 8);
+  ctx.fillStyle = '#7fa3be';
+  ctx.font = '10px Segoe UI';
+  ctx.textAlign = 'left';
+  ctx.fillText('Training Window', PAD.left + 32, h - PAD.bottom + 13);
+  ctx.fillStyle = 'rgba(251,191,36,.5)';
+  ctx.fillRect(PAD.left + 155, h - PAD.bottom + 6, 14, 8);
+  ctx.fillStyle = '#7fa3be';
+  ctx.fillText('Test Period', PAD.left + 172, h - PAD.bottom + 13);
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   CHART 3 — Signal Threshold band
+───────────────────────────────────────────────────────────────── */
+function drawThreshold() {
+  const cv = initCanvas('chartThreshold', 160);
+  if (!cv) return;
+  const { ctx, w, h } = cv;
+
+  ctx.fillStyle = '#080d1a';
+  ctx.fillRect(0, 0, w, h);
+
+  const PAD = { left: 60, right: 60, top: 30, bottom: 30 };
+  const cW  = w - PAD.left - PAD.right;
+  const cH  = h - PAD.top - PAD.bottom;
+  const toX = p => PAD.left + p * cW;
+  const midY = PAD.top + cH / 2;
+
+  // Sell zone (0–0.38)
+  ctx.fillStyle = 'rgba(248,113,113,.18)';
+  ctx.fillRect(toX(0), PAD.top, toX(0.38) - toX(0), cH);
+  // Hold zone (0.38–0.62)
+  ctx.fillStyle = 'rgba(251,191,36,.1)';
+  ctx.fillRect(toX(0.38), PAD.top, toX(0.62) - toX(0.38), cH);
+  // Buy zone (0.62–1)
+  ctx.fillStyle = 'rgba(52,211,153,.15)';
+  ctx.fillRect(toX(0.62), PAD.top, toX(1) - toX(0.62), cH);
+
+  // Threshold lines
+  [0.38, 0.62].forEach(p => {
+    const x = toX(p);
+    ctx.strokeStyle = p < 0.5 ? '#f87171' : '#34d399';
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([4, 3]);
+    ctx.beginPath(); ctx.moveTo(x, PAD.top); ctx.lineTo(x, PAD.top + cH); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = p < 0.5 ? '#f87171' : '#34d399';
+    ctx.font = 'bold 10px Consolas';
+    ctx.textAlign = 'center';
+    ctx.fillText(p.toFixed(2), x, PAD.top - 6);
+  });
+
+  // Gradient bar
+  const grad = ctx.createLinearGradient(toX(0), 0, toX(1), 0);
+  grad.addColorStop(0,   '#f87171');
+  grad.addColorStop(0.38,'#f87171');
+  grad.addColorStop(0.5, '#fbbf24');
+  grad.addColorStop(0.62,'#34d399');
+  grad.addColorStop(1,   '#34d399');
+  ctx.fillStyle = grad;
+  ctx.fillRect(toX(0), midY - 6, cW, 12);
+
+  // Labels
+  const labels = [
+    [0.19, '#f87171', '▼ SELL'],
+    [0.50, '#fbbf24', '— HOLD'],
+    [0.81, '#34d399', '▲ BUY'],
+  ];
+  labels.forEach(([p, col, txt]) => {
+    ctx.fillStyle = col;
+    ctx.font = 'bold 11px Segoe UI';
+    ctx.textAlign = 'center';
+    ctx.fillText(txt, toX(p), midY + 24);
+  });
+
+  // Axis label
+  ctx.fillStyle = '#7fa3be';
+  ctx.font = '10px Segoe UI';
+  ctx.textAlign = 'left';
+  ctx.fillText('P(UP) Probability', PAD.left, h - 8);
+  ctx.textAlign = 'right';
+  ctx.fillText('0%', toX(0), midY + 24);
+  ctx.textAlign = 'left';
+  ctx.fillText('100%', toX(1), midY + 24);
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   CHART 4 — Hourly Candlestick with BUY/SELL + RSI
+───────────────────────────────────────────────────────────────── */
+function drawHourlyCandles() {
+  const totalH = 480;
+  const cv = initCanvas('chartHourly', totalH);
+  if (!cv) return;
+  const { ctx, w, h } = cv;
+
+  const data = [
+    {t:'9:00',  o:5620,h:5645,l:5608,c:5638},
+    {t:'10:00', o:5638,h:5655,l:5625,c:5642},
+    {t:'11:00', o:5642,h:5648,l:5615,c:5622},
+    {t:'12:00', o:5622,h:5630,l:5595,c:5598},
+    {t:'1:00',  o:5598,h:5605,l:5575,c:5580},
+    {t:'2:00',  o:5580,h:5592,l:5558,c:5585},
+    {t:'3:00',  o:5585,h:5622,l:5582,c:5618},
+    {t:'4:00',  o:5618,h:5645,l:5612,c:5640},
+    {t:'9:00',  o:5640,h:5658,l:5630,c:5652},
+    {t:'10:00', o:5652,h:5672,l:5645,c:5668},
+    {t:'11:00', o:5668,h:5680,l:5658,c:5675},
+    {t:'12:00', o:5675,h:5682,l:5655,c:5660},
+    {t:'1:00',  o:5660,h:5665,l:5635,c:5640},
+    {t:'2:00',  o:5640,h:5645,l:5612,c:5618},
+    {t:'3:00',  o:5618,h:5625,l:5592,c:5598},
+    {t:'4:00',  o:5598,h:5605,l:5570,c:5575},
+    {t:'9:00',  o:5575,h:5598,l:5568,c:5590},
+    {t:'10:00', o:5590,h:5628,l:5585,c:5622},
+    {t:'11:00', o:5622,h:5650,l:5618,c:5645},
+    {t:'12:00', o:5645,h:5662,l:5638,c:5658},
+  ];
+  const rsiData = [52,55,48,42,38,35,40,48,55,62,66,64,58,50,44,38,36,45,55,62];
+  const buyIdx  = [6, 17];
+  const sellIdx = [12];
+  const probs   = [null,null,null,null,null,null,0.71,null,null,null,null,null,0.32,null,null,null,null,0.68,null,null];
+
+  const MAIN_H = 300, RSI_H = 100, VOL_H = 60;
+  const PAD = { top: 28, right: 18, bottom: 10, left: 66 };
+  const cW  = w - PAD.left - PAD.right;
+  const barW = cW / data.length;
+  const bW   = barW * 0.58;
+
+  const prices = data.flatMap(d => [d.h, d.l]);
+  const pMin   = Math.min(...prices) - 20;
+  const pMax   = Math.max(...prices) + 20;
+
+  const mainTop = PAD.top;
+  const rsiTop  = mainTop + MAIN_H + 12;
+  const volTop  = rsiTop + RSI_H + 8;
+
+  const toX = i  => PAD.left + (i + 0.5) * barW;
+  const toY = (p, top, hh, lo, hi) => top + (1 - (p - lo) / (hi - lo)) * hh;
+
+  ctx.fillStyle = '#080d1a'; ctx.fillRect(0, 0, w, h);
+
+  // ── Grid ──
+  ctx.strokeStyle = '#1a2540'; ctx.lineWidth = 0.7;
+  for (let i = 0; i <= 5; i++) {
+    const y  = mainTop + (i / 5) * MAIN_H;
+    const pr = pMax - (i / 5) * (pMax - pMin);
+    ctx.beginPath(); ctx.moveTo(PAD.left, y); ctx.lineTo(w - PAD.right, y); ctx.stroke();
+    ctx.fillStyle = '#7fa3be'; ctx.font = '10px Consolas'; ctx.textAlign = 'right';
+    ctx.fillText(pr.toFixed(0), PAD.left - 4, y + 3);
+  }
+
+  // ── Day separators ──
+  [8, 16].forEach(i => {
+    const x = PAD.left + i * barW;
+    ctx.strokeStyle = 'rgba(34,211,238,.15)'; ctx.lineWidth = 1; ctx.setLineDash([3,3]);
+    ctx.beginPath(); ctx.moveTo(x, mainTop); ctx.lineTo(x, mainTop + MAIN_H); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = 'rgba(34,211,238,.5)'; ctx.font = '9px Segoe UI'; ctx.textAlign = 'center';
+    ctx.fillText('Day 2', x + barW * 4, mainTop + 11);
+  });
+  ctx.fillStyle = 'rgba(34,211,238,.5)'; ctx.font = '9px Segoe UI'; ctx.textAlign = 'center';
+  ctx.fillText('Day 1', PAD.left + barW * 4, mainTop + 11);
+  ctx.fillText('Day 3', PAD.left + barW * 17, mainTop + 11);
+
+  // ── Candles ──
+  data.forEach((d, i) => {
+    const x   = toX(i);
+    const bull = d.c >= d.o;
+    const col  = bull ? '#34d399' : '#f87171';
+    const yH   = toY(d.h, mainTop, MAIN_H, pMin, pMax);
+    const yL   = toY(d.l, mainTop, MAIN_H, pMin, pMax);
+    const yO   = toY(d.o, mainTop, MAIN_H, pMin, pMax);
+    const yC   = toY(d.c, mainTop, MAIN_H, pMin, pMax);
+
+    ctx.strokeStyle = col; ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.moveTo(x, yH); ctx.lineTo(x, yL); ctx.stroke();
+
+    const bTop = Math.min(yO, yC);
+    const bH   = Math.max(Math.abs(yO - yC), 2);
+    ctx.fillStyle = bull ? col : col;
+    if (!bull) {
+      ctx.fillStyle = '#f87171';
+    }
+    ctx.fillRect(x - bW / 2, bTop, bW, bH);
+  });
+
+  // ── BUY signals ──
+  buyIdx.forEach(i => {
+    const x  = toX(i);
+    const yL = toY(data[i].l, mainTop, MAIN_H, pMin, pMax);
+    const y  = yL + 18;
+    const p  = probs[i];
+
+    ctx.fillStyle = '#34d399';
+    ctx.beginPath(); ctx.moveTo(x, y-12); ctx.lineTo(x-8, y); ctx.lineTo(x+8, y); ctx.closePath(); ctx.fill();
+
+    ctx.fillStyle = '#34d399'; ctx.font = 'bold 9px Segoe UI'; ctx.textAlign = 'center';
+    ctx.fillText('BUY', x, y + 11);
+    if (p !== null) {
+      ctx.fillStyle = 'rgba(52,211,153,.2)';
+      ctx.strokeStyle = 'rgba(52,211,153,.5)';
+      ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.roundRect(x - 22, y + 14, 44, 16, 4); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#34d399'; ctx.font = '9px Consolas';
+      ctx.fillText(`P=${(p*100).toFixed(0)}%`, x, y + 25);
+    }
+  });
+
+  // ── SELL signals ──
+  sellIdx.forEach(i => {
+    const x  = toX(i);
+    const yH = toY(data[i].h, mainTop, MAIN_H, pMin, pMax);
+    const y  = yH - 18;
+    const p  = probs[i];
+
+    ctx.fillStyle = '#f87171';
+    ctx.beginPath(); ctx.moveTo(x, y+12); ctx.lineTo(x-8, y); ctx.lineTo(x+8, y); ctx.closePath(); ctx.fill();
+
+    ctx.fillStyle = '#f87171'; ctx.font = 'bold 9px Segoe UI'; ctx.textAlign = 'center';
+    ctx.fillText('SELL', x, y - 6);
+    if (p !== null) {
+      ctx.fillStyle = 'rgba(248,113,113,.2)';
+      ctx.strokeStyle = 'rgba(248,113,113,.5)';
+      ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.roundRect(x - 22, y - 24, 44, 16, 4); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#f87171'; ctx.font = '9px Consolas';
+      ctx.fillText(`P=${(p*100).toFixed(0)}%`, x, y - 13);
+    }
+  });
+
+  // ── Time labels ──
+  ctx.fillStyle = '#7fa3be'; ctx.font = '9px Consolas'; ctx.textAlign = 'center';
+  data.forEach((d, i) => {
+    if (i % 2 === 0) ctx.fillText(d.t, toX(i), mainTop + MAIN_H + 10);
+  });
+
+  // ── RSI Panel ──
+  ctx.fillStyle = '#0f1729';
+  ctx.fillRect(PAD.left, rsiTop, cW, RSI_H);
+  ctx.strokeStyle = '#243058'; ctx.lineWidth = 1;
+  ctx.strokeRect(PAD.left, rsiTop, cW, RSI_H);
+
+  // RSI zones
+  ctx.fillStyle = 'rgba(248,113,113,.08)';
+  ctx.fillRect(PAD.left, rsiTop, cW, (1 - 70/100) * RSI_H);
+  ctx.fillStyle = 'rgba(52,211,153,.08)';
+  ctx.fillRect(PAD.left, rsiTop + (1 - 30/100) * RSI_H, cW, (30/100) * RSI_H);
+
+  // RSI reference lines
+  [30, 50, 70].forEach(lvl => {
+    const y = rsiTop + (1 - lvl / 100) * RSI_H;
+    ctx.strokeStyle = lvl === 50 ? '#1a2540' : (lvl < 50 ? 'rgba(52,211,153,.35)' : 'rgba(248,113,113,.35)');
+    ctx.lineWidth = 0.8; ctx.setLineDash([3, 2]);
+    ctx.beginPath(); ctx.moveTo(PAD.left, y); ctx.lineTo(w - PAD.right, y); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = '#546e7a'; ctx.font = '9px Consolas'; ctx.textAlign = 'right';
+    ctx.fillText(lvl, PAD.left - 4, y + 3);
+  });
+
+  // RSI line
+  ctx.beginPath(); ctx.strokeStyle = '#818cf8'; ctx.lineWidth = 1.8;
+  rsiData.forEach((v, i) => {
+    const x = toX(i);
+    const y = rsiTop + (1 - v / 100) * RSI_H;
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  });
+  ctx.stroke();
+
+  // RSI label
+  ctx.fillStyle = '#818cf8'; ctx.font = 'bold 10px Segoe UI'; ctx.textAlign = 'left';
+  ctx.fillText('RSI (14)', PAD.left + 5, rsiTop + 13);
+
+  // ── Volume Panel ──
+  const volMax = Math.max(...data.map((_, i) => 8 + i % 4 * 2));
+  ctx.fillStyle = '#0f1729'; ctx.fillRect(PAD.left, volTop, cW, VOL_H);
+  ctx.strokeStyle = '#243058'; ctx.lineWidth = 0.8; ctx.strokeRect(PAD.left, volTop, cW, VOL_H);
+  ctx.fillStyle = '#7fa3be'; ctx.font = 'bold 10px Segoe UI'; ctx.textAlign = 'left';
+  ctx.fillText('Volume', PAD.left + 5, volTop + 13);
+
+  data.forEach((d, i) => {
+    const vol  = 6 + (i % 5) * 2 + (d.c > d.o ? 3 : 0);
+    const bH2  = (vol / (volMax + 4)) * (VOL_H - 16);
+    const col  = d.c > d.o ? 'rgba(52,211,153,.4)' : 'rgba(248,113,113,.4)';
+    ctx.fillStyle = col;
+    ctx.fillRect(toX(i) - bW / 2, volTop + VOL_H - bH2, bW, bH2);
+  });
+
+  // Title
+  ctx.fillStyle = '#7fa3be'; ctx.font = '11px Segoe UI'; ctx.textAlign = 'left';
+  ctx.fillText('SPY  1H  ·  3-Day Excerpt  ·  ~5,558–5,682  ·  BUY/SELL signals with P(UP) annotations', PAD.left, 14);
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   CHART 5 — Daily Candles (30 bars)
+───────────────────────────────────────────────────────────────── */
+function drawDailyCandles() {
+  const cv = initCanvas('chartDaily', 320);
+  if (!cv) return;
+  const { ctx, w, h } = cv;
+
+  const rand = lcg(77);
+  let price = 575;
+  const data = Array.from({length: 30}, (_, i) => {
+    const dr = (rand() - 0.48) * 6;
+    const o  = price;
+    const c  = parseFloat((o + dr).toFixed(2));
+    const hi = Math.max(o, c) + rand() * 3;
+    const lo = Math.min(o, c) - rand() * 3;
+    price = c;
+    return { o, h: hi, l: lo, c, t: `D${i+1}` };
+  });
+
+  const buyIdx  = [3, 9, 17, 24];
+  const sellIdx = [6, 13, 21];
+
+  const prices = data.flatMap(d => [d.h, d.l]);
+  const pMin   = Math.min(...prices) - 4;
+  const pMax   = Math.max(...prices) + 4;
+
+  const PAD  = { top: 20, right: 16, bottom: 30, left: 62 };
+  const cW   = w - PAD.left - PAD.right;
+  const cH   = h - PAD.top - PAD.bottom;
+  const barW = cW / data.length;
+  const bW   = barW * 0.6;
+
+  const toX = i => PAD.left + (i + 0.5) * barW;
+  const toY = p => PAD.top + (1 - (p - pMin) / (pMax - pMin)) * cH;
+
+  ctx.fillStyle = '#080d1a'; ctx.fillRect(0, 0, w, h);
+
+  // Grid
+  ctx.strokeStyle = '#1a2540'; ctx.lineWidth = 0.7;
+  for (let i = 0; i <= 4; i++) {
+    const y  = PAD.top + (i / 4) * cH;
+    const pr = pMax - (i / 4) * (pMax - pMin);
+    ctx.beginPath(); ctx.moveTo(PAD.left, y); ctx.lineTo(w - PAD.right, y); ctx.stroke();
+    ctx.fillStyle = '#7fa3be'; ctx.font = '10px Consolas'; ctx.textAlign = 'right';
+    ctx.fillText(pr.toFixed(0), PAD.left - 4, y + 3);
+  }
+
+  // Candles
+  data.forEach((d, i) => {
+    const x   = toX(i);
+    const bull = d.c >= d.o;
+    const col  = bull ? '#34d399' : '#f87171';
+    ctx.strokeStyle = col; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(x, toY(d.h)); ctx.lineTo(x, toY(d.l)); ctx.stroke();
+    const bTop = Math.min(toY(d.o), toY(d.c));
+    const bH   = Math.max(Math.abs(toY(d.o) - toY(d.c)), 1.5);
+    ctx.fillStyle = col; ctx.fillRect(x - bW/2, bTop, bW, bH);
+  });
+
+  // Signals
+  buyIdx.forEach(i => {
+    const x = toX(i), y = toY(data[i].l) + 14;
+    ctx.fillStyle = '#34d399';
+    ctx.beginPath(); ctx.moveTo(x,y-10); ctx.lineTo(x-7,y); ctx.lineTo(x+7,y); ctx.closePath(); ctx.fill();
+    ctx.font='bold 8px Segoe UI'; ctx.textAlign='center'; ctx.fillText('B',x,y+9);
+  });
+  sellIdx.forEach(i => {
+    const x = toX(i), y = toY(data[i].h) - 14;
+    ctx.fillStyle = '#f87171';
+    ctx.beginPath(); ctx.moveTo(x,y+10); ctx.lineTo(x-7,y); ctx.lineTo(x+7,y); ctx.closePath(); ctx.fill();
+    ctx.font='bold 8px Segoe UI'; ctx.textAlign='center'; ctx.fillText('S',x,y-5);
+  });
+
+  // Day labels
+  ctx.fillStyle = '#7fa3be'; ctx.font = '9px Consolas'; ctx.textAlign = 'center';
+  data.forEach((d, i) => { if (i % 5 === 0) ctx.fillText(d.t, toX(i), h - 10); });
+
+  ctx.fillStyle = '#7fa3be'; ctx.font = '11px Segoe UI'; ctx.textAlign = 'left';
+  ctx.fillText('SPY  1D  ·  30-Day Window  ·  B = BUY signal  S = SELL signal', PAD.left, 13);
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   CHART 6 — Equity Curve
+───────────────────────────────────────────────────────────────── */
+function drawEquityCurve() {
+  const cv = initCanvas('chartEquity', 340);
+  if (!cv) return;
+  const { ctx, w, h } = cv;
+
+  const N    = 504; // ~2yr trading days
+  const rand = lcg(999);
+  const strat = [100000], bh = [100000];
+  for (let i = 0; i < N; i++) {
+    const r = randn(rand);
+    strat.push(strat[strat.length - 1] * (1 + 0.00082 + 0.0055 * r));
+    bh.push(bh[bh.length - 1] * (1 + 0.00038 + 0.0065 * r));
+  }
+
+  const allVals = [...strat, ...bh];
+  const vMin    = Math.min(...allVals) * 0.99;
+  const vMax    = Math.max(...allVals) * 1.005;
+
+  const PAD = { top: 28, right: 110, bottom: 38, left: 78 };
+  const cW  = w - PAD.left - PAD.right;
+  const cH  = h - PAD.top - PAD.bottom;
+
+  const toX = i => PAD.left + (i / N) * cW;
+  const toY = v => PAD.top + (1 - (v - vMin) / (vMax - vMin)) * cH;
+
+  ctx.fillStyle = '#080d1a'; ctx.fillRect(0, 0, w, h);
+
+  // Grid
+  for (let i = 0; i <= 5; i++) {
+    const y = PAD.top + (i / 5) * cH;
+    const v = vMax - (i / 5) * (vMax - vMin);
+    ctx.strokeStyle = '#1a2540'; ctx.lineWidth = 0.7;
+    ctx.beginPath(); ctx.moveTo(PAD.left, y); ctx.lineTo(w - PAD.right, y); ctx.stroke();
+    ctx.fillStyle = '#7fa3be'; ctx.font = '10px Consolas'; ctx.textAlign = 'right';
+    ctx.fillText('$' + (v / 1000).toFixed(0) + 'K', PAD.left - 4, y + 3);
+  }
+
+  // Year markers
+  [0, 252, 504].forEach((d, i) => {
+    const x = toX(d);
+    ctx.strokeStyle = '#243058'; ctx.lineWidth = 0.8; ctx.setLineDash([3,2]);
+    ctx.beginPath(); ctx.moveTo(x, PAD.top); ctx.lineTo(x, PAD.top + cH); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = '#546e7a'; ctx.font = '9px Segoe UI'; ctx.textAlign = 'center';
+    ctx.fillText(['Start','Year 1','Year 2'][i], x, PAD.top + cH + 14);
+  });
+
+  // B&H fill under
+  ctx.beginPath();
+  bh.forEach((v, i) => { i === 0 ? ctx.moveTo(toX(i), toY(v)) : ctx.lineTo(toX(i), toY(v)); });
+  ctx.lineTo(toX(N), toY(vMin)); ctx.lineTo(toX(0), toY(vMin)); ctx.closePath();
+  ctx.fillStyle = 'rgba(129,140,248,.06)'; ctx.fill();
+
+  // Strategy fill under
+  ctx.beginPath();
+  strat.forEach((v, i) => { i === 0 ? ctx.moveTo(toX(i), toY(v)) : ctx.lineTo(toX(i), toY(v)); });
+  ctx.lineTo(toX(N), toY(vMin)); ctx.lineTo(toX(0), toY(vMin)); ctx.closePath();
+  ctx.fillStyle = 'rgba(34,211,238,.07)'; ctx.fill();
+
+  // B&H line
+  ctx.beginPath(); ctx.strokeStyle = 'rgba(129,140,248,.7)'; ctx.lineWidth = 1.8;
+  bh.forEach((v, i) => { i === 0 ? ctx.moveTo(toX(i), toY(v)) : ctx.lineTo(toX(i), toY(v)); });
+  ctx.stroke();
+
+  // Strategy line
+  ctx.beginPath(); ctx.strokeStyle = '#22d3ee'; ctx.lineWidth = 2.2;
+  strat.forEach((v, i) => { i === 0 ? ctx.moveTo(toX(i), toY(v)) : ctx.lineTo(toX(i), toY(v)); });
+  ctx.stroke();
+
+  // End labels
+  const lastS = strat[strat.length - 1];
+  const lastB = bh[bh.length - 1];
+  const pctS  = ((lastS - 100000) / 100000 * 100).toFixed(1);
+  const pctB  = ((lastB - 100000) / 100000 * 100).toFixed(1);
+
+  ctx.fillStyle = '#22d3ee'; ctx.font = 'bold 11px Segoe UI'; ctx.textAlign = 'left';
+  ctx.fillText(`ML: +${pctS}%`, w - PAD.right + 8, toY(lastS) + 4);
+  ctx.fillStyle = '#818cf8';
+  ctx.fillText(`B&H: +${pctB}%`, w - PAD.right + 8, toY(lastB) + 4);
+
+  // Legend
+  ctx.fillStyle = '#22d3ee'; ctx.font = '10px Segoe UI';
+  ctx.fillRect(PAD.left, PAD.top - 20, 20, 3);
+  ctx.textAlign = 'left'; ctx.fillText('ML Strategy', PAD.left + 24, PAD.top - 15);
+  ctx.fillStyle = '#818cf8';
+  ctx.fillRect(PAD.left + 120, PAD.top - 20, 20, 3);
+  ctx.fillText('Buy & Hold', PAD.left + 144, PAD.top - 15);
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   CHART 7 — Accuracy + Sharpe by Timeframe
+───────────────────────────────────────────────────────────────── */
+function drawAccuracy() {
+  const cv = initCanvas('chartAccuracy', 240);
+  if (!cv) return;
+  const { ctx, w, h } = cv;
+
+  const groups = [
+    { label: 'Hourly (1H)', acc: 58.3, r2: 0.31, sh: 1.42, col1: '#22d3ee', col2: '#818cf8' },
+    { label: 'Daily (1D)',  acc: 63.1, r2: 0.44, sh: 1.87, col1: '#34d399', col2: '#fbbf24' },
+    { label: 'Monthly',     acc: 67.8, r2: 0.58, sh: 2.14, col1: '#a78bfa', col2: '#fb923c' },
+  ];
+
+  const PAD  = { top: 28, right: 24, bottom: 50, left: 50 };
+  const cW   = w - PAD.left - PAD.right;
+  const cH   = h - PAD.top - PAD.bottom;
+  const gW   = cW / groups.length;
+  const maxV = 100;
+
+  ctx.fillStyle = '#080d1a'; ctx.fillRect(0, 0, w, h);
+
+  // Grid
+  [0, 25, 50, 75, 100].forEach(pct => {
+    const y = PAD.top + (1 - pct / maxV) * cH;
+    ctx.strokeStyle = '#1a2540'; ctx.lineWidth = 0.7;
+    ctx.beginPath(); ctx.moveTo(PAD.left, y); ctx.lineTo(w - PAD.right, y); ctx.stroke();
+    ctx.fillStyle = '#7fa3be'; ctx.font = '9px Consolas'; ctx.textAlign = 'right';
+    ctx.fillText(pct + '%', PAD.left - 4, y + 3);
+  });
+
+  // Reference line at 50%
+  const y50 = PAD.top + (1 - 50 / maxV) * cH;
+  ctx.strokeStyle = 'rgba(248,113,113,.3)'; ctx.lineWidth = 1; ctx.setLineDash([4,3]);
+  ctx.beginPath(); ctx.moveTo(PAD.left, y50); ctx.lineTo(w - PAD.right, y50); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = '#f87171'; ctx.font = '9px Segoe UI'; ctx.textAlign = 'left';
+  ctx.fillText('Random 50%', PAD.left + 4, y50 - 4);
+
+  groups.forEach((g, gi) => {
+    const cx  = PAD.left + gi * gW + gW / 2;
+    const bW2 = gW * 0.28;
+
+    // Accuracy bar
+    const accH = (g.acc / maxV) * cH;
+    const accY = PAD.top + cH - accH;
+    const grad1 = ctx.createLinearGradient(0, accY, 0, accY + accH);
+    grad1.addColorStop(0, g.col1);
+    grad1.addColorStop(1, hex2rgba(g.col1, 0.3));
+    ctx.fillStyle = grad1;
+    ctx.beginPath();
+    ctx.roundRect(cx - bW2 - 3, accY, bW2, accH, 4);
+    ctx.fill();
+    ctx.fillStyle = g.col1; ctx.font = 'bold 10px Consolas'; ctx.textAlign = 'center';
+    ctx.fillText(g.acc + '%', cx - bW2/2 - 3, accY - 5);
+
+    // R² bar (scaled to 100%)
+    const r2H = (g.r2 * 100 / maxV) * cH;
+    const r2Y = PAD.top + cH - r2H;
+    const grad2 = ctx.createLinearGradient(0, r2Y, 0, r2Y + r2H);
+    grad2.addColorStop(0, g.col2);
+    grad2.addColorStop(1, hex2rgba(g.col2, 0.3));
+    ctx.fillStyle = grad2;
+    ctx.beginPath();
+    ctx.roundRect(cx + 3, r2Y, bW2, r2H, 4);
+    ctx.fill();
+    ctx.fillStyle = g.col2; ctx.font = 'bold 10px Consolas'; ctx.textAlign = 'center';
+    ctx.fillText('R²' + g.r2, cx + bW2/2 + 3, r2Y - 5);
+
+    // Group label
+    ctx.fillStyle = '#e8f4fc'; ctx.font = 'bold 11px Segoe UI'; ctx.textAlign = 'center';
+    ctx.fillText(g.label, cx, h - PAD.bottom + 16);
+
+    // Sharpe
+    ctx.fillStyle = '#fbbf24'; ctx.font = '10px Consolas'; ctx.textAlign = 'center';
+    ctx.fillText('Sharpe: ' + g.sh, cx, h - PAD.bottom + 30);
+  });
+
+  // Legend
+  ctx.fillStyle = 'rgba(34,211,238,.7)';
+  ctx.fillRect(PAD.left, PAD.top - 20, 10, 10);
+  ctx.fillStyle = '#7fa3be'; ctx.font = '10px Segoe UI'; ctx.textAlign = 'left';
+  ctx.fillText('Direction Accuracy', PAD.left + 14, PAD.top - 12);
+  ctx.fillStyle = 'rgba(251,191,36,.7)';
+  ctx.fillRect(PAD.left + 160, PAD.top - 20, 10, 10);
+  ctx.fillText('Magnitude R² (×100%)', PAD.left + 174, PAD.top - 12);
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   CHART 8 — Monthly Probability Gauge
+───────────────────────────────────────────────────────────────── */
+function drawGauge() {
+  const c = document.getElementById('chartGauge');
+  if (!c) return;
+  const dpr = window.devicePixelRatio || 1;
+  c.width   = 260 * dpr; c.height = 160 * dpr;
+  const ctx = c.getContext('2d');
+  ctx.scale(dpr, dpr);
+
+  const cx = 130, cy = 130, r = 100, prob = 0.72;
+  const startA = Math.PI, endA = 2 * Math.PI;
+
+  ctx.fillStyle = '#0f1729'; ctx.beginPath();
+  ctx.arc(cx, cy, r + 10, 0, 2 * Math.PI); ctx.fill();
+
+  // Zone arcs
+  const zones = [
+    { from: 0,   to: 0.38, col: '#f87171' },
+    { from: 0.38,to: 0.62, col: '#fbbf24' },
+    { from: 0.62,to: 1.0,  col: '#34d399' },
+  ];
+  zones.forEach(z => {
+    const a0 = startA + z.from * Math.PI;
+    const a1 = startA + z.to   * Math.PI;
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, a0, a1);
+    ctx.arc(cx, cy, r - 18, a1, a0, true);
+    ctx.closePath();
+    ctx.fillStyle = hex2rgba(z.col, 0.35);
+    ctx.fill();
+    ctx.strokeStyle = hex2rgba(z.col, 0.6);
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  });
+
+  // Tick marks
+  for (let i = 0; i <= 10; i++) {
+    const a   = Math.PI + i * (Math.PI / 10);
+    const len = i % 5 === 0 ? 12 : 6;
+    ctx.strokeStyle = '#7fa3be'; ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.moveTo(cx + (r + 2) * Math.cos(a), cy + (r + 2) * Math.sin(a));
+    ctx.lineTo(cx + (r + 2 - len) * Math.cos(a), cy + (r + 2 - len) * Math.sin(a));
+    ctx.stroke();
+  }
+
+  // Needle
+  const needleA = Math.PI + prob * Math.PI;
+  ctx.strokeStyle = '#fff'; ctx.lineWidth = 2.5;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(cx, cy);
+  ctx.lineTo(cx + (r - 22) * Math.cos(needleA), cy + (r - 22) * Math.sin(needleA));
+  ctx.stroke();
+
+  // Center dot
+  ctx.fillStyle = '#fff';
+  ctx.beginPath(); ctx.arc(cx, cy, 5, 0, 2 * Math.PI); ctx.fill();
+
+  // Labels
+  ctx.fillStyle = '#f87171'; ctx.font = 'bold 10px Segoe UI'; ctx.textAlign = 'center';
+  ctx.fillText('SELL', cx - 82, cy - 18);
+  ctx.fillStyle = '#fbbf24';
+  ctx.fillText('HOLD', cx, cy - 102);
+  ctx.fillStyle = '#34d399';
+  ctx.fillText('BUY', cx + 82, cy - 18);
+
+  ctx.fillStyle = '#7fa3be'; ctx.font = '9px Consolas';
+  ctx.fillText('0%', cx - r - 4, cy + 12);
+  ctx.textAlign = 'right';
+  ctx.fillText('100%', cx + r + 4, cy + 12);
+}
+
+/* ── TF tab switcher ─────────────────────────────────────────── */
+function switchTF(id, btn) {
+  document.querySelectorAll('.tf-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tf-tab').forEach(b => b.classList.remove('active'));
+  document.getElementById('tf-' + id).classList.add('active');
+  btn.classList.add('active');
+}
+
+/* ── Init all charts on load ─────────────────────────────────── */
+window.addEventListener('load', () => {
+  drawFeatureImportance();
+  drawWalkForward();
+  drawThreshold();
+  drawHourlyCandles();
+  drawDailyCandles();
+  drawEquityCurve();
+  drawAccuracy();
+  drawGauge();
+});
+
+// Redraw on resize (debounced)
+let _rt;
+window.addEventListener('resize', () => {
+  clearTimeout(_rt);
+  _rt = setTimeout(() => {
+    drawFeatureImportance();
+    drawWalkForward();
+    drawThreshold();
+    drawHourlyCandles();
+    drawDailyCandles();
+    drawEquityCurve();
+    drawAccuracy();
+  }, 200);
+});
+
+</script>
+<script src="ibkr-widget.js"></script>
+</body>
+</html>

@@ -4,7 +4,7 @@ import {
 } from "remotion";
 
 // ── Constants ────────────────────────────────────────────────────────────────
-export const LIVE_DURATION = 14058;
+export const LIVE_DURATION = 18042;
 
 const ACCENT  = "#10b981";   // emerald green
 const ACCENT2 = "#34d399";
@@ -15,18 +15,21 @@ const TEXT     = "#f1f5f9";
 const MUTED   = "#64748b";
 
 const T = {
-  titleIn:      0,
-  brokerIn:     806,
-  pipelineIn:   1987,
-  candlestickIn:3032,
-  stockSignalIn:4110,
-  optionsLiveIn:5405,
-  futuresLiveIn:6600,
-  dashboardIn:  7962,
-  slippageIn:   9043,
-  journalIn:    10251,
-  mistakesIn:   11409,
-  summaryIn:    12741,
+  titleIn:         0,
+  brokerIn:        806,
+  pipelineIn:      1987,
+  candlestickIn:   3032,
+  stockSignalIn:   4110,
+  optionsLiveIn:   5405,
+  futuresLiveIn:   6600,
+  dashboardIn:     7962,
+  slippageIn:      9043,
+  journalIn:       10251,
+  mistakesIn:      11409,
+  summaryIn:       12741,
+  marketSummaryIn: 14058,
+  forecastIn:      15300,
+  mlTradingIn:     16542,
 };
 
 const LIVE_CLIPS = [
@@ -42,6 +45,9 @@ const LIVE_CLIPS = [
   { id: "live-10", start: 10251, dur: 1128 },
   { id: "live-11", start: 11409, dur: 1302 },
   { id: "live-12", start: 12741, dur: 1227 },
+  { id: "live-13", start: 14058, dur: 1200, ext: "wav" },
+  { id: "live-14", start: 15300, dur: 1200, ext: "wav" },
+  { id: "live-15", start: 16542, dur: 1440, ext: "wav" },
 ];
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -1166,7 +1172,7 @@ const MistakesScene = ({ frame }) => {
 // ── Scene 12 — Summary ───────────────────────────────────────────────────────
 const SummaryScene = ({ frame }) => {
   const f = frame - T.summaryIn;
-  const opacity = fadeInOut(frame, T.summaryIn, null);
+  const opacity = fadeInOut(frame, T.summaryIn, T.marketSummaryIn);
   const markets = [
     { sym: "AAPL / Stocks", win: "62.4%", sharpe: "1.71", dd: "−11.2%", status: "LIVE" },
     { sym: "Options (SPY)", win: "64.9%", sharpe: "1.68", dd: "−12.4%", status: "LIVE" },
@@ -1261,6 +1267,457 @@ const SummaryScene = ({ frame }) => {
   );
 };
 
+// ── Scene 13 — Market Summary ─────────────────────────────────────────────────
+const MarketSummaryScene = ({ frame }) => {
+  const f = frame - T.marketSummaryIn;
+  const opacity = fadeInOut(frame, T.marketSummaryIn, T.forecastIn);
+
+  const indices = [
+    { sym: "SPY",  name: "S&P 500 ETF",  price: "512.40", chg: "+0.82%", dir: "up"   },
+    { sym: "QQQ",  name: "Nasdaq-100",   price: "436.15", chg: "+1.14%", dir: "up"   },
+    { sym: "DIA",  name: "Dow Jones",    price: "388.70", chg: "+0.35%", dir: "up"   },
+    { sym: "VIX",  name: "Volatility",   price: "16.4",   chg: "−2.1%",  dir: "down" },
+  ];
+
+  const notes = [
+    "SPY broke above 20-SMA with volume 1.4× average — bullish momentum confirmed",
+    "VIX at 16.4 — below 20 signals low fear, favorable environment for bull spreads",
+    "QQQ RSI at 61 — room to run, not yet overbought territory",
+    "ES futures gap up +8 pts — overnight buyers confirm the uptrend",
+    "GC gold RSI at 73 — overbought, watch for pullback near 2,340",
+    "Breadth: 68% of S&P stocks above 20-SMA — broad-based participation",
+  ];
+
+  const topActive = [
+    { sym: "NVDA",      type: "Stock",   dir: "BUY",  prob: "74%", mag: "+2.3%"  },
+    { sym: "ES=F",      type: "Futures", dir: "BUY",  prob: "71%", mag: "+38pts" },
+    { sym: "SPY opts",  type: "Options", dir: "HOLD", prob: "54%", mag: "+0.6%"  },
+  ];
+
+  return (
+    <AbsoluteFill style={{ background: BG, opacity }}>
+      <div style={{ position: "absolute", top: 48, left: 80, right: 80, bottom: 56 }}>
+        <div style={{ fontSize: 34, fontWeight: 800, color: TEXT,
+                      marginBottom: 6, opacity: sp(f, 0) }}>
+          🗺 Market Summary Dashboard
+        </div>
+        <div style={{ fontSize: 14, color: MUTED, marginBottom: 20,
+                      opacity: sp(f, 4) }}>
+          AI-generated overview across all asset classes — refreshes every 4 hours
+        </div>
+
+        {/* Index snapshot cards */}
+        <div style={{ display: "flex", gap: 16, marginBottom: 18 }}>
+          {indices.map((idx, i) => (
+            <div key={idx.sym} style={{
+              flex: 1, background: SURFACE,
+              border: `1px solid ${BORDER}`, borderRadius: 10, padding: "14px 16px",
+              opacity: sp(f, 6 + i * 4),
+              transform: `translateY(${ci(f, [6+i*4, 20+i*4], [14, 0])}px)`,
+            }}>
+              <div style={{ fontSize: 11, color: MUTED, fontWeight: 700,
+                            letterSpacing: "0.08em", marginBottom: 6 }}>{idx.sym}</div>
+              <div style={{ fontSize: 22, fontWeight: 800, color: TEXT,
+                            marginBottom: 4 }}>{idx.price}</div>
+              <div style={{ fontSize: 12, fontWeight: 700,
+                            color: idx.dir === "up" ? "#4ade80" : "#f87171" }}>{idx.chg}</div>
+              <div style={{ fontSize: 10, color: MUTED, marginTop: 3 }}>{idx.name}</div>
+            </div>
+          ))}
+        </div>
+
+        <div style={{ display: "flex", gap: 20 }}>
+          {/* AI Notes column */}
+          <div style={{ flex: 1.4 }}>
+            <div style={{ fontSize: 11, color: MUTED, fontWeight: 700,
+                          letterSpacing: "0.08em", marginBottom: 10,
+                          opacity: sp(f, 20) }}>
+              AI MARKET NOTES
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
+              {notes.map((note, i) => (
+                <div key={i} style={{
+                  background: SURFACE, border: `1px solid ${BORDER}`,
+                  borderRadius: 8, padding: "9px 13px",
+                  fontSize: 12, color: TEXT, lineHeight: 1.4,
+                  opacity: sp(f, 22 + i * 5),
+                  transform: `translateX(${ci(f, [22+i*5, 36+i*5], [-14, 0])}px)`,
+                }}>
+                  <span style={{ color: ACCENT, marginRight: 6 }}>▸</span>{note}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Right column — breadth + top active */}
+          <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 14 }}>
+            {/* Market breadth bar */}
+            <div style={{
+              background: SURFACE, border: `1px solid ${BORDER}`,
+              borderRadius: 10, padding: "14px 16px",
+              opacity: sp(f, 22),
+            }}>
+              <div style={{ fontSize: 11, color: MUTED, fontWeight: 700,
+                            letterSpacing: "0.08em", marginBottom: 10 }}>
+                MARKET BREADTH
+              </div>
+              <div style={{ fontSize: 12, color: MUTED, marginBottom: 6 }}>
+                % stocks above 20-SMA
+              </div>
+              <div style={{ height: 10, background: "rgba(255,255,255,.08)",
+                            borderRadius: 5, overflow: "hidden", marginBottom: 6 }}>
+                <div style={{
+                  height: "100%", borderRadius: 5,
+                  width: `${ci(f, [22, 52], [0, 68])}%`,
+                  background: "linear-gradient(90deg,#f87171 0%,#fbbf24 40%,#4ade80 75%)",
+                }} />
+              </div>
+              <div style={{ fontSize: 16, fontWeight: 800, color: "#4ade80" }}>68%</div>
+            </div>
+
+            {/* Highest activity table */}
+            <div style={{
+              background: SURFACE, border: `1px solid ${BORDER}`,
+              borderRadius: 10, overflow: "hidden",
+              opacity: sp(f, 32),
+            }}>
+              <div style={{ padding: "10px 14px", borderBottom: `1px solid ${BORDER}`,
+                            fontSize: 11, color: MUTED, fontWeight: 700,
+                            letterSpacing: "0.08em" }}>
+                HIGHEST ACTIVITY
+              </div>
+              {topActive.map((a, i) => (
+                <div key={a.sym} style={{
+                  display: "flex", justifyContent: "space-between",
+                  alignItems: "center", padding: "9px 14px",
+                  borderBottom: i < topActive.length - 1 ? `1px solid ${BORDER}` : "none",
+                  opacity: sp(f, 36 + i * 5),
+                }}>
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: TEXT }}>{a.sym}</div>
+                    <div style={{ fontSize: 10, color: MUTED }}>{a.type}</div>
+                  </div>
+                  <div style={{ textAlign: "right" }}>
+                    <div style={{
+                      fontSize: 12, fontWeight: 700,
+                      color: a.dir === "BUY" ? "#4ade80" : a.dir === "SELL" ? "#f87171" : MUTED,
+                    }}>{a.dir} {a.prob}</div>
+                    <div style={{ fontSize: 10, color: MUTED }}>{a.mag}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+      <BrandBar />
+    </AbsoluteFill>
+  );
+};
+
+// ── Scene 14 — Multi-Horizon Forecast ─────────────────────────────────────────
+const ForecastScene = ({ frame }) => {
+  const f = frame - T.forecastIn;
+  const opacity = fadeInOut(frame, T.forecastIn, T.mlTradingIn);
+
+  const horizons = [
+    {
+      label: "1-Day Forecast", color: "#38bdf8", accuracy: "58%",
+      assets: [
+        { sym: "SPY",  dir: "▲ UP",   prob: "71%", tgt: "+0.9%",   color: "#4ade80" },
+        { sym: "QQQ",  dir: "▲ UP",   prob: "68%", tgt: "+1.2%",   color: "#4ade80" },
+        { sym: "ES=F", dir: "▲ UP",   prob: "66%", tgt: "+32 pts", color: "#4ade80" },
+        { sym: "GC=F", dir: "▼ DOWN", prob: "39%", tgt: "−18 pts", color: "#f87171" },
+      ],
+    },
+    {
+      label: "1-Week Forecast", color: "#a78bfa", accuracy: "56%",
+      assets: [
+        { sym: "SPY",  dir: "▲ UP",   prob: "64%", tgt: "+2.1%",   color: "#4ade80" },
+        { sym: "QQQ",  dir: "▲ UP",   prob: "61%", tgt: "+2.8%",   color: "#4ade80" },
+        { sym: "ES=F", dir: "▲ UP",   prob: "60%", tgt: "+85 pts", color: "#4ade80" },
+        { sym: "GC=F", dir: "→ HOLD", prob: "51%", tgt: "+0.3%",   color: MUTED     },
+      ],
+    },
+    {
+      label: "1-Month Forecast", color: "#fbbf24", accuracy: "53%",
+      assets: [
+        { sym: "SPY",  dir: "▲ UP", prob: "61%", tgt: "+4.2%",    color: "#4ade80" },
+        { sym: "QQQ",  dir: "▲ UP", prob: "59%", tgt: "+5.6%",    color: "#4ade80" },
+        { sym: "ES=F", dir: "▲ UP", prob: "58%", tgt: "+215 pts", color: "#4ade80" },
+        { sym: "GC=F", dir: "▲ UP", prob: "63%", tgt: "+2.8%",    color: "#4ade80" },
+      ],
+    },
+  ];
+
+  return (
+    <AbsoluteFill style={{ background: BG, opacity }}>
+      <div style={{ position: "absolute", top: 48, left: 80, right: 80, bottom: 56 }}>
+        <div style={{ fontSize: 34, fontWeight: 800, color: TEXT,
+                      marginBottom: 6, opacity: sp(f, 0) }}>
+          📅 Multi-Horizon Daily Forecasts
+        </div>
+        <div style={{ fontSize: 14, color: MUTED, marginBottom: 20,
+                      opacity: sp(f, 4) }}>
+          Gradient Boosting models trained on daily candles — 1D / 1W / 1M predictions
+        </div>
+
+        {/* Three horizon columns */}
+        <div style={{ display: "flex", gap: 16, marginBottom: 18 }}>
+          {horizons.map((h, hi) => (
+            <div key={h.label} style={{
+              flex: 1, background: SURFACE,
+              border: `1px solid ${BORDER}`, borderRadius: 12, overflow: "hidden",
+              opacity: sp(f, 8 + hi * 8),
+              transform: `translateY(${ci(f, [8+hi*8, 24+hi*8], [20, 0])}px)`,
+            }}>
+              <div style={{
+                padding: "12px 16px", borderBottom: `1px solid ${BORDER}`,
+                borderTop: `3px solid ${h.color}`,
+                background: `linear-gradient(90deg,${h.color}22,transparent)`,
+              }}>
+                <div style={{ fontSize: 14, fontWeight: 800, color: h.color }}>
+                  {h.label}
+                </div>
+                <div style={{ fontSize: 11, color: MUTED, marginTop: 2 }}>
+                  Historical accuracy: {h.accuracy}
+                </div>
+              </div>
+              {h.assets.map((a, ai) => (
+                <div key={a.sym} style={{
+                  display: "flex", justifyContent: "space-between",
+                  alignItems: "center", padding: "10px 16px",
+                  borderBottom: ai < h.assets.length - 1 ? `1px solid ${BORDER}` : "none",
+                  opacity: sp(f, 18 + hi * 8 + ai * 4),
+                }}>
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: TEXT }}>{a.sym}</div>
+                    <div style={{ fontSize: 11, color: MUTED }}>P: {a.prob}</div>
+                  </div>
+                  <div style={{ textAlign: "right" }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: a.color }}>{a.dir}</div>
+                    <div style={{ fontSize: 11, color: MUTED }}>{a.tgt}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+
+        {/* Accuracy vs horizon bar chart */}
+        <div style={{
+          background: SURFACE, border: `1px solid ${BORDER}`,
+          borderRadius: 10, padding: "14px 18px",
+          opacity: sp(f, 52),
+        }}>
+          <div style={{ fontSize: 11, color: MUTED, fontWeight: 700,
+                        letterSpacing: "0.08em", marginBottom: 10 }}>
+            FORECAST ACCURACY vs. HORIZON — confidence declines as horizon extends
+          </div>
+          <div style={{ display: "flex", alignItems: "flex-end", gap: 10, height: 68 }}>
+            {[
+              { label: "1D",     pct: 58, color: "#38bdf8" },
+              { label: "1W",     pct: 56, color: "#a78bfa" },
+              { label: "1M",     pct: 53, color: "#fbbf24" },
+              { label: "Random", pct: 50, color: MUTED     },
+            ].map((bar, i) => (
+              <div key={bar.label} style={{ display: "flex", flexDirection: "column",
+                                            alignItems: "center", gap: 4 }}>
+                <div style={{ fontSize: 11, color: bar.color, fontWeight: 700 }}>
+                  {bar.pct}%
+                </div>
+                <div style={{
+                  width: 48, borderRadius: "3px 3px 0 0",
+                  height: `${ci(f, [52+i*3, 66+i*3], [0, bar.pct * 0.9])}px`,
+                  background: bar.color,
+                  opacity: bar.label === "Random" ? 0.3 : 1,
+                }} />
+                <div style={{ fontSize: 10, color: MUTED }}>{bar.label}</div>
+              </div>
+            ))}
+            <div style={{ flex: 1, fontSize: 12, color: MUTED, lineHeight: 1.6,
+                          paddingLeft: 20, paddingBottom: 22 }}>
+              Even at 53% accuracy, a positive R:R ratio makes the strategy
+              statistically profitable over 100+ trades. 3% above random
+              is a meaningful edge at scale.
+            </div>
+          </div>
+        </div>
+      </div>
+      <BrandBar />
+    </AbsoluteFill>
+  );
+};
+
+// ── Scene 15 — ML in Trading Applications ─────────────────────────────────────
+const MLTradingScene = ({ frame }) => {
+  const f = frame - T.mlTradingIn;
+  const opacity = fadeInOut(frame, T.mlTradingIn, null);
+
+  const assetTypes = [
+    {
+      name: "Stocks",  color: "#38bdf8", count: 23,
+      features: ["SMA 20/50/200 ratio", "MACD + histogram", "RSI", "Stoch %K",
+                 "Williams %R", "BB width + position", "Vol ratio + regime",
+                 "Returns 1/3/5/10/20D", "ATR%", "OBV trend"],
+    },
+    {
+      name: "Options", color: "#a78bfa", count: 18,
+      features: ["SMA 20/50 ratio", "MACD + histogram", "RSI", "Stoch %K",
+                 "BB width + position", "Vol ratio + regime", "HV5 ratio",
+                 "Returns 1/3/5D", "ATR%", "OC / HL range"],
+    },
+    {
+      name: "Futures", color: "#f59e0b", count: 21,
+      features: ["SMA 20/50/200 ratio", "MACD + histogram", "RSI", "ADX",
+                 "BB width + position", "Vol ratio + regime",
+                 "Returns 1/3/5/10/20D", "ATR%", "OC / HL range"],
+    },
+  ];
+
+  const ensembleBoxes = [
+    { label: "Gradient\nBoosting", sub: "n=200 depth=4 lr=0.05", color: "#38bdf8" },
+    { label: "+", sub: "", color: MUTED },
+    { label: "Extra\nTrees", sub: "n=200 depth=6", color: "#a78bfa" },
+    { label: "→", sub: "", color: MUTED },
+    { label: "Voting\nClassifier", sub: "soft vote (avg prob)", color: ACCENT },
+    { label: "→", sub: "", color: MUTED },
+    { label: "BUY /\nSELL / HOLD", sub: "P≥0.60 buy · P≤0.40 sell", color: "#4ade80" },
+  ];
+
+  return (
+    <AbsoluteFill style={{ background: BG, opacity }}>
+      <div style={{ position: "absolute", top: 48, left: 80, right: 80, bottom: 56 }}>
+        <div style={{ fontSize: 34, fontWeight: 800, color: TEXT,
+                      marginBottom: 6, opacity: sp(f, 0) }}>
+          🤖 ML in Trading — Ensemble Methods
+        </div>
+        <div style={{ fontSize: 14, color: MUTED, marginBottom: 18,
+                      opacity: sp(f, 4) }}>
+          VotingClassifier + VotingRegressor with asset-type-specific feature engineering
+        </div>
+
+        {/* Ensemble architecture diagram */}
+        <div style={{
+          background: SURFACE, border: `1px solid ${BORDER}`,
+          borderRadius: 10, padding: "14px 20px", marginBottom: 16,
+          opacity: sp(f, 6),
+        }}>
+          <div style={{ fontSize: 11, color: MUTED, fontWeight: 700,
+                        letterSpacing: "0.08em", marginBottom: 12 }}>
+            ENSEMBLE ARCHITECTURE — DIRECTION SIGNAL
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+            {ensembleBoxes.map((box, i) => (
+              box.label === "+" || box.label === "→"
+                ? <div key={i} style={{ fontSize: 20, color: box.color, padding: "0 4px",
+                                        opacity: sp(f, 10 + i * 3) }}>{box.label}</div>
+                : <div key={i} style={{
+                    background: "rgba(255,255,255,.04)",
+                    border: `1px solid ${box.color}`,
+                    borderRadius: 8, padding: "10px 14px", textAlign: "center",
+                    flex: "0 0 auto", minWidth: 128,
+                    opacity: sp(f, 10 + i * 3),
+                  }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: box.color,
+                                  whiteSpace: "pre-line", lineHeight: 1.3, marginBottom: 4 }}>
+                      {box.label}
+                    </div>
+                    <div style={{ fontSize: 10, color: MUTED }}>{box.sub}</div>
+                  </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Per-asset feature sets */}
+        <div style={{ display: "flex", gap: 14, marginBottom: 16 }}>
+          {assetTypes.map((at, ai) => (
+            <div key={at.name} style={{
+              flex: 1, background: SURFACE,
+              border: `1px solid ${BORDER}`,
+              borderTop: `3px solid ${at.color}`,
+              borderRadius: 10, padding: "12px 16px",
+              opacity: sp(f, 26 + ai * 6),
+            }}>
+              <div style={{ display: "flex", justifyContent: "space-between",
+                            alignItems: "baseline", marginBottom: 10 }}>
+                <div style={{ fontSize: 14, fontWeight: 800, color: at.color }}>
+                  {at.name}
+                </div>
+                <div style={{
+                  fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 4,
+                  background: `${at.color}22`, color: at.color,
+                }}>
+                  {at.count} features
+                </div>
+              </div>
+              {at.features.slice(0, 7).map((feat, fi) => (
+                <div key={fi} style={{
+                  display: "flex", alignItems: "center", gap: 6, marginBottom: 5,
+                  opacity: sp(f, 30 + ai * 6 + fi * 2),
+                }}>
+                  <div style={{ width: 5, height: 5, borderRadius: "50%",
+                                background: at.color, flexShrink: 0 }} />
+                  <div style={{ fontSize: 10, color: MUTED }}>{feat}</div>
+                </div>
+              ))}
+              {at.features.length > 7 && (
+                <div style={{ fontSize: 10, color: MUTED, marginTop: 3 }}>
+                  +{at.features.length - 7} more…
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+
+        {/* Walk-forward cross-validation row */}
+        <div style={{
+          background: SURFACE, border: `1px solid ${BORDER}`,
+          borderRadius: 10, padding: "12px 18px",
+          display: "flex", gap: 24, alignItems: "center",
+          opacity: sp(f, 54),
+        }}>
+          <div style={{ flex: "0 0 auto" }}>
+            <div style={{ fontSize: 11, color: MUTED, fontWeight: 700,
+                          letterSpacing: "0.08em", marginBottom: 6 }}>
+              WALK-FORWARD VALIDATION
+            </div>
+            <div style={{ fontSize: 13, color: TEXT }}>
+              TimeSeriesSplit(n_splits=5) — no lookahead bias
+            </div>
+          </div>
+          <div style={{ display: "flex", gap: 6, flex: 1 }}>
+            {[1, 2, 3, 4, 5].map(fold => (
+              <div key={fold} style={{
+                flex: 1, borderRadius: 6, overflow: "hidden",
+                opacity: sp(f, 56 + fold * 3),
+              }}>
+                <div style={{ height: 18, background: "#1e40af", fontSize: 9,
+                              color: "#93c5fd", display: "flex", alignItems: "center",
+                              justifyContent: "center", fontWeight: 700 }}>
+                  TRAIN
+                </div>
+                <div style={{ height: 14, background: "#4ade8033", fontSize: 9,
+                              color: ACCENT, display: "flex", alignItems: "center",
+                              justifyContent: "center" }}>
+                  TEST
+                </div>
+                <div style={{ fontSize: 9, color: MUTED, textAlign: "center",
+                              marginTop: 3 }}>Fold {fold}</div>
+              </div>
+            ))}
+          </div>
+          <div style={{ flex: "0 0 auto", fontSize: 12, color: MUTED }}>
+            CV accuracy<br />
+            <span style={{ fontSize: 18, fontWeight: 800, color: ACCENT }}>61.2%</span>
+          </div>
+        </div>
+      </div>
+      <BrandBar />
+    </AbsoluteFill>
+  );
+};
+
 // ── Root Composition ─────────────────────────────────────────────────────────
 export const LiveTrading = () => {
   const frame = useCurrentFrame();
@@ -1269,7 +1726,7 @@ export const LiveTrading = () => {
       {/* Audio */}
       {LIVE_CLIPS.map(c => (
         <Sequence key={c.id} from={c.start}>
-          <Html5Audio src={staticFile(`audio/${c.id}.mp3`)} />
+          <Html5Audio src={staticFile(`audio/${c.id}.${c.ext || "mp3"}`)} />
         </Sequence>
       ))}
 
@@ -1285,7 +1742,10 @@ export const LiveTrading = () => {
       <Sequence from={T.slippageIn}    durationInFrames={T.journalIn     - T.slippageIn   + 30}><SlippageScene   frame={frame} /></Sequence>
       <Sequence from={T.journalIn}     durationInFrames={T.mistakesIn    - T.journalIn    + 30}><JournalScene    frame={frame} /></Sequence>
       <Sequence from={T.mistakesIn}    durationInFrames={T.summaryIn     - T.mistakesIn   + 30}><MistakesScene   frame={frame} /></Sequence>
-      <Sequence from={T.summaryIn}     durationInFrames={LIVE_DURATION   - T.summaryIn       }><SummaryScene    frame={frame} /></Sequence>
+      <Sequence from={T.summaryIn}        durationInFrames={T.marketSummaryIn - T.summaryIn        + 30}><SummaryScene        frame={frame} /></Sequence>
+      <Sequence from={T.marketSummaryIn}  durationInFrames={T.forecastIn      - T.marketSummaryIn  + 30}><MarketSummaryScene  frame={frame} /></Sequence>
+      <Sequence from={T.forecastIn}       durationInFrames={T.mlTradingIn     - T.forecastIn       + 30}><ForecastScene       frame={frame} /></Sequence>
+      <Sequence from={T.mlTradingIn}      durationInFrames={LIVE_DURATION     - T.mlTradingIn          }><MLTradingScene      frame={frame} /></Sequence>
     </AbsoluteFill>
   );
 };

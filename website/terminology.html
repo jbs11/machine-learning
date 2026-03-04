@@ -1,0 +1,1147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Trading Terminology — ML Trading Dashboard</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    /* ── Page layout ── */
+    .term-page-wrap {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 2rem 1.5rem 4rem;
+    }
+    .term-page-header {
+      margin-bottom: 2rem;
+    }
+    .term-page-title {
+      font-size: 1.9rem;
+      font-weight: 900;
+      background: linear-gradient(135deg, #e8f4fc 30%, var(--primary));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: .4rem;
+    }
+    .term-page-sub {
+      color: var(--muted);
+      font-size: .9rem;
+      line-height: 1.6;
+    }
+
+    /* ── Search bar ── */
+    .search-wrap {
+      position: relative;
+      max-width: 540px;
+      margin-bottom: 1.5rem;
+    }
+    .search-icon {
+      position: absolute;
+      left: .85rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--muted);
+      font-size: 1rem;
+      pointer-events: none;
+    }
+    #term-search {
+      width: 100%;
+      padding: .65rem 1rem .65rem 2.4rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: .9rem;
+      outline: none;
+      transition: border-color .2s;
+    }
+    #term-search:focus { border-color: var(--primary); }
+    #term-search::placeholder { color: var(--muted); }
+    #search-count {
+      position: absolute;
+      right: .85rem;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: .75rem;
+      color: var(--muted);
+    }
+
+    /* ── Category filter pills ── */
+    .cat-filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: .45rem;
+      margin-bottom: 2rem;
+    }
+    .cat-pill {
+      padding: .3rem .85rem;
+      border-radius: 99px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--muted);
+      font-size: .78rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all .15s;
+      letter-spacing: .03em;
+    }
+    .cat-pill:hover { border-color: var(--primary); color: var(--text); }
+    .cat-pill.active { background: rgba(34,211,238,.14); border-color: var(--primary); color: var(--primary); }
+
+    /* ── Category sections ── */
+    .cat-section {
+      margin-bottom: 2.5rem;
+    }
+    .cat-section-header {
+      display: flex;
+      align-items: center;
+      gap: .75rem;
+      margin-bottom: 1rem;
+      padding-bottom: .6rem;
+      border-bottom: 2px solid var(--border);
+    }
+    .cat-icon { font-size: 1.3rem; }
+    .cat-title {
+      font-size: 1.05rem;
+      font-weight: 800;
+      color: var(--text);
+    }
+    .cat-count {
+      font-size: .72rem;
+      font-weight: 700;
+      padding: .15rem .5rem;
+      border-radius: 99px;
+      background: rgba(255,255,255,.06);
+      color: var(--muted);
+      margin-left: auto;
+    }
+
+    /* ── Term grid & cards ── */
+    .term-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 1rem;
+    }
+    @media (max-width: 640px) { .term-grid { grid-template-columns: 1fr; } }
+
+    .term-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1rem 1.1rem;
+      transition: border-color .18s, transform .18s;
+    }
+    .term-card:hover {
+      border-color: rgba(34,211,238,.35);
+      transform: translateY(-1px);
+    }
+    .term-name {
+      font-size: .95rem;
+      font-weight: 800;
+      color: var(--primary);
+      margin-bottom: .35rem;
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+      flex-wrap: wrap;
+    }
+    .term-abbr {
+      font-size: .72rem;
+      font-weight: 700;
+      color: var(--muted);
+      background: rgba(255,255,255,.05);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: .1rem .4rem;
+      font-family: monospace;
+    }
+    .term-def {
+      font-size: .83rem;
+      color: var(--muted);
+      line-height: 1.65;
+    }
+    .term-def strong { color: var(--text); }
+    .term-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: .3rem;
+      margin-top: .6rem;
+    }
+    .term-tag {
+      font-size: .65rem;
+      font-weight: 700;
+      padding: .1rem .4rem;
+      border-radius: 3px;
+      letter-spacing: .05em;
+      text-transform: uppercase;
+    }
+    .tag-live  { background: rgba(74,222,128,.12);  color: #4ade80; }
+    .tag-sum   { background: rgba(56,189,248,.12);  color: #38bdf8; }
+    .tag-both  { background: rgba(167,139,250,.12); color: #a78bfa; }
+
+    /* ── No results ── */
+    #no-results {
+      display: none;
+      grid-column: 1/-1;
+      text-align: center;
+      padding: 3rem 1rem;
+      color: var(--muted);
+      font-size: .9rem;
+    }
+
+    /* ── Page nav ── */
+    .page-nav {
+      display: flex; align-items: center; gap: 1rem;
+      padding: .6rem 1.5rem;
+      background: var(--surface); border-bottom: 1px solid var(--border);
+      font-size: .83rem;
+    }
+    .page-nav a {
+      color: var(--muted); text-decoration: none; padding: .3rem .7rem;
+      border-radius: 5px; transition: color .15s;
+    }
+    .page-nav a:hover { color: var(--text); background: rgba(255,255,255,.06); }
+    .page-nav a.active { color: var(--accent); font-weight: 700; }
+    .page-nav-sep { color: var(--border); user-select: none; }
+  </style>
+</head>
+<body>
+
+<!-- ── Navigation ── -->
+<nav class="nav">
+  <a href="index.html" class="nav-logo">
+    <img src="images/steve.jpg" class="nav-logo-photo" alt="Stephen Borick">
+    <div class="nav-logo-text">
+      <span class="nav-company">Artificial Intelligence</span>
+      <span class="nav-name">Solutions, Inc.</span>
+    </div>
+  </a>
+  <ul class="nav-links">
+    <li><a href="index.html">Home</a></li>
+    <li><a href="neural-networks.html">Neural Networks</a></li>
+    <li><a href="machine-learning.html">Machine Learning</a></li>
+    <li><a href="ml-trading.html">ML in Trading</a></li>
+    <li><a href="stock-trading.html">Stocks</a></li>
+    <li><a href="options-trading.html">Options</a></li>
+    <li><a href="futures-trading.html">Futures</a></li>
+    <li><a href="live-trading.html">Live Trading</a></li>
+  </ul>
+</nav>
+
+<!-- ── Page nav bar ── -->
+<nav class="page-nav">
+  <a href="live-trading.html">← Live Trading</a>
+  <span class="page-nav-sep">|</span>
+  <a href="market-summary.html">Market Summary</a>
+  <span class="page-nav-sep">|</span>
+  <a href="terminology.html" class="active">Terminology</a>
+  <span class="page-nav-sep">|</span>
+  <a href="ml-sp500-example.html">ML Example 🧠</a>
+  <span class="page-nav-sep">|</span>
+  <a href="ml-key-assets.html">ML Key Assets 📋</a>
+  <span class="page-nav-sep">|</span>
+  <a href="ml-xgboost-assets.html">XGBoost Charts 📊</a>
+  <span class="page-nav-sep">|</span>
+  <a href="gamma-exposure.html">GEX Charts 🎯</a>
+  <span class="page-nav-sep">|</span>
+  <a href="options-strategy.html">Options Strategy 📈</a>
+  <span class="page-nav-sep">|</span>
+  <a href="option-flows.html">Option Flows 🌊</a>
+  <span class="page-nav-sep">|</span>
+  <a href="options-summary.html">Options Summary 📊</a>
+  <span class="page-nav-sep">|</span>
+  <a href="0dte-options.html">0DTE 🔥</a>
+  <span class="page-nav-sep">|</span>
+  <a href="fundamentals.html">Fundamentals 📋</a>
+  <span class="page-nav-sep">|</span>
+  <a href="institutional-buyers.html">Institutional 🏦</a>
+</nav>
+
+<div class="term-page-wrap">
+
+  <div class="term-page-header">
+    <div class="term-page-title">📖 Trading Terminology</div>
+    <p class="term-page-sub">
+      Definitions for every term used across the Live Trading and Market Summary dashboards —
+      organized by category. Use the search box or category filters to find any term instantly.
+    </p>
+  </div>
+
+  <!-- Search -->
+  <div class="search-wrap">
+    <span class="search-icon">🔍</span>
+    <input type="text" id="term-search" placeholder="Search terms… e.g. ATR, RSI, P(UP), volatility regime" oninput="filterTerms()">
+    <span id="search-count"></span>
+  </div>
+
+  <!-- Category filters -->
+  <div class="cat-filters" id="cat-filters">
+    <button class="cat-pill active" onclick="setCat('all', this)">All</button>
+    <button class="cat-pill" onclick="setCat('chart', this)">📊 Chart &amp; Price</button>
+    <button class="cat-pill" onclick="setCat('indicators', this)">📈 Indicators</button>
+    <button class="cat-pill" onclick="setCat('ml', this)">🤖 ML Models</button>
+    <button class="cat-pill" onclick="setCat('signals', this)">🎯 Signals &amp; Thresholds</button>
+    <button class="cat-pill" onclick="setCat('setup', this)">⚙️ Trade Setup</button>
+    <button class="cat-pill" onclick="setCat('options', this)">🎯 Options</button>
+    <button class="cat-pill" onclick="setCat('futures', this)">⚡ Futures</button>
+    <button class="cat-pill" onclick="setCat('market', this)">🌐 Market Structure</button>
+    <button class="cat-pill" onclick="setCat('assets', this)">🏦 Asset Types</button>
+    <button class="cat-pill" onclick="setCat('timeframes', this)">⏱ Timeframes</button>
+    <button class="cat-pill" onclick="setCat('platform', this)">🔌 Platform &amp; Data</button>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════════════════ -->
+  <!-- CHART & PRICE ACTION -->
+  <!-- ══════════════════════════════════════════════════════════════════════ -->
+  <div class="cat-section" data-cat="chart">
+    <div class="cat-section-header">
+      <span class="cat-icon">📊</span>
+      <span class="cat-title">Chart &amp; Price Action</span>
+      <span class="cat-count" id="cnt-chart"></span>
+    </div>
+    <div class="term-grid" id="grid-chart">
+
+      <div class="term-card">
+        <div class="term-name">Candlestick</div>
+        <div class="term-def">A chart type showing a bar's <strong>Open, High, Low, and Close</strong> prices. A green (bullish) candle means Close &gt; Open; a red (bearish) candle means Close &lt; Open. The wicks show the High and Low extremes of the period.</div>
+        <div class="term-tags"><span class="term-tag tag-both">Both Pages</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">OHLCV <span class="term-abbr">Open · High · Low · Close · Volume</span></div>
+        <div class="term-def">The five standard data points for each bar: <strong>Open</strong> (first trade price), <strong>High</strong> (highest price), <strong>Low</strong> (lowest price), <strong>Close</strong> (last trade price), and <strong>Volume</strong> (number of shares/contracts traded).</div>
+        <div class="term-tags"><span class="term-tag tag-both">Both Pages</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">Volume</div>
+        <div class="term-def">The total number of shares or contracts traded during a bar period. Displayed as a histogram below the candlestick chart. Green bars = up-close bars; red bars = down-close bars. Higher volume confirms price moves.</div>
+        <div class="term-tags"><span class="term-tag tag-both">Both Pages</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">ATR <span class="term-abbr">Average True Range</span></div>
+        <div class="term-def">Measures average bar-to-bar price volatility over 14 periods. True Range = max(High−Low, |High−PrevClose|, |Low−PrevClose|). Used to set <strong>stop losses at 1.5× ATR</strong> and to validate that magnitude forecasts exceed 1× ATR before taking a trade.</div>
+        <div class="term-tags"><span class="term-tag tag-live">Live Trading</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">ATR % <span class="term-abbr">ATR as % of Price</span></div>
+        <div class="term-def">ATR divided by the current closing price, expressed as a percentage. Normalizes volatility across different-priced assets — a $5 ATR on a $500 stock (1%) has very different meaning than on a $50 stock (10%).</div>
+        <div class="term-tags"><span class="term-tag tag-live">Live Trading</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">Signal Marker</div>
+        <div class="term-def">An arrow displayed directly on the candlestick chart at historical BUY/SELL signal points generated by the ML model. <strong>▲ green arrow below bar</strong> = BUY signal; <strong>▼ red arrow above bar</strong> = SELL signal. Includes the probability percentage.</div>
+        <div class="term-tags"><span class="term-tag tag-live">Live Trading</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">Bar / Candle</div>
+        <div class="term-def">A single time-period unit on the chart. Each bar represents the full OHLCV data for that interval (e.g., one 1H bar covers one hour of trading). The ML models train on historical bars and predict the direction of the <strong>next bar</strong>.</div>
+        <div class="term-tags"><span class="term-tag tag-both">Both Pages</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">OC Range <span class="term-abbr">Open-to-Close Range</span></div>
+        <div class="term-def">The percentage change from Open to Close within a single bar: (Close − Open) / Open. A positive OC Range means a bullish bar; negative means bearish. Used as a <strong>ML input feature</strong> capturing intra-bar sentiment.</div>
+        <div class="term-tags"><span class="term-tag tag-live">Live Trading</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">HL Range <span class="term-abbr">High-to-Low Range</span></div>
+        <div class="term-def">The percentage spread from High to Low within a bar: (High − Low) / Open. A wide HL Range indicates high intra-bar volatility. Used as a <strong>ML feature</strong> to capture how much price swung during the period.</div>
+        <div class="term-tags"><span class="term-tag tag-live">Live Trading</span></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════════════════ -->
+  <!-- TECHNICAL INDICATORS -->
+  <!-- ══════════════════════════════════════════════════════════════════════ -->
+  <div class="cat-section" data-cat="indicators">
+    <div class="cat-section-header">
+      <span class="cat-icon">📈</span>
+      <span class="cat-title">Technical Indicators</span>
+      <span class="cat-count" id="cnt-indicators"></span>
+    </div>
+    <div class="term-grid" id="grid-indicators">
+
+      <div class="term-card">
+        <div class="term-name">RSI <span class="term-abbr">Relative Strength Index</span></div>
+        <div class="term-def">A momentum oscillator (0–100) measuring the speed and magnitude of price changes over 14 periods. <strong>Above 70</strong> = potentially overbought; <strong>below 30</strong> = potentially oversold. One of the top features in the ML model across all asset types.</div>
+        <div class="term-tags"><span class="term-tag tag-both">Both Pages</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">MACD <span class="term-abbr">Moving Average Convergence Divergence</span></div>
+        <div class="term-def">Calculated as EMA(12) − EMA(26). Positive MACD = short-term momentum above long-term trend (bullish). The <strong>MACD Signal Line</strong> is a 9-period EMA of the MACD. The <strong>MACD Histogram</strong> = MACD − Signal, showing momentum acceleration.</div>
+        <div class="term-tags"><span class="term-tag tag-both">Both Pages</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">MACD Histogram</div>
+        <div class="term-def">The difference between the MACD line and its Signal line (MACD − Signal). Positive and growing = accelerating bullish momentum. Crossing zero from below = potential buy signal. Used as a standalone ML feature to detect momentum shifts.</div>
+        <div class="term-tags"><span class="term-tag tag-both">Both Pages</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">Bollinger Bands</div>
+        <div class="term-def">Bands plotted 2 standard deviations above and below a 20-period SMA. The ML model uses two derived features: <strong>BB Width</strong> (band spread / midline — measures volatility) and <strong>BB Position</strong> (where price sits within the bands: 0 = lower, 1 = upper).</div>
+        <div class="term-tags"><span class="term-tag tag-both">Both Pages</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">BB Width <span class="term-abbr">Bollinger Band Width</span></div>
+        <div class="term-def">(Upper Band − Lower Band) / SMA20. Low BB Width = price coiling in a tight range (potential breakout ahead). High BB Width = price already in a volatile expansion. Used by ML as a <strong>volatility context feature</strong>.</div>
+        <div class="term-tags"><span class="term-tag tag-both">Both Pages</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">BB Position</div>
+        <div class="term-def">(Close − Lower Band) / (Upper Band − Lower Band). A value near 1 means price is at the top of the bands (overbought zone); near 0 means at the bottom (oversold zone). Helps the ML model identify mean-reversion setups.</div>
+        <div class="term-tags"><span class="term-tag tag-both">Both Pages</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">Stochastic %K <span class="term-abbr">14-Period Stochastic</span></div>
+        <div class="term-def">Compares the current Close to the High–Low range over 14 periods: (Close − Low14) / (High14 − Low14) × 100. Values above 80 suggest overbought conditions; below 20 suggest oversold. Captures where price is within its recent trading range.</div>
+        <div class="term-tags"><span class="term-tag tag-both">Both Pages</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">Williams %R</div>
+        <div class="term-def">Similar to Stochastic but inverted: −(High14 − Close) / (High14 − Low14) × 100. Range: −100 to 0. Readings near 0 = overbought; near −100 = oversold. Used by the ML stock and options models to identify reversal zones.</div>
+        <div class="term-tags"><span class="term-tag tag-live">Live Trading</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">ADX <span class="term-abbr">Average Directional Index</span></div>
+        <div class="term-def">Measures <strong>trend strength</strong> (not direction) on a 0–100 scale. ADX &gt; 25 = strong trend; &lt; 20 = weak/ranging market. Used in the <strong>futures and index ML models</strong> (replacing OBV, which is unreliable for futures). Higher ADX = momentum trades work better.</div>
+        <div class="term-tags"><span class="term-tag tag-both">Both Pages</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">OBV <span class="term-abbr">On-Balance Volume</span></div>
+        <div class="term-def">A cumulative indicator adding volume on up-bars and subtracting it on down-bars. The ML model uses the <strong>10-bar OBV slope</strong> (normalized to ±1) to capture whether volume is flowing into or out of an asset. Used for stocks and options only — unreliable for futures/indices.</div>
+        <div class="term-tags"><span class="term-tag tag-live">Live Trading</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">SMA Ratio <span class="term-abbr">SMA20 / SMA50 / SMA200 Ratio</span></div>
+        <div class="term-def">Close price divided by its 20-, 50-, or 200-period Simple Moving Average. A ratio &gt; 1 means price is above the average (bullish); &lt; 1 means below (bearish). The 200 SMA ratio is a long-term trend filter; 20 and 50 capture shorter momentum.</div>
+        <div class="term-tags"><span class="term-tag tag-both">Both Pages</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">EMA <span class="term-abbr">Exponential Moving Average</span></div>
+        <div class="term-def">A moving average that gives <strong>greater weight to recent prices</strong>. Used internally to compute MACD (EMA12 − EMA26) and the MACD Signal Line (EMA9 of MACD). Reacts faster to recent price changes than a Simple Moving Average.</div>
+        <div class="term-tags"><span class="term-tag tag-both">Both Pages</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">HV5 Ratio <span class="term-abbr">Historical Volatility Ratio</span></div>
+        <div class="term-def">5-bar realized volatility divided by 20-bar realized volatility (both measured as rolling standard deviation of returns). A ratio &gt; 1 means short-term volatility is elevated relative to longer-term — used in <strong>options models</strong> to detect volatility spikes.</div>
+        <div class="term-tags"><span class="term-tag tag-live">Live Trading</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">Vol Ratio <span class="term-abbr">Volume Ratio</span></div>
+        <div class="term-def">Current bar's volume divided by its 20-bar average volume. A Vol Ratio &gt; 1.5 indicates unusually high activity. Used to rank assets by <strong>trading activity</strong> on the Market Summary page and as an ML feature for momentum confirmation.</div>
+        <div class="term-tags"><span class="term-tag tag-both">Both Pages</span></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════════════════ -->
+  <!-- ML MODELS -->
+  <!-- ══════════════════════════════════════════════════════════════════════ -->
+  <div class="cat-section" data-cat="ml">
+    <div class="cat-section-header">
+      <span class="cat-icon">🤖</span>
+      <span class="cat-title">ML Models &amp; Techniques</span>
+      <span class="cat-count" id="cnt-ml"></span>
+    </div>
+    <div class="term-grid" id="grid-ml">
+
+      <div class="term-card">
+        <div class="term-name">GBM <span class="term-abbr">Gradient Boosting Machine</span></div>
+        <div class="term-def">An ensemble of decision trees trained <strong>sequentially</strong>, where each tree corrects the errors of the previous one. The dashboard uses <code>GradientBoostingClassifier</code> (direction) and <code>GradientBoostingRegressor</code> (magnitude) from scikit-learn. Parameters: 200 estimators, max_depth=4, learning_rate=0.05, subsample=0.8.</div>
+        <div class="term-tags"><span class="term-tag tag-both">Both Pages</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">ExtraTrees <span class="term-abbr">Extremely Randomized Trees</span></div>
+        <div class="term-def">An ensemble of decision trees where <strong>both the feature and the split threshold are chosen randomly</strong> at each node — faster than GBM and less prone to overfitting on small datasets. Combined with GBM in a voting ensemble for improved direction predictions.</div>
+        <div class="term-tags"><span class="term-tag tag-live">Live Trading</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">Ensemble / Voting Classifier</div>
+        <div class="term-def">Combines multiple models and averages their probability predictions (<strong>soft voting</strong>) to produce a final signal. The dashboard uses <code>VotingClassifier([GBC, ExtraTrees])</code> for direction and <code>VotingRegressor([GBR, ExtraTreesRegressor])</code> for magnitude — ensemble reduces variance vs. a single model.</div>
+        <div class="term-tags"><span class="term-tag tag-live">Live Trading</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">Cross-Validation <span class="term-abbr">CV · 5-Fold Walk-Forward</span></div>
+        <div class="term-def">A technique to estimate how well a model generalizes to new data. The dashboard uses <strong>TimeSeriesSplit(n_splits=5)</strong> — a walk-forward approach that always trains on past data and tests on future data, respecting the temporal ordering of markets. Reported as <strong>CV Accuracy</strong>.</div>
+        <div class="term-tags"><span class="term-tag tag-live">Live Trading</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">Walk-Forward Validation</div>
+        <div class="term-def">A backtesting methodology that simulates real trading: train on data up to time T, test on T+1, then roll the window forward. This prevents <strong>look-ahead bias</strong> (using future data to predict the past). More reliable than random cross-validation for time series.</div>
+        <div class="term-tags"><span class="term-tag tag-live">Live Trading</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">Feature Importance</div>
+        <div class="term-def">How much each input variable (feature) contributes to the model's predictions. Calculated from the GBM's split gain at each node. Displayed in the <strong>Top Feature Drivers</strong> panel and the <strong>ML Ranking</strong> section — helps explain why the model made a specific decision.</div>
+        <div class="term-tags"><span class="term-tag tag-both">Both Pages</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">Feature Engineering</div>
+        <div class="term-def">The process of transforming raw OHLCV data into meaningful inputs for the ML model. Includes computing RSI, MACD, ATR ratios, SMA ratios, return windows (1, 3, 5, 10, 20 bars), vol regime, OBV trend, and stochastics. The dashboard computes <strong>18–23 features</strong> depending on the asset type.</div>
+        <div class="term-tags"><span class="term-tag tag-both">Both Pages</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">Per-Asset-Type Models</div>
+        <div class="term-def">The dashboard trains <strong>separate ML models with different feature sets</strong> for Stocks (23 features), Options (18 features, volatility-heavy), Futures (21 features, ADX-based trend), and Indices (same as Futures). This improves accuracy vs. one-size-fits-all models.</div>
+        <div class="term-tags"><span class="term-tag tag-both">Both Pages</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">StandardScaler</div>
+        <div class="term-def">A preprocessing step that standardizes each feature to have <strong>mean = 0 and standard deviation = 1</strong> before feeding data to the ML model. Prevents features with large ranges (e.g., volume) from dominating features with small ranges (e.g., RSI). Applied to both training and prediction data.</div>
+        <div class="term-tags"><span class="term-tag tag-live">Live Trading</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">Multi-Horizon Forecast</div>
+        <div class="term-def">Separate GBM models trained to predict returns over <strong>1 day, 1 week, and 1 month</strong> horizons using daily bars. Each horizon has its own model, P(UP) probability, and target price. Available for SPY, QQQ, ES=F, and GC=F on the Market Summary page.</div>
+        <div class="term-tags"><span class="term-tag tag-sum">Market Summary</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">Soft Voting</div>
+        <div class="term-def">An ensemble strategy where each model outputs a <strong>probability vector</strong> and the final prediction is the weighted average of probabilities (vs. hard voting which just takes majority class votes). Soft voting produces better-calibrated probabilities and is used for the direction classifier.</div>
+        <div class="term-tags"><span class="term-tag tag-live">Live Trading</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">CV Accuracy</div>
+        <div class="term-def">The average classification accuracy across the 5 walk-forward cross-validation folds. Reported on the signal panel. A <strong>CV Accuracy ≥ 57%</strong> is used as a quality gate — signals from models below this threshold should be avoided. Random chance = 50%.</div>
+        <div class="term-tags"><span class="term-tag tag-live">Live Trading</span></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════════════════ -->
+  <!-- SIGNALS & THRESHOLDS -->
+  <!-- ══════════════════════════════════════════════════════════════════════ -->
+  <div class="cat-section" data-cat="signals">
+    <div class="cat-section-header">
+      <span class="cat-icon">🎯</span>
+      <span class="cat-title">Signals &amp; Thresholds</span>
+      <span class="cat-count" id="cnt-signals"></span>
+    </div>
+    <div class="term-grid" id="grid-signals">
+
+      <div class="term-card">
+        <div class="term-name">P(UP) <span class="term-abbr">Probability of Upward Move</span></div>
+        <div class="term-def">The model's probability (0.0–1.0) that the <strong>next bar will close higher</strong> than the current bar. Displayed as a percentage on the probability gauge. A BUY signal requires P(UP) ≥ 60% (62% in high-volatility regimes). Computed by the Voting Classifier's soft probability output.</div>
+        <div class="term-tags"><span class="term-tag tag-both">Both Pages</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">P(DOWN) <span class="term-abbr">Probability of Downward Move</span></div>
+        <div class="term-def">Equal to 1 − P(UP). The model's probability that the next bar will close lower. A SELL signal requires P(DOWN) ≥ 60% (i.e., P(UP) ≤ 40%). Displayed on the left side of the probability gauge opposite P(UP).</div>
+        <div class="term-tags"><span class="term-tag tag-both">Both Pages</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">BUY Signal</div>
+        <div class="term-def">Issued when <strong>P(UP) ≥ 60%</strong> (or ≥ 62% in high-volatility regime). Displayed as a green badge and an upward arrow marker on the chart. Suggests a long position — buy the asset or open a bullish options/futures position following the trade setup panel's entry, stop, and target levels.</div>
+        <div class="term-tags"><span class="term-tag tag-both">Both Pages</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">SELL Signal</div>
+        <div class="term-def">Issued when <strong>P(UP) ≤ 40%</strong> (or ≤ 38% in high-volatility regime). Displayed as a red badge and a downward arrow marker on the chart. Suggests a short position — short the asset or open a bearish options/futures position following trade setup levels.</div>
+        <div class="term-tags"><span class="term-tag tag-both">Both Pages</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">HOLD Signal</div>
+        <div class="term-def">Issued when P(UP) is between 40% and 60% (38%–62% in high-vol). The model does not have sufficient directional conviction. <strong>Do not trade.</strong> Wait for a higher-probability setup to develop before entering a position.</div>
+        <div class="term-tags"><span class="term-tag tag-both">Both Pages</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">Confidence Threshold</div>
+        <div class="term-def">The minimum P(UP) or P(DOWN) probability required to issue a BUY or SELL signal. <strong>Standard: 60% BUY / 40% SELL.</strong> High-volatility regime: 62% BUY / 38% SELL. Tighter thresholds in high-vol reduce false signals when markets are choppy.</div>
+        <div class="term-tags"><span class="term-tag tag-live">Live Trading</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">Volatility Regime <span class="term-abbr">Vol Regime</span></div>
+        <div class="term-def">Classifies the current market environment as <strong>Low (0), Normal (1), or High (2)</strong> volatility by comparing the current ATR% to its 50-bar rolling median. High regime = ATR% &gt; 1.5× median; Low regime = ATR% &lt; 0.75× median. Affects thresholds, signal interpretation, and trade sizing.</div>
+        <div class="term-tags"><span class="term-tag tag-both">Both Pages</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">Magnitude Forecast <span class="term-abbr">Pred. Magnitude %</span></div>
+        <div class="term-def">The <strong>predicted percentage price move</strong> for the next bar, output by the GBM Regressor. Positive = bullish move, negative = bearish move. Used to set price targets (Entry + Magnitude) and validate the signal: magnitude should exceed 1× ATR to be worth trading.</div>
+        <div class="term-tags"><span class="term-tag tag-both">Both Pages</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">Probability Gauge</div>
+        <div class="term-def">A visual bar on the signal panel showing the split between P(DOWN) on the left and P(UP) on the right. The fill color shifts from red (bearish) through yellow (neutral) to green (bullish) based on the model's output probability.</div>
+        <div class="term-tags"><span class="term-tag tag-live">Live Trading</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">Signal Quality Checklist</div>
+        <div class="term-def">A six-point validation framework for each signal: <strong>(1)</strong> P(UP) ≥ 65% or P(DOWN) ≤ 35% <strong>(2)</strong> Magnitude ≥ 1.0× ATR <strong>(3)</strong> CV Accuracy ≥ 57% <strong>(4)</strong> Threshold filter applied <strong>(5)</strong> Risk defined (1.5× ATR stop) <strong>(6)</strong> Target at magnitude forecast. All six should be met before entering a trade.</div>
+        <div class="term-tags"><span class="term-tag tag-live">Live Trading</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">Signal Breadth</div>
+        <div class="term-def">The percentage of all tracked assets (stocks + options + futures + indices) currently showing a BUY signal vs. a SELL signal. High breadth (≥60% BUY) = broad market bullish environment; low breadth (≥60% SELL) = broad bearish pressure. Displayed on the Market Summary overview cards.</div>
+        <div class="term-tags"><span class="term-tag tag-sum">Market Summary</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">Market Direction</div>
+        <div class="term-def">The aggregate classification of all signals: <strong>BULLISH</strong> (≥60% BUY), <strong>SLIGHTLY BULLISH</strong> (45–60% BUY), <strong>NEUTRAL</strong>, <strong>SLIGHTLY BEARISH</strong>, or <strong>BEARISH</strong> (≥60% SELL). Computed from all unique symbols in the market summary batch run.</div>
+        <div class="term-tags"><span class="term-tag tag-sum">Market Summary</span></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════════════════ -->
+  <!-- TRADE SETUP -->
+  <!-- ══════════════════════════════════════════════════════════════════════ -->
+  <div class="cat-section" data-cat="setup">
+    <div class="cat-section-header">
+      <span class="cat-icon">⚙️</span>
+      <span class="cat-title">Trade Setup</span>
+      <span class="cat-count" id="cnt-setup"></span>
+    </div>
+    <div class="term-grid" id="grid-setup">
+
+      <div class="term-card">
+        <div class="term-name">Entry Price</div>
+        <div class="term-def">The price at which you open a position. In the trade setup panel, entry = <strong>current Close price</strong> at the time of the signal. For limit orders, you may set the entry slightly below (BUY) or above (SELL) the current price to improve fill quality.</div>
+        <div class="term-tags"><span class="term-tag tag-live">Live Trading</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">Stop Loss <span class="term-abbr">Stop · 1.5× ATR</span></div>
+        <div class="term-def">The price at which you exit to limit losses. Set at <strong>1.5× ATR away from entry</strong>: BUY stop = Entry − 1.5×ATR; SELL stop = Entry + 1.5×ATR. Using ATR ensures the stop is calibrated to the asset's actual volatility — not too tight (stops out prematurely) or too wide (too much risk).</div>
+        <div class="term-tags"><span class="term-tag tag-live">Live Trading</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">Target Price <span class="term-abbr">Take Profit</span></div>
+        <div class="term-def">The profit-taking level: <strong>Entry ± Magnitude Forecast %</strong>. BUY target = Entry × (1 + magnitude%). SELL target = Entry × (1 − |magnitude%|). The target represents the ML model's predicted price after one bar's move. Only trade when target distance exceeds the stop distance (R:R &gt; 1).</div>
+        <div class="term-tags"><span class="term-tag tag-live">Live Trading</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">R:R Ratio <span class="term-abbr">Risk:Reward Ratio</span></div>
+        <div class="term-def">Target distance divided by stop distance: (Target − Entry) / (Entry − Stop). An R:R of 2:1 means you risk $1 to potentially make $2. The dashboard displays the computed ratio — a signal should have an R:R ≥ 1.5 to be worth taking after accounting for commissions and slippage.</div>
+        <div class="term-tags"><span class="term-tag tag-live">Live Trading</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">Position Sizing</div>
+        <div class="term-def">How many shares/contracts to trade. Standard rule: <strong>risk no more than 2% of account equity per trade</strong>. Shares = (Account × 2%) / (Entry − Stop). For futures, risk per contract is displayed directly — divide your 2% dollar limit by the risk per contract to determine lot size.</div>
+        <div class="term-tags"><span class="term-tag tag-live">Live Trading</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">Reward per Unit</div>
+        <div class="term-def">The dollar profit expected per share (stocks) or per point (futures) if the target is reached: |Magnitude%| × Entry Price. For futures this is then multiplied by the <strong>contract multiplier</strong> to get the dollar reward per contract.</div>
+        <div class="term-tags"><span class="term-tag tag-live">Live Trading</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">Slippage</div>
+        <div class="term-def">The difference between the expected fill price and the actual fill price — caused by the bid-ask spread and market impact. For liquid ETFs (SPY, QQQ) slippage is minimal. For less liquid stocks or fast-moving futures, slippage can meaningfully erode edge — factor it into R:R calculations.</div>
+        <div class="term-tags"><span class="term-tag tag-live">Live Trading</span></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════════════════ -->
+  <!-- OPTIONS -->
+  <!-- ══════════════════════════════════════════════════════════════════════ -->
+  <div class="cat-section" data-cat="options">
+    <div class="cat-section-header">
+      <span class="cat-icon">🎯</span>
+      <span class="cat-title">Options Trading</span>
+      <span class="cat-count" id="cnt-options"></span>
+    </div>
+    <div class="term-grid" id="grid-options">
+
+      <div class="term-card">
+        <div class="term-name">IV <span class="term-abbr">Implied Volatility</span></div>
+        <div class="term-def">The market's expectation of future price volatility, derived from current options prices. <strong>High IV = expensive premiums</strong> (good for selling options); <strong>Low IV = cheap premiums</strong> (good for buying options). Always check IV rank before selecting an options strategy.</div>
+        <div class="term-tags"><span class="term-tag tag-live">Live Trading</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">IV Rank</div>
+        <div class="term-def">Where current IV sits relative to its 52-week range: (Current IV − 52w Low) / (52w High − 52w Low) × 100. <strong>IV Rank &lt; 30</strong> = buy premium strategies (debit spreads). <strong>IV Rank &gt; 60</strong> = sell premium strategies (credit spreads, iron condors).</div>
+        <div class="term-tags"><span class="term-tag tag-live">Live Trading</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">Debit Spread</div>
+        <div class="term-def">An options strategy where you <strong>buy one option and sell another at a different strike</strong>, paying a net debit (upfront cost). Used when IV is low and you want to buy cheap premium with limited risk. Examples: Bull Call Spread (bullish), Bear Put Spread (bearish).</div>
+        <div class="term-tags"><span class="term-tag tag-live">Live Trading</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">Credit Spread</div>
+        <div class="term-def">An options strategy where you <strong>sell one option and buy another further away</strong>, collecting a net credit (premium received upfront). Used when IV is high. Maximum profit = credit received; maximum loss = spread width minus credit. Examples: Bull Put Spread, Bear Call Spread.</div>
+        <div class="term-tags"><span class="term-tag tag-live">Live Trading</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">Bull Call Spread</div>
+        <div class="term-def">Buy a call at a lower strike, sell a call at a higher strike (same expiration). <strong>Bullish strategy with limited risk and limited reward.</strong> Use when IV Rank &lt; 30 and the ML model shows a BUY signal. Maximum profit when price exceeds the short call strike at expiration.</div>
+        <div class="term-tags"><span class="term-tag tag-live">Live Trading</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">Bear Put Spread</div>
+        <div class="term-def">Buy a put at a higher strike, sell a put at a lower strike (same expiration). <strong>Bearish strategy with limited risk.</strong> Use when IV Rank &lt; 30 and the ML model shows a SELL signal. Maximum profit when price falls below the short put strike at expiration.</div>
+        <div class="term-tags"><span class="term-tag tag-live">Live Trading</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">Bull Put Spread</div>
+        <div class="term-def">Sell a put at a higher strike, buy a put at a lower strike — collect a net credit. <strong>Bullish credit spread.</strong> Use when IV Rank &gt; 60 and ML shows BUY. You profit if the underlying stays above the short put strike. Risk = spread width minus credit received.</div>
+        <div class="term-tags"><span class="term-tag tag-live">Live Trading</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">Bear Call Spread</div>
+        <div class="term-def">Sell a call at a lower strike, buy a call at a higher strike — collect a net credit. <strong>Bearish credit spread.</strong> Use when IV Rank &gt; 60 and ML shows SELL. You profit if price stays below the short call strike. Maximum loss = spread width minus credit received.</div>
+        <div class="term-tags"><span class="term-tag tag-live">Live Trading</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">Iron Condor</div>
+        <div class="term-def">Simultaneously sell a Bull Put Spread and a Bear Call Spread — a <strong>neutral, range-bound strategy</strong>. Profit when the underlying stays between both short strikes. Use when IV Rank &gt; 60 and the ML signal is HOLD (no directional conviction). Maximum profit = combined credit received.</div>
+        <div class="term-tags"><span class="term-tag tag-live">Live Trading</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">Strike Selection</div>
+        <div class="term-def">Choosing the option strike prices for a spread. Dashboard rule: <strong>the break-even price of the spread must fall inside the ML model's predicted magnitude move.</strong> If the model predicts +2% and your break-even requires +3%, the spread is too wide — choose closer strikes.</div>
+        <div class="term-tags"><span class="term-tag tag-live">Live Trading</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">Break-Even</div>
+        <div class="term-def">The underlying price at which an options position has zero profit or loss at expiration. For a Bull Call Spread: lower strike + net debit paid. Your break-even must be inside the ML model's predicted magnitude move for the trade to have positive expected value.</div>
+        <div class="term-tags"><span class="term-tag tag-live">Live Trading</span></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════════════════ -->
+  <!-- FUTURES -->
+  <!-- ══════════════════════════════════════════════════════════════════════ -->
+  <div class="cat-section" data-cat="futures">
+    <div class="cat-section-header">
+      <span class="cat-icon">⚡</span>
+      <span class="cat-title">Futures Trading</span>
+      <span class="cat-count" id="cnt-futures"></span>
+    </div>
+    <div class="term-grid" id="grid-futures">
+
+      <div class="term-card">
+        <div class="term-name">Contract Multiplier</div>
+        <div class="term-def">Converts a futures price move (in points) to a dollar gain/loss. Each futures contract has a fixed multiplier: <strong>ES=F $50/pt · NQ=F $20/pt · CL=F $1,000/barrel · GC=F $100/oz · SI=F $5,000/oz · ZB=F $1,000/pt</strong>. Risk $ = ATR points × Multiplier × 1.5 (stop distance).</div>
+        <div class="term-tags"><span class="term-tag tag-live">Live Trading</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">ES=F <span class="term-abbr">E-mini S&amp;P 500 Futures</span></div>
+        <div class="term-def">CME futures contract tracking the S&amp;P 500 index. <strong>Multiplier: $50 per point.</strong> One of the most liquid futures markets in the world. Trades nearly 24/5. Represents a bet on the broad US large-cap equity market. Tick size = 0.25 points ($12.50/tick).</div>
+        <div class="term-tags"><span class="term-tag tag-both">Both Pages</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">NQ=F <span class="term-abbr">E-mini Nasdaq-100 Futures</span></div>
+        <div class="term-def">CME futures contract tracking the Nasdaq-100 index. <strong>Multiplier: $20 per point.</strong> More volatile than ES — higher tech-sector concentration. Used for leveraged tech-focused directional trades. Tick size = 0.25 points ($5/tick).</div>
+        <div class="term-tags"><span class="term-tag tag-both">Both Pages</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">CL=F <span class="term-abbr">WTI Crude Oil Futures</span></div>
+        <div class="term-def">NYMEX futures contract for West Texas Intermediate crude oil. <strong>Multiplier: $1,000 per dollar.</strong> Highly sensitive to geopolitical events, OPEC decisions, and supply/demand data. One of the highest-volatility futures markets. The ML model uses an oil-specific commodity feature set.</div>
+        <div class="term-tags"><span class="term-tag tag-both">Both Pages</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">GC=F <span class="term-abbr">Gold Futures</span></div>
+        <div class="term-def">COMEX futures for gold. <strong>Multiplier: $100 per troy ounce.</strong> Moves on dollar strength/weakness, inflation expectations, and geopolitical risk. Acts as a safe-haven asset — rising gold often signals risk-off sentiment. Used by the market summary's World Events engine.</div>
+        <div class="term-tags"><span class="term-tag tag-both">Both Pages</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">SI=F <span class="term-abbr">Silver Futures</span></div>
+        <div class="term-def">COMEX silver futures. <strong>Multiplier: $5,000 per troy ounce.</strong> Has both industrial and precious-metal characteristics — more volatile than gold and correlated with both commodity cycles and safe-haven demand.</div>
+        <div class="term-tags"><span class="term-tag tag-both">Both Pages</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">ZB=F <span class="term-abbr">30-Year US Treasury Bond Futures</span></div>
+        <div class="term-def">CBOT futures on the 30-year US Treasury bond. <strong>Multiplier: $1,000 per point.</strong> Moves inversely to long-term interest rates. Rising ZB = falling long yields (risk-off, flight to safety). The Market Summary World Events engine uses ZB signals to detect Fed policy shifts and monetary policy events.</div>
+        <div class="term-tags"><span class="term-tag tag-both">Both Pages</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">Risk Per Contract</div>
+        <div class="term-def">The dollar amount at risk on one futures contract: <strong>ATR (in points) × 1.5 × Multiplier.</strong> Displayed in the futures trade setup panel. Divide your maximum per-trade dollar risk (2% of account) by this number to determine how many contracts to trade.</div>
+        <div class="term-tags"><span class="term-tag tag-live">Live Trading</span></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════════════════ -->
+  <!-- MARKET STRUCTURE -->
+  <!-- ══════════════════════════════════════════════════════════════════════ -->
+  <div class="cat-section" data-cat="market">
+    <div class="cat-section-header">
+      <span class="cat-icon">🌐</span>
+      <span class="cat-title">Market Structure &amp; Sentiment</span>
+      <span class="cat-count" id="cnt-market"></span>
+    </div>
+    <div class="term-grid" id="grid-market">
+
+      <div class="term-card">
+        <div class="term-name">VIX <span class="term-abbr">CBOE Volatility Index</span></div>
+        <div class="term-def">The "fear gauge" — measures the market's 30-day implied volatility expectation derived from S&amp;P 500 options prices. <strong>VIX &lt; 15</strong> = calm; <strong>15–25</strong> = moderate concern; <strong>&gt; 25</strong> = elevated fear; <strong>&gt; 30</strong> = high stress. Used by the World Events engine to detect volatility events and geopolitical risk.</div>
+        <div class="term-tags"><span class="term-tag tag-both">Both Pages</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">Market Breadth</div>
+        <div class="term-def">A measure of how many stocks (or assets) are participating in a trend vs. just a few leaders. On the dashboard, computed as the <strong>ratio of BUY to SELL signals</strong> across all tracked assets. Broad BUY breadth = healthy rally; narrow breadth = only a few assets leading (potential warning sign).</div>
+        <div class="term-tags"><span class="term-tag tag-sum">Market Summary</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">Risk-On / Risk-Off</div>
+        <div class="term-def"><strong>Risk-on</strong> = investors prefer growth assets (stocks, high-yield, commodities). <strong>Risk-off</strong> = investors flee to safety (bonds, gold, yen, cash). The World Events engine detects regime shifts: SPY+IWM aligned BUY = risk-on; ZB rising + GC rising = risk-off flight to safety.</div>
+        <div class="term-tags"><span class="term-tag tag-sum">Market Summary</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">Safe Haven</div>
+        <div class="term-def">Assets that hold or gain value during market stress: <strong>Gold (GC=F), US Treasuries (ZB=F), and the US Dollar.</strong> When geopolitical or macro risk rises, capital flows into these assets. The dashboard flags a GEOPOLITICAL / SAFE HAVEN event when gold surges without an oil move.</div>
+        <div class="term-tags"><span class="term-tag tag-sum">Market Summary</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">Monetary Policy</div>
+        <div class="term-def">Central bank decisions about interest rates and money supply. Detected via <strong>ZB=F (Treasury futures) direction</strong>: ZB BUY = bond rally = rate-cut expectations (dovish Fed, easing). ZB SELL = bond selloff = rate-hike expectations (hawkish Fed, tightening). Bullish for stocks in easing cycles.</div>
+        <div class="term-tags"><span class="term-tag tag-sum">Market Summary</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">Inflation Signal</div>
+        <div class="term-def">Detected when <strong>both Gold (GC=F) and Crude Oil (CL=F) are rising simultaneously</strong> — a classic dual commodity inflation signal. Rising commodity costs pressure corporate margins and may prompt central banks to raise rates. Classified as BEARISH for equities in the World Events engine.</div>
+        <div class="term-tags"><span class="term-tag tag-sum">Market Summary</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">Market Cap Divergence</div>
+        <div class="term-def">When large-cap stocks (SPY) and small-cap stocks (IWM) diverge in direction. <strong>SPY BUY + IWM SELL</strong> = large-cap leadership without broad participation (potential market top). <strong>SPY SELL + IWM BUY</strong> = rotation into small caps (risk appetite returning). Detected in the World Events breadth analysis.</div>
+        <div class="term-tags"><span class="term-tag tag-sum">Market Summary</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">World Events Engine</div>
+        <div class="term-def">An algorithmic system that analyzes the live ML signals from all tracked assets and synthesizes them into <strong>economic and geopolitical event narratives</strong>. Detects: Monetary Policy, Inflation, Geopolitical Risk, Volatility Events, Tech Sector cycles, Energy signals, and Market Breadth conditions.</div>
+        <div class="term-tags"><span class="term-tag tag-sum">Market Summary</span></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════════════════ -->
+  <!-- ASSET TYPES -->
+  <!-- ══════════════════════════════════════════════════════════════════════ -->
+  <div class="cat-section" data-cat="assets">
+    <div class="cat-section-header">
+      <span class="cat-icon">🏦</span>
+      <span class="cat-title">Asset Types &amp; Groups</span>
+      <span class="cat-count" id="cnt-assets"></span>
+    </div>
+    <div class="term-grid" id="grid-assets">
+
+      <div class="term-card">
+        <div class="term-name">ETF <span class="term-abbr">Exchange-Traded Fund</span></div>
+        <div class="term-def">A basket of securities that trades on an exchange like a stock. Dashboard ETFs: <strong>SPY</strong> (S&amp;P 500), <strong>QQQ</strong> (Nasdaq-100), <strong>DIA</strong> (Dow Jones), <strong>IWM</strong> (Russell 2000). ETFs provide broad market exposure with stock-like liquidity and options markets.</div>
+        <div class="term-tags"><span class="term-tag tag-live">Live Trading</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">Magnificent 7 <span class="term-abbr">Mag 7</span></div>
+        <div class="term-def">The seven largest US tech/growth stocks by market cap: <strong>AAPL, MSFT, NVDA, GOOGL, AMZN, META, TSLA.</strong> Together they represent roughly 30% of the S&amp;P 500 by weight. When Mag 7 signals align (≥4 of 7 BUY), the dashboard flags a Technology / AI Investment Cycle event.</div>
+        <div class="term-tags"><span class="term-tag tag-both">Both Pages</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">Blue Chips</div>
+        <div class="term-def">Large-cap, financially stable, sector-diversified stocks: <strong>JPM, BAC, V</strong> (Financials) · <strong>XOM, CVX</strong> (Energy) · <strong>JNJ, UNH</strong> (Healthcare) · <strong>WMT, HD</strong> (Consumer/Retail) · <strong>BRK-B</strong> (Diversified). Typically lower volatility than Mag 7.</div>
+        <div class="term-tags"><span class="term-tag tag-both">Both Pages</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">S&amp;P 500 Index <span class="term-abbr">^GSPC</span></div>
+        <div class="term-def">A capitalization-weighted index of 500 large US companies. The benchmark for US equity market performance. The dashboard tracks it via yfinance (^GSPC) and as a futures contract (ES=F). ML model uses Futures feature set (ADX-based) for index signals.</div>
+        <div class="term-tags"><span class="term-tag tag-both">Both Pages</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">^VIX <span class="term-abbr">CBOE Volatility Index</span></div>
+        <div class="term-def">Tracked as an index (not tradeable directly). Used by the dashboard as a key input for the World Events engine — VIX ≥ 20 triggers a Market Volatility event; VIX ≥ 25 + Gold BUY triggers a Geopolitical Risk event. The ML model uses Futures-type features for VIX signals.</div>
+        <div class="term-tags"><span class="term-tag tag-both">Both Pages</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">Russell 2000 <span class="term-abbr">^RUT · IWM</span></div>
+        <div class="term-def">An index of 2,000 US small-cap stocks (IWM is the ETF). Small caps are more sensitive to domestic economic conditions and credit availability than large caps. <strong>IWM vs. SPY divergence</strong> is used by the Market Breadth event detection to identify cap-size rotations.</div>
+        <div class="term-tags"><span class="term-tag tag-both">Both Pages</span></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════════════════ -->
+  <!-- TIMEFRAMES -->
+  <!-- ══════════════════════════════════════════════════════════════════════ -->
+  <div class="cat-section" data-cat="timeframes">
+    <div class="cat-section-header">
+      <span class="cat-icon">⏱</span>
+      <span class="cat-title">Timeframes &amp; Intervals</span>
+      <span class="cat-count" id="cnt-timeframes"></span>
+    </div>
+    <div class="term-grid" id="grid-timeframes">
+
+      <div class="term-card">
+        <div class="term-name">1m <span class="term-abbr">1 Minute</span></div>
+        <div class="term-def">The shortest available chart interval — each bar covers one minute of trading. <strong>Max history: ~5 days</strong> (yfinance limit). Best for intraday scalping. Note: ML signals are computed on 1H bars regardless of the chart timeframe — the signal arrows will still show at their correct timestamps.</div>
+        <div class="term-tags"><span class="term-tag tag-live">Live Trading</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">5m <span class="term-abbr">5 Minute</span></div>
+        <div class="term-def">Each bar covers 5 minutes of trading. <strong>Max history: ~30 days.</strong> Common for short-term intraday trading. Provides more context than 1m while still showing intraday structure. Good for timing entries after the 1H ML signal triggers.</div>
+        <div class="term-tags"><span class="term-tag tag-live">Live Trading</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">15m <span class="term-abbr">15 Minute</span></div>
+        <div class="term-def">Each bar covers 15 minutes. <strong>Max history: ~60 days.</strong> Balances intraday detail with broader context. Useful for seeing swing structures and support/resistance levels that inform stop and target placement within the 1H signal framework.</div>
+        <div class="term-tags"><span class="term-tag tag-live">Live Trading</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">30m <span class="term-abbr">30 Minute</span></div>
+        <div class="term-def">Each bar covers 30 minutes. <strong>Max history: ~60 days.</strong> Shows half-session structure — morning and afternoon sessions are clearly separated. Useful for identifying intraday trends and key pivot levels that align with ML signal direction.</div>
+        <div class="term-tags"><span class="term-tag tag-live">Live Trading</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">1H <span class="term-abbr">1 Hour — Default</span></div>
+        <div class="term-def">The <strong>default chart interval</strong> and the primary timeframe the ML models are trained on. Each bar = one hour of trading. History: 90 days (~1,700 bars). The ML signal, P(UP), magnitude, stop, and target are all calibrated to this interval. Signal markers align perfectly with 1H candles.</div>
+        <div class="term-tags"><span class="term-tag tag-both">Both Pages</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">4H <span class="term-abbr">4 Hour</span></div>
+        <div class="term-def">Four-hour bars, constructed by resampling 1H data (OHLCV aggregation). History: 90 days (~420 bars). A popular swing-trading timeframe that filters out intraday noise. The ML models can be applied at this timeframe for positions held 1–3 days.</div>
+        <div class="term-tags"><span class="term-tag tag-both">Both Pages</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">1D <span class="term-abbr">1 Day</span></div>
+        <div class="term-def">Daily bars — each candle represents one full trading session. History: 365 days. Used for the <strong>Multi-Horizon Forecast</strong> models (1-day, 1-week, 1-month predictions). Daily charts reveal the primary trend that shorter timeframes should align with.</div>
+        <div class="term-tags"><span class="term-tag tag-both">Both Pages</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">Multi-Horizon Forecast</div>
+        <div class="term-def">Separate GBM models trained on daily data to forecast returns over <strong>1 Day, 1 Week (5 trading days), and 1 Month (20 trading days)</strong>. Each horizon has its own P(UP), magnitude %, and target price. Available for SPY, QQQ, ES=F, GC=F on the Market Summary page.</div>
+        <div class="term-tags"><span class="term-tag tag-sum">Market Summary</span></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════════════════ -->
+  <!-- PLATFORM & DATA -->
+  <!-- ══════════════════════════════════════════════════════════════════════ -->
+  <div class="cat-section" data-cat="platform">
+    <div class="cat-section-header">
+      <span class="cat-icon">🔌</span>
+      <span class="cat-title">Platform &amp; Data Sources</span>
+      <span class="cat-count" id="cnt-platform"></span>
+    </div>
+    <div class="term-grid" id="grid-platform">
+
+      <div class="term-card">
+        <div class="term-name">IBKR <span class="term-abbr">Interactive Brokers</span></div>
+        <div class="term-def">The recommended broker for this dashboard — supports stocks, options, and futures from a single account. Provides <strong>real-time market data</strong> when TWS or IB Gateway is running and connected. Connects via the ib_async Python library on port 7497 (paper) or 7496 (live).</div>
+        <div class="term-tags"><span class="term-tag tag-live">Live Trading</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">TWS <span class="term-abbr">Trader Workstation</span></div>
+        <div class="term-def">Interactive Brokers' main desktop trading application. Must be running and logged in with API access enabled for the dashboard to receive real-time data. <strong>Paper trading port: 7497. Live trading port: 7496.</strong> Enable via TWS → File → Global Configuration → API → Settings.</div>
+        <div class="term-tags"><span class="term-tag tag-live">Live Trading</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">IB Gateway</div>
+        <div class="term-def">A lightweight alternative to TWS that runs headlessly (no GUI). Uses the same ports (7497 paper, 7496 live). Preferred for server deployments where TWS's full interface is unnecessary. Connects the same way via ib_async.</div>
+        <div class="term-tags"><span class="term-tag tag-live">Live Trading</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">yfinance</div>
+        <div class="term-def">A Python library that downloads <strong>15–20 minute delayed</strong> historical market data from Yahoo Finance. Used as the fallback data source when IBKR is not connected. Free and requires no API key. Supports 1m through 1d intervals with various history limits per interval.</div>
+        <div class="term-tags"><span class="term-tag tag-both">Both Pages</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">Real-Time Data</div>
+        <div class="term-def">Live market prices with millisecond or second latency, available when connected to IBKR via TWS or IB Gateway. Shown as <strong>● IBKR Live</strong> in the status badge. Required for active intraday trading where delayed data would result in stale signals.</div>
+        <div class="term-tags"><span class="term-tag tag-live">Live Trading</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">Delayed Data</div>
+        <div class="term-def">Market data that is <strong>15–20 minutes behind real time</strong> — provided by yfinance when IBKR is not connected. Shown as <strong>● yfinance</strong> in the status badge. Sufficient for educational purposes and end-of-day swing trading analysis, but not suitable for intraday execution.</div>
+        <div class="term-tags"><span class="term-tag tag-both">Both Pages</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">In-Memory Cache <span class="term-abbr">4-Min TTL</span></div>
+        <div class="term-def">The Flask server stores computed ML signals and candle data in memory for <strong>4 minutes (240 seconds)</strong>. Subsequent requests within the TTL return instantly without re-running the ML model. The ↻ Refresh button bypasses the cache (<code>?nocache=1</code>) to force a fresh computation.</div>
+        <div class="term-tags"><span class="term-tag tag-both">Both Pages</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">Paper Trading</div>
+        <div class="term-def">Simulated trading with <strong>virtual money</strong> — no real capital at risk. IBKR offers a paper trading account on port 7497. Useful for testing the ML signals and building confidence before committing real capital. All features of the dashboard work identically in paper mode.</div>
+        <div class="term-tags"><span class="term-tag tag-live">Live Trading</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">live-server.py</div>
+        <div class="term-def">The Python Flask backend server that powers both dashboards. Provides REST API endpoints: <code>/api/candles/&lt;symbol&gt;</code>, <code>/api/signal/&lt;symbol&gt;</code>, <code>/api/market-summary</code>, <code>/api/forecast/&lt;symbol&gt;</code>, <code>/api/ibkr-status</code>. Run with <code>python live-server.py</code> on port 5050.</div>
+        <div class="term-tags"><span class="term-tag tag-both">Both Pages</span></div>
+      </div>
+
+    </div>
+  </div>
+
+</div><!-- /.term-page-wrap -->
+
+<script>
+let activeCat = 'all';
+
+function setCat(cat, btn) {
+  activeCat = cat;
+  document.querySelectorAll('.cat-pill').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+
+  document.querySelectorAll('.cat-section').forEach(sec => {
+    const show = cat === 'all' || sec.dataset.cat === cat;
+    sec.style.display = show ? '' : 'none';
+  });
+  filterTerms();
+}
+
+function filterTerms() {
+  const q = document.getElementById('term-search').value.trim().toLowerCase();
+  let total = 0;
+
+  document.querySelectorAll('.cat-section').forEach(sec => {
+    if (activeCat !== 'all' && sec.dataset.cat !== activeCat) return;
+    let secVisible = 0;
+    sec.querySelectorAll('.term-card').forEach(card => {
+      const text = card.textContent.toLowerCase();
+      const match = !q || text.includes(q);
+      card.style.display = match ? '' : 'none';
+      if (match) { secVisible++; total++; }
+    });
+    // Hide entire section if no cards match (only when searching)
+    sec.style.display = (q && secVisible === 0) ? 'none' : '';
+  });
+
+  const countEl = document.getElementById('search-count');
+  countEl.textContent = q ? `${total} result${total !== 1 ? 's' : ''}` : '';
+}
+
+// Count cards per category and populate badges
+function initCounts() {
+  const catMap = {
+    chart:      'cnt-chart',
+    indicators: 'cnt-indicators',
+    ml:         'cnt-ml',
+    signals:    'cnt-signals',
+    setup:      'cnt-setup',
+    options:    'cnt-options',
+    futures:    'cnt-futures',
+    market:     'cnt-market',
+    assets:     'cnt-assets',
+    timeframes: 'cnt-timeframes',
+    platform:   'cnt-platform',
+  };
+  Object.entries(catMap).forEach(([cat, id]) => {
+    const grid = document.getElementById('grid-' + cat);
+    if (!grid) return;
+    const n = grid.querySelectorAll('.term-card').length;
+    const el = document.getElementById(id);
+    if (el) el.textContent = n + ' terms';
+  });
+}
+
+// Keyboard shortcut: focus search on '/'
+document.addEventListener('keydown', e => {
+  if (e.key === '/' && document.activeElement.tagName !== 'INPUT') {
+    e.preventDefault();
+    document.getElementById('term-search').focus();
+  }
+});
+
+initCounts();
+</script>
+
+<script src="ibkr-widget.js"></script>
+</body>
+</html>

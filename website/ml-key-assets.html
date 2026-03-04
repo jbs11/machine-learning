@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Machine Learning for Key Assets — Feature Heatmap</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    /* ── Layout ── */
+    .ka-wrap { max-width: 1400px; margin: 0 auto; padding: 0 1.5rem 6rem; }
+
+    /* ── Page nav (reuse market-summary class) ── */
+    .page-nav {
+      display: flex; align-items: center; gap: 1rem;
+      padding: .6rem 1.5rem; background: var(--surface);
+      border-bottom: 1px solid var(--border); font-size: .83rem;
+    }
+    .page-nav a { color: var(--muted); text-decoration: none; padding: .3rem .7rem; border-radius: 5px; transition: color .15s, background .15s; }
+    .page-nav a:hover { color: var(--text); background: rgba(255,255,255,.06); }
+    .page-nav a.active { color: var(--accent); font-weight: 700; }
+    .page-nav-sep { color: var(--border); }
+
+    /* ── Hero ── */
+    .ka-hero {
+      padding: 3.5rem 1.5rem 2.5rem; text-align: center;
+      background: radial-gradient(ellipse 80% 55% at 50% -5%, rgba(34,211,238,.12) 0%, transparent 65%), var(--bg);
+      border-bottom: 1px solid var(--border);
+    }
+    .ka-hero h1 {
+      font-size: clamp(1.8rem, 4vw, 3rem); font-weight: 900;
+      letter-spacing: -.03em; line-height: 1.15; margin-bottom: .8rem;
+      background: linear-gradient(135deg,#fff 20%,var(--primary));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    .ka-hero p { color: var(--muted); font-size: 1.05rem; max-width: 680px; margin: 0 auto 1.5rem; line-height: 1.7; }
+
+    /* ── Stats strip ── */
+    .stats-strip { display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr));
+      gap:1px; background:var(--border); border-top:1px solid var(--border); border-bottom:1px solid var(--border); }
+    .stat-cell { background:var(--surface); padding:1rem 1.2rem; text-align:center; }
+    .stat-val { font-size:1.4rem; font-weight:900; margin-bottom:.1rem; }
+    .stat-lbl { font-size:.7rem; font-weight:600; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); }
+
+    /* ── Server bar ── */
+    .server-bar { display:flex;align-items:center;gap:.75rem;background:var(--surface);
+      border:1px solid var(--border);border-radius:8px;padding:.55rem 1.1rem;
+      margin:1.2rem 0;font-size:.85rem; }
+    .sdot { width:9px;height:9px;border-radius:50%;background:#f87171;flex-shrink:0;transition:background .3s; }
+    .sdot.on { background:#4ade80; } .sdot.loading { background:#fbbf24; }
+    .smsg { color:var(--muted); flex:1; }
+    .rbtn { background:transparent;border:1px solid var(--border);color:var(--muted);
+      padding:.28rem .75rem;border-radius:6px;cursor:pointer;font-size:.8rem;transition:border-color .2s,color .2s; }
+    .rbtn:hover { border-color:var(--accent);color:var(--accent); }
+
+    /* ── Legend / feature keys ── */
+    .feat-legend { display:flex;flex-wrap:wrap;gap:.5rem;margin:1.2rem 0; }
+    .feat-pill { display:flex;align-items:center;gap:.4rem;padding:.3rem .8rem;
+      background:var(--card);border:1px solid var(--border);border-radius:99px;
+      font-size:.75rem;font-weight:700;cursor:default; }
+    .feat-pill-num { color:var(--primary);font-weight:900;min-width:1.1rem; }
+
+    /* ── Feature table ── */
+    .tbl-outer { overflow-x: auto; -webkit-overflow-scrolling: touch; margin-top: 1rem; border-radius: var(--radius); border: 1px solid var(--border); }
+    .feat-tbl { border-collapse: collapse; width: 100%; min-width: 1100px; font-size: .82rem; }
+    .feat-tbl th {
+      background: var(--surface); color: var(--muted); font-size: .72rem;
+      font-weight: 700; text-transform: uppercase; letter-spacing: .07em;
+      padding: .6rem .75rem; border-bottom: 1px solid var(--border);
+      white-space: nowrap; text-align: center; position: sticky; top: 0; z-index: 5;
+    }
+    .feat-tbl th.th-left { text-align: left; }
+    .feat-tbl th.th-asset { text-align: left; min-width: 185px; }
+    .feat-tbl td { padding: .48rem .72rem; border-bottom: 1px solid rgba(36,48,88,.5); text-align: center; vertical-align: middle; }
+    .feat-tbl tr:last-child td { border-bottom: none; }
+    .feat-tbl tr:hover td { background: rgba(255,255,255,.025); }
+
+    /* ── Group header rows ── */
+    .grp-hdr td { background: rgba(34,211,238,.06); border-bottom: 1px solid rgba(34,211,238,.18);
+      font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .09em;
+      color: var(--primary); padding: .4rem .75rem; text-align: left; }
+
+    /* ── Asset name cell ── */
+    .sym-cell { text-align: left; }
+    .sym-ticker { font-weight: 800; color: var(--text); font-size: .85rem; font-family: 'Consolas', monospace; }
+    .sym-name { font-size: .72rem; color: var(--muted); margin-top: .1rem; max-width: 170px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .sym-type { display:inline-block;font-size:.65rem;font-weight:700;letter-spacing:.06em;
+      padding:.1rem .45rem;border-radius:4px;margin-top:.2rem; }
+    .t-stock { background:rgba(34,211,238,.12);color:#22d3ee; }
+    .t-options { background:rgba(129,140,248,.12);color:#818cf8; }
+    .t-futures { background:rgba(251,191,36,.12);color:#fbbf24; }
+
+    /* ── Trend badge ── */
+    .trend-bull { background:rgba(52,211,153,.18);border:1px solid rgba(52,211,153,.4);
+      color:#34d399;border-radius:6px;padding:.22rem .65rem;font-weight:800;font-size:.78rem;
+      white-space:nowrap;display:inline-block; }
+    .trend-bear { background:rgba(248,113,113,.18);border:1px solid rgba(248,113,113,.4);
+      color:#f87171;border-radius:6px;padding:.22rem .65rem;font-weight:800;font-size:.78rem;
+      white-space:nowrap;display:inline-block; }
+    .trend-neut { background:rgba(251,191,36,.12);border:1px solid rgba(251,191,36,.3);
+      color:#fbbf24;border-radius:6px;padding:.22rem .65rem;font-weight:800;font-size:.78rem;
+      white-space:nowrap;display:inline-block; }
+
+    /* ── Signal chip (inline small) ── */
+    .sig-b { color:#34d399;font-weight:800;font-size:.8rem; }
+    .sig-s { color:#f87171;font-weight:800;font-size:.8rem; }
+    .sig-h { color:#fbbf24;font-weight:800;font-size:.8rem; }
+
+    /* ── Feature cells — heatmap colouring applied via JS ── */
+    .fc { font-family: 'Consolas', monospace; font-size: .79rem; border-radius: 4px; padding: .25rem .4rem; font-weight: 600; }
+
+    /* ── Skeleton shimmer while loading ── */
+    .skeleton { animation: shimmer 1.4s infinite linear; background: linear-gradient(90deg,var(--card) 25%,var(--card-hover) 50%,var(--card) 75%); background-size:200% 100%; border-radius:4px; height:14px; }
+    @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+
+    /* ── Summary cards below table ── */
+    .summary-grid { display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:1rem;margin:1.5rem 0; }
+    .sum-card { background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:1.1rem 1.25rem; }
+    .sum-card-hdr { display:flex;align-items:center;gap:.5rem;margin-bottom:.75rem; }
+    .sum-card-icon { font-size:1.3rem; }
+    .sum-card-title { font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted); }
+    .sum-card-val { font-size:1.55rem;font-weight:900;margin-bottom:.2rem; }
+    .sum-card-sub { font-size:.78rem;color:var(--muted); }
+
+    /* ── Feature explanations ── */
+    .feat-explain { display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:.85rem;margin:1.5rem 0; }
+    .feat-card { background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:.9rem 1rem; }
+    .feat-card-num { display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:var(--primary);color:#000;font-weight:900;font-size:.72rem;margin-right:.5rem;flex-shrink:0; }
+    .feat-card-name { font-weight:700;font-size:.85rem;color:var(--text); }
+    .feat-card-body { font-size:.78rem;color:var(--muted);margin-top:.4rem;line-height:1.6; }
+    .feat-card-range { display:flex;justify-content:space-between;margin-top:.4rem;font-size:.72rem; }
+    .fr-bear { color:#f87171; } .fr-bull { color:#34d399; }
+
+    /* ── Confidence bar ── */
+    .conf-bar-wrap { display:flex;align-items:center;gap:.45rem; }
+    .conf-bar { flex:1;height:6px;background:var(--border);border-radius:3px;overflow:hidden;min-width:50px; }
+    .conf-bar-fill { height:100%;border-radius:3px; }
+    .conf-val { font-family:'Consolas',monospace;font-size:.8rem;font-weight:700;min-width:36px; }
+
+    /* ── Filter bar ── */
+    .filter-bar { display:flex;flex-wrap:wrap;align-items:center;gap:.6rem;margin:1.2rem 0; }
+    .filter-pill { padding:.3rem .85rem;border-radius:99px;border:1px solid var(--border);
+      background:transparent;color:var(--muted);font-size:.78rem;font-weight:700;cursor:pointer;transition:all .15s; }
+    .filter-pill.active { background:rgba(34,211,238,.12);border-color:var(--accent);color:var(--accent); }
+    .filter-pill:hover:not(.active) { border-color:var(--muted);color:var(--text); }
+
+    /* ── Column sort indicators ── */
+    th.sortable { cursor:pointer;user-select:none; }
+    th.sortable:hover { color:var(--text); }
+    th.sort-asc::after  { content:' ↑'; color:var(--accent); }
+    th.sort-desc::after { content:' ↓'; color:var(--accent); }
+
+    /* ── Error / empty state ── */
+    .empty-state { text-align:center;padding:3rem;color:var(--muted); }
+    .empty-icon { font-size:2.5rem;margin-bottom:.75rem; }
+
+    @media(max-width:800px) { .ka-hero h1{font-size:1.6rem;} }
+  </style>
+</head>
+<body>
+
+<!-- ── Main Nav ── -->
+<nav class="nav">
+  <a href="index.html" class="nav-logo">
+    <img src="images/steve.jpg" class="nav-logo-photo" alt="Stephen Borick">
+    <div class="nav-logo-text">
+      <span class="nav-company">Artificial Intelligence</span>
+      <span class="nav-name">Solutions, Inc.</span>
+    </div>
+  </a>
+  <ul class="nav-links">
+    <li><a href="index.html">Home</a></li>
+    <li><a href="neural-networks.html">Neural Networks</a></li>
+    <li><a href="machine-learning.html">Machine Learning</a></li>
+    <li><a href="ml-trading.html">ML in Trading</a></li>
+    <li><a href="ml-sp500-example.html">ML Example</a></li>
+    <li><a href="stock-trading.html">Stock Trading</a></li>
+    <li><a href="options-trading.html">Options</a></li>
+    <li><a href="futures-trading.html">Futures</a></li>
+    <li><a href="live-trading.html">Live Trading</a></li>
+  </ul>
+</nav>
+
+<!-- ── Page Nav ── -->
+<nav class="page-nav">
+  <a href="live-trading.html">← Live Trading</a>
+  <span class="page-nav-sep">|</span>
+  <a href="market-summary.html">Market Summary</a>
+  <span class="page-nav-sep">|</span>
+  <a href="terminology.html">Terminology 📖</a>
+  <span class="page-nav-sep">|</span>
+  <a href="ml-sp500-example.html">ML Example 🧠</a>
+  <span class="page-nav-sep">|</span>
+  <a href="ml-key-assets.html" class="active">ML Key Assets</a>
+  <span class="page-nav-sep">|</span>
+  <a href="ml-xgboost-assets.html">XGBoost Charts 📊</a>
+  <span class="page-nav-sep">|</span>
+  <a href="gamma-exposure.html">GEX Charts 🎯</a>
+  <span class="page-nav-sep">|</span>
+  <a href="options-strategy.html">Options Strategy 📈</a>
+  <span class="page-nav-sep">|</span>
+  <a href="option-flows.html">Option Flows 🌊</a>
+  <span class="page-nav-sep">|</span>
+  <a href="options-summary.html">Options Summary 📊</a>
+  <span class="page-nav-sep">|</span>
+  <a href="0dte-options.html">0DTE 🔥</a>
+  <span class="page-nav-sep">|</span>
+  <a href="fundamentals.html">Fundamentals 📋</a>
+  <span class="page-nav-sep">|</span>
+  <a href="institutional-buyers.html">Institutional 🏦</a>
+</nav>
+
+<!-- ── Breadcrumb ── -->
+<div style="background:var(--surface);border-bottom:1px solid var(--border);">
+  <div style="max-width:1400px;margin:0 auto;padding:.5rem 1.5rem;font-size:.82rem;color:var(--muted);display:flex;align-items:center;gap:.45rem;">
+    <a href="index.html" style="color:var(--muted);">AI Course</a>›</span>
+    <a href="ml-sp500-example.html" style="color:var(--muted);">ML Example</a>›</span>
+    <span style="color:var(--text);">Machine Learning for Key Assets</span>
+  </div>
+</div>
+
+<!-- ── Hero ── -->
+<section class="ka-hero">
+  <div style="display:inline-block;padding:.28rem .85rem;background:rgba(34,211,238,.1);border:1px solid rgba(34,211,238,.25);border-radius:999px;color:var(--primary);font-size:.78rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;margin-bottom:1rem;">
+    Live ML Feature Heatmap
+  </div>
+  <h1>Machine Learning<br>for Key Assets</h1>
+  <p>
+    The <strong style="color:var(--text);">top 11 ML features</strong> scored live for every tracked
+    stock, options underlying, and futures contract — revealing which assets are
+    <span style="color:#34d399;font-weight:700;">BULLISH</span>,
+    <span style="color:#f87171;font-weight:700;">BEARISH</span>, or
+    <span style="color:#fbbf24;font-weight:700;">NEUTRAL</span>
+    according to the machine learning model right now.
+  </p>
+</section>
+
+<!-- ── Stats Strip ── -->
+<div class="stats-strip" id="statsStrip">
+  <div class="stat-cell"><div class="stat-val" id="statBull" style="color:#34d399;">—</div><div class="stat-lbl">Bullish Assets</div></div>
+  <div class="stat-cell"><div class="stat-val" id="statBear" style="color:#f87171;">—</div><div class="stat-lbl">Bearish Assets</div></div>
+  <div class="stat-cell"><div class="stat-val" id="statNeut" style="color:#fbbf24;">—</div><div class="stat-lbl">Neutral Assets</div></div>
+  <div class="stat-cell"><div class="stat-val" id="statTotal" style="color:#22d3ee;">—</div><div class="stat-lbl">Total Tracked</div></div>
+  <div class="stat-cell"><div class="stat-val" id="statBullPct" style="color:#34d399;">—</div><div class="stat-lbl">Bull %</div></div>
+  <div class="stat-cell"><div class="stat-val" id="statTs" style="color:#7fa3be;font-size:.85rem;">—</div><div class="stat-lbl">Last Updated</div></div>
+</div>
+
+<div class="ka-wrap" style="padding-top:1.2rem;">
+
+  <!-- Server bar -->
+  <div class="server-bar">
+    <div class="sdot loading" id="sdot"></div>
+    <span class="smsg" id="smsg">Connecting to ML server and computing features…</span>
+    <button class="rbtn" onclick="loadData(true)">↻ Refresh</button>
+    <a href="live-trading.html" class="rbtn" style="text-decoration:none;">📡 Live Trading</a>
+  </div>
+
+  <!-- Filter bar -->
+  <div class="filter-bar">
+    <span style="font-size:.75rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;">Filter:</span>
+    <button class="filter-pill active" onclick="setFilter('all',this)">All Assets</button>
+    <button class="filter-pill" onclick="setFilter('ETFs',this)">ETFs</button>
+    <button class="filter-pill" onclick="setFilter('Mag 7',this)">Mag 7</button>
+    <button class="filter-pill" onclick="setFilter('Blue Chips',this)">Blue Chips</button>
+    <button class="filter-pill" onclick="setFilter('Futures',this)">Futures</button>
+    <button class="filter-pill" onclick="setFilter('BULLISH',this)" style="margin-left:.5rem;border-color:rgba(52,211,153,.35);color:#34d399;">▲ Bullish Only</button>
+    <button class="filter-pill" onclick="setFilter('BEARISH',this)" style="border-color:rgba(248,113,113,.35);color:#f87171;">▼ Bearish Only</button>
+    <button class="filter-pill" onclick="setFilter('BUY',this)" style="border-color:rgba(52,211,153,.25);color:#34d399;">BUY Signal</button>
+    <button class="filter-pill" onclick="setFilter('SELL',this)" style="border-color:rgba(248,113,113,.25);color:#f87171;">SELL Signal</button>
+  </div>
+
+  <!-- ── Feature Legend ── -->
+  <div class="feat-legend" id="featLegend">
+    <span style="font-size:.75rem;font-weight:700;color:var(--muted);align-self:center;text-transform:uppercase;letter-spacing:.07em;">Features:</span>
+    <span class="feat-pill"><span class="feat-pill-num">①</span>RSI(14)</span>
+    <span class="feat-pill"><span class="feat-pill-num">②</span>MACD Hist</span>
+    <span class="feat-pill"><span class="feat-pill-num">③</span>ATR%</span>
+    <span class="feat-pill"><span class="feat-pill-num">④</span>SMA20 Ratio</span>
+    <span class="feat-pill"><span class="feat-pill-num">⑤</span>BB Position</span>
+    <span class="feat-pill"><span class="feat-pill-num">⑥</span>Vol Ratio</span>
+    <span class="feat-pill"><span class="feat-pill-num">⑦</span>5-Bar Ret%</span>
+    <span class="feat-pill"><span class="feat-pill-num">⑧</span>OBV Trend</span>
+    <span class="feat-pill"><span class="feat-pill-num">⑨</span>Stoch %K</span>
+    <span class="feat-pill"><span class="feat-pill-num">⑩</span>ADX</span>
+    <span class="feat-pill"><span class="feat-pill-num">⑪</span>Sharpe(20)</span>
+  </div>
+
+  <!-- ── Main Table ── -->
+  <div class="tbl-outer" id="tblOuter">
+    <table class="feat-tbl" id="featTbl">
+      <thead>
+        <tr>
+          <th class="th-asset th-left">Asset</th>
+          <th>Close</th>
+          <th class="sortable" onclick="sortBy('trend')" title="Overall ML Trend">Trend</th>
+          <th class="sortable" onclick="sortBy('signal')" title="BUY / HOLD / SELL Signal">Signal</th>
+          <th class="sortable" onclick="sortBy('prob_up')" title="P(UP) Probability from ML classifier">P(UP)%</th>
+          <!-- Feature columns -->
+          <th title="RSI(14) — Relative Strength Index. &lt;30 oversold (bull), &gt;70 overbought (bear)">① RSI</th>
+          <th title="MACD Histogram — MACD line minus signal line. Positive = bullish momentum">② MACD H</th>
+          <th title="ATR% — Average True Range as % of price. Higher = more volatile">③ ATR%</th>
+          <th title="SMA20 Ratio — Close ÷ 20-bar SMA. &gt;1 = above moving average (bullish)">④ SMA20</th>
+          <th title="Bollinger Band Position — 0 = lower band, 1 = upper band. &gt;0.5 = upper half (bullish)">⑤ BB Pos</th>
+          <th title="Volume Ratio — Current volume ÷ 20-bar avg. &gt;1.2 = elevated volume">⑥ Vol Rt</th>
+          <th title="5-Bar Return — % price change over last 5 bars. Positive = recent uptrend">⑦ Ret5%</th>
+          <th title="OBV Trend — On-Balance Volume slope, normalized −1 to +1. Positive = buying pressure">⑧ OBV</th>
+          <th title="Stochastic %K — 14-period stochastic. &lt;20 oversold, &gt;80 overbought">⑨ Stoch</th>
+          <th title="ADX — Average Directional Index. &gt;25 = trending market, &lt;20 = choppy">⑩ ADX</th>
+          <th class="sortable" onclick="sortBy('sharpe')" title="Sharpe Ratio (20-bar annualized) — risk-adjusted return. &gt;1 excellent, &lt;0 negative">⑪ Sharpe</th>
+        </tr>
+      </thead>
+      <tbody id="tblBody">
+        <!-- skeleton rows -->
+        <tr><td class="sym-cell" colspan="16" style="padding:2rem;text-align:center;">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:.75rem;">
+            <div style="font-size:1.5rem;">⚙️</div>
+            <div style="color:var(--muted);font-size:.9rem;">Computing ML features for all assets…</div>
+            <div style="color:var(--muted);font-size:.8rem;">(This may take 20–40 seconds on first load while models train)</div>
+          </div>
+        </td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ── Summary Cards ── -->
+  <div id="summarySection" style="display:none;">
+    <hr style="border:none;border-top:1px solid var(--border);margin:2rem 0;">
+    <div style="font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin-bottom:1rem;">Market Breadth Summary</div>
+    <div class="summary-grid" id="summaryGrid"></div>
+  </div>
+
+  <!-- ── Feature Explanations ── -->
+  <hr style="border:none;border-top:1px solid var(--border);margin:2.5rem 0;">
+  <div style="font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin-bottom:1rem;">How to Read the Feature Heatmap</div>
+  <div style="background:rgba(34,211,238,.06);border:1px solid rgba(34,211,238,.18);border-left:3px solid var(--primary);border-radius:8px;padding:.9rem 1.2rem;margin-bottom:1.2rem;font-size:.88rem;line-height:1.7;">
+    Each cell is <span style="background:rgba(52,211,153,.25);color:#34d399;padding:.1rem .4rem;border-radius:3px;font-weight:700;">green</span> when the feature is bullish for that asset,
+    <span style="background:rgba(248,113,113,.25);color:#f87171;padding:.1rem .4rem;border-radius:3px;font-weight:700;">red</span> when bearish,
+    and <span style="background:rgba(255,255,255,.06);color:var(--muted);padding:.1rem .4rem;border-radius:3px;">neutral</span> otherwise.
+    The <strong style="color:var(--text);">Trend</strong> column is the overall ML verdict —
+    a weighted combination of all 11 features plus the ensemble classifier's P(UP) probability.
+    Click any column header to sort. Use the filter buttons to focus on specific groups or signals.
+  </div>
+
+  <div class="feat-explain">
+    <div class="feat-card">
+      <div><span class="feat-card-num">①</span><span class="feat-card-name">RSI (14) — Relative Strength Index</span></div>
+      <div class="feat-card-body">Momentum oscillator measuring the speed and magnitude of recent price changes. Compares average gains vs average losses over 14 bars. The single highest-importance feature in the ML model (14.2%).</div>
+      <div class="feat-card-range"><span class="fr-bear">0–30 Oversold → Bullish reversal zone</span><span class="fr-bull">70–100 Overbought → Bearish reversal zone</span></div>
+    </div>
+    <div class="feat-card">
+      <div><span class="feat-card-num">②</span><span class="feat-card-name">MACD Histogram</span></div>
+      <div class="feat-card-body">Difference between the MACD line (EMA12−EMA26) and the 9-bar signal line. Captures momentum shifts and divergences. Rising histogram = accelerating momentum. Second most important feature (11.8%).</div>
+      <div class="feat-card-range"><span class="fr-bull">Positive → Bullish momentum</span><span class="fr-bear">Negative → Bearish momentum</span></div>
+    </div>
+    <div class="feat-card">
+      <div><span class="feat-card-num">③</span><span class="feat-card-name">ATR % — Average True Range</span></div>
+      <div class="feat-card-body">14-bar average true range expressed as a percentage of price. Measures current volatility. High ATR signals wider expected moves and larger stops are needed. Critical for position sizing and stop placement (10.7%).</div>
+      <div class="feat-card-range"><span class="fr-bull">&lt;0.5% Low vol, tight stops</span><span class="fr-bear">&gt;2% High vol, wide stops</span></div>
+    </div>
+    <div class="feat-card">
+      <div><span class="feat-card-num">④</span><span class="feat-card-name">SMA20 Ratio — Price vs 20-bar SMA</span></div>
+      <div class="feat-card-body">Close price divided by the 20-bar simple moving average. Values above 1.0 mean price is above its short-term average (uptrend); below 1.0 means downtrend. Used to determine mean-reversion vs trend-following conditions (9.6%).</div>
+      <div class="feat-card-range"><span class="fr-bull">&gt;1.002 Above SMA → Bullish</span><span class="fr-bear">&lt;0.998 Below SMA → Bearish</span></div>
+    </div>
+    <div class="feat-card">
+      <div><span class="feat-card-num">⑤</span><span class="feat-card-name">BB Position — Bollinger Band %B</span></div>
+      <div class="feat-card-body">Position of price within the Bollinger Bands (0 = lower band, 1 = upper band). Values near 0 indicate oversold conditions near support; values near 1 indicate overbought near resistance. Critical for mean-reversion timing (8.8%).</div>
+      <div class="feat-card-range"><span class="fr-bull">0.0–0.3 Near lower band → Oversold</span><span class="fr-bear">0.7–1.0 Near upper band → Overbought</span></div>
+    </div>
+    <div class="feat-card">
+      <div><span class="feat-card-num">⑥</span><span class="feat-card-name">Volume Ratio</span></div>
+      <div class="feat-card-body">Current bar volume divided by the 20-bar rolling average volume. Values above 1.2 indicate elevated trading activity, confirming price moves. Volume spikes in the direction of trend add conviction to signals (8.2%).</div>
+      <div class="feat-card-range"><span class="fr-bull">&gt;1.5× High conviction move</span><span class="fr-bear">&lt;0.7× Low conviction, weak move</span></div>
+    </div>
+    <div class="feat-card">
+      <div><span class="feat-card-num">⑦</span><span class="feat-card-name">5-Bar Return (%)</span></div>
+      <div class="feat-card-body">Percentage price change over the last 5 bars (5 hours on hourly charts, 5 days on daily). Captures short-term momentum and recent trend direction. Positive values indicate recent uptrend; negative = downtrend (7.4%).</div>
+      <div class="feat-card-range"><span class="fr-bull">Positive → Recent uptrend</span><span class="fr-bear">Negative → Recent downtrend</span></div>
+    </div>
+    <div class="feat-card">
+      <div><span class="feat-card-num">⑧</span><span class="feat-card-name">OBV Trend — On-Balance Volume</span></div>
+      <div class="feat-card-body">Normalized 10-bar slope of On-Balance Volume (OBV), scaled to [−1, +1]. OBV adds volume on up bars and subtracts on down bars; rising OBV indicates institutional accumulation. Divergence from price is a leading indicator (6.3%).</div>
+      <div class="feat-card-range"><span class="fr-bull">&gt;0.1 Buying pressure / accumulation</span><span class="fr-bear">&lt;−0.1 Selling pressure / distribution</span></div>
+    </div>
+    <div class="feat-card">
+      <div><span class="feat-card-num">⑨</span><span class="feat-card-name">Stochastic %K (14-period)</span></div>
+      <div class="feat-card-body">Position of current close within the 14-bar high-low range, expressed as 0–100%. Identifies overbought and oversold conditions similar to RSI but more sensitive to recent extremes. Used with RSI for confluence signals (5.7%).</div>
+      <div class="feat-card-range"><span class="fr-bull">0–20 Oversold zone</span><span class="fr-bear">80–100 Overbought zone</span></div>
+    </div>
+    <div class="feat-card">
+      <div><span class="feat-card-num">⑩</span><span class="feat-card-name">ADX — Average Directional Index</span></div>
+      <div class="feat-card-body">Measures trend strength on a 0–100 scale. Does NOT indicate direction — it measures whether a trend exists. ADX &gt;25 confirms a trending market where momentum strategies work; ADX &lt;20 signals choppy/ranging conditions (4.9%).</div>
+      <div class="feat-card-range"><span class="fr-bear">&lt;20 No trend / choppy</span><span class="fr-bull">&gt;25 Strong trend present</span></div>
+    </div>
+    <div class="feat-card">
+      <div><span class="feat-card-num">⑪</span><span class="feat-card-name">Sharpe Ratio (20-bar, annualized)</span></div>
+      <div class="feat-card-body">Rolling 20-bar Sharpe ratio annualized to a yearly scale: (avg daily return ÷ std dev) × √252. Measures risk-adjusted return — how much return is earned per unit of risk. Positive means the asset has been rewarding recently; negative means losses relative to volatility.</div>
+      <div class="feat-card-range"><span class="fr-bear">&lt;0 Negative risk-adj return</span><span class="fr-bull">&gt;1.0 Strong risk-adj return</span></div>
+    </div>
+  </div>
+
+  <!-- Bottom page nav -->
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-top:3rem;flex-wrap:wrap;gap:1rem;border-top:1px solid var(--border);padding-top:1.5rem;">
+    <a href="ml-sp500-example.html" style="color:var(--muted);text-decoration:none;font-size:.9rem;">← ML S&amp;P 500 Example</a>
+    <a href="live-trading.html" class="hero-cta" style="font-size:.88rem;padding:.6rem 1.4rem;">Open Live Dashboard →</a>
+  </div>
+
+</div><!-- /ka-wrap -->
+
+<script>
+const API = 'http://localhost:5050';
+
+// ── Feature metadata (display, heatmap logic) ────────────────────────────────
+const FEAT_META = {
+  rsi:         { lbl:'RSI',    fmt: v => v.toFixed(1),
+                 color: v => v < 35 ? 'bull' : v > 65 ? 'bear' : 'neut' },
+  macd_hist:   { lbl:'MACD H', fmt: v => v > 0 ? '+'+v.toFixed(3) : v.toFixed(3),
+                 color: v => v > 0.05 ? 'bull' : v < -0.05 ? 'bear' : 'neut' },
+  atr_pct:     { lbl:'ATR%',   fmt: v => v.toFixed(3)+'%',
+                 color: v => v < 0.4 ? 'bull' : v > 1.5 ? 'bear' : 'neut' },
+  sma20_ratio: { lbl:'SMA20',  fmt: v => v.toFixed(4),
+                 color: v => v > 1.002 ? 'bull' : v < 0.998 ? 'bear' : 'neut' },
+  bb_pos:      { lbl:'BB Pos', fmt: v => (v*100).toFixed(1)+'%',
+                 color: v => v < 0.32 ? 'bull' : v > 0.70 ? 'bear' : 'neut' },
+  vol_ratio:   { lbl:'Vol Rt', fmt: v => v.toFixed(2)+'×',
+                 color: v => v > 1.4 ? 'bull' : v < 0.7 ? 'bear' : 'neut' },
+  ret5:        { lbl:'Ret5%',  fmt: v => (v*100 > 0 ? '+' : '') + (v*100).toFixed(2)+'%',
+                 color: v => v > 0.003 ? 'bull' : v < -0.003 ? 'bear' : 'neut' },
+  obv_trend:   { lbl:'OBV',    fmt: v => v > 0 ? '+'+v.toFixed(3) : v.toFixed(3),
+                 color: v => v > 0.08 ? 'bull' : v < -0.08 ? 'bear' : 'neut' },
+  stoch_k:     { lbl:'Stoch',  fmt: v => v.toFixed(1),
+                 color: v => v < 25 ? 'bull' : v > 78 ? 'bear' : 'neut' },
+  adx:         { lbl:'ADX',    fmt: v => v.toFixed(1),
+                 color: v => v > 28 ? 'bull' : v < 15 ? 'bear' : 'neut' },
+  sharpe_20:   { lbl:'Sharpe', fmt: v => v.toFixed(2),
+                 color: v => v > 1.0 ? 'bull' : v < 0 ? 'bear' : 'neut' },
+};
+const FEAT_ORDER = ['rsi','macd_hist','atr_pct','sma20_ratio','bb_pos',
+                    'vol_ratio','ret5','obv_trend','stoch_k','adx','sharpe_20'];
+
+// ── Cell background colours ──────────────────────────────────────────────────
+const CELL_BG = {
+  bull: 'rgba(52,211,153,.18)',
+  bear: 'rgba(248,113,113,.18)',
+  neut: '',
+};
+const CELL_FG = {
+  bull: '#34d399',
+  bear: '#f87171',
+  neut: '#7fa3be',
+};
+
+// ── State ────────────────────────────────────────────────────────────────────
+let _allRows = [];
+let _activeFilter = 'all';
+let _sortKey = null;
+let _sortDir = 1;
+
+// ── Load data from server ────────────────────────────────────────────────────
+async function loadData(nocache = false) {
+  setStatus('loading', 'Computing ML features for all assets…');
+
+  try {
+    const url = `${API}/api/feature-table${nocache ? '?nocache=1' : ''}`;
+    const res = await fetch(url, { cache: 'no-store' });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+
+    if (!data.assets || data.assets.length === 0) {
+      setStatus('error', 'No asset data returned from server.');
+      return;
+    }
+
+    _allRows = data.assets;
+    renderTable(_allRows);
+    renderStats(_allRows);
+    renderSummary(_allRows);
+
+    const ts = data.timestamp ? new Date(data.timestamp).toLocaleTimeString() : '';
+    setStatus('ok', `${data.count} assets loaded · ${ts} · auto-refreshes every 5 min`);
+    document.getElementById('statTs').textContent = ts || '—';
+  } catch (e) {
+    setStatus('error', `Server error: ${e.message}. Is Flask running on port 5050?`);
+    renderErrorState();
+  }
+}
+
+function setStatus(state, msg) {
+  const dot = document.getElementById('sdot');
+  const smsg = document.getElementById('smsg');
+  dot.className = 'sdot ' + (state === 'ok' ? 'on' : state === 'loading' ? 'loading' : '');
+  smsg.textContent = msg;
+}
+
+// ── Apply filter ─────────────────────────────────────────────────────────────
+function setFilter(f, btn) {
+  _activeFilter = f;
+  document.querySelectorAll('.filter-pill').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderTable(_allRows);
+}
+
+function filteredRows() {
+  return _allRows.filter(r => {
+    if (_activeFilter === 'all')     return true;
+    if (_activeFilter === 'BULLISH') return r.trend === 'BULLISH';
+    if (_activeFilter === 'BEARISH') return r.trend === 'BEARISH';
+    if (_activeFilter === 'BUY')     return r.signal === 'BUY';
+    if (_activeFilter === 'SELL')    return r.signal === 'SELL';
+    return r.group === _activeFilter;
+  });
+}
+
+// ── Sort ──────────────────────────────────────────────────────────────────────
+function sortBy(key) {
+  if (_sortKey === key) _sortDir *= -1;
+  else { _sortKey = key; _sortDir = 1; }
+
+  const heads = document.querySelectorAll('.feat-tbl th.sortable');
+  heads.forEach(th => {
+    th.classList.remove('sort-asc','sort-desc');
+    if (th.getAttribute('onclick') === `sortBy('${key}')`) {
+      th.classList.add(_sortDir === 1 ? 'sort-desc' : 'sort-asc');
+    }
+  });
+
+  const ordMap = { 'BULLISH': 0, 'NEUTRAL': 1, 'BEARISH': 2 };
+  const sigMap  = { 'BUY': 0, 'HOLD': 1, 'SELL': 2 };
+  _allRows.sort((a, b) => {
+    let va = key === 'trend'  ? ordMap[a.trend]  ?? 1 :
+             key === 'signal' ? sigMap[a.signal] ?? 1 :
+             key === 'prob_up'? a.prob_up :
+             key === 'sharpe' ? (a.features?.sharpe_20 ?? -99) : 0;
+    let vb = key === 'trend'  ? ordMap[b.trend]  ?? 1 :
+             key === 'signal' ? sigMap[b.signal] ?? 1 :
+             key === 'prob_up'? b.prob_up :
+             key === 'sharpe' ? (b.features?.sharpe_20 ?? -99) : 0;
+    return (va - vb) * _sortDir;
+  });
+  renderTable(_allRows);
+}
+
+// ── Render table ─────────────────────────────────────────────────────────────
+function renderTable(allData) {
+  const rows   = filteredRows();
+  const tbody  = document.getElementById('tblBody');
+  if (rows.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="16" class="empty-state"><div class="empty-icon">🔍</div><div>No assets match this filter.</div></td></tr>`;
+    return;
+  }
+
+  let html = '';
+  let lastGroup = null;
+
+  rows.forEach(r => {
+    // Group header
+    if (r.group !== lastGroup) {
+      const grpBull = allData.filter(x => x.group === r.group && x.trend === 'BULLISH').length;
+      const grpBear = allData.filter(x => x.group === r.group && x.trend === 'BEARISH').length;
+      const grpTot  = allData.filter(x => x.group === r.group).length;
+      html += `<tr class="grp-hdr"><td colspan="16">
+        ${r.group}
+        <span style="font-weight:400;color:var(--muted);margin-left:.75rem;font-size:.7rem;">
+          ${grpTot} assets —
+          <span style="color:#34d399;">${grpBull} Bull</span> /
+          <span style="color:#f87171;">${grpBear} Bear</span>
+        </span>
+      </td></tr>`;
+      lastGroup = r.group;
+    }
+
+    const tClass = r.trend === 'BULLISH' ? 'trend-bull' : r.trend === 'BEARISH' ? 'trend-bear' : 'trend-neut';
+    const sClass = r.signal === 'BUY' ? 'sig-b' : r.signal === 'SELL' ? 'sig-s' : 'sig-h';
+    const tArrow = r.trend === 'BULLISH' ? '▲' : r.trend === 'BEARISH' ? '▼' : '—';
+    const pct    = (r.prob_up * 100).toFixed(1);
+    const pColor = r.prob_up >= 0.60 ? '#34d399' : r.prob_up <= 0.40 ? '#f87171' : '#fbbf24';
+    const barPct = r.prob_up * 100;
+    const typeClass = r.asset_type === 'futures' ? 't-futures' : r.asset_type === 'options' ? 't-options' : 't-stock';
+    const typeLbl   = r.asset_type === 'futures' ? 'FUTURES' : r.asset_type === 'options' ? 'OPTIONS' : 'STOCK';
+
+    // Feature cells
+    let featCells = '';
+    FEAT_ORDER.forEach(fk => {
+      const meta = FEAT_META[fk];
+      const val  = r.features ? r.features[fk] : null;
+      if (val === null || val === undefined) {
+        featCells += `<td><span class="fc" style="color:var(--muted)">—</span></td>`;
+        return;
+      }
+      const cat = meta.color(val);
+      const bg  = CELL_BG[cat];
+      const fg  = CELL_FG[cat];
+      featCells += `<td style="${bg ? 'background:'+bg+';' : ''}">
+        <span class="fc" style="color:${fg}">${meta.fmt(val)}</span>
+      </td>`;
+    });
+
+    const closeStr = r.close >= 1000 ? r.close.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})
+                                     : r.close.toFixed(2);
+
+    html += `<tr>
+      <td class="sym-cell">
+        <a href="live-trading.html?sym=${encodeURIComponent(r.symbol)}" style="text-decoration:none;">
+          <div class="sym-ticker">${r.symbol}</div>
+          <div class="sym-name">${r.label.replace(/ \(.*\)$/,'')}</div>
+          <span class="sym-type ${typeClass}">${typeLbl}</span>
+        </a>
+      </td>
+      <td style="font-family:'Consolas',monospace;color:var(--text);font-weight:600;">$${closeStr}</td>
+      <td><span class="${tClass}">${tArrow} ${r.trend}</span></td>
+      <td><span class="${sClass}">${r.signal}</span></td>
+      <td>
+        <div class="conf-bar-wrap">
+          <div class="conf-bar">
+            <div class="conf-bar-fill" style="width:${barPct}%;background:${pColor};"></div>
+          </div>
+          <span class="conf-val" style="color:${pColor}">${pct}%</span>
+        </div>
+      </td>
+      ${featCells}
+    </tr>`;
+  });
+
+  tbody.innerHTML = html;
+}
+
+// ── Render stats strip ────────────────────────────────────────────────────────
+function renderStats(rows) {
+  const bull = rows.filter(r => r.trend === 'BULLISH').length;
+  const bear = rows.filter(r => r.trend === 'BEARISH').length;
+  const neut = rows.filter(r => r.trend === 'NEUTRAL').length;
+  const tot  = rows.length;
+  document.getElementById('statBull').textContent = bull;
+  document.getElementById('statBear').textContent = bear;
+  document.getElementById('statNeut').textContent = neut;
+  document.getElementById('statTotal').textContent = tot;
+  document.getElementById('statBullPct').textContent = tot > 0 ? (bull/tot*100).toFixed(0)+'%' : '—';
+}
+
+// ── Render summary cards ──────────────────────────────────────────────────────
+function renderSummary(rows) {
+  const sec  = document.getElementById('summarySection');
+  const grid = document.getElementById('summaryGrid');
+  sec.style.display = 'block';
+
+  const bull = rows.filter(r => r.trend === 'BULLISH');
+  const bear = rows.filter(r => r.trend === 'BEARISH');
+  const buys = rows.filter(r => r.signal === 'BUY');
+  const sells= rows.filter(r => r.signal === 'SELL');
+
+  const topBull = [...bull].sort((a,b) => b.prob_up - a.prob_up).slice(0,3).map(r => r.symbol).join(' · ') || 'None';
+  const topBear = [...bear].sort((a,b) => a.prob_up - b.prob_up).slice(0,3).map(r => r.symbol).join(' · ') || 'None';
+
+  const avgProb = rows.reduce((s,r) => s + r.prob_up, 0) / (rows.length || 1);
+  const mktBias = avgProb > 0.55 ? 'Bullish Bias' : avgProb < 0.45 ? 'Bearish Bias' : 'Neutral Bias';
+  const mktCol  = avgProb > 0.55 ? '#34d399' : avgProb < 0.45 ? '#f87171' : '#fbbf24';
+
+  // Count bullish / bearish per feature across all assets
+  const featBull = {}, featBear = {};
+  FEAT_ORDER.forEach(fk => { featBull[fk] = 0; featBear[fk] = 0; });
+  rows.forEach(r => {
+    FEAT_ORDER.forEach(fk => {
+      const meta = FEAT_META[fk];
+      const val  = r.features?.[fk];
+      if (val == null) return;
+      const c = meta.color(val);
+      if (c === 'bull') featBull[fk]++;
+      if (c === 'bear') featBear[fk]++;
+    });
+  });
+  const bestFeat  = FEAT_ORDER.reduce((best, fk) => featBull[fk] > featBull[best] ? fk : best, FEAT_ORDER[0]);
+  const worstFeat = FEAT_ORDER.reduce((worst, fk) => featBear[fk] > featBear[worst] ? fk : worst, FEAT_ORDER[0]);
+
+  const highVolCount = rows.filter(r => r.vol_regime === 2).length;
+
+  grid.innerHTML = `
+    <div class="sum-card">
+      <div class="sum-card-hdr"><span class="sum-card-icon">🌐</span><span class="sum-card-title">Market Bias</span></div>
+      <div class="sum-card-val" style="color:${mktCol}">${mktBias}</div>
+      <div class="sum-card-sub">Avg P(UP): ${(avgProb*100).toFixed(1)}% across ${rows.length} assets</div>
+    </div>
+    <div class="sum-card">
+      <div class="sum-card-hdr"><span class="sum-card-icon">▲</span><span class="sum-card-title">Top Bullish</span></div>
+      <div class="sum-card-val" style="color:#34d399;font-size:1.1rem;">${topBull}</div>
+      <div class="sum-card-sub">${bull.length} BULLISH assets · ${buys.length} BUY signals</div>
+    </div>
+    <div class="sum-card">
+      <div class="sum-card-hdr"><span class="sum-card-icon">▼</span><span class="sum-card-title">Top Bearish</span></div>
+      <div class="sum-card-val" style="color:#f87171;font-size:1.1rem;">${topBear}</div>
+      <div class="sum-card-sub">${bear.length} BEARISH assets · ${sells.length} SELL signals</div>
+    </div>
+    <div class="sum-card">
+      <div class="sum-card-hdr"><span class="sum-card-icon">⚡</span><span class="sum-card-title">Most Bullish Feature</span></div>
+      <div class="sum-card-val vcyan" style="color:#22d3ee;font-size:1.1rem;">${FEAT_META[bestFeat]?.lbl || bestFeat}</div>
+      <div class="sum-card-sub">${featBull[bestFeat]} assets bullish on this feature</div>
+    </div>
+    <div class="sum-card">
+      <div class="sum-card-hdr"><span class="sum-card-icon">⚠️</span><span class="sum-card-title">Most Bearish Feature</span></div>
+      <div class="sum-card-val" style="color:#f87171;font-size:1.1rem;">${FEAT_META[worstFeat]?.lbl || worstFeat}</div>
+      <div class="sum-card-sub">${featBear[worstFeat]} assets bearish on this feature</div>
+    </div>
+    <div class="sum-card">
+      <div class="sum-card-hdr"><span class="sum-card-icon">🌡️</span><span class="sum-card-title">High Volatility</span></div>
+      <div class="sum-card-val" style="color:#fbbf24">${highVolCount}</div>
+      <div class="sum-card-sub">${highVolCount} assets in high-vol regime · wider stops needed</div>
+    </div>
+  `;
+}
+
+// ── Error state ───────────────────────────────────────────────────────────────
+function renderErrorState() {
+  document.getElementById('tblBody').innerHTML = `
+    <tr><td colspan="16" class="empty-state">
+      <div class="empty-icon">⚠️</div>
+      <div style="margin-bottom:.5rem;">Cannot reach ML server at <code style="color:var(--primary);">localhost:5050</code></div>
+      <div style="font-size:.82rem;">Start the server: <code style="color:var(--primary);">py live-server.py</code></div>
+      <button onclick="loadData()" class="hero-cta" style="margin-top:1rem;font-size:.85rem;padding:.55rem 1.4rem;">Retry Connection</button>
+    </td></tr>`;
+}
+
+// ── Auto-refresh every 5 min ──────────────────────────────────────────────────
+window.addEventListener('load', () => loadData());
+setInterval(() => loadData(), 5 * 60 * 1000);
+</script>
+<script src="ibkr-widget.js"></script>
+</body>
+</html>

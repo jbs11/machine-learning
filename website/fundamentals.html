@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fundamentals — Financial Analysis &amp; Rankings</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    /* ── Layout ── */
+    .fund-wrap { max-width: 1600px; margin: 0 auto; padding: 0 1.5rem 6rem; }
+
+    /* ── Page nav ── */
+    .page-nav {
+      display: flex; align-items: center; gap: 1rem;
+      padding: .6rem 1.5rem; background: var(--surface);
+      border-bottom: 1px solid var(--border); font-size: .83rem; flex-wrap: wrap;
+    }
+    .page-nav a { color: var(--muted); text-decoration: none; padding: .3rem .7rem; border-radius: 5px; transition: color .15s, background .15s; }
+    .page-nav a:hover { color: var(--text); background: rgba(255,255,255,.06); }
+    .page-nav a.active { color: #10b981; font-weight: 700; }
+    .page-nav-sep { color: var(--border); }
+
+    /* ── Hero ── */
+    .fund-hero {
+      padding: 3.5rem 1.5rem 2.5rem; text-align: center;
+      background: radial-gradient(ellipse 80% 55% at 50% -5%, rgba(16,185,129,.13) 0%, transparent 65%), var(--bg);
+      border-bottom: 1px solid var(--border);
+    }
+    .fund-hero h1 {
+      font-size: clamp(1.8rem, 4vw, 3rem); font-weight: 900;
+      letter-spacing: -.03em; line-height: 1.15; margin-bottom: .8rem;
+      background: linear-gradient(135deg, #10b981 0%, #34d399 45%, #6ee7b7 80%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    .fund-hero p { color: var(--muted); font-size: 1.05rem; max-width: 760px; margin: 0 auto 1.5rem; line-height: 1.7; }
+    .fund-badge {
+      display: inline-flex; align-items: center; gap: .5rem;
+      padding: .3rem 1rem; background: rgba(16,185,129,.1);
+      border: 1px solid rgba(16,185,129,.3); border-radius: 999px;
+      color: #10b981; font-size: .78rem; font-weight: 600;
+      letter-spacing: .08em; text-transform: uppercase; margin-bottom: 1rem;
+    }
+
+    /* ── Stats strip ── */
+    .stats-strip { display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr));
+      gap:1px; background:var(--border); border-top:1px solid var(--border); border-bottom:1px solid var(--border); }
+    .stat-cell { background:var(--surface); padding:1rem 1.2rem; text-align:center; }
+    .stat-val  { font-size:1.4rem; font-weight:900; margin-bottom:.1rem; }
+    .stat-lbl  { font-size:.7rem; font-weight:600; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); }
+
+    /* ── Server bar ── */
+    .server-bar { display:flex;align-items:center;gap:.75rem;background:var(--surface);
+      border:1px solid var(--border);border-radius:8px;padding:.55rem 1.1rem;
+      margin:1.2rem 0;font-size:.85rem; }
+    .sdot { width:9px;height:9px;border-radius:50%;background:#f87171;flex-shrink:0;transition:background .3s; }
+    .sdot.on { background:#4ade80; } .sdot.loading { background:#fbbf24;animation:pulse 1s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1}50%{opacity:.35} }
+    .smsg { color:var(--muted); flex:1; }
+    .rbtn { background:transparent;border:1px solid var(--border);color:var(--muted);
+      padding:.28rem .75rem;border-radius:6px;cursor:pointer;font-size:.8rem;transition:border-color .2s,color .2s; }
+    .rbtn:hover { border-color:#10b981;color:#10b981; }
+
+    /* ── Filter bar ── */
+    .filter-bar { display:flex;flex-wrap:wrap;align-items:center;gap:.6rem;margin:1.2rem 0; }
+    .filter-pill { padding:.3rem .85rem;border-radius:99px;border:1px solid var(--border);
+      background:transparent;color:var(--muted);font-size:.78rem;font-weight:700;cursor:pointer;transition:all .15s; }
+    .filter-pill.active { background:rgba(16,185,129,.12);border-color:#10b981;color:#10b981; }
+    .filter-pill:hover:not(.active) { border-color:var(--muted);color:var(--text); }
+    .filter-sep { width:1px;height:20px;background:var(--border);flex-shrink:0; }
+    .sort-sel { background:var(--surface);border:1px solid var(--border);color:var(--muted);
+      padding:.28rem .75rem;border-radius:6px;font-size:.78rem;cursor:pointer;font-family:inherit; }
+
+    /* ── Asset card ── */
+    .fund-card { background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
+      overflow:hidden;margin-bottom:1.6rem;transition:border-color .2s,box-shadow .2s; }
+    .fund-card:hover { border-color:rgba(16,185,129,.3);box-shadow:0 4px 28px rgba(0,0,0,.3); }
+    .fund-card.sbuy-card { border-left:3px solid #059669; }
+    .fund-card.buy-card  { border-left:3px solid #10b981; }
+    .fund-card.hold-card { border-left:3px solid #fbbf24; }
+    .fund-card.sell-card { border-left:3px solid #f87171; }
+    .fund-card.na-card   { border-left:3px solid var(--border); }
+
+    /* Card header */
+    .fund-head { padding:.85rem 1.1rem .7rem;display:flex;align-items:flex-start;gap:.65rem;flex-wrap:wrap; }
+    .fund-sym  { font-family:'Consolas',monospace;font-size:1.1rem;font-weight:900;color:var(--text); }
+    .fund-name { font-size:.8rem;color:var(--muted);margin-top:.15rem; }
+    .fund-chips { display:flex;flex-wrap:wrap;gap:.35rem;align-items:center;margin-top:.3rem; }
+    .chip { font-size:.65rem;font-weight:700;letter-spacing:.05em;padding:.18rem .55rem;border-radius:5px; }
+    .chip-grp    { background:rgba(56,189,248,.1);color:#7dd3fc;border:1px solid rgba(56,189,248,.2); }
+    .chip-sector { background:rgba(168,85,247,.1);color:#c084fc;border:1px solid rgba(168,85,247,.2); }
+    .chip-etf    { background:rgba(167,139,250,.1);color:#c084fc;border:1px solid rgba(167,139,250,.2); }
+    .chip-stock  { background:rgba(34,211,238,.1);color:#22d3ee;border:1px solid rgba(34,211,238,.2); }
+    .fund-right { margin-left:auto;text-align:right;flex-shrink:0; }
+    .rating-chip { font-size:.78rem;font-weight:800;padding:.28rem .9rem;border-radius:8px;display:inline-block;letter-spacing:.04em; }
+    .rc-sbuy  { background:rgba(5,150,105,.2);color:#34d399;border:1px solid rgba(5,150,105,.4); }
+    .rc-buy   { background:rgba(16,185,129,.15);color:#10b981;border:1px solid rgba(16,185,129,.3); }
+    .rc-hold  { background:rgba(251,191,36,.15);color:#fbbf24;border:1px solid rgba(251,191,36,.3); }
+    .rc-sell  { background:rgba(248,113,113,.15);color:#f87171;border:1px solid rgba(248,113,113,.3); }
+    .rc-ssell { background:rgba(239,68,68,.2);color:#ef4444;border:1px solid rgba(239,68,68,.4); }
+    .rc-na    { background:rgba(156,163,175,.1);color:#6b7280;border:1px solid rgba(156,163,175,.2); }
+    .score-wrap { display:flex;align-items:center;gap:.5rem;margin-top:.45rem;justify-content:flex-end; }
+    .score-bar-bg { width:90px;height:5px;background:rgba(255,255,255,.07);border-radius:3px;overflow:hidden; }
+    .score-bar-fill { height:100%;border-radius:3px; }
+    .score-num { font-size:.72rem;font-weight:800;font-family:'Consolas',monospace; }
+
+    /* 3-col metrics grid */
+    .fund-grid { display:grid;grid-template-columns:1fr 1fr 1fr;gap:0;border-top:1px solid var(--border); }
+    @media(max-width:720px) { .fund-grid { grid-template-columns:1fr; } }
+    .fund-col { padding:.75rem 1rem;border-right:1px solid var(--border); }
+    .fund-col:last-child { border-right:none; }
+    .fc-title { font-size:.63rem;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:#10b981;margin-bottom:.5rem; }
+    .fc-row   { display:flex;justify-content:space-between;align-items:center;margin-bottom:.28rem;gap:.5rem; }
+    .fc-key   { font-size:.72rem;color:var(--muted); }
+    .fc-val   { font-size:.72rem;font-weight:700;font-family:'Consolas',monospace;text-align:right; }
+    .cv-green  { color:#10b981; }
+    .cv-red    { color:#f87171; }
+    .cv-yellow { color:#fbbf24; }
+    .cv-blue   { color:#38bdf8; }
+    .cv-muted  { color:var(--muted); }
+
+    /* Analyst target bar */
+    .tgt-section { border-top:1px solid var(--border);padding:.75rem 1.1rem .9rem; }
+    .tgt-title { font-size:.63rem;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:#10b981;margin-bottom:.65rem; }
+    .tgt-bar-outer { position:relative;height:32px; }
+    .tgt-bar-track { position:absolute;top:50%;transform:translateY(-50%);left:0;right:0;height:4px;background:rgba(255,255,255,.07);border-radius:2px; }
+    .tgt-bar-range { position:absolute;top:50%;transform:translateY(-50%);height:4px;border-radius:2px;background:rgba(16,185,129,.25); }
+    .tgt-marker-spot { position:absolute;top:50%;transform:translate(-50%,-50%);font-size:14px;line-height:1;cursor:default;z-index:2; }
+    .tgt-marker-mean { position:absolute;top:50%;transform:translate(-50%,-50%);font-size:14px;line-height:1;cursor:default;z-index:2; }
+    .tgt-axis { display:flex;justify-content:space-between;font-size:.63rem;color:var(--muted);font-family:'Consolas',monospace;margin-top:.25rem; }
+    .tgt-summary { display:flex;gap:1.5rem;flex-wrap:wrap;margin-top:.55rem; }
+    .tgt-item { display:flex;flex-direction:column; }
+    .ti-label { font-size:.6rem;text-transform:uppercase;letter-spacing:.07em;color:var(--muted); }
+    .ti-val   { font-size:.83rem;font-weight:800;font-family:'Consolas',monospace; }
+
+    /* Earnings section */
+    .earn-section { border-top:1px solid var(--border);padding:.7rem 1.1rem; }
+    .earn-title { font-size:.63rem;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:#10b981;margin-bottom:.45rem; }
+    .earn-row { display:flex;align-items:center;gap:.8rem;flex-wrap:wrap;margin-bottom:.4rem; }
+    .earn-date { font-family:'Consolas',monospace;font-size:.8rem;font-weight:700;color:var(--text); }
+    .earn-lbl  { font-size:.68rem;color:var(--muted); }
+    .upg-table { width:100%;border-collapse:collapse;margin-top:.4rem; }
+    .upg-table th { font-size:.6rem;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);
+      padding:.2rem .45rem;text-align:left;border-bottom:1px solid var(--border); }
+    .upg-table td { font-size:.68rem;padding:.22rem .45rem;border-bottom:1px solid rgba(255,255,255,.04); }
+    .upg-table tr:last-child td { border-bottom:none; }
+    .ug-firm  { color:var(--text);font-weight:600; }
+    .ug-buy   { color:#10b981;font-weight:700; }
+    .ug-hold  { color:#fbbf24;font-weight:700; }
+    .ug-sell  { color:#f87171;font-weight:700; }
+    .ug-date  { color:var(--muted);font-family:'Consolas',monospace;font-size:.63rem; }
+
+    /* News section */
+    .news-section { border-top:1px solid var(--border);padding:.7rem 1.1rem; }
+    .news-title { font-size:.63rem;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:#10b981;margin-bottom:.4rem; }
+    .news-list  { list-style:none;margin:0;padding:0; }
+    .news-list li { margin-bottom:.28rem;display:flex;align-items:baseline;gap:.4rem; }
+    .news-list a { color:var(--muted);font-size:.72rem;text-decoration:none;line-height:1.4;transition:color .15s;flex:1; }
+    .news-list a:hover { color:#10b981; }
+    .news-src  { font-size:.6rem;color:rgba(156,163,175,.5);flex-shrink:0; }
+
+    /* Links section */
+    .links-section { border-top:1px solid var(--border);padding:.65rem 1.1rem; }
+    .links-title { font-size:.63rem;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:#10b981;margin-bottom:.45rem; }
+    .links-row { display:flex;flex-wrap:wrap;gap:.4rem; }
+    .ext-link { font-size:.68rem;font-weight:600;padding:.22rem .7rem;border-radius:6px;
+      border:1px solid var(--border);color:var(--muted);text-decoration:none;transition:all .15s; }
+    .ext-link:hover { border-color:#10b981;color:#10b981;background:rgba(16,185,129,.06); }
+
+    /* Description */
+    .desc-section { border-top:1px solid var(--border);padding:.65rem 1.1rem .9rem; }
+    .desc-text { font-size:.72rem;color:var(--muted);line-height:1.65; }
+
+    /* ── Explanation cards ── */
+    .explain-grid { display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:1rem;margin-top:2.5rem; }
+    .explain-card { background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:1.2rem 1.4rem; }
+    .explain-card h3 { font-size:.92rem;font-weight:800;margin-bottom:.5rem;color:var(--text); }
+    .explain-card p  { font-size:.78rem;color:var(--muted);line-height:1.65; }
+    .explain-card ul { font-size:.78rem;color:var(--muted);line-height:1.65;padding-left:1.2rem;margin:.3rem 0 0; }
+    .explain-card li { margin-bottom:.25rem; }
+
+    /* Empty / error state */
+    .empty-state { text-align:center;padding:4rem 2rem;color:var(--muted); }
+    .empty-state h3 { font-size:1.1rem;font-weight:700;margin-bottom:.5rem;color:var(--text); }
+    .empty-state p  { font-size:.85rem; }
+    .empty-state code { background:rgba(255,255,255,.06);padding:.1rem .4rem;border-radius:4px;font-family:'Consolas',monospace; }
+  </style>
+</head>
+<body>
+
+<!-- ── Page Nav ── -->
+<nav class="page-nav">
+  <a href="live-trading.html">&#8592; Live Trading</a>
+  <span class="page-nav-sep">|</span>
+  <a href="market-summary.html">Market Summary</a>
+  <span class="page-nav-sep">|</span>
+  <a href="terminology.html">Terminology &#128214;</a>
+  <span class="page-nav-sep">|</span>
+  <a href="ml-sp500-example.html">ML Example &#129504;</a>
+  <span class="page-nav-sep">|</span>
+  <a href="ml-key-assets.html">ML Key Assets &#128203;</a>
+  <span class="page-nav-sep">|</span>
+  <a href="ml-xgboost-assets.html">XGBoost Charts &#128202;</a>
+  <span class="page-nav-sep">|</span>
+  <a href="gamma-exposure.html">GEX Charts &#127919;</a>
+  <span class="page-nav-sep">|</span>
+  <a href="options-strategy.html">Options Strategy &#128200;</a>
+  <span class="page-nav-sep">|</span>
+  <a href="option-flows.html">Option Flows &#127754;</a>
+  <span class="page-nav-sep">|</span>
+  <a href="options-summary.html">Options Summary &#128202;</a>
+  <span class="page-nav-sep">|</span>
+  <a href="0dte-options.html">0DTE &#128293;</a>
+  <span class="page-nav-sep">|</span>
+  <a href="fundamentals.html" class="active">Fundamentals &#128203;</a>
+  <span class="page-nav-sep">|</span>
+  <a href="institutional-buyers.html">Institutional 🏦</a>
+</nav>
+
+<!-- ── Hero ── -->
+<section class="fund-hero">
+  <div class="fund-badge">&#128203; Fundamentals &middot; Financial Analysis &middot; Rankings</div>
+  <h1>Fundamentals<br>Analysis &amp; Rankings</h1>
+  <p>Deep financial fundamentals for all tracked stocks and ETFs &mdash; valuation metrics, growth rates,
+     analyst consensus, price targets, earnings calendar, and composite ranking scores.</p>
+</section>
+
+<!-- ── Stats Strip ── -->
+<div class="stats-strip">
+  <div class="stat-cell"><div class="stat-val" id="sTotalAssets">&#8212;</div><div class="stat-lbl">Total Assets</div></div>
+  <div class="stat-cell"><div class="stat-val cv-green" id="sStrongBuy">&#8212;</div><div class="stat-lbl">Strong Buy</div></div>
+  <div class="stat-cell"><div class="stat-val" id="sAvgFwdPE">&#8212;</div><div class="stat-lbl">Avg Fwd P/E</div></div>
+  <div class="stat-cell"><div class="stat-val cv-green" id="sAvgRevGrowth">&#8212;</div><div class="stat-lbl">Avg Rev Growth</div></div>
+  <div class="stat-cell"><div class="stat-val cv-green" id="sAvgUpside">&#8212;</div><div class="stat-lbl">Avg Upside %</div></div>
+  <div class="stat-cell"><div class="stat-val" id="sAvgScore">&#8212;</div><div class="stat-lbl">Avg Score</div></div>
+</div>
+
+<!-- ── Main Content ── -->
+<div class="fund-wrap">
+
+  <!-- Server bar -->
+  <div class="server-bar">
+    <div class="sdot loading" id="sdot"></div>
+    <span class="smsg" id="smsg">Loading fundamentals data&hellip;</span>
+    <span id="stime" style="font-size:.75rem;color:var(--muted)"></span>
+    <button class="rbtn" onclick="loadData(true)">&#8635; Refresh</button>
+  </div>
+
+  <!-- Filter bar -->
+  <div class="filter-bar">
+    <div id="grpPills" style="display:flex;gap:.4rem;flex-wrap:wrap">
+      <button class="filter-pill active" data-grp="All">All Groups</button>
+      <button class="filter-pill" data-grp="ETFs">ETFs</button>
+      <button class="filter-pill" data-grp="Mag 7">Mag 7</button>
+      <button class="filter-pill" data-grp="Blue Chips">Blue Chips</button>
+    </div>
+    <div class="filter-sep"></div>
+    <div id="ratPills" style="display:flex;gap:.4rem;flex-wrap:wrap">
+      <button class="filter-pill active" data-rat="All">All Ratings</button>
+      <button class="filter-pill" data-rat="STRONG BUY">Strong Buy</button>
+      <button class="filter-pill" data-rat="BUY">Buy</button>
+      <button class="filter-pill" data-rat="HOLD">Hold</button>
+      <button class="filter-pill" data-rat="SELL">Sell</button>
+    </div>
+    <div class="filter-sep"></div>
+    <select class="sort-sel" id="sortSel" onchange="applyFilters()">
+      <option value="score">Score &#8595;</option>
+      <option value="mcap">Market Cap &#8595;</option>
+      <option value="fwdpe">Fwd P/E &#8593;</option>
+      <option value="revgrowth">Rev Growth &#8595;</option>
+      <option value="upside">Upside % &#8595;</option>
+      <option value="symbol">Symbol A&#8594;Z</option>
+    </select>
+  </div>
+
+  <!-- Cards container -->
+  <div id="cardsContainer"></div>
+
+  <!-- Explanation cards -->
+  <div class="explain-grid">
+    <div class="explain-card">
+      <h3>&#128202; Fundamental Score (0&ndash;100)</h3>
+      <p>A composite score combining six factors: revenue growth (+15 max), earnings growth (+10 max),
+         forward P/E valuation (&plusmn;20), analyst consensus (&plusmn;15 based on rating from
+         Strong Buy to Strong Sell), net profitability (+5 if &gt;15%), 52-week price momentum (&plusmn;10),
+         and upside to analyst mean target (&plusmn;10). Baseline is 50. Scores above 65 indicate
+         strong broad-based fundamentals.</p>
+    </div>
+    <div class="explain-card">
+      <h3>&#128176; Valuation Metrics</h3>
+      <p>Key ratios for comparing price to underlying fundamentals:</p>
+      <ul>
+        <li><strong>Forward P/E</strong>: Price relative to next 12-month earnings. &lt;15 = value; &gt;40 = growth premium.</li>
+        <li><strong>Price/Book</strong>: Price vs. net asset value. High P/B implies market expects returns above book.</li>
+        <li><strong>EV/EBITDA</strong>: Enterprise value vs. operating earnings. &lt;10 often signals undervaluation; &gt;25 is richly priced.</li>
+        <li><strong>P/S</strong>: Useful for high-growth pre-profit companies where P/E is not meaningful.</li>
+      </ul>
+    </div>
+    <div class="explain-card">
+      <h3>&#128200; Growth &amp; Profitability</h3>
+      <p>Revenue and earnings growth rates drive long-term share price. <strong>Net Margin</strong> above 15% is
+         exceptional; above 25% is elite-tier (typical of MSFT, NVDA, AAPL). <strong>ROE</strong> above 20%
+         signals efficient use of shareholder capital. Strong growth at a reasonable P/E &mdash; measured
+         by the PEG ratio &mdash; is the hallmark of compounders that outperform over decades.</p>
+    </div>
+    <div class="explain-card">
+      <h3>&#127963;&#65039; Financial Health</h3>
+      <p>Balance sheet strength protects against downturns and enables opportunistic investment.</p>
+      <ul>
+        <li><strong>Current Ratio</strong> &gt;1 means current assets cover current liabilities. &lt;1 signals near-term liquidity risk.</li>
+        <li><strong>Debt/Equity</strong>: Below 100% is conservative; above 200% warrants scrutiny of interest coverage.</li>
+        <li><strong>Free Cash Flow</strong>: Cash generated after capital expenditure &mdash; the truest measure of a business&apos;s earning power and ability to fund dividends, buybacks, and M&amp;A.</li>
+      </ul>
+    </div>
+    <div class="explain-card">
+      <h3>&#127919; Analyst Consensus</h3>
+      <p>Wall Street ratings are aggregated across all covering sell-side analysts. The mean recommendation
+         scale runs: 1.0 = Strong Buy, 2.0 = Buy, 3.0 = Hold, 4.0 = Sell, 5.0 = Strong Sell. The price target
+         range (low / mean / high) shows the spread of individual analyst expectations. A wide range signals
+         high uncertainty; a narrow range signals strong conviction. More analysts covering a stock generally
+         increases consensus reliability.</p>
+    </div>
+    <div class="explain-card">
+      <h3>&#128197; Earnings Calendar</h3>
+      <p>Earnings announcements are the single biggest recurring volatility driver for individual stocks.
+         A <strong>beat + raise</strong> (beats EPS estimate and raises forward guidance) typically drives
+         5&ndash;15% moves up. A <strong>miss + lower</strong> can drop 10&ndash;20%. Options traders note that
+         implied volatility spikes into earnings then collapses immediately after (&ldquo;IV crush&rdquo;) &mdash;
+         making long options purchased just before earnings expensive. Analyst upgrades and downgrades
+         following earnings also move prices significantly.</p>
+    </div>
+  </div>
+
+</div><!-- /fund-wrap -->
+
+<script>
+// ── Globals ──────────────────────────────────────────────────────────────────
+let allAssets = [];
+let activeGrp = 'All';
+let activeRat = 'All';
+
+// ── Formatters ───────────────────────────────────────────────────────────────
+function fmt$(n, decs = 0) {
+  if (n == null || n === '' || isNaN(+n)) return '—';
+  const v = +n;
+  if (Math.abs(v) >= 1e12) return '$' + (v / 1e12).toFixed(1) + 'T';
+  if (Math.abs(v) >= 1e9)  return '$' + (v / 1e9).toFixed(1)  + 'B';
+  if (Math.abs(v) >= 1e6)  return '$' + (v / 1e6).toFixed(1)  + 'M';
+  return '$' + v.toLocaleString(undefined, { maximumFractionDigits: decs });
+}
+
+function fmtN(n, decs = 1, suffix = '') {
+  if (n == null || n === '' || isNaN(+n)) return '—';
+  return (+n).toFixed(decs) + suffix;
+}
+
+function fmtPct(n, decs = 1) {
+  if (n == null || n === '' || isNaN(+n)) return '—';
+  const v = +n * 100;
+  return (v >= 0 ? '+' : '') + v.toFixed(decs) + '%';
+}
+
+function fmtDate(s) {
+  if (!s) return '—';
+  try {
+    const d = new Date(s);
+    if (isNaN(d)) return s;
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  } catch { return s; }
+}
+
+// ── Rating helpers ────────────────────────────────────────────────────────────
+function ratingClass(r) {
+  if (!r || r === 'N/A') return 'rc-na';
+  if (r === 'STRONG BUY')  return 'rc-sbuy';
+  if (r === 'BUY')         return 'rc-buy';
+  if (r === 'HOLD')        return 'rc-hold';
+  if (r === 'SELL')        return 'rc-sell';
+  if (r === 'STRONG SELL') return 'rc-ssell';
+  return 'rc-na';
+}
+
+function cardClass(r) {
+  if (!r || r === 'N/A') return 'na-card';
+  if (r === 'STRONG BUY') return 'sbuy-card';
+  if (r === 'BUY')        return 'buy-card';
+  if (r === 'HOLD')       return 'hold-card';
+  return 'sell-card';
+}
+
+function scoreColor(s) {
+  if (s >= 70) return '#10b981';
+  if (s >= 55) return '#34d399';
+  if (s >= 40) return '#fbbf24';
+  return '#f87171';
+}
+
+function upgradeClass(toGrade) {
+  if (!toGrade) return '';
+  const t = toGrade.toLowerCase();
+  if (t.includes('buy') || t.includes('outperform') || t.includes('overweight') || t.includes('positive')) return 'ug-buy';
+  if (t.includes('sell') || t.includes('underperform') || t.includes('underweight') || t.includes('negative')) return 'ug-sell';
+  return 'ug-hold';
+}
+
+// ── Analyst target range bar ──────────────────────────────────────────────────
+function buildTargetBar(a) {
+  const low  = parseFloat(a.target_low)  || 0;
+  const high = parseFloat(a.target_high) || 0;
+  const mean = parseFloat(a.target_mean) || 0;
+  const spot = parseFloat(a.spot)        || 0;
+  if (!low || !high || !mean || !spot || low >= high) return '';
+
+  const range   = high - low;
+  const pct     = v => Math.max(0, Math.min(100, ((v - low) / range) * 100));
+  const spotPct = pct(spot);
+  const meanPct = pct(mean);
+  const upside  = ((mean - spot) / spot * 100).toFixed(1);
+  const color   = mean > spot ? '#10b981' : '#f87171';
+
+  return `
+  <div class="tgt-section">
+    <div class="tgt-title">&#127919; Analyst Price Targets</div>
+    <div class="tgt-bar-outer">
+      <div class="tgt-bar-track"></div>
+      <div class="tgt-bar-range" style="left:0%;right:0%"></div>
+      <div class="tgt-marker-spot" style="left:${spotPct}%" title="Current: $${spot.toFixed(2)}">&#9670;</div>
+      <div class="tgt-marker-mean" style="left:${meanPct}%;color:${color}" title="Mean Target: $${mean.toFixed(2)}">&#10033;</div>
+    </div>
+    <div class="tgt-axis"><span>Low: ${fmt$(low, 0)}</span><span>High: ${fmt$(high, 0)}</span></div>
+    <div class="tgt-summary">
+      <div class="tgt-item"><span class="ti-label">Current</span><span class="ti-val">${fmt$(spot, 2)}</span></div>
+      <div class="tgt-item"><span class="ti-label">Mean Target</span><span class="ti-val" style="color:${color}">${fmt$(mean, 0)}</span></div>
+      <div class="tgt-item"><span class="ti-label">Upside</span><span class="ti-val" style="color:${color}">${upside > 0 ? '+' : ''}${upside}%</span></div>
+      <div class="tgt-item"><span class="ti-label">Analysts</span><span class="ti-val">${a.n_analysts || '—'}</span></div>
+      <div class="tgt-item"><span class="ti-label">Low / High</span><span class="ti-val">${fmt$(low, 0)} / ${fmt$(high, 0)}</span></div>
+    </div>
+  </div>`;
+}
+
+// ── Upgrades table ────────────────────────────────────────────────────────────
+function buildUpgrades(upgrades) {
+  if (!upgrades || !upgrades.length) return '';
+  const rows = upgrades.slice(0, 5).map(u => {
+    const toGrade = u.to || u.to_grade || '';
+    const frGrade = u.from || u.from_grade || '';
+    return `<tr>
+      <td class="ug-firm">${u.firm || '—'}</td>
+      <td>${frGrade || '—'} &rarr; <span class="${upgradeClass(toGrade)}">${toGrade || '—'}</span></td>
+      <td class="ug-date">${u.date ? fmtDate(u.date) : '—'}</td>
+    </tr>`;
+  }).join('');
+  return `<table class="upg-table">
+    <thead><tr><th>Firm</th><th>Action</th><th>Date</th></tr></thead>
+    <tbody>${rows}</tbody>
+  </table>`;
+}
+
+// ── News list ─────────────────────────────────────────────────────────────────
+function buildNews(news) {
+  if (!news || !news.length) return '';
+  const items = news.slice(0, 5).map(n => `
+    <li>
+      <a href="${n.url || '#'}" target="_blank" rel="noopener">${n.title || 'No title'}</a>
+      ${n.source ? `<span class="news-src">${n.source}</span>` : ''}
+    </li>`).join('');
+  return `<ul class="news-list">${items}</ul>`;
+}
+
+// ── Build a single asset card ─────────────────────────────────────────────────
+function buildCard(a) {
+  const sym   = a.symbol || '';
+  const score = a.fund_score != null ? +a.fund_score : null;
+
+  const scoreBar = score != null ? `
+    <div class="score-wrap">
+      <div class="score-bar-bg">
+        <div class="score-bar-fill" style="width:${score}%;background:${scoreColor(score)}"></div>
+      </div>
+      <span class="score-num" style="color:${scoreColor(score)}">${score}</span>
+    </div>` : '';
+
+  // ── Valuation column
+  const mcap  = fmt$(a.market_cap);
+  const ev    = fmt$(a.enterprise_value);
+  const fpe   = fmtN(a.forward_pe, 1);
+  const tpe   = fmtN(a.trailing_pe, 1);
+  const pb    = fmtN(a.price_to_book, 1);
+  const eveb  = fmtN(a.ev_ebitda, 1);
+
+  // ── Growth column
+  const rev   = fmt$(a.revenue);
+  const revg  = fmtPct(a.revenue_growth);
+  const eg    = fmtPct(a.earnings_growth);
+  const feps  = a.forward_eps != null ? '$' + (+a.forward_eps).toFixed(2) : '—';
+  const nm    = a.net_margin  != null ? (+a.net_margin  * 100).toFixed(1) + '%' : '—';
+  const roe   = a.roe         != null ? (+a.roe         * 100).toFixed(0) + '%' : '—';
+
+  // ── Health column
+  const beta  = fmtN(a.beta, 2);
+  const cr    = fmtN(a.current_ratio, 2);
+  const de    = a.debt_to_equity != null ? (+a.debt_to_equity).toFixed(0) + '%' : '—';
+  const fcf   = fmt$(a.free_cash_flow);
+  const dy    = a.dividend_yield != null ? (+a.dividend_yield).toFixed(2) + '%' : '—';
+  const w52   = (a.wk52_high && a.wk52_low) ? `${fmt$(a.wk52_low, 0)}–${fmt$(a.wk52_high, 0)}` : '—';
+  const wkChg = a.wk52_change != null ? fmtPct(a.wk52_change) : '—';
+
+  // Dynamic colors
+  const fpeC   = a.forward_pe   != null ? (+a.forward_pe < 25 ? 'cv-green' : +a.forward_pe > 40 ? 'cv-red' : 'cv-yellow') : 'cv-muted';
+  const revgC  = a.revenue_growth  != null ? (+a.revenue_growth  >= 0 ? 'cv-green' : 'cv-red') : 'cv-muted';
+  const egC    = a.earnings_growth != null ? (+a.earnings_growth >= 0 ? 'cv-green' : 'cv-red') : 'cv-muted';
+  const nmC    = a.net_margin      != null && +a.net_margin > 0.15 ? 'cv-green' : 'cv-muted';
+  const roeC   = a.roe             != null && +a.roe > 0.2 ? 'cv-green' : 'cv-muted';
+  const crC    = a.current_ratio   != null && +a.current_ratio >= 1 ? 'cv-green' : 'cv-red';
+  const deC    = a.debt_to_equity  != null && +a.debt_to_equity > 200 ? 'cv-red' : 'cv-muted';
+  const wkC    = a.wk52_change     != null ? (+a.wk52_change >= 0 ? 'cv-green' : 'cv-red') : 'cv-muted';
+
+  // Chips
+  const grpChip    = `<span class="chip chip-grp">${a.group || ''}</span>`;
+  const sectorChip = a.sector ? `<span class="chip chip-sector">${a.sector}</span>` : '';
+  const typeChip   = a.group === 'ETFs'
+    ? `<span class="chip chip-etf">ETF</span>`
+    : `<span class="chip chip-stock">STOCK</span>`;
+
+  // External links
+  const links = [
+    { label: 'Yahoo Financials',  url: `https://finance.yahoo.com/quote/${sym}/financials/` },
+    { label: 'SEC 10-K',          url: `https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=${sym}&type=10-K&owner=include&count=5` },
+    { label: 'SEC 10-Q',          url: `https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=${sym}&type=10-Q&owner=include&count=5` },
+    { label: 'Earnings Estimates',url: `https://finance.yahoo.com/quote/${sym}/earnings/` },
+    { label: 'Analyst Ratings',   url: `https://finance.yahoo.com/quote/${sym}/analysis/` },
+  ];
+  if (a.website) links.push({ label: 'Investor Relations', url: a.website });
+  const linksHtml = links.map(l =>
+    `<a class="ext-link" href="${l.url}" target="_blank" rel="noopener">${l.label}</a>`
+  ).join('');
+
+  // Earnings / upgrades section
+  const hasEarnings = a.next_earnings || a.eps_estimate || (a.upgrades && a.upgrades.length);
+  const earningsHtml = hasEarnings ? `
+  <div class="earn-section">
+    <div class="earn-title">&#128197; Earnings &amp; Analyst Actions</div>
+    ${a.next_earnings ? `
+    <div class="earn-row">
+      <span class="earn-lbl">Next Earnings:</span>
+      <span class="earn-date">${fmtDate(a.next_earnings)}</span>
+      ${a.eps_estimate ? `<span class="earn-lbl">EPS Est:</span><span class="earn-date">$${(+a.eps_estimate).toFixed(2)}</span>` : ''}
+    </div>` : ''}
+    ${buildUpgrades(a.upgrades)}
+  </div>` : '';
+
+  // News section
+  const newsHtml = (a.news && a.news.length) ? `
+  <div class="news-section">
+    <div class="news-title">&#128240; Recent News</div>
+    ${buildNews(a.news)}
+  </div>` : '';
+
+  // Description
+  const descHtml = a.description ? `
+  <div class="desc-section">
+    <div class="desc-text">${a.description}</div>
+  </div>` : '';
+
+  return `
+<div class="fund-card ${cardClass(a.rating)}"
+     data-sym="${sym}" data-grp="${a.group || ''}" data-rat="${a.rating || 'N/A'}"
+     data-score="${score || 0}" data-mcap="${a.market_cap || 0}"
+     data-fwdpe="${a.forward_pe || 9999}" data-revg="${a.revenue_growth || 0}"
+     data-upside="${a.upside_pct || 0}">
+
+  <div class="fund-head">
+    <div>
+      <div class="fund-sym">${sym}</div>
+      <div class="fund-name">${a.label || ''}</div>
+      <div class="fund-chips">${grpChip}${sectorChip}${typeChip}</div>
+    </div>
+    <div class="fund-right">
+      <span class="rating-chip ${ratingClass(a.rating)}">${a.rating || 'N/A'}</span>
+      ${scoreBar}
+    </div>
+  </div>
+
+  <div class="fund-grid">
+    <div class="fund-col">
+      <div class="fc-title">Valuation</div>
+      <div class="fc-row"><span class="fc-key">Market Cap</span>      <span class="fc-val cv-blue">${mcap}</span></div>
+      <div class="fc-row"><span class="fc-key">Enterprise Value</span><span class="fc-val cv-muted">${ev}</span></div>
+      <div class="fc-row"><span class="fc-key">Fwd P/E</span>         <span class="fc-val ${fpeC}">${fpe}</span></div>
+      <div class="fc-row"><span class="fc-key">Trail P/E</span>       <span class="fc-val cv-muted">${tpe}</span></div>
+      <div class="fc-row"><span class="fc-key">Price/Book</span>      <span class="fc-val cv-muted">${pb}</span></div>
+      <div class="fc-row"><span class="fc-key">EV/EBITDA</span>       <span class="fc-val cv-muted">${eveb}</span></div>
+    </div>
+    <div class="fund-col">
+      <div class="fc-title">Growth &amp; Earnings</div>
+      <div class="fc-row"><span class="fc-key">Revenue</span>         <span class="fc-val cv-blue">${rev}</span></div>
+      <div class="fc-row"><span class="fc-key">Rev Growth</span>      <span class="fc-val ${revgC}">${revg}</span></div>
+      <div class="fc-row"><span class="fc-key">EPS Growth</span>      <span class="fc-val ${egC}">${eg}</span></div>
+      <div class="fc-row"><span class="fc-key">Fwd EPS</span>         <span class="fc-val cv-muted">${feps}</span></div>
+      <div class="fc-row"><span class="fc-key">Net Margin</span>      <span class="fc-val ${nmC}">${nm}</span></div>
+      <div class="fc-row"><span class="fc-key">ROE</span>             <span class="fc-val ${roeC}">${roe}</span></div>
+    </div>
+    <div class="fund-col">
+      <div class="fc-title">Financial Health</div>
+      <div class="fc-row"><span class="fc-key">Beta</span>            <span class="fc-val cv-muted">${beta}</span></div>
+      <div class="fc-row"><span class="fc-key">Current Ratio</span>   <span class="fc-val ${crC}">${cr}</span></div>
+      <div class="fc-row"><span class="fc-key">Debt/Equity</span>     <span class="fc-val ${deC}">${de}</span></div>
+      <div class="fc-row"><span class="fc-key">Free Cash Flow</span>  <span class="fc-val cv-blue">${fcf}</span></div>
+      <div class="fc-row"><span class="fc-key">Dividend Yield</span>  <span class="fc-val cv-muted">${dy}</span></div>
+      <div class="fc-row"><span class="fc-key">52W Range</span>       <span class="fc-val cv-muted" style="font-size:.64rem">${w52}</span></div>
+      <div class="fc-row"><span class="fc-key">52W Change</span>      <span class="fc-val ${wkC}">${wkChg}</span></div>
+    </div>
+  </div>
+
+  ${buildTargetBar(a)}
+  ${earningsHtml}
+  ${newsHtml}
+
+  <div class="links-section">
+    <div class="links-title">&#128279; Reports &amp; Links</div>
+    <div class="links-row">${linksHtml}</div>
+  </div>
+
+  ${descHtml}
+</div>`;
+}
+
+// ── Stats strip ───────────────────────────────────────────────────────────────
+function updateStats() {
+  document.getElementById('sTotalAssets').textContent = allAssets.length;
+  const sb = allAssets.filter(a => a.rating === 'STRONG BUY').length;
+  document.getElementById('sStrongBuy').textContent = sb;
+
+  const pes = allAssets.filter(a => a.forward_pe && +a.forward_pe > 0 && +a.forward_pe < 500).map(a => +a.forward_pe);
+  document.getElementById('sAvgFwdPE').textContent = pes.length
+    ? (pes.reduce((s, v) => s + v, 0) / pes.length).toFixed(1) : '—';
+
+  const rgs = allAssets.filter(a => a.revenue_growth != null).map(a => +a.revenue_growth * 100);
+  document.getElementById('sAvgRevGrowth').textContent = rgs.length
+    ? (rgs.reduce((s, v) => s + v, 0) / rgs.length).toFixed(1) + '%' : '—';
+
+  const ups = allAssets.filter(a => a.upside_pct != null).map(a => +a.upside_pct);
+  document.getElementById('sAvgUpside').textContent = ups.length
+    ? (ups.reduce((s, v) => s + v, 0) / ups.length).toFixed(1) + '%' : '—';
+
+  const scs = allAssets.filter(a => a.fund_score != null).map(a => +a.fund_score);
+  document.getElementById('sAvgScore').textContent = scs.length
+    ? (scs.reduce((s, v) => s + v, 0) / scs.length).toFixed(0) : '—';
+}
+
+// ── Filter + sort + render ────────────────────────────────────────────────────
+function applyFilters() {
+  const sort = document.getElementById('sortSel').value;
+
+  let filtered = allAssets.filter(a => {
+    const grpOk = activeGrp === 'All' || a.group === activeGrp;
+    const ratOk = activeRat === 'All' || a.rating === activeRat;
+    return grpOk && ratOk;
+  });
+
+  filtered.sort((a, b) => {
+    switch (sort) {
+      case 'score':     return (b.fund_score || 0) - (a.fund_score || 0);
+      case 'mcap':      return (b.market_cap  || 0) - (a.market_cap  || 0);
+      case 'fwdpe':     return (a.forward_pe   || 9999) - (b.forward_pe   || 9999);
+      case 'revgrowth': return (b.revenue_growth || 0) - (a.revenue_growth || 0);
+      case 'upside':    return (b.upside_pct     || 0) - (a.upside_pct     || 0);
+      case 'symbol':    return (a.symbol || '').localeCompare(b.symbol || '');
+      default:          return 0;
+    }
+  });
+
+  const cont = document.getElementById('cardsContainer');
+  if (!filtered.length) {
+    cont.innerHTML = `<div class="empty-state"><h3>No assets match filters</h3>
+      <p>Try adjusting the group or rating filters above.</p></div>`;
+    return;
+  }
+  cont.innerHTML = filtered.map(buildCard).join('');
+}
+
+// ── Filter pill click handlers ────────────────────────────────────────────────
+document.getElementById('grpPills').addEventListener('click', e => {
+  const btn = e.target.closest('.filter-pill');
+  if (!btn || !btn.dataset.grp) return;
+  activeGrp = btn.dataset.grp;
+  document.querySelectorAll('#grpPills .filter-pill').forEach(p =>
+    p.classList.toggle('active', p.dataset.grp === activeGrp));
+  applyFilters();
+});
+
+document.getElementById('ratPills').addEventListener('click', e => {
+  const btn = e.target.closest('.filter-pill');
+  if (!btn || !btn.dataset.rat) return;
+  activeRat = btn.dataset.rat;
+  document.querySelectorAll('#ratPills .filter-pill').forEach(p =>
+    p.classList.toggle('active', p.dataset.rat === activeRat));
+  applyFilters();
+});
+
+// ── Load data ─────────────────────────────────────────────────────────────────
+async function loadData(nocache = false) {
+  const dot = document.getElementById('sdot');
+  const msg = document.getElementById('smsg');
+  dot.className = 'sdot loading';
+  msg.textContent = 'Loading fundamentals data (may take 30–60 s on first load)…';
+  document.getElementById('stime').textContent = '';
+
+  try {
+    const url = 'http://localhost:5050/api/fundamentals' + (nocache ? '?nocache=1' : '');
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+
+    allAssets = data.assets || [];
+    dot.className = 'sdot on';
+    msg.textContent = `${allAssets.length} assets loaded`;
+    const ts = data.timestamp ? new Date(data.timestamp).toLocaleTimeString() : '';
+    document.getElementById('stime').textContent = ts ? `as of ${ts}` : '';
+
+    updateStats();
+    applyFilters();
+  } catch (err) {
+    dot.className = 'sdot';
+    msg.textContent = `Error: ${err.message} — Is the Flask server running on port 5050?`;
+    document.getElementById('cardsContainer').innerHTML = `
+      <div class="empty-state">
+        <h3>Could not load data</h3>
+        <p>Start the Flask server: <code>py live-server.py</code></p>
+      </div>`;
+  }
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+loadData();
+</script>
+<script src="ibkr-widget.js"></script>
+</body>
+</html>

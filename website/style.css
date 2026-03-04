@@ -7,6 +7,7 @@
   --card-hover:#1e2d50;
   --border:    #243058;
   --primary:   #22d3ee;
+  --accent:    #22d3ee;   /* alias of --primary used by live-trading & market-summary */
   --primary-dim:#0e7490;
   --secondary: #818cf8;
   --gold:      #fbbf24;

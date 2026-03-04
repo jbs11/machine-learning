@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>0DTE Options — Today's Best Trades</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    /* ── Layout ── */
+    .dte-wrap { max-width: 1600px; margin: 0 auto; padding: 0 1.5rem 6rem; }
+
+    /* ── Page nav ── */
+    .page-nav {
+      display: flex; align-items: center; gap: 1rem;
+      padding: .6rem 1.5rem; background: var(--surface);
+      border-bottom: 1px solid var(--border); font-size: .83rem; flex-wrap: wrap;
+    }
+    .page-nav a { color: var(--muted); text-decoration: none; padding: .3rem .7rem; border-radius: 5px; transition: color .15s, background .15s; }
+    .page-nav a:hover { color: var(--text); background: rgba(255,255,255,.06); }
+    .page-nav a.active { color: #ef4444; font-weight: 700; }
+    .page-nav-sep { color: var(--border); }
+
+    /* ── Hero ── */
+    .dte-hero {
+      padding: 3.5rem 1.5rem 2.5rem; text-align: center;
+      background: radial-gradient(ellipse 80% 55% at 50% -5%, rgba(239,68,68,.13) 0%, transparent 65%), var(--bg);
+      border-bottom: 1px solid var(--border);
+    }
+    .dte-hero h1 {
+      font-size: clamp(1.8rem, 4vw, 3rem); font-weight: 900;
+      letter-spacing: -.03em; line-height: 1.15; margin-bottom: .8rem;
+      background: linear-gradient(135deg, #ef4444 0%, #f97316 45%, #fbbf24 80%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    .dte-hero p { color: var(--muted); font-size: 1.05rem; max-width: 760px; margin: 0 auto 1.5rem; line-height: 1.7; }
+    .dte-badge {
+      display: inline-flex; align-items: center; gap: .5rem;
+      padding: .3rem 1rem; background: rgba(239,68,68,.1);
+      border: 1px solid rgba(239,68,68,.3); border-radius: 999px;
+      color: #ef4444; font-size: .78rem; font-weight: 600;
+      letter-spacing: .08em; text-transform: uppercase; margin-bottom: 1rem;
+    }
+
+    /* ── Stats strip ── */
+    .stats-strip { display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr));
+      gap:1px; background:var(--border); border-top:1px solid var(--border); border-bottom:1px solid var(--border); }
+    .stat-cell { background:var(--surface); padding:1rem 1.2rem; text-align:center; }
+    .stat-val  { font-size:1.4rem; font-weight:900; margin-bottom:.1rem; }
+    .stat-lbl  { font-size:.7rem; font-weight:600; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); }
+
+    /* ── Server bar ── */
+    .server-bar { display:flex;align-items:center;gap:.75rem;background:var(--surface);
+      border:1px solid var(--border);border-radius:8px;padding:.55rem 1.1rem;
+      margin:1.2rem 0;font-size:.85rem; }
+    .sdot { width:9px;height:9px;border-radius:50%;background:#f87171;flex-shrink:0;transition:background .3s; }
+    .sdot.on { background:#4ade80; } .sdot.loading { background:#fbbf24;animation:pulse 1s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1}50%{opacity:.35} }
+    .smsg { color:var(--muted); flex:1; }
+    .rbtn { background:transparent;border:1px solid var(--border);color:var(--muted);
+      padding:.28rem .75rem;border-radius:6px;cursor:pointer;font-size:.8rem;transition:border-color .2s,color .2s; }
+    .rbtn:hover { border-color:#ef4444;color:#ef4444; }
+
+    /* ── Filter bar ── */
+    .filter-bar { display:flex;flex-wrap:wrap;align-items:center;gap:.6rem;margin:1.2rem 0; }
+    .filter-pill { padding:.3rem .85rem;border-radius:99px;border:1px solid var(--border);
+      background:transparent;color:var(--muted);font-size:.78rem;font-weight:700;cursor:pointer;transition:all .15s; }
+    .filter-pill.active     { background:rgba(239,68,68,.12);border-color:#ef4444;color:#ef4444; }
+    .filter-pill.active-bull{ background:rgba(34,197,94,.12);border-color:#22c55e;color:#22c55e; }
+    .filter-pill.active-bear{ background:rgba(248,113,113,.12);border-color:#f87171;color:#f87171; }
+    .filter-pill:hover:not(.active):not(.active-bull):not(.active-bear){ border-color:var(--muted);color:var(--text); }
+    .filter-sep { width:1px;height:20px;background:var(--border);flex-shrink:0; }
+    .sort-sel { background:var(--surface);border:1px solid var(--border);color:var(--muted);
+      padding:.28rem .75rem;border-radius:6px;font-size:.78rem;cursor:pointer;font-family:inherit; }
+
+    /* ── Card ── */
+    .dte-card { background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
+      overflow:hidden;margin-bottom:1.4rem;transition:border-color .2s,box-shadow .2s; }
+    .dte-card:hover { border-color:rgba(239,68,68,.3);box-shadow:0 4px 28px rgba(0,0,0,.3); }
+    .dte-card.bull-card { border-left:3px solid #22c55e; }
+    .dte-card.bear-card { border-left:3px solid #f87171; }
+    .dte-card.neut-card { border-left:3px solid #fbbf24; }
+
+    /* Card header */
+    .dte-head { padding:.8rem 1rem .65rem;display:flex;align-items:flex-start;gap:.65rem;flex-wrap:wrap; }
+    .dte-sym  { font-family:'Consolas',monospace;font-size:1.05rem;font-weight:900;color:var(--text); }
+    .dte-lbl  { font-size:.73rem;color:var(--muted);margin-top:.1rem; }
+    .dte-chips{ display:flex;flex-wrap:wrap;gap:.35rem;align-items:center;margin-top:.25rem; }
+    .chip { font-size:.65rem;font-weight:700;letter-spacing:.05em;padding:.18rem .55rem;border-radius:5px; }
+    .chip-grp    { background:rgba(56,189,248,.1);color:#7dd3fc;border:1px solid rgba(56,189,248,.2); }
+    .chip-stock  { background:rgba(34,211,238,.1);color:#22d3ee;border:1px solid rgba(34,211,238,.2); }
+    .chip-futures{ background:rgba(251,191,36,.1);color:#fbbf24;border:1px solid rgba(251,191,36,.2); }
+    .chip-etf    { background:rgba(167,139,250,.1);color:#c084fc;border:1px solid rgba(167,139,250,.2); }
+    .chip-0dte   { background:rgba(239,68,68,.15);color:#ef4444;border:1px solid rgba(239,68,68,.3); }
+    .chip-squeeze{ background:rgba(245,158,11,.15);color:#f59e0b;border:1px solid rgba(245,158,11,.3); }
+    .chip-cascade{ background:rgba(248,113,113,.15);color:#f87171;border:1px solid rgba(248,113,113,.3); }
+    .dte-right { margin-left:auto;text-align:right;flex-shrink:0; }
+    .bias-chip { font-size:.8rem;font-weight:800;padding:.28rem .85rem;border-radius:8px;display:inline-block; }
+    .bias-bull { background:rgba(34,197,94,.15);color:#22c55e;border:1px solid rgba(34,197,94,.3); }
+    .bias-bear { background:rgba(248,113,113,.15);color:#f87171;border:1px solid rgba(248,113,113,.3); }
+    .bias-neut { background:rgba(251,191,36,.15);color:#fbbf24;border:1px solid rgba(251,191,36,.3); }
+    .act-bar-wrap { display:flex;align-items:center;gap:.5rem;margin-top:.4rem;justify-content:flex-end; }
+    .act-bar-bg   { width:80px;height:5px;background:rgba(255,255,255,.07);border-radius:3px;overflow:hidden; }
+    .act-bar-fill { height:100%;background:linear-gradient(90deg,#ef4444,#f97316);border-radius:3px; }
+    .act-score    { font-size:.7rem;font-weight:800;color:#f97316;font-family:'Consolas',monospace; }
+
+    /* 3-col grid */
+    .dte-grid { display:grid;grid-template-columns:1fr 1fr 1fr;gap:0;border-top:1px solid var(--border); }
+    @media(max-width:720px) { .dte-grid { grid-template-columns:1fr; } }
+    .dte-col { padding:.7rem 1rem;border-right:1px solid var(--border); }
+    .dte-col:last-child { border-right:none; }
+    .dc-title { font-size:.63rem;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:#ef4444;margin-bottom:.5rem; }
+    .dc-row   { display:flex;justify-content:space-between;align-items:center;margin-bottom:.28rem;gap:.5rem; }
+    .dc-key   { font-size:.72rem;color:var(--muted); }
+    .dc-val   { font-size:.72rem;font-weight:700;font-family:'Consolas',monospace;text-align:right; }
+    .cv-bull  { color:#22c55e; } .cv-bear { color:#f87171; } .cv-neut { color:#fbbf24; }
+    .cv-blue  { color:#38bdf8; } .cv-red  { color:#ef4444; } .cv-orange{ color:#f97316; }
+
+    /* Trades table */
+    .trades-wrap { border-top:1px solid var(--border); padding:.55rem 1rem .8rem; }
+    .trades-title { font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:#fbbf24;margin-bottom:.4rem; }
+    .trades-table { width:100%;border-collapse:collapse;font-size:.72rem; }
+    .trades-table th { color:var(--muted);font-weight:600;padding:.18rem .4rem;text-align:right;
+      font-size:.62rem;text-transform:uppercase;border-bottom:1px solid var(--border); }
+    .trades-table th:first-child,.trades-table th:nth-child(2),.trades-table th:nth-child(3) { text-align:left; }
+    .trades-table td { padding:.25rem .4rem;text-align:right;font-family:'Consolas',monospace; }
+    .trades-table td:first-child { text-align:center;font-weight:900;color:#f97316; }
+    .trades-table td:nth-child(2) { text-align:left; }
+    .trades-table td:nth-child(3) { text-align:left; }
+    .trades-table td.rationale { text-align:left;font-family:inherit;font-size:.7rem;color:var(--muted);max-width:300px;line-height:1.4; }
+    .trades-table tr:hover td { background:rgba(255,255,255,.025); }
+    .t-call   { color:#22c55e;font-weight:800; } .t-put    { color:#f87171;font-weight:800; }
+    .t-buy    { color:#22c55e;font-weight:700; } .t-sell   { color:#f87171;font-weight:700; }
+    .t-atm    { color:#fbbf24;font-weight:700; }
+    .t-itm    { color:#22c55e; } .t-otm    { color:#94a3b8; }
+
+    /* Tornado chart */
+    .tornado-wrap { border-top:1px solid var(--border);background:#070d18;position:relative; }
+    canvas.tor-cv { display:block;width:100%; }
+    .tor-title { font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;
+      color:var(--muted);padding:.4rem 1rem .15rem; }
+    .tor-legend { display:flex;gap:.9rem;padding:.35rem 1rem .4rem;border-top:1px solid var(--border);flex-wrap:wrap; }
+    .tl-item { display:flex;align-items:center;gap:.3rem;font-size:.67rem;color:var(--muted); }
+    .tl-green  { width:9px;height:9px;background:rgba(34,197,94,.7);border-radius:2px;flex-shrink:0; }
+    .tl-red    { width:9px;height:9px;background:rgba(248,113,113,.7);border-radius:2px;flex-shrink:0; }
+    .tl-yellow { width:10px;height:2px;background:#fbbf24;flex-shrink:0; }
+    .tl-purple { width:10px;height:2px;background:#a78bfa;flex-shrink:0;border-top:1px dashed #a78bfa; }
+
+    /* Impact section */
+    .impact-section { border-top:1px solid var(--border);display:grid;grid-template-columns:1fr 1fr 1fr;gap:0; }
+    @media(max-width:720px) { .impact-section { grid-template-columns:1fr; } }
+    .impact-col { padding:.75rem 1rem;border-right:1px solid var(--border); }
+    .impact-col:last-child { border-right:none; }
+    .impact-title { font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;margin-bottom:.4rem; }
+    .it-market { color:#f97316; } .it-retail { color:#38bdf8; } .it-inst { color:#a78bfa; }
+    .impact-body { font-size:.79rem;color:var(--muted);line-height:1.68; }
+
+    /* Unusual table */
+    .unusual-wrap { padding:.55rem 1rem .75rem;border-top:1px solid var(--border); }
+    .udt-title { font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:.35rem; }
+    .u-table { width:100%;border-collapse:collapse;font-size:.72rem; }
+    .u-table th { color:var(--muted);font-weight:600;text-align:right;padding:.18rem .4rem;font-size:.62rem;text-transform:uppercase;border-bottom:1px solid var(--border); }
+    .u-table th:first-child { text-align:left; }
+    .u-table td { padding:.24rem .4rem;text-align:right;font-family:'Consolas',monospace; }
+    .u-table td:first-child { text-align:left; }
+    .u-table tr:hover td { background:rgba(255,255,255,.025); }
+    .u-call { color:#22c55e;font-weight:700; } .u-put  { color:#f87171;font-weight:700; }
+    .u-ratio{ color:#fbbf24;font-weight:700; }
+
+    /* Explanation cards */
+    .explain-grid { display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:.9rem;margin:1.2rem 0; }
+    .ex-card  { background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1rem 1.1rem; }
+    .ex-icon  { font-size:1.3rem;margin-bottom:.4rem; }
+    .ex-title { font-weight:800;font-size:.88rem;color:var(--text);margin-bottom:.4rem; }
+    .ex-body  { font-size:.8rem;color:var(--muted);line-height:1.65; }
+
+    .empty-state { text-align:center;padding:4rem;color:var(--muted); }
+    @media(max-width:800px) { .dte-hero h1{font-size:1.6rem;} }
+  </style>
+</head>
+<body>
+
+<!-- ── Main Nav ── -->
+<nav class="nav">
+  <a href="index.html" class="nav-logo">
+    <img src="images/steve.jpg" class="nav-logo-photo" alt="Stephen Borick">
+    <div class="nav-logo-text">
+      <span class="nav-company">Artificial Intelligence</span>
+      <span class="nav-name">Solutions, Inc.</span>
+    </div>
+  </a>
+  <ul class="nav-links">
+    <li><a href="index.html">Home</a></li>
+    <li><a href="neural-networks.html">Neural Networks</a></li>
+    <li><a href="machine-learning.html">Machine Learning</a></li>
+    <li><a href="ml-trading.html">ML in Trading</a></li>
+    <li><a href="ml-sp500-example.html">ML Example</a></li>
+    <li><a href="stock-trading.html">Stock Trading</a></li>
+    <li><a href="options-trading.html">Options</a></li>
+    <li><a href="futures-trading.html">Futures</a></li>
+    <li><a href="live-trading.html">Live Trading</a></li>
+  </ul>
+</nav>
+
+<!-- ── Page Nav ── -->
+<nav class="page-nav">
+  <a href="live-trading.html">← Live Trading</a>
+  <span class="page-nav-sep">|</span>
+  <a href="market-summary.html">Market Summary</a>
+  <span class="page-nav-sep">|</span>
+  <a href="terminology.html">Terminology 📖</a>
+  <span class="page-nav-sep">|</span>
+  <a href="ml-sp500-example.html">ML Example 🧠</a>
+  <span class="page-nav-sep">|</span>
+  <a href="ml-key-assets.html">ML Key Assets 📋</a>
+  <span class="page-nav-sep">|</span>
+  <a href="ml-xgboost-assets.html">XGBoost Charts 📊</a>
+  <span class="page-nav-sep">|</span>
+  <a href="gamma-exposure.html">GEX Charts 🎯</a>
+  <span class="page-nav-sep">|</span>
+  <a href="options-strategy.html">Options Strategy 📈</a>
+  <span class="page-nav-sep">|</span>
+  <a href="option-flows.html">Option Flows 🌊</a>
+  <span class="page-nav-sep">|</span>
+  <a href="options-summary.html">Options Summary 📊</a>
+  <span class="page-nav-sep">|</span>
+  <a href="0dte-options.html" class="active">0DTE 🔥</a>
+  <span class="page-nav-sep">|</span>
+  <a href="fundamentals.html">Fundamentals 📋</a>
+  <span class="page-nav-sep">|</span>
+  <a href="institutional-buyers.html">Institutional 🏦</a>
+</nav>
+
+<!-- ── Hero ── -->
+<section class="dte-hero">
+  <div class="dte-badge">🔥 0DTE · Zero Days to Expiry · Today's Contracts Only</div>
+  <h1>0DTE Options<br>Best Trades Today</h1>
+  <p>
+    <strong style="color:var(--text);">Zero days to expiration</strong> — the most volatile, highest-gamma options contracts that expire <em>today</em>.
+    Real-time trade recommendations ranked by unusual activity, with
+    <strong style="color:#f97316;">market impact</strong>,
+    <strong style="color:#38bdf8;">retail strategy</strong>, and
+    <strong style="color:#a78bfa;">institutional mechanics</strong> explained for every asset.
+  </p>
+</section>
+
+<!-- ── Stats Strip ── -->
+<div class="stats-strip">
+  <div class="stat-cell"><div class="stat-val" id="statAssets"  style="color:#ef4444;">—</div><div class="stat-lbl">0DTE Assets</div></div>
+  <div class="stat-cell"><div class="stat-val" id="statCallVol" style="color:#22c55e;">—</div><div class="stat-lbl">Call Volume</div></div>
+  <div class="stat-cell"><div class="stat-val" id="statPutVol"  style="color:#f87171;">—</div><div class="stat-lbl">Put Volume</div></div>
+  <div class="stat-cell"><div class="stat-val" id="statPremM"   style="color:#f97316;">—</div><div class="stat-lbl">Total Prem $M</div></div>
+  <div class="stat-cell"><div class="stat-val" id="statBull"    style="color:#22c55e;">—</div><div class="stat-lbl">Bullish</div></div>
+  <div class="stat-cell"><div class="stat-val" id="statBear"    style="color:#f87171;">—</div><div class="stat-lbl">Bearish</div></div>
+  <div class="stat-cell"><div class="stat-val" id="statNeut"    style="color:#fbbf24;">—</div><div class="stat-lbl">Neutral</div></div>
+  <div class="stat-cell"><div class="stat-val" id="statTs"      style="color:#7fa3be;font-size:.85rem;">—</div><div class="stat-lbl">Last Updated</div></div>
+</div>
+
+<div class="dte-wrap" style="padding-top:1.2rem;">
+
+  <!-- Server bar -->
+  <div class="server-bar">
+    <div class="sdot loading" id="sdot"></div>
+    <span class="smsg" id="smsg">Fetching 0DTE options data…</span>
+    <button class="rbtn" onclick="loadData(true)">↻ Refresh</button>
+    <a href="option-flows.html"  class="rbtn" style="text-decoration:none;">🌊 All Flows</a>
+    <a href="options-summary.html" class="rbtn" style="text-decoration:none;">📊 Summary</a>
+    <a href="gamma-exposure.html"  class="rbtn" style="text-decoration:none;">🎯 GEX</a>
+  </div>
+
+  <!-- Filter bar -->
+  <div class="filter-bar">
+    <button class="filter-pill active" data-fgrp="all"      onclick="setGrp('all',this)">All Groups</button>
+    <button class="filter-pill" data-fgrp="ETFs"            onclick="setGrp('ETFs',this)">ETFs</button>
+    <button class="filter-pill" data-fgrp="Mag 7"           onclick="setGrp('Mag 7',this)">Mag 7</button>
+    <button class="filter-pill" data-fgrp="Blue Chips"      onclick="setGrp('Blue Chips',this)">Blue Chips</button>
+    <button class="filter-pill" data-fgrp="Futures"         onclick="setGrp('Futures',this)">Futures</button>
+    <div class="filter-sep"></div>
+    <button class="filter-pill active" data-fdir="all"      onclick="setDir('all',this)">All Biases</button>
+    <button class="filter-pill" data-fdir="BULLISH"         onclick="setDir('BULLISH',this)">🟢 Bullish</button>
+    <button class="filter-pill" data-fdir="BEARISH"         onclick="setDir('BEARISH',this)">🔴 Bearish</button>
+    <button class="filter-pill" data-fdir="NEUTRAL"         onclick="setDir('NEUTRAL',this)">🟡 Neutral</button>
+    <div class="filter-sep"></div>
+    <select class="sort-sel" id="sortSel" onchange="renderCards()">
+      <option value="activity">Sort: Activity ↓</option>
+      <option value="symbol">Sort: Symbol A–Z</option>
+      <option value="group">Sort: Group</option>
+      <option value="callvol">Sort: Call Vol ↓</option>
+      <option value="putvol">Sort: Put Vol ↓</option>
+    </select>
+  </div>
+
+  <!-- Cards -->
+  <div id="cardsContainer"></div>
+
+  <!-- Explanation section -->
+  <div style="margin-top:3rem;">
+    <div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#ef4444;margin-bottom:.8rem;">
+      📘 Understanding 0DTE Options
+    </div>
+    <div class="explain-grid">
+      <div class="ex-card">
+        <div class="ex-icon">🔥</div>
+        <div class="ex-title">What is 0DTE?</div>
+        <div class="ex-body">Zero days to expiration (0DTE) options are contracts that expire <strong style="color:var(--text);">the same day they are traded</strong>. By market close, they are either worth their intrinsic value (if in-the-money) or expire completely worthless. For the buyer, it's a high-leverage, all-or-nothing bet on intraday price direction. For the seller (usually a market maker), it's a premium collection with the highest possible gamma risk. Since 2022, 0DTE options have grown to represent over <strong style="color:#ef4444;">50% of daily S&P 500 options volume</strong>.</div>
+      </div>
+      <div class="ex-card">
+        <div class="ex-icon">⚡</div>
+        <div class="ex-title">The Gamma Bomb</div>
+        <div class="ex-body">Gamma measures how fast delta changes as the underlying price moves. For 0DTE options, gamma is at its <strong style="color:#ef4444;">maximum</strong> — especially near ATM strikes. A $1 move in the stock can change an ATM 0DTE delta from 0.50 to nearly 1.00 (or 0.00). This forces market makers to buy or sell hundreds of thousands of shares of stock per contract just to stay delta-neutral. Near expiry, the slightest price move near a high-OI 0DTE strike triggers a gamma feedback loop — up-moves accelerate, down-moves cascade.</div>
+      </div>
+      <div class="ex-card">
+        <div class="ex-icon">📍</div>
+        <div class="ex-title">Pin Risk &amp; Max Pain</div>
+        <div class="ex-body">As expiry approaches, prices tend to be "pinned" near strikes with the highest open interest. This happens because market makers continuously delta-hedge as the price oscillates — their hedging activity dampens the very move they're hedging against, creating a magnetic pull toward the strike. <strong style="color:#a78bfa;">Max pain</strong> is the strike where option buyers collectively lose the most at expiry — the level dealers profit most from. Historically, 0DTE expirations often settle within 0.25% of the max pain strike.</div>
+      </div>
+      <div class="ex-card">
+        <div class="ex-icon">👤</div>
+        <div class="ex-title">Retail 0DTE Strategy</div>
+        <div class="ex-body">Retail traders use 0DTE primarily as <strong style="color:var(--text);">directional momentum plays</strong>. A $100 0DTE call on SPY can return 500–1,000% if SPY moves up 0.5% by close — or expire worthless by 3 PM. Key principles: (1) trade with the flow direction, not against it; (2) size tiny — 0.5% per trade max; (3) enter before 10 AM when premium is cheap and exit before 2 PM when theta accelerates; (4) avoid news days without context. The high vol/OI ratios flagged in the Best Trades table indicate institutional conviction — following those strikes often yields the best risk-adjusted entries.</div>
+      </div>
+      <div class="ex-card">
+        <div class="ex-icon">🏦</div>
+        <div class="ex-title">Institutional 0DTE Strategy</div>
+        <div class="ex-body">Institutions use 0DTE for four purposes: <strong style="color:var(--text);">(1) intraday portfolio hedging</strong> — a fund long $500M SPY buys 0DTE puts to hedge an afternoon of event risk; <strong style="color:var(--text);">(2) gamma scalping</strong> — market makers buy 0DTE ATM options and scalp delta as price moves; <strong style="color:var(--text);">(3) pinning</strong> — large players short straddles at key strikes and defend them with stock to maximize premium collected; <strong style="color:var(--text);">(4) momentum acceleration</strong> — directional funds buy large 0DTE call sweeps to both hedge their long stock and push the stock higher via forced dealer buying.</div>
+      </div>
+      <div class="ex-card">
+        <div class="ex-icon">📊</div>
+        <div class="ex-title">Reading the Trades Table</div>
+        <div class="ex-body">The Best Trades table is ranked by <strong style="color:var(--text);">volume</strong> of 0DTE unusual activity. <strong style="color:#22c55e;">BUY CALL</strong> — directional bullish trade: profit if stock rises above strike by close. <strong style="color:#f87171;">BUY PUT</strong> — directional bearish trade: profit if stock falls below strike. <strong>Moneyness</strong>: ATM = near current price (highest gamma/leverage); ITM = already has intrinsic value (lower leverage); OTM = cheaper but requires larger move. <strong>Vol/OI ratio</strong> above 5× = strong institutional conviction. <strong>Premium $K</strong> = total notional traded at that strike — higher = more institutional capital at risk.</div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /dte-wrap -->
+
+<script src="ibkr-widget.js"></script>
+<script>
+'use strict';
+
+const API = 'http://localhost:5050';
+let allData  = [];
+let grpFilter = 'all';
+let dirFilter = 'all';
+
+/* ── Filters ── */
+function setGrp(val, btn) {
+  grpFilter = val;
+  document.querySelectorAll('[data-fgrp]').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderCards();
+}
+function setDir(val, btn) {
+  dirFilter = val;
+  document.querySelectorAll('[data-fdir]').forEach(b => b.classList.remove('active','active-bull','active-bear'));
+  if      (val === 'BULLISH') btn.classList.add('active-bull');
+  else if (val === 'BEARISH') btn.classList.add('active-bear');
+  else                        btn.classList.add('active');
+  renderCards();
+}
+
+/* ── Fetch ── */
+async function loadData(nocache = false) {
+  const dot = document.getElementById('sdot');
+  const msg = document.getElementById('smsg');
+  dot.className = 'sdot loading';
+  msg.textContent = 'Fetching 0DTE options data (reuses cached flow data if available)…';
+  try {
+    const qs  = nocache ? '?nocache=1' : '';
+    const res = await fetch(`${API}/api/0dte${qs}`, { signal: AbortSignal.timeout(120000) });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const json = await res.json();
+    allData = json.assets || [];
+    dot.className = 'sdot on';
+    const ts = json.timestamp ? new Date(json.timestamp).toLocaleTimeString() : '—';
+    msg.textContent = `${json.count} assets with 0DTE activity  ·  ${ts}`;
+    updateStats(allData, json.timestamp);
+    renderCards();
+  } catch (e) {
+    dot.className = 'sdot';
+    msg.textContent = `Error: ${e.message}`;
+  }
+}
+
+/* ── Stats ── */
+function updateStats(rows, ts) {
+  const bull = rows.filter(r => r.dte0_bias === 'BULLISH').length;
+  const bear = rows.filter(r => r.dte0_bias === 'BEARISH').length;
+  const neut = rows.filter(r => r.dte0_bias === 'NEUTRAL').length;
+  const callVol = rows.reduce((s,r) => s + (r.dte0_call_vol||0), 0);
+  const putVol  = rows.reduce((s,r) => s + (r.dte0_put_vol||0),  0);
+  const premM   = rows.reduce((s,r) => s + (r.dte0_call_prem_k||0) + (r.dte0_put_prem_k||0), 0) / 1000;
+
+  document.getElementById('statAssets').textContent  = rows.length;
+  document.getElementById('statCallVol').textContent = fmtVol(callVol);
+  document.getElementById('statPutVol').textContent  = fmtVol(putVol);
+  document.getElementById('statPremM').textContent   = '$' + premM.toFixed(1) + 'M';
+  document.getElementById('statBull').textContent    = bull;
+  document.getElementById('statBear').textContent    = bear;
+  document.getElementById('statNeut').textContent    = neut;
+  document.getElementById('statTs').textContent      = ts ? new Date(ts).toLocaleTimeString() : '—';
+}
+
+/* ── Render ── */
+function renderCards() {
+  const sortVal = document.getElementById('sortSel').value;
+  let filtered = allData.filter(a => {
+    if (grpFilter !== 'all' && a.group !== grpFilter) return false;
+    if (dirFilter !== 'all' && a.dte0_bias !== dirFilter) return false;
+    return true;
+  });
+  if (sortVal === 'activity') filtered.sort((a,b) => (b.activity_score||0) - (a.activity_score||0));
+  else if (sortVal === 'symbol')  filtered.sort((a,b) => a.symbol.localeCompare(b.symbol));
+  else if (sortVal === 'group')   filtered.sort((a,b) => (a.group||'').localeCompare(b.group||'') || (b.activity_score||0) - (a.activity_score||0));
+  else if (sortVal === 'callvol') filtered.sort((a,b) => (b.dte0_call_vol||0) - (a.dte0_call_vol||0));
+  else if (sortVal === 'putvol')  filtered.sort((a,b) => (b.dte0_put_vol||0)  - (a.dte0_put_vol||0));
+
+  const container = document.getElementById('cardsContainer');
+  if (!filtered.length) {
+    container.innerHTML = '<div class="empty-state">No assets with 0DTE activity match current filters.<br><small>0DTE options only exist on expiry days (typically Mon/Wed/Fri for major ETFs).</small></div>';
+    return;
+  }
+  container.innerHTML = filtered.map(a => buildCard(a)).join('');
+  filtered.forEach(a => drawTornado(a));
+}
+
+/* ── Format helpers ── */
+function fmtVol(v) {
+  if (!v) return '0';
+  if (v >= 1e6) return (v/1e6).toFixed(1) + 'M';
+  if (v >= 1e3) return (v/1e3).toFixed(0) + 'K';
+  return String(v);
+}
+function fmtPrice(v) {
+  if (!v && v !== 0) return '—';
+  return '$' + (+v).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:2});
+}
+function fmtM(m) {
+  if (m == null) return '—';
+  const a = Math.abs(m), s = m < 0 ? '-' : '+';
+  if (a >= 1000) return s + '$' + (a/1000).toFixed(1) + 'B';
+  if (a >= 1)    return s + '$' + a.toFixed(1) + 'M';
+  return s + '$' + (a*1000).toFixed(0) + 'K';
+}
+function fmtK(k) {
+  if (!k && k !== 0) return '—';
+  const a = Math.abs(k);
+  if (a >= 1000) return '$' + (a/1000).toFixed(1) + 'M';
+  return '$' + a.toFixed(0) + 'K';
+}
+
+/* ── Build card ── */
+function buildCard(a) {
+  const bias      = a.dte0_bias || 'NEUTRAL';
+  const biasClass = bias === 'BULLISH' ? 'bias-bull' : bias === 'BEARISH' ? 'bias-bear' : 'bias-neut';
+  const biasLabel = bias === 'BULLISH' ? '↑ BULLISH' : bias === 'BEARISH' ? '↓ BEARISH' : '→ NEUTRAL';
+  const cardEdge  = bias === 'BULLISH' ? 'bull-card' : bias === 'BEARISH' ? 'bear-card' : 'neut-card';
+  const atClass   = a.asset_type === 'futures' ? 'chip-futures' : a.asset_type === 'etf' ? 'chip-etf' : 'chip-stock';
+  const atLabel   = (a.asset_type||'stock').charAt(0).toUpperCase()+(a.asset_type||'stock').slice(1);
+
+  // Activity bar (normalize to top asset)
+  const maxScore = Math.max(...allData.map(x => x.activity_score||0), 1);
+  const actPct   = Math.min(100, ((a.activity_score||0) / maxScore * 100)).toFixed(0);
+
+  const sqBadge = a.squeeze_potential ? `<span class="chip chip-squeeze">🔺 Squeeze</span>` : '';
+  const caBadge = a.crash_potential   ? `<span class="chip chip-cascade">🔻 Cascade</span>` : '';
+
+  // 0DTE expiry pill
+  const dte0Expiries = (a.flow_expiries || []).filter(([,d]) => d === 0);
+  const expLabel = dte0Expiries.length ? dte0Expiries.map(([e]) => e).join(', ') : 'Today';
+
+  // ── 3-col grid ──────────────────────────────────────────────────────────
+  const cv  = a.dte0_call_vol  || 0;
+  const pv  = a.dte0_put_vol   || 0;
+  const cpr = a.dte0_call_prem_k || 0;
+  const ppr = a.dte0_put_prem_k  || 0;
+  const tot = (cv + pv);
+  const cpRatio = pv > 0 ? (cv / pv).toFixed(2) : '∞';
+  const cpColor = cv > pv ? 'cv-bull' : cv < pv ? 'cv-bear' : 'cv-neut';
+
+  const statsCol = `
+    <div class="dte-col">
+      <div class="dc-title">0DTE Volume</div>
+      <div class="dc-row"><span class="dc-key">Call Volume</span><span class="dc-val cv-bull">${fmtVol(cv)}</span></div>
+      <div class="dc-row"><span class="dc-key">Put Volume</span><span class="dc-val cv-bear">${fmtVol(pv)}</span></div>
+      <div class="dc-row"><span class="dc-key">Call Premium</span><span class="dc-val cv-bull">${fmtK(cpr)}</span></div>
+      <div class="dc-row"><span class="dc-key">Put Premium</span><span class="dc-val cv-bear">${fmtK(ppr)}</span></div>
+      <div class="dc-row"><span class="dc-key">Total Premium</span><span class="dc-val cv-orange">${fmtK(cpr+ppr)}</span></div>
+    </div>`;
+
+  const mp  = a.max_pain_strike || 0;
+  const mpD = (mp && a.spot) ? ((mp - a.spot)/a.spot*100).toFixed(1) : null;
+  const levelsCol = `
+    <div class="dte-col">
+      <div class="dc-title">Key Levels</div>
+      <div class="dc-row"><span class="dc-key">Spot</span><span class="dc-val cv-blue">${fmtPrice(a.spot)}</span></div>
+      <div class="dc-row"><span class="dc-key">Max Pain</span><span class="dc-val" style="color:#a78bfa;">${fmtPrice(mp)}${mpD ? ` <span style="font-size:.62rem;color:var(--muted);">(${mpD>0?'+':''}${mpD}%)</span>` : ''}</span></div>
+      <div class="dc-row"><span class="dc-key">Pin Risk</span><span class="dc-val cv-neut">${fmtPrice(a.pin_risk_strike)}</span></div>
+      ${a.squeeze_potential ? `<div class="dc-row"><span class="dc-key">Squeeze @</span><span class="dc-val" style="color:#f59e0b;">${fmtPrice(a.squeeze_strike)}</span></div>` : ''}
+      ${a.crash_potential   ? `<div class="dc-row"><span class="dc-key">Cascade @</span><span class="dc-val cv-bear">${fmtPrice(a.crash_strike)}</span></div>` : ''}
+      <div class="dc-row"><span class="dc-key">Dealer Δ</span><span class="dc-val ${(a.net_dealer_delta_m||0)>0?'cv-bull':'cv-bear'}">${fmtM(a.net_dealer_delta_m)}</span></div>
+    </div>`;
+
+  const expiryCol = `
+    <div class="dte-col">
+      <div class="dc-title">Today's 0DTE</div>
+      <div class="dc-row"><span class="dc-key">Expiry Date</span><span class="dc-val" style="color:#ef4444;">${expLabel}</span></div>
+      <div class="dc-row"><span class="dc-key">C/P Vol Ratio</span><span class="dc-val ${cpColor}">${cpRatio}×</span></div>
+      <div class="dc-row"><span class="dc-key">Total Vol</span><span class="dc-val">${fmtVol(tot)}</span></div>
+      <div class="dc-row"><span class="dc-key">Activity Score</span><span class="dc-val cv-orange">${(a.activity_score||0).toLocaleString()}</span></div>
+      <div class="dc-row"><span class="dc-key">Bias</span><span class="dc-val ${biasClass.replace('bias-','cv-')}">${bias}</span></div>
+    </div>`;
+
+  // ── Trades table ────────────────────────────────────────────────────────
+  const tradesHtml = buildTradesTable(a.trades || []);
+
+  // ── Impact section ──────────────────────────────────────────────────────
+  const impactHtml = buildImpactSection(a);
+
+  // ── Unusual 0DTE table ──────────────────────────────────────────────────
+  const unusualHtml = buildUnusualTable(a.dte0_unusual || []);
+
+  return `
+  <div class="dte-card ${cardEdge}">
+    <div class="dte-head">
+      <div>
+        <div class="dte-sym">${a.symbol}</div>
+        <div class="dte-lbl">${a.label || ''}</div>
+        <div class="dte-chips">
+          ${a.group ? `<span class="chip chip-grp">${a.group}</span>` : ''}
+          <span class="chip ${atClass}">${atLabel}</span>
+          <span class="chip chip-0dte">0DTE</span>
+          ${sqBadge}${caBadge}
+        </div>
+      </div>
+      <div class="dte-right">
+        <div class="${biasClass} bias-chip">${biasLabel}</div>
+        <div class="act-bar-wrap">
+          <div class="act-bar-bg"><div class="act-bar-fill" style="width:${actPct}%;"></div></div>
+          <span class="act-score">${(a.activity_score||0).toLocaleString()}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="dte-grid">${statsCol}${levelsCol}${expiryCol}</div>
+
+    ${tradesHtml}
+
+    <div class="tor-title" style="border-top:1px solid var(--border);">Option Volume per Strike (Aggregate 0DTE + Near-Term)</div>
+    <div class="tornado-wrap">
+      <canvas class="tor-cv" id="tor-${a.symbol}" height="200"></canvas>
+    </div>
+    <div class="tor-legend">
+      <div class="tl-item"><div class="tl-green"></div>Call Volume</div>
+      <div class="tl-item"><div class="tl-red"></div>Put Volume</div>
+      <div class="tl-item"><div class="tl-yellow"></div>Spot</div>
+      <div class="tl-item"><div class="tl-purple"></div>Max Pain</div>
+    </div>
+
+    ${impactHtml}
+    ${unusualHtml}
+  </div>`;
+}
+
+/* ── Trades table ── */
+function buildTradesTable(trades) {
+  if (!trades || !trades.length) return '';
+  const rows = trades.map(t => {
+    const tc = t.type === 'CALL' ? 't-call' : 't-put';
+    const ac = t.action.includes('BUY') ? 't-buy' : 't-sell';
+    const mc = t.moneyness === 'ATM' ? 't-atm' : t.moneyness === 'ITM' ? 't-itm' : 't-otm';
+    const ratioStr = t.ratio > 0 ? `${t.ratio.toFixed(1)}×` : '—';
+    return `<tr>
+      <td>${t.rank}</td>
+      <td class="${tc}">${t.type}</td>
+      <td class="${ac}">${t.action}</td>
+      <td>${fmtPrice(t.strike)}</td>
+      <td class="${mc}">${t.moneyness}</td>
+      <td>${t.pct_from_spot > 0 ? '+' : ''}${t.pct_from_spot}%</td>
+      <td>${fmtVol(t.vol)}</td>
+      <td class="u-ratio">${ratioStr}</td>
+      <td>${t.premium_k ? fmtK(t.premium_k) : '—'}</td>
+      <td class="rationale">${t.rationale}</td>
+    </tr>`;
+  }).join('');
+  return `
+    <div class="trades-wrap">
+      <div class="trades-title">🏆 Best 0DTE Trades (Ranked by Volume)</div>
+      <table class="trades-table">
+        <thead><tr>
+          <th style="text-align:center">#</th>
+          <th style="text-align:left">Type</th>
+          <th style="text-align:left">Action</th>
+          <th>Strike</th><th>Money</th><th>From Spot</th>
+          <th>Volume</th><th>Vol/OI</th><th>Prem</th>
+          <th style="text-align:left">Rationale</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+}
+
+/* ── Impact section ── */
+function buildImpactSection(a) {
+  const mi = a.market_impact        || '';
+  const ri = a.retail_impact        || '';
+  const ii = a.institutional_impact || '';
+  if (!mi && !ri && !ii) return '';
+  return `
+    <div class="impact-section">
+      <div class="impact-col">
+        <div class="impact-title it-market">🌍 Market Impact</div>
+        <div class="impact-body">${mi}</div>
+      </div>
+      <div class="impact-col">
+        <div class="impact-title it-retail">👤 Retail Trader Impact</div>
+        <div class="impact-body">${ri}</div>
+      </div>
+      <div class="impact-col">
+        <div class="impact-title it-inst">🏦 Institutional Impact</div>
+        <div class="impact-body">${ii}</div>
+      </div>
+    </div>`;
+}
+
+/* ── Unusual 0DTE table ── */
+function buildUnusualTable(unusual) {
+  if (!unusual || !unusual.length) return '';
+  const rows = unusual.map(u => {
+    const tc = u.type === 'CALL' ? 'u-call' : 'u-put';
+    return `<tr>
+      <td><span class="${tc}">${u.type}</span> @${fmtPrice(u.strike)}</td>
+      <td>${(u.vol||0).toLocaleString()}</td>
+      <td>${(u.oi||0).toLocaleString()}</td>
+      <td class="u-ratio">${u.ratio}×</td>
+      <td>${fmtK(u.premium_k)}</td>
+      <td style="color:#ef4444;font-weight:700;">0DTE</td>
+    </tr>`;
+  }).join('');
+  return `
+    <div class="unusual-wrap">
+      <div class="udt-title">⚡ 0DTE Unusual Activity (vol/OI > 3× and vol > 500)</div>
+      <table class="u-table">
+        <thead><tr>
+          <th style="text-align:left">Strike / Type</th>
+          <th>Volume</th><th>OI</th><th>Vol/OI</th><th>Premium</th><th>DTE</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+}
+
+/* ── Tornado chart ── */
+function drawTornado(a) {
+  const cv = document.getElementById('tor-' + a.symbol);
+  if (!cv) return;
+  const strikes   = a.strikes   || [];
+  const callVols  = a.call_vol  || [];
+  const putVols   = a.put_vol   || [];
+  if (!strikes.length) return;
+
+  const dpr = window.devicePixelRatio || 1;
+  const W   = cv.parentElement.offsetWidth;
+  const H   = 200;
+  cv.width  = W * dpr; cv.height = H * dpr;
+  cv.style.width = W + 'px'; cv.style.height = H + 'px';
+  const ctx = cv.getContext('2d');
+  ctx.scale(dpr, dpr);
+
+  const pad = { l:46, r:10, t:8, b:18 };
+  const cw  = W - pad.l - pad.r;
+  const ch  = H - pad.t - pad.b;
+  const n   = strikes.length;
+  const bh  = Math.max(1, ch / n - 1);
+  const half = cw / 2;
+  const maxV = Math.max(...callVols, ...putVols, 1);
+
+  strikes.forEach((k, i) => {
+    const y  = pad.t + i * (ch / n) + ((ch / n) - bh) / 2;
+    const cw_bar = (callVols[i] || 0) / maxV * half * 0.92;
+    const pw_bar = (putVols[i]  || 0) / maxV * half * 0.92;
+    // Call bar (right of center)
+    if (cw_bar > 0) {
+      ctx.fillStyle = 'rgba(34,197,94,.65)';
+      ctx.fillRect(pad.l + half, y, cw_bar, bh);
+    }
+    // Put bar (left of center)
+    if (pw_bar > 0) {
+      ctx.fillStyle = 'rgba(248,113,113,.65)';
+      ctx.fillRect(pad.l + half - pw_bar, y, pw_bar, bh);
+    }
+    // Strike label
+    if (i % Math.max(1, Math.floor(n / 7)) === 0) {
+      ctx.fillStyle = 'rgba(127,163,190,.7)';
+      ctx.font = `${9 * dpr / dpr}px Consolas,monospace`;
+      ctx.textAlign = 'right';
+      ctx.fillText('$' + k.toFixed(0), pad.l - 3, y + bh * 0.75);
+    }
+  });
+
+  // Center line
+  ctx.strokeStyle = 'rgba(255,255,255,.08)';
+  ctx.lineWidth   = 1;
+  ctx.setLineDash([]);
+  ctx.beginPath(); ctx.moveTo(pad.l + half, pad.t); ctx.lineTo(pad.l + half, pad.t + ch); ctx.stroke();
+
+  // Spot line
+  const spotIdx = strikes.reduce((best, k, i) =>
+    Math.abs(k - a.spot) < Math.abs(strikes[best] - a.spot) ? i : best, 0);
+  const ySpot = pad.t + spotIdx * (ch / n) + (ch / n) / 2;
+  ctx.strokeStyle = '#fbbf24';
+  ctx.lineWidth   = 1.5;
+  ctx.setLineDash([4, 3]);
+  ctx.beginPath(); ctx.moveTo(pad.l, ySpot); ctx.lineTo(pad.l + cw, ySpot); ctx.stroke();
+
+  // Max pain line
+  if (a.max_pain_strike) {
+    const mpIdx = strikes.reduce((best, k, i) =>
+      Math.abs(k - a.max_pain_strike) < Math.abs(strikes[best] - a.max_pain_strike) ? i : best, 0);
+    const yMp = pad.t + mpIdx * (ch / n) + (ch / n) / 2;
+    ctx.strokeStyle = '#a78bfa';
+    ctx.lineWidth   = 1.5;
+    ctx.setLineDash([3, 3]);
+    ctx.beginPath(); ctx.moveTo(pad.l, yMp); ctx.lineTo(pad.l + cw, yMp); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = '#a78bfa';
+    ctx.font = `${8 * dpr / dpr}px Consolas,monospace`;
+    ctx.textAlign = 'left';
+    ctx.fillText('MP', pad.l + cw - 18, yMp - 2);
+  }
+  ctx.setLineDash([]);
+}
+
+/* ── Init ── */
+window.addEventListener('load', () => loadData());
+</script>
+</body>
+</html>

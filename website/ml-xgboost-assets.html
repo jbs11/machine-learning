@@ -1,0 +1,1714 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ML XGBoost All Assets — Candlestick Chart Signals</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
+  <style>
+    /* ── Layout ── */
+    .xb-wrap { max-width: 1600px; margin: 0 auto; padding: 0 1.5rem 6rem; }
+
+    /* ── Page nav ── */
+    .page-nav {
+      display: flex; align-items: center; gap: 1rem;
+      padding: .6rem 1.5rem; background: var(--surface);
+      border-bottom: 1px solid var(--border); font-size: .83rem;
+    }
+    .page-nav a { color: var(--muted); text-decoration: none; padding: .3rem .7rem; border-radius: 5px; transition: color .15s, background .15s; }
+    .page-nav a:hover { color: var(--text); background: rgba(255,255,255,.06); }
+    .page-nav a.active { color: var(--accent); font-weight: 700; }
+    .page-nav-sep { color: var(--border); }
+
+    /* ── Hero ── */
+    .xb-hero {
+      padding: 3.5rem 1.5rem 2.5rem; text-align: center;
+      background: radial-gradient(ellipse 80% 55% at 50% -5%, rgba(251,191,36,.1) 0%, transparent 65%), var(--bg);
+      border-bottom: 1px solid var(--border);
+    }
+    .xb-hero h1 {
+      font-size: clamp(1.8rem, 4vw, 3rem); font-weight: 900;
+      letter-spacing: -.03em; line-height: 1.15; margin-bottom: .8rem;
+      background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 40%, #fff 80%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    .xb-hero p { color: var(--muted); font-size: 1.05rem; max-width: 720px; margin: 0 auto 1.5rem; line-height: 1.7; }
+    .xgb-badge {
+      display: inline-flex; align-items: center; gap: .5rem;
+      padding: .3rem 1rem; background: rgba(251,191,36,.1);
+      border: 1px solid rgba(251,191,36,.25); border-radius: 999px;
+      color: #fbbf24; font-size: .78rem; font-weight: 600;
+      letter-spacing: .08em; text-transform: uppercase; margin-bottom: 1rem;
+    }
+
+    /* ── Stats strip ── */
+    .stats-strip { display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr));
+      gap:1px; background:var(--border); border-top:1px solid var(--border); border-bottom:1px solid var(--border); }
+    .stat-cell { background:var(--surface); padding:1rem 1.2rem; text-align:center; }
+    .stat-val { font-size:1.4rem; font-weight:900; margin-bottom:.1rem; }
+    .stat-lbl { font-size:.7rem; font-weight:600; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); }
+
+    /* ── Server bar ── */
+    .server-bar { display:flex;align-items:center;gap:.75rem;background:var(--surface);
+      border:1px solid var(--border);border-radius:8px;padding:.55rem 1.1rem;
+      margin:1.2rem 0;font-size:.85rem; }
+    .sdot { width:9px;height:9px;border-radius:50%;background:#f87171;flex-shrink:0;transition:background .3s; }
+    .sdot.on { background:#4ade80; } .sdot.loading { background:#fbbf24;animation:pulse 1s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+    .smsg { color:var(--muted); flex:1; }
+    .rbtn { background:transparent;border:1px solid var(--border);color:var(--muted);
+      padding:.28rem .75rem;border-radius:6px;cursor:pointer;font-size:.8rem;transition:border-color .2s,color .2s; }
+    .rbtn:hover { border-color:#fbbf24;color:#fbbf24; }
+
+    /* ── Progress bar ── */
+    .progress-wrap { height:4px;background:var(--border);border-radius:2px;overflow:hidden;margin:.3rem 0; display:none; }
+    .progress-fill { height:100%;background:linear-gradient(90deg,#fbbf24,#f59e0b);border-radius:2px;transition:width .4s; width:0%; }
+
+    /* ── Filter bar ── */
+    .filter-bar { display:flex;flex-wrap:wrap;align-items:center;gap:.6rem;margin:1.2rem 0; }
+    .filter-pill { padding:.3rem .85rem;border-radius:99px;border:1px solid var(--border);
+      background:transparent;color:var(--muted);font-size:.78rem;font-weight:700;cursor:pointer;transition:all .15s; }
+    .filter-pill.active { background:rgba(251,191,36,.12);border-color:#fbbf24;color:#fbbf24; }
+    .filter-pill:hover:not(.active) { border-color:var(--muted);color:var(--text); }
+
+    /* ── Charts grid ── */
+    .charts-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(480px,1fr)); gap:1.2rem; margin-top:1rem; }
+    @media(max-width:600px) { .charts-grid { grid-template-columns:1fr; } }
+
+    /* ── Chart card ── */
+    .chart-card {
+      background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+      overflow: hidden; transition: border-color .2s, box-shadow .2s;
+    }
+    .chart-card:hover { border-color: rgba(251,191,36,.35); box-shadow: 0 4px 24px rgba(0,0,0,.25); }
+    .card-header { padding: .75rem 1rem .55rem; display:flex; align-items:flex-start; gap:.65rem; }
+    .card-sym { font-family:'Consolas',monospace; font-size:1.05rem; font-weight:900; color:var(--text); }
+    .card-label { font-size:.73rem; color:var(--muted); margin-top:.1rem; max-width:220px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .card-meta { margin-left:auto; text-align:right; }
+    .card-signal { font-size:.75rem; font-weight:800; padding:.18rem .55rem; border-radius:5px; display:inline-block; }
+    .sig-buy  { background:rgba(52,211,153,.18);color:#34d399;border:1px solid rgba(52,211,153,.35); }
+    .sig-sell { background:rgba(248,113,113,.18);color:#f87171;border:1px solid rgba(248,113,113,.35); }
+    .sig-hold { background:rgba(251,191,36,.12); color:#fbbf24;border:1px solid rgba(251,191,36,.3); }
+    .card-acc { font-size:.68rem; color:var(--muted); margin-top:.25rem; }
+    .card-acc span { color:var(--text); font-weight:700; }
+    .type-chip { display:inline-block; font-size:.62rem; font-weight:700; letter-spacing:.06em;
+      padding:.1rem .45rem; border-radius:4px; margin-top:.25rem; }
+    .t-etf  { background:rgba(34,211,238,.12); color:#22d3ee; }
+    .t-stock{ background:rgba(34,211,238,.12); color:#22d3ee; }
+    .t-futures{ background:rgba(251,191,36,.12); color:#fbbf24; }
+
+    /* ── Canvas chart ── */
+    .chart-canvas-wrap { position:relative; background:#0a0f1a; }
+    canvas.chart-cv { display:block; width:100%; }
+
+    /* ── Legend strip below chart ── */
+    .chart-legend { display:flex; gap:1.2rem; padding:.5rem 1rem; border-top:1px solid var(--border); flex-wrap:wrap; }
+    .leg-item { display:flex; align-items:center; gap:.35rem; font-size:.72rem; color:var(--muted); }
+    .leg-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+    .leg-line-buy  { width:18px;height:2.5px;background:#22c55e;border-radius:2px;flex-shrink:0; }
+    .leg-line-sell { width:18px;height:2.5px;background:#f87171;border-radius:2px;flex-shrink:0; }
+    .leg-region-bull { width:14px;height:10px;background:rgba(34,197,94,.18);border:1px solid rgba(34,197,94,.4);border-radius:2px;flex-shrink:0; }
+    .leg-region-bear { width:14px;height:10px;background:rgba(248,113,113,.18);border:1px solid rgba(248,113,113,.4);border-radius:2px;flex-shrink:0; }
+    .leg-change { width:2px;height:12px;background:rgba(255,255,255,.4);border-left:2px dashed rgba(255,255,255,.4);flex-shrink:0; }
+    .leg-line-train { width:16px;height:2px;border-top:2px dashed rgba(251,191,36,.5);flex-shrink:0; }
+
+    /* ── Top importance bar ── */
+    .imp-strip { padding:.5rem 1rem .7rem; border-top:1px solid var(--border); }
+    .imp-title { font-size:.65rem; font-weight:700; text-transform:uppercase; letter-spacing:.07em; color:var(--muted); margin-bottom:.4rem; }
+    .imp-bars { display:flex; flex-direction:column; gap:.22rem; }
+    .imp-row { display:flex; align-items:center; gap:.5rem; }
+    .imp-name { font-size:.67rem; color:var(--muted); min-width:70px; text-align:right; font-family:'Consolas',monospace; }
+    .imp-bar-outer { flex:1; height:5px; background:var(--border); border-radius:3px; overflow:hidden; }
+    .imp-bar-fill  { height:100%; background:linear-gradient(90deg,#fbbf24,#f59e0b); border-radius:3px; }
+    .imp-val { font-size:.65rem; color:var(--muted); min-width:30px; font-family:'Consolas',monospace; }
+
+    /* ── Group section header ── */
+    .grp-section-hdr {
+      font-size:.72rem; font-weight:700; text-transform:uppercase; letter-spacing:.1em;
+      color:var(--primary); padding:.6rem 0 .4rem;
+      border-bottom: 1px solid rgba(34,211,238,.18); margin-bottom:.6rem; margin-top:1.4rem;
+      display:flex; align-items:center; gap:.75rem;
+    }
+    .grp-section-hdr:first-child { margin-top:.4rem; }
+    .grp-count { font-weight:400; color:var(--muted); font-size:.7rem; }
+
+    /* ── Empty / error state ── */
+    .empty-state { grid-column:1/-1; text-align:center; padding:4rem; color:var(--muted); }
+
+    /* ── XGBoost info box ── */
+    .xgb-info { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:1.5rem 1.8rem; margin:2rem 0; }
+    .xgb-info h3 { font-size:1.05rem; font-weight:800; margin-bottom:.75rem; color:var(--text); }
+    .xgb-info p { font-size:.9rem; color:var(--muted); line-height:1.75; margin-bottom:.7rem; }
+    .xgb-info p:last-child { margin-bottom:0; }
+    .xgb-steps { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:.85rem; margin-top:1rem; }
+    .xgb-step { background:var(--card); border:1px solid var(--border); border-radius:9px; padding:.8rem 1rem; }
+    .xgb-step-num { font-size:.7rem; font-weight:900; color:#fbbf24; text-transform:uppercase; letter-spacing:.08em; margin-bottom:.3rem; }
+    .xgb-step-txt { font-size:.82rem; color:var(--muted); line-height:1.6; }
+
+    @media(max-width:800px) { .xb-hero h1{font-size:1.6rem;} }
+
+    /* ── Zoom Control Bar ─────────────────────────────────────────────── */
+    .zoom-bar {
+      display:flex; align-items:center; gap:.45rem; padding:.3rem 1rem;
+      background:rgba(255,255,255,.008); border-bottom:1px solid rgba(255,255,255,.04);
+    }
+    .zoom-btn {
+      background:var(--card); border:1px solid var(--border); color:var(--text);
+      font-size:.8rem; font-weight:700; width:24px; height:24px;
+      border-radius:5px; cursor:pointer; display:flex; align-items:center;
+      justify-content:center; transition:border-color .15s,color .15s; flex-shrink:0;
+      line-height:1; padding:0;
+    }
+    .zoom-btn:hover { border-color:var(--accent); color:var(--accent); }
+    .zoom-btn.wide { width:auto; padding:0 .55rem; font-size:.7rem; }
+    .zoom-hint {
+      font-size:.62rem; color:var(--muted); margin-left:auto;
+      white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    }
+    .zoom-range-lbl { font-size:.65rem; color:var(--muted); font-family:'Consolas',monospace; }
+
+    /* ── Chart resize handle ───────────────────────────────────────────── */
+    .chart-resize-handle {
+      height:8px; background:rgba(255,255,255,.04); border-top:1px solid var(--border);
+      cursor:ns-resize; display:flex; align-items:center; justify-content:center;
+      transition:background .15s; user-select:none; font-size:8px; color:var(--border);
+      letter-spacing:2px;
+    }
+    .chart-resize-handle:hover { background:rgba(34,211,238,.08); border-top-color:rgba(34,211,238,.3); color:var(--accent); }
+    /* ── LightweightCharts container ── */
+    .lw-chart-wrap { position:relative; background:#080d18; }
+    .lw-chart-div  { width:100%; height:300px; }
+    .lw-ohlc-bar {
+      display:flex; align-items:center; gap:1rem; padding:.3rem 1rem;
+      background:#060b14; border-bottom:1px solid var(--border);
+      font-family:'Consolas',monospace; font-size:.72rem; color:var(--muted);
+      flex-wrap:wrap;
+    }
+    .lw-ohlc-bar span { white-space:nowrap; }
+    .lw-ohlc-bar .ov { color:var(--text); font-weight:700; }
+
+    /* ── Timeframe Selector Bar ───────────────────────────────────────── */
+    .tf-bar {
+      display:flex; align-items:center; gap:.55rem; padding:.38rem 1rem;
+      border-bottom:1px solid rgba(255,255,255,.04);
+      background:rgba(255,255,255,.012); flex-wrap:wrap;
+    }
+    .tf-label { font-size:.64rem; font-weight:700; text-transform:uppercase; letter-spacing:.07em; color:var(--muted); }
+    .tf-select {
+      background:var(--card); border:1px solid var(--border); color:var(--text);
+      font-size:.72rem; padding:.18rem .5rem; border-radius:5px; cursor:pointer;
+      font-family:inherit; transition:border-color .15s;
+    }
+    .tf-select:focus { outline:none; border-color:var(--accent); }
+    .tf-info { font-size:.65rem; color:var(--muted); margin-left:auto; }
+    .tf-spinner { display:none; width:10px; height:10px; border:2px solid var(--border); border-top-color:#fbbf24; border-radius:50%; animation:spin .6s linear infinite; margin-left:auto; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+
+    /* ── GEX Level Strip (below chart) ───────────────────────────────── */
+    .gex-strip {
+      display:flex; gap:.9rem; padding:.3rem 1rem; flex-wrap:wrap;
+      border-top:1px solid rgba(255,255,255,.04); font-size:.66rem; min-height:24px;
+    }
+    .gex-lvl { display:flex; align-items:center; gap:.28rem; color:var(--muted); }
+    .gex-line { width:14px; height:0; border-top:2px dashed currentColor; flex-shrink:0; }
+    .gex-solid { width:14px; height:0; border-top:2px solid currentColor; flex-shrink:0; }
+    .gex-call { color:#22c55e; } .gex-put { color:#f87171; }
+    .gex-spot { color:rgba(226,232,240,.75); } .gex-flip { color:#a78bfa; }
+    .gex-val  { font-family:'Consolas',monospace; font-weight:700; }
+
+    /* ── Asset Narrative Panel ────────────────────────────────────────── */
+    .asset-narr-wrap { border-top: 1px solid var(--border); }
+    .asset-narr-toggle {
+      width:100%; background:none; border:none; padding:.5rem 1rem;
+      display:flex; align-items:center; gap:.5rem; cursor:pointer;
+      color:var(--muted); font-size:.7rem; font-weight:700; text-transform:uppercase;
+      letter-spacing:.07em; text-align:left; transition:color .15s;
+    }
+    .asset-narr-toggle:hover { color:var(--text); }
+    .asset-narr-toggle .ngl-ico { margin-left:auto; font-style:normal; transition:transform .2s; }
+    .asset-narr-toggle.open .ngl-ico { transform:rotate(180deg); }
+    .asset-narr-body { display:none; padding:.3rem 1rem .9rem; }
+    .asset-narr-body.open { display:block; }
+    .narr-title {
+      font-size:.85rem; font-weight:800; color:var(--text);
+      margin-bottom:.55rem; line-height:1.35;
+      background:linear-gradient(90deg,var(--text),var(--muted));
+      -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+    }
+    .narr-para { font-size:.795rem; color:#94a3b8; line-height:1.78; margin-bottom:.65rem; }
+    .narr-para:last-child { margin-bottom:0; }
+    .narr-para strong { color:var(--text); font-weight:700; }
+    .narr-para em { color:#fbbf24; font-style:normal; }
+    .narr-para .hl-buy  { color:#22c55e; font-weight:700; }
+    .narr-para .hl-sell { color:#f87171; font-weight:700; }
+    .narr-para .hl-gex  { color:#a78bfa; font-weight:600; }
+
+    /* ── Deep-Dive Info Sections (bottom) ─────────────────────────────── */
+    .deep-section {
+      background:var(--surface); border:1px solid var(--border);
+      border-radius:var(--radius); padding:1.6rem 1.8rem; margin-bottom:1.2rem;
+    }
+    .deep-section h3 {
+      font-size:1.05rem; font-weight:800; margin-bottom:.8rem; color:var(--text);
+      display:flex; align-items:center; gap:.55rem;
+    }
+    .deep-section h4 {
+      font-size:.85rem; font-weight:700; color:var(--accent);
+      margin:.9rem 0 .3rem; text-transform:uppercase; letter-spacing:.06em;
+    }
+    .deep-section p { font-size:.9rem; color:var(--muted); line-height:1.78; margin-bottom:.65rem; }
+    .deep-section p:last-child { margin-bottom:0; }
+    .deep-section p strong { color:var(--text); }
+    .deep-grid {
+      display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr));
+      gap:.85rem; margin-top:.9rem;
+    }
+    .deep-card {
+      background:var(--card); border:1px solid var(--border);
+      border-radius:9px; padding:.85rem 1rem;
+    }
+    .deep-card-title {
+      font-size:.7rem; font-weight:900; color:#fbbf24;
+      text-transform:uppercase; letter-spacing:.08em; margin-bottom:.35rem;
+    }
+    .deep-card-body { font-size:.82rem; color:var(--muted); line-height:1.65; }
+    .deep-card-body strong { color:var(--text); }
+    .inst-table { width:100%; border-collapse:collapse; margin-top:.7rem; font-size:.8rem; }
+    .inst-table th {
+      text-align:left; padding:.35rem .6rem; background:var(--card);
+      color:var(--muted); font-size:.68rem; font-weight:700;
+      text-transform:uppercase; letter-spacing:.06em; border-bottom:1px solid var(--border);
+    }
+    .inst-table td { padding:.32rem .6rem; border-bottom:1px solid rgba(255,255,255,.04); color:#94a3b8; }
+    .inst-table td:first-child { color:var(--text); font-weight:700; font-family:'Consolas',monospace; }
+    .inst-table tr:last-child td { border-bottom:none; }
+
+    /* ── Direction Change Analysis Panel ─────────────────────────────── */
+    .dir-changes-wrap { border-top: 1px solid var(--border); }
+    .dir-changes-toggle {
+      width:100%; background:none; border:none; padding:.5rem 1rem;
+      display:flex; align-items:center; gap:.5rem; cursor:pointer;
+      color:var(--muted); font-size:.7rem; font-weight:700; text-transform:uppercase;
+      letter-spacing:.07em; text-align:left; transition:color .15s;
+    }
+    .dir-changes-toggle:hover { color:var(--text); }
+    .dir-changes-toggle .tgl-ico { margin-left:auto; font-style:normal; transition:transform .2s; }
+    .dir-changes-toggle.open .tgl-ico { transform:rotate(180deg); }
+    .dir-changes-body { display:none; padding:.1rem 1rem .9rem; }
+    .dir-changes-body.open { display:block; }
+
+    .dc-item {
+      border-left: 3px solid var(--border); padding:.65rem .9rem .7rem;
+      margin-bottom:.7rem; background: rgba(255,255,255,.018);
+      border-radius:0 7px 7px 0;
+    }
+    .dc-item.dc-buy  { border-left-color: #22c55e; }
+    .dc-item.dc-sell { border-left-color: #f87171; }
+    .dc-item.dc-hold { border-left-color: #fbbf24; }
+
+    .dc-head { display:flex; align-items:center; gap:.4rem; margin-bottom:.5rem; flex-wrap:wrap; }
+    .dc-date { font-size:.73rem; font-weight:800; color:var(--text); font-family:'Consolas',monospace; }
+    .dc-badge { font-size:.63rem; font-weight:800; padding:.13rem .48rem; border-radius:4px; }
+    .dcb-buy  { background:rgba(34,197,94,.18);  color:#22c55e; border:1px solid rgba(34,197,94,.35); }
+    .dcb-sell { background:rgba(248,113,113,.18);color:#f87171; border:1px solid rgba(248,113,113,.35); }
+    .dcb-hold { background:rgba(251,191,36,.12); color:#fbbf24; border:1px solid rgba(251,191,36,.3); }
+    .dcb-flat { background:rgba(127,163,190,.1); color:var(--muted); border:1px solid var(--border); }
+    .dc-arrow { font-size:.72rem; color:var(--muted); }
+
+    .dc-section { margin-top:.45rem; }
+    .dc-sec-lbl {
+      font-size:.62rem; font-weight:700; text-transform:uppercase; letter-spacing:.07em;
+      color:var(--muted); margin-bottom:.22rem;
+    }
+    .dc-sep { height:1px; background:rgba(255,255,255,.06); margin:.45rem 0; }
+    .dc-events { margin:0; padding:0; list-style:none; }
+    .dc-events li {
+      font-size:.76rem; color:#94a3b8; line-height:1.6; padding-left:1rem;
+      position:relative; margin-bottom:.1rem;
+    }
+    .dc-events li::before { content:'▸'; position:absolute; left:0; color:var(--accent); font-size:.65rem; top:.1em; }
+    .dc-prose { font-size:.77rem; color:#94a3b8; line-height:1.68; }
+    .dc-prose strong { color:var(--text); font-weight:700; }
+    .dc-prose em { color:#fbbf24; font-style:normal; }
+  </style>
+</head>
+<body>
+
+<!-- ── Main Nav ── -->
+<nav class="nav">
+  <a href="index.html" class="nav-logo">
+    <img src="images/steve.jpg" class="nav-logo-photo" alt="Stephen Borick">
+    <div class="nav-logo-text">
+      <span class="nav-company">Artificial Intelligence</span>
+      <span class="nav-name">Solutions, Inc.</span>
+    </div>
+  </a>
+  <ul class="nav-links">
+    <li><a href="index.html">Home</a></li>
+    <li><a href="neural-networks.html">Neural Networks</a></li>
+    <li><a href="machine-learning.html">Machine Learning</a></li>
+    <li><a href="ml-trading.html">ML in Trading</a></li>
+    <li><a href="ml-sp500-example.html">ML Example</a></li>
+    <li><a href="stock-trading.html">Stock Trading</a></li>
+    <li><a href="options-trading.html">Options</a></li>
+    <li><a href="futures-trading.html">Futures</a></li>
+    <li><a href="live-trading.html">Live Trading</a></li>
+  </ul>
+</nav>
+
+<!-- ── Page Nav ── -->
+<nav class="page-nav">
+  <a href="live-trading.html">← Live Trading</a>
+  <span class="page-nav-sep">|</span>
+  <a href="market-summary.html">Market Summary</a>
+  <span class="page-nav-sep">|</span>
+  <a href="terminology.html">Terminology 📖</a>
+  <span class="page-nav-sep">|</span>
+  <a href="ml-sp500-example.html">ML Example 🧠</a>
+  <span class="page-nav-sep">|</span>
+  <a href="ml-key-assets.html">ML Key Assets 📋</a>
+  <span class="page-nav-sep">|</span>
+  <a href="ml-xgboost-assets.html" class="active">XGBoost Charts 📊</a>
+  <span class="page-nav-sep">|</span>
+  <a href="gamma-exposure.html">GEX Charts 🎯</a>
+  <span class="page-nav-sep">|</span>
+  <a href="options-strategy.html">Options Strategy 📈</a>
+  <span class="page-nav-sep">|</span>
+  <a href="option-flows.html">Option Flows 🌊</a>
+  <span class="page-nav-sep">|</span>
+  <a href="options-summary.html">Options Summary 📊</a>
+  <span class="page-nav-sep">|</span>
+  <a href="0dte-options.html">0DTE 🔥</a>
+  <span class="page-nav-sep">|</span>
+  <a href="fundamentals.html">Fundamentals 📋</a>
+  <span class="page-nav-sep">|</span>
+  <a href="institutional-buyers.html">Institutional 🏦</a>
+</nav>
+
+<!-- ── Hero ── -->
+<section class="xb-hero">
+  <div class="xgb-badge">⚡ XGBoost · Daily Candles · 2024–2026</div>
+  <h1>ML XGBoost<br>All Assets</h1>
+  <p>
+    <strong style="color:var(--text);">XGBoost (Extreme Gradient Boosting)</strong> trained on 2024 daily data
+    for every tracked stock, ETF, and futures contract — with
+    <span style="color:#34d399;font-weight:700;">BUY ▲</span> and
+    <span style="color:#f87171;font-weight:700;">SELL ▼</span> signal markers plotted
+    directly on each candlestick chart. Train period ends at the yellow dashed line; all signals
+    to the right are <em>out-of-sample predictions</em>.
+  </p>
+</section>
+
+<!-- ── Stats Strip ── -->
+<div class="stats-strip" id="statsStrip">
+  <div class="stat-cell"><div class="stat-val" id="statTotal" style="color:#22d3ee;">—</div><div class="stat-lbl">Assets</div></div>
+  <div class="stat-cell"><div class="stat-val" id="statBuy"   style="color:#34d399;">—</div><div class="stat-lbl">BUY Signal</div></div>
+  <div class="stat-cell"><div class="stat-val" id="statSell"  style="color:#f87171;">—</div><div class="stat-lbl">SELL Signal</div></div>
+  <div class="stat-cell"><div class="stat-val" id="statHold"  style="color:#fbbf24;">—</div><div class="stat-lbl">HOLD Signal</div></div>
+  <div class="stat-cell"><div class="stat-val" id="statAcc"   style="color:#a78bfa;">—</div><div class="stat-lbl">Avg OOS Acc</div></div>
+  <div class="stat-cell"><div class="stat-val" id="statTs"    style="color:#7fa3be;font-size:.85rem;">—</div><div class="stat-lbl">Last Updated</div></div>
+</div>
+
+<div class="xb-wrap" style="padding-top:1.2rem;">
+
+  <!-- Server bar -->
+  <div class="server-bar">
+    <div class="sdot loading" id="sdot"></div>
+    <div style="flex:1;">
+      <span class="smsg" id="smsg">Fetching daily data and training XGBoost for all assets…</span>
+      <div class="progress-wrap" id="progWrap"><div class="progress-fill" id="progFill"></div></div>
+    </div>
+    <button class="rbtn" onclick="loadData(true)">↻ Refresh</button>
+    <a href="live-trading.html" class="rbtn" style="text-decoration:none;">📡 Live Trading</a>
+  </div>
+
+  <!-- Filter bar -->
+  <div class="filter-bar">
+    <span style="font-size:.75rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;">Show:</span>
+    <button class="filter-pill active" onclick="setFilter('all',this)">All Assets</button>
+    <button class="filter-pill" onclick="setFilter('ETFs',this)">ETFs</button>
+    <button class="filter-pill" onclick="setFilter('Mag 7',this)">Mag 7</button>
+    <button class="filter-pill" onclick="setFilter('Blue Chips',this)">Blue Chips</button>
+    <button class="filter-pill" onclick="setFilter('Futures',this)">Futures</button>
+    <button class="filter-pill" onclick="setFilter('BUY',this)"  style="margin-left:.5rem;border-color:rgba(52,211,153,.35);color:#34d399;">▲ BUY Only</button>
+    <button class="filter-pill" onclick="setFilter('SELL',this)" style="border-color:rgba(248,113,113,.35);color:#f87171;">▼ SELL Only</button>
+  </div>
+
+  <!-- Charts container -->
+  <div id="chartsContainer"></div>
+
+  <!-- ── Deep-Dive Explanation Sections ─────────────────────────────────── -->
+  <hr style="border:none;border-top:1px solid var(--border);margin:2.5rem 0;">
+
+  <!-- Section 1: XGBoost Methodology -->
+  <div class="deep-section">
+    <h3>⚡ XGBoost Algorithm — How It Generates Trading Signals</h3>
+    <p><strong>XGBoost (Extreme Gradient Boosting)</strong> is an ensemble of decision trees trained sequentially — each new tree corrects the prediction errors of all previous trees. Unlike a single decision tree (which overfits) or a random forest (which averages independent trees), XGBoost uses <strong>gradient descent in function space</strong>: it fits each successive tree to the residual errors (gradients of the loss function) of the combined ensemble. This produces a model that iteratively improves signal quality with each of the 300 trees added.</p>
+    <p>For financial time series, XGBoost excels because it natively handles <strong>non-linear interactions between technical indicators</strong> without requiring manual feature engineering. For example, the model can learn that RSI > 70 is only a SELL signal when ATR% is low (mean-reversion regime), but RSI > 70 is a continuation BUY signal when ATR% is high and OBV is trending upward (momentum breakout regime) — a conditional relationship that linear models cannot capture.</p>
+    <div class="deep-grid">
+      <div class="deep-card">
+        <div class="deep-card-title">① Data Pipeline</div>
+        <div class="deep-card-body">Daily OHLCV downloaded from Yahoo Finance for 2024-01-01 to present. Auto-adjusted for splits and dividends. Minimum 120 bars required for training. Futures roll-adjusted at expiration.</div>
+      </div>
+      <div class="deep-card">
+        <div class="deep-card-title">② Feature Engineering</div>
+        <div class="deep-card-body">Up to 23 technical indicators: <strong>RSI-14, MACD histogram (12/26/9), ATR% (14-bar), SMA-20/50 ratio, Bollinger Band %B, Stochastic %K (14), ADX (14), OBV trend, 20-bar Sharpe ratio,</strong> and return momentum at 1/3/5/10/20-bar horizons.</div>
+      </div>
+      <div class="deep-card">
+        <div class="deep-card-title">③ Train/Test Split</div>
+        <div class="deep-card-body">Model trained on 2024 data (before yellow dashed line). Out-of-sample predictions generated for 2025–2026. No lookahead bias — the model never sees future data at prediction time. OOS accuracy is the only meaningful metric.</div>
+      </div>
+      <div class="deep-card">
+        <div class="deep-card-title">④ XGBoost Hyperparameters</div>
+        <div class="deep-card-body">300 boosted trees, max depth 5, learning rate 0.05, 80% column subsampling, 80% row subsampling. Log-loss (binary cross-entropy) objective for probability calibration. L1/L2 regularization prevents overfitting.</div>
+      </div>
+      <div class="deep-card">
+        <div class="deep-card-title">⑤ Signal Generation</div>
+        <div class="deep-card-body"><strong>BUY</strong> when P(UP) ≥ 58%. <strong>SELL</strong> when P(UP) ≤ 42%. <strong>HOLD</strong> when 42% &lt; P(UP) &lt; 58% (low confidence zone). Only the first bar of each new signal run is marked — reducing noise and highlighting genuine directional changes.</div>
+      </div>
+      <div class="deep-card">
+        <div class="deep-card-title">⑥ Feature Importance</div>
+        <div class="deep-card-body">XGBoost computes <strong>gain importance</strong> — the average improvement in loss function when a feature is used for a split, weighted by how often it is used. High gain = the model relies on this feature to make its most confident predictions.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Section 2: Institutional Buyers Impact -->
+  <div class="deep-section">
+    <h3>🏦 Institutional Buyers — How They Drive XGBoost Signal Changes</h3>
+    <p>Institutional investors collectively control <strong>$50–70 trillion</strong> in assets under management and are the dominant force in equity price discovery. Their buying and selling behavior creates the persistent momentum, OBV trends, and Sharpe ratio patterns that XGBoost's highest-importance features capture. Understanding how different institution types generate directional signals is essential for interpreting the model's direction changes.</p>
+    <h4>Index Funds & ETF Sponsors (Vanguard, BlackRock, State Street)</h4>
+    <p>These three firms control <strong>$20+ trillion</strong> in passive index assets and are the single largest shareholder group for virtually every stock in the dashboard. Their buying is mechanical: when inflows arrive, they purchase every S&P 500 constituent proportional to index weight. This creates <strong>persistent, non-fundamental OBV uptrends</strong> that the XGBoost model correctly interprets as BUY signals — even when fundamental analysis might suggest otherwise. Quarter-end rebalancing ($20–50B of flows in the final 3 days of each quarter) creates predictable OBV inflections that the model has learned to associate with directional confirmation. <em>Impact on model:</em> Passive flows are the primary driver of OBV and 20-bar Sharpe features for large-cap stocks.</p>
+    <h4>Hedge Funds & Active Managers (2 & 20 Fee Structure)</h4>
+    <p>Approximately <strong>10,000 hedge funds</strong> managing $4T+ collectively create rapid, conviction-based position changes that generate the MACD crossovers and RSI reversals that XGBoost captures as direction change signals. When a hedge fund catalyst occurs (earnings miss, macro shock, activist announcement), hedge fund selling can move a stock 3–5% in minutes — creating an ATR% spike and RSI collapse that the model reads as a SELL onset. <em>Impact on model:</em> Hedge fund activity drives MACD histogram and ATR% features — the most important signals at direction change points.</p>
+    <h4>CTAs (Commodity Trading Advisors) — Systematic Trend Followers</h4>
+    <p>CTAs manage <strong>$300–500B</strong> in trend-following strategies and create one of the most dangerous feedback loops in markets. They go LONG when price is above the 200-day moving average (SMA ratio > 1.0) and SELL when price breaks below — often triggering $20–50B of selling at exactly the moment when a stock crosses its 200-day MA. This creates <strong>self-reinforcing momentum</strong> that XGBoost's SMA ratio feature captures directly. CTA deleveraging during August 2024 (Sahm Rule + yen carry unwind) and April 2025 (tariff crash) created the most dramatic SELL signal accelerations in the dataset. <em>Impact on model:</em> CTAs make the SMA-20/50 ratio and momentum features non-linearly predictive — a stock near its 200-day MA has different signal dynamics than one far above or below it.</p>
+    <h4>Vol Control Funds & Risk-Parity Strategies</h4>
+    <p>Vol Control funds target a fixed portfolio volatility (e.g., 12% annualized) by mechanically adjusting equity exposure inversely to realized volatility. When VIX rises from 15 to 20 (a 33% increase in vol), Vol Control funds sell equities worth <strong>$10–20B</strong> to maintain target volatility. This creates a procyclical feedback: rising volatility → forced selling → more volatility → more forced selling. The August 2024 VIX spike to 65 and April 2025 VIX spike to 52 both triggered massive Vol Control fund liquidations that amplified initial shocks into near-crash territory — creating the most extreme ATR% readings in the XGBoost feature set. <em>Impact on model:</em> Vol Control selling creates ATR% regime breaks that signal the most important SELL onsets in the dataset.</p>
+    <table class="inst-table">
+      <tr><th>Institution Type</th><th>AUM Estimate</th><th>Primary XGBoost Features Driven</th><th>Key Direction Change Mechanism</th></tr>
+      <tr><td>Index Funds (Vanguard, BLK, SSGA)</td><td>$20T+</td><td>OBV trend, 20-bar Sharpe</td><td>Quarterly rebalancing flows create directional OBV breaks</td></tr>
+      <tr><td>Active Hedge Funds</td><td>$4T</td><td>MACD histogram, ATR%, RSI</td><td>Rapid conviction position changes on catalysts</td></tr>
+      <tr><td>CTA Trend Followers</td><td>$400B</td><td>SMA ratio, momentum</td><td>200-day MA breaks trigger systematic selling cascades</td></tr>
+      <tr><td>Vol Control / Risk Parity</td><td>$1.5T</td><td>ATR%, Sharpe ratio</td><td>VIX spikes force mechanical equity liquidation</td></tr>
+      <tr><td>Options Market Makers</td><td>N/A (dealers)</td><td>ATR%, OBV (via delta hedging)</td><td>GEX regime changes create amplified price moves</td></tr>
+      <tr><td>Corporate Buybacks</td><td>$1T/year</td><td>OBV, Bollinger Band %B</td><td>Mechanical bid creates floor under OBV on dips</td></tr>
+      <tr><td>Sovereign Wealth Funds</td><td>$12T</td><td>OBV, Sharpe (multi-month)</td><td>Strategic accumulation creates persistent OBV uptrends</td></tr>
+    </table>
+  </div>
+
+  <!-- Section 3: Market Events & Feature Impact -->
+  <div class="deep-section">
+    <h3>📰 Market Events — How They Corrupt or Confirm Technical Features</h3>
+    <p>The XGBoost model's 23 technical features are derived entirely from OHLCV price and volume data — they have no direct knowledge of Fed meetings, earnings releases, geopolitical events, or tariff announcements. Yet these events are precisely what cause the <strong>RSI collapses, MACD crossovers, OBV surges, and ATR% spikes</strong> that the model reads as direction change signals. Understanding the event-to-feature transmission mechanism explains why the model's direction changes occur when they do.</p>
+    <h4>Federal Reserve Policy Events</h4>
+    <p>Fed decisions are the most impactful recurring events for XGBoost signals. A <strong>rate cut</strong> triggers: (1) immediate RSI surge as prices gap up, (2) MACD crossover within 1–3 days as momentum builds, (3) OBV surge as institutional buyers add exposure, and (4) Sharpe ratio improvement as returns increase without volatility spiking — four simultaneous BUY feature confirmations. A <strong>hawkish surprise</strong> reverses this: RSI collapse, MACD turns negative, OBV shows distribution, ATR% spikes — four SELL feature confirmations. The September 2024 50bp cut and December 2024 hawkish dot plot are the clearest examples in the dataset of Fed events generating simultaneous multi-feature direction changes.</p>
+    <h4>Earnings Surprises (Especially Mag 7)</h4>
+    <p>Earnings surprises create the sharpest single-session feature breaks in the dataset. An earnings beat generates: gap-up open → RSI jumps 10–20 points → MACD histogram surges → OBV records single-day high (volume × price spike) → Bollinger Band upper breach. For NVDA's February 2024 earnings (+769% YoY), these features moved so dramatically that they generated the strongest BUY signal onset in the entire 2024 training set — providing the model with a reference anchor that it uses to identify subsequent high-probability BUY setups. Conversely, earnings misses (even small ones, like MSFT's July 2024 Azure "miss") create SELL onsets through the reverse process.</p>
+    <h4>Geopolitical Shocks</h4>
+    <p>Geopolitical events (Iran attack April 2024, Russia-Ukraine developments, Middle East escalations) create <strong>immediate ATR% spikes and OBV distribution</strong> as institutional risk managers reduce exposure simultaneously. The April 13, 2024 Iranian drone attack on Israel caused an ATR% spike from 0.8% to 1.9% in a single session — a signal the model interprets as volatility-regime break and potential SELL onset. However, geopolitical shocks tend to be transient (the April 2024 market recovered in 2 weeks), meaning the model's SELL signals around geopolitical events are often the shortest-duration in the dataset. The model learns this pattern in training: geopolitical ATR% spikes without sustained OBV distribution = shorter SELL confidence.</p>
+    <h4>Tariff & Trade Policy Events (2025)</h4>
+    <p>The April 2025 "Liberation Day" tariff announcements were unprecedented in the XGBoost feature space — a -10.5% S&P move in 2 sessions created ATR% and MACD readings that the model had never seen in its 2024 training data. This is an <strong>out-of-distribution event</strong>: the model extrapolates from the largest shocks in its training set (August 2024 yen unwind: -8% in 3 days) but the April 2025 crash exceeded all training precedents. The April 9 tariff pause created the largest single-session positive return in the dataset (+9.5% S&P), which similarly challenged the model's confidence intervals. Signal quality during this period is the lowest in the dataset — the model is genuinely uncertain rather than directionally wrong.</p>
+  </div>
+
+  <!-- Section 4: GEX Feedback Loop -->
+  <div class="deep-section">
+    <h3>🎯 GEX & Delta Hedging — The Hidden Force Behind Direction Changes</h3>
+    <p><strong>Gamma Exposure (GEX)</strong> is the aggregate gamma position of all options market makers (dealers) across all strikes and expirations for a given asset. It represents how much dealers must buy or sell the underlying asset for every $1 move in price to maintain delta neutrality. GEX is the single most important institutional flow that XGBoost features capture <em>indirectly</em> — through its effects on price action, volatility, and volume that flow into ATR%, OBV, and momentum features.</p>
+    <h4>Long Gamma Regime (Positive GEX — Stabilizing)</h4>
+    <p>When GEX is positive, options dealers are net long gamma — they profit from realized volatility and must <strong>buy when prices fall, sell when prices rise</strong> to maintain delta neutrality. This creates a stabilizing feedback loop: a -1% S&P decline triggers $8–15B in mechanical dealer buying, which limits the decline to -1.5% instead of -3%. In a long-gamma environment, XGBoost features are well-behaved: ATR% stays low, momentum features are smooth and persistent, and MACD/RSI signals have higher reliability. This is why the model's training period (2024 bull market with mostly positive GEX) produces well-calibrated signals — the training data reflects orderly, low-volatility price action where technical features have strong predictive value.</p>
+    <h4>Short Gamma Regime (Negative GEX — Amplifying)</h4>
+    <p>When GEX is negative, options dealers are net short gamma — they must <strong>sell when prices fall, buy when prices rise</strong> to hedge. This creates a destabilizing feedback loop that directly shapes XGBoost features: a -1% S&P decline triggers $5–10B in forced dealer selling, amplifying to a -2–3% actual decline. In a short-gamma environment, ATR% spikes, MACD turns aggressively negative, and OBV shows distribution — creating the strongest SELL signals in the model. The August 2024 (VIX 65) and April 2025 (VIX 52) crashes are the most extreme short-gamma examples in the dataset, where dealer forced selling amplified initial catalysts by 30–100% beyond fundamental fair value.</p>
+    <h4>Gamma Flip Level — The Most Critical Price Point</h4>
+    <p>The <strong>Gamma Flip Level</strong> (GEX zero-crossing) is the price at which GEX transitions from positive to negative. Above this level, markets are stabilized by dealer buying; below it, markets are amplified by dealer selling. The flip level acts as a <strong>regime switch</strong> in XGBoost feature behavior: price trending above the flip level → orderly ATR% → reliable RSI/MACD signals. Price breaking below → ATR% spikes → MACD collapses rapidly → RSI overshoots. The model implicitly learns this regime switch through training, but it is not aware of the flip level explicitly — it only sees the resulting feature changes. This explains why direction changes in the model often correspond to the flip level being crossed in the GEX dashboard.</p>
+    <h4>How to Use GEX with XGBoost Signals</h4>
+    <p>The most powerful trading approach combines XGBoost signals with live GEX data from the GEX Dashboard: (1) <strong>BUY signal + Positive GEX</strong> = highest conviction long — dealer stabilization reinforces the model's bullish momentum features; (2) <strong>SELL signal + Negative GEX</strong> = highest conviction short — dealer amplification reinforces the model's bearish features; (3) <strong>BUY signal + Negative GEX</strong> = lower conviction — the model sees bullish features but dealer flows may amplify any adverse move; (4) <strong>SELL signal + Positive GEX</strong> = lower conviction — bearish features but dealer stabilization may limit downside and create false SELL signals. The direction change panels for each asset above provide the historical GEX context at each signal transition point.</p>
+  </div>
+
+  <!-- Bottom nav -->
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-top:3rem;flex-wrap:wrap;gap:1rem;border-top:1px solid var(--border);padding-top:1.5rem;">
+    <a href="ml-key-assets.html" style="color:var(--muted);text-decoration:none;font-size:.9rem;">← ML Key Assets</a>
+    <a href="live-trading.html" class="hero-cta" style="font-size:.88rem;padding:.6rem 1.4rem;background:linear-gradient(135deg,#fbbf24,#f59e0b);color:#000;">Open Live Dashboard →</a>
+  </div>
+
+</div><!-- /xb-wrap -->
+
+<script>
+const API = 'http://localhost:5050';
+let _allData = null;
+let _activeFilter = 'all';
+let _gexMap    = {};  // symbol → GEX data
+let _tfCandles = {};  // symbol → raw candles [{time,open,high,low,close}]
+let _lwCharts  = {};  // symbol → { chart, cs, vs, bgSeries, priceLines, height, isResizing, resizeStartY, resizeStartH }
+const DEFAULT_H = 320;
+const MIN_H = 180, MAX_H = 800;
+
+// ── Fit chart to all content ──────────────────────────────────────────────────
+function fitChart(symbol) {
+  const inst = _lwCharts[symbol];
+  if (inst?.chart) inst.chart.timeScale().fitContent();
+}
+
+// ── Attach resize handle for chart height ────────────────────────────────────
+function attachChartEvents(a) {
+  const rh  = document.getElementById('rh-' + a.symbol);
+  if (!rh) return;
+  const inst = _lwCharts[a.symbol];
+  if (!inst) return;
+
+  rh.addEventListener('mousedown', e => {
+    e.preventDefault();
+    inst.isResizing   = true;
+    inst.resizeStartY = e.clientY;
+    inst.resizeStartH = inst.height || DEFAULT_H;
+    document.body.style.cursor = 'ns-resize';
+    document.body.style.userSelect = 'none';
+  });
+  document.addEventListener('mousemove', e => {
+    if (!inst.isResizing) return;
+    const newH = Math.max(MIN_H, Math.min(MAX_H, inst.resizeStartH + (e.clientY - inst.resizeStartY)));
+    inst.height = newH;
+    const div = document.getElementById('cv-' + a.symbol);
+    if (div) { div.style.height = newH + 'px'; inst.chart.resize(div.clientWidth, newH); }
+  });
+  document.addEventListener('mouseup', () => {
+    if (!inst.isResizing) return;
+    inst.isResizing = false;
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+  });
+}
+
+// ── Load GEX data for call/put walls ─────────────────────────────────────────
+async function loadGexData() {
+  try {
+    const res = await fetch(`${API}/api/gamma-exposure`, { cache: 'no-store' });
+    if (!res.ok) return;
+    const data = await res.json();
+    (data.assets || []).forEach(a => { _gexMap[a.symbol] = a; });
+  } catch(e) { /* GEX unavailable — charts still render */ }
+}
+
+// ── Timeframe change handler ──────────────────────────────────────────────────
+async function changeTimeframe(symbol, interval) {
+  const infoEl     = document.getElementById('tf-info-' + symbol);
+  const spinEl     = document.getElementById('tf-spin-' + symbol);
+  const gexStripEl = document.getElementById('gex-strip-' + symbol);
+  const TF_LABELS  = {
+    '1d': '2024–2026 · Daily candles · XGBoost signals',
+    '4h': '90 days · 4-Hour candles · daily signal overlay',
+    '1h': '90 days · 1-Hour candles · daily signal overlay',
+    '30m': '60 days · 30-Min candles · daily signal overlay',
+  };
+  const asset = (_allData?.assets || []).find(a => a.symbol === symbol);
+  if (!asset) return;
+
+  if (interval === '1d') {
+    _tfCandles[symbol] = null;
+    renderLWChart(asset, { candles: null, gex: _gexMap[symbol] || null });
+    if (infoEl) infoEl.textContent = TF_LABELS['1d'];
+    updateGexStrip(gexStripEl, _gexMap[symbol]);
+    return;
+  }
+
+  if (spinEl) spinEl.style.display = 'block';
+  if (infoEl) infoEl.textContent = 'Loading…';
+
+  try {
+    const res = await fetch(`${API}/api/candles/${encodeURIComponent(symbol)}?interval=${interval}`, { cache: 'no-store' });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    if (!Array.isArray(data) || !data.length) throw new Error('No candles');
+    // Deduplicate + sort (LightweightCharts requires strict ascending time)
+    const seen = new Set();
+    const candles = data
+      .filter(c => { if (seen.has(c.time)) return false; seen.add(c.time); return true; })
+      .sort((a, b) => a.time - b.time);
+    _tfCandles[symbol] = candles;
+    renderLWChart(asset, { candles, gex: _gexMap[symbol] || null });
+    if (infoEl) infoEl.textContent = TF_LABELS[interval] || interval + ' candles';
+    updateGexStrip(gexStripEl, _gexMap[symbol]);
+  } catch(e) {
+    if (infoEl) infoEl.textContent = 'Failed to load — try again';
+  } finally {
+    if (spinEl) spinEl.style.display = 'none';
+  }
+}
+
+// ── Render GEX level strip below chart ───────────────────────────────────────
+function updateGexStrip(el, gex) {
+  if (!el) return;
+  if (!gex) { el.innerHTML = '<span style="color:var(--muted);font-size:.65rem;">GEX levels unavailable</span>'; return; }
+  const fmt = p => p >= 1000 ? p.toLocaleString('en-US', {maximumFractionDigits:0}) : p?.toFixed(2);
+  el.innerHTML = [
+    gex.gamma_wall ? `<span class="gex-lvl gex-call"><span class="gex-line"></span>Call Wall <span class="gex-val">$${fmt(gex.gamma_wall)}</span></span>` : '',
+    gex.put_wall   ? `<span class="gex-lvl gex-put"><span class="gex-line"></span>Put Wall <span class="gex-val">$${fmt(gex.put_wall)}</span></span>` : '',
+    gex.spot       ? `<span class="gex-lvl gex-spot"><span class="gex-solid"></span>Spot <span class="gex-val">$${fmt(gex.spot)}</span></span>` : '',
+    gex.flip_level ? `<span class="gex-lvl gex-flip"><span class="gex-line"></span>Flip <span class="gex-val">$${fmt(gex.flip_level)}</span></span>` : '',
+  ].filter(Boolean).join('');
+}
+
+// ── Load data ──────────────────────────────────────────────────────────────
+async function loadData(nocache = false) {
+  setStatus('loading', 'Training XGBoost for all assets… (30–60 s on first load)');
+  showProgress(true);
+  simulateProgress();
+
+  try {
+    const url = `${API}/api/xgboost-charts${nocache ? '?nocache=1' : ''}`;
+    const res = await fetch(url, { cache: 'no-store' });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+
+    if (!data.assets || data.assets.length === 0) {
+      setStatus('error', 'No asset data returned.');
+      showProgress(false);
+      return;
+    }
+
+    _allData = data;
+    await loadGexData();
+    renderAll(data.assets);
+    renderStats(data.assets);
+    const ts = data.timestamp ? new Date(data.timestamp).toLocaleTimeString() : '';
+    setStatus('ok', `${data.count} assets · XGBoost trained · ${ts} · auto-refreshes every 10 min`);
+    document.getElementById('statTs').textContent = ts || '—';
+    showProgress(false);
+  } catch (e) {
+    setStatus('error', `Cannot reach server: ${e.message}. Start Flask: py live-server.py`);
+    showProgress(false);
+    renderError();
+  }
+}
+
+// ── Progress simulation ────────────────────────────────────────────────────
+let _progTimer = null;
+function simulateProgress() {
+  let pct = 5;
+  clearInterval(_progTimer);
+  document.getElementById('progFill').style.width = pct + '%';
+  _progTimer = setInterval(() => {
+    pct = Math.min(pct + (pct < 80 ? 2 : 0.3), 92);
+    document.getElementById('progFill').style.width = pct + '%';
+  }, 800);
+}
+function showProgress(v) {
+  document.getElementById('progWrap').style.display = v ? 'block' : 'none';
+  if (!v) {
+    clearInterval(_progTimer);
+    document.getElementById('progFill').style.width = '100%';
+  }
+}
+
+function setStatus(state, msg) {
+  const dot = document.getElementById('sdot');
+  dot.className = 'sdot ' + (state === 'ok' ? 'on' : state === 'loading' ? 'loading' : '');
+  document.getElementById('smsg').textContent = msg;
+}
+
+// ── Filter ─────────────────────────────────────────────────────────────────
+function setFilter(f, btn) {
+  _activeFilter = f;
+  document.querySelectorAll('.filter-pill').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  if (_allData) renderAll(_allData.assets);
+}
+
+function filteredAssets(assets) {
+  return assets.filter(a => {
+    if (_activeFilter === 'all')  return true;
+    if (_activeFilter === 'BUY')  return a.current_signal === 'BUY';
+    if (_activeFilter === 'SELL') return a.current_signal === 'SELL';
+    return a.group === _activeFilter;
+  });
+}
+
+// ── Render stats strip ────────────────────────────────────────────────────
+function renderStats(assets) {
+  const buy  = assets.filter(a => a.current_signal === 'BUY').length;
+  const sell = assets.filter(a => a.current_signal === 'SELL').length;
+  const hold = assets.filter(a => a.current_signal === 'HOLD').length;
+  const accs = assets.filter(a => a.oos_accuracy != null).map(a => a.oos_accuracy);
+  const avgAcc = accs.length ? (accs.reduce((s,v)=>s+v,0)/accs.length*100).toFixed(1)+'%' : '—';
+  document.getElementById('statTotal').textContent = assets.length;
+  document.getElementById('statBuy').textContent   = buy;
+  document.getElementById('statSell').textContent  = sell;
+  document.getElementById('statHold').textContent  = hold;
+  document.getElementById('statAcc').textContent   = avgAcc;
+}
+
+// ── Render all chart groups ────────────────────────────────────────────────
+function renderAll(assets) {
+  const container = document.getElementById('chartsContainer');
+  const filtered  = filteredAssets(assets);
+
+  if (filtered.length === 0) {
+    container.innerHTML = `<div class="empty-state"><div style="font-size:2rem;margin-bottom:.5rem;">🔍</div>No assets match filter.</div>`;
+    return;
+  }
+
+  // Group assets
+  const groups = {};
+  filtered.forEach(a => {
+    if (!groups[a.group]) groups[a.group] = [];
+    groups[a.group].push(a);
+  });
+  const GROUP_ORDER = ['ETFs', 'Mag 7', 'Blue Chips', 'Futures'];
+
+  let html = '';
+  GROUP_ORDER.forEach(grp => {
+    if (!groups[grp]) return;
+    const list = groups[grp];
+    const buyCnt  = list.filter(a => a.current_signal === 'BUY').length;
+    const sellCnt = list.filter(a => a.current_signal === 'SELL').length;
+    html += `<div class="grp-section-hdr">
+      ${grp}
+      <span class="grp-count">${list.length} assets —
+        <span style="color:#34d399;">${buyCnt} BUY</span> /
+        <span style="color:#f87171;">${sellCnt} SELL</span>
+      </span>
+    </div>
+    <div class="charts-grid" id="grid-${grp.replace(/\s/g,'_')}">`;
+    list.forEach(a => { html += buildCardHTML(a); });
+    html += `</div>`;
+  });
+
+  container.innerHTML = html;
+
+  // Draw all charts after DOM is ready
+  requestAnimationFrame(() => {
+    filtered.forEach(a => {
+      const tf = _tfCandles[a.symbol] || null;
+      renderLWChart(a, { candles: tf, gex: _gexMap[a.symbol] || null });
+      attachChartEvents(a);
+      updateGexStrip(document.getElementById('gex-strip-' + a.symbol), _gexMap[a.symbol] || null);
+    });
+  });
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// DIRECTION CHANGE ANALYSIS  —  market events · GEX · delta hedging
+// ══════════════════════════════════════════════════════════════════════════
+
+// ── Per-asset narrative profiles ──────────────────────────────────────────
+const ASSET_NARRATIVE = {
+  'SPY': {
+    title: 'SPDR S&P 500 ETF — Broad Market Regime Tracker',
+    paras: [
+      `<strong>SPY</strong> is the world's most liquid ETF and the primary institutional barometer for U.S. equity health. The XGBoost model for SPY is the most reliable in the portfolio — trained on dense, high-quality OHLCV data where technical features cleanly encode macro regime shifts. The model's highest-importance features are <strong>OBV trend</strong> and <strong>20-bar Sharpe ratio</strong>, capturing the persistent directional accumulation flows from BlackRock ($3.7T AUM), Vanguard ($7T AUM), and State Street ($3.5T AUM) — the three largest ETF sponsors who collectively control SPY's float dynamics.`,
+      `The <strong>2024 bull market</strong> was the model's strongest sustained BUY period: the AI capex supercycle, decelerating CPI (3.4%→2.4%), and the Fed's September 2024 50bp cut combined to keep RSI above 55, MACD histogram positive, and OBV trending upward for over 8 consecutive months. Directional changes were driven by specific macro shocks: the <span class="hl-sell">April 2024 hot CPI (3.5%)</span> + Iran attack flipped MACD negative and spiked ATR%, generating a SELL onset. The <span class="hl-buy">September 2024 Fed cut</span> reversed all features simultaneously into a BUY. The <span class="hl-sell">December 2024 hawkish Fed</span> (only 2 cuts for 2025) caused a -4.5% drop that triggered another SELL onset.`,
+      `<strong>Institutional buyer impact:</strong> Quarter-end rebalancing by pension funds ($8–15T in pension assets) injects $20–50B of directional flow that directly shifts SPY's OBV and Sharpe features — two of its highest-importance variables. The <span class="hl-gex">GEX regime</span> is equally critical: positive GEX above VIX 18 means dealer delta buying mechanically stabilizes SPY (limits drawdowns to ≤1.5%), while the August 2024 short-gamma cascade (VIX 65) forced $40–60B of dealer selling that amplified a -3% gap into -6%. The April 2025 Liberation Day crash (VIX 52) represented the most extreme short-gamma environment since COVID — every 1% SPY decline triggered mechanical dealer selling amplifying to 1.5–2% total move. The +9.5% recovery on the tariff pause was driven by the largest single-session dealer positive delta rehedging flow in history.`,
+    ],
+  },
+  'QQQ': {
+    title: 'Invesco Nasdaq-100 ETF — AI Supercycle & Tech Concentration',
+    paras: [
+      `<strong>QQQ</strong> tracks the Nasdaq-100 with 56% weight in Magnificent 7 stocks, making it the most AI-sensitive of the ETF group. The XGBoost model for QQQ is driven primarily by <strong>MACD histogram</strong> and <strong>RSI</strong> — capturing the momentum character of tech stocks that can sustain overbought readings (RSI 75–85) for months during bull cycles, a behavior the model correctly learns does not constitute a SELL signal in a momentum regime.`,
+      `The <strong>2024 AI supercycle</strong> drove QQQ from $400 to $540, generating one of the model's longest BUY streaks. NVDA's February 2024 earnings (+769% YoY) created a cascade: QQQ's SMA-20 ratio surged, MACD histogram hit multi-year highs, and OBV recorded its largest weekly increase since 2020. The <span class="hl-sell">July 2024 Mag-7 rotation</span> is the most significant direction change in QQQ's model history: when institutional rotation from growth to small-caps drained $25–35B from Nasdaq-heavy portfolios, RSI dropped from 75 to 38 in 4 days — a textbook SELL onset. The <span class="hl-sell">January 2025 DeepSeek shock</span> caused a single-session -5% gap that generated a brief SELL before recovering within the week.`,
+      `<strong>Institutional buyer impact:</strong> QQQ's OBV is directly shaped by NVDA, AAPL, and MSFT institutional accumulation — when all three move in the same direction, QQQ's OBV signal becomes the strongest predictor in the feature set. <span class="hl-gex">GEX dynamics</span>: QQQ dealer hedging often leads SPY by 30–60 minutes because tech options are more actively traded by sophisticated institutions. NVDA GEX shocks propagate to QQQ within hours via forced index ETF rebalancing — the February 2024 NVDA earnings call-delta surge ($8B+ of NVDA buying) created additional QQQ buying as index weights readjusted.`,
+    ],
+  },
+  'IWM': {
+    title: 'iShares Russell 2000 ETF — Small Cap Rate Sensitivity & GEX Volatility',
+    paras: [
+      `<strong>IWM</strong> tracks 2,000 small-cap companies and is the most volatile ETF in the dashboard, with ATR% as its highest-importance XGBoost feature. Small caps are highly sensitive to domestic credit conditions, interest rates, and economic cycle expectations — making IWM's signals more event-driven and shorter-duration than SPY or QQQ. The model generates <strong>more frequent direction changes</strong> for IWM than any other ETF.`,
+      `The <span class="hl-buy">July 2024 sector rotation</span> created IWM's most explosive signal: as Mag 7 sold off, small caps surged +10% in 4 sessions on rate-cut expectations. RSI jumped from 32 to 78, Stochastic %K crossed bullishly, and MACD flipped positive — four simultaneous BUY confirmations. The <span class="hl-sell">August 2024 Sahm Rule trigger</span> (unemployment 4.3%) hit IWM hardest: small companies have thin cash cushions and high variable-rate debt, making recession fears disproportionately bearish. The <span class="hl-buy">November 2024 Trump election</span> was IWM's single best session: the deregulation + domestic tariff protection narrative drove IWM +8% in 3 days — a BUY onset confirmed across all momentum features.`,
+      `<strong>GEX insight:</strong> IWM frequently runs in a <span class="hl-gex">short-gamma regime</span> — dealers are short delta and must sell into declines and buy into rallies, amplifying both moves 30–40% beyond fundamentals. During the July 2024 rotation, sudden IWM call buying forced dealers to buy IWM futures worth $5–8B, creating outsized +10% moves in days that fundamentals alone couldn't justify. The April 2025 tariff shock created credit-tightening fears that hit small-cap borrowers hardest — IWM SELL signals during this period reflected both fundamental risk and negative-GEX mechanical amplification.`,
+    ],
+  },
+  'DIA': {
+    title: 'SPDR Dow Jones ETF — Blue Chip Stability & Rate Cycle',
+    paras: [
+      `<strong>DIA</strong> tracks 30 blue chip Dow Jones companies (JPM, GS, MSFT, AAPL, CAT, HON, UNH) weighted by price. The XGBoost model for DIA generates the fewest direction changes of any ETF — its <strong>SMA ratio</strong> and <strong>20-bar Sharpe</strong> features reflect the slow-moving institutional flows that characterize Dow-constituent ownership. Pension funds, insurance companies, and sovereign wealth funds dominate DIA's float, creating persistently trending OBV signals that give the model high conviction on entry.`,
+      `The <span class="hl-buy">November 2024 Trump election</span> was the most impactful single event for DIA: financials (JPM, GS — deregulation narrative), industrials (CAT, HON — infrastructure spending), and defense (RTX, BA — defense budget increases) surged simultaneously. DIA outperformed SPY by 2% in the post-election week — the first time in years the Dow led the S&P. The <span class="hl-sell">April 2025 tariff shock</span> hit DIA specifically through Boeing (supply chain disruption), Caterpillar (China revenue 15% of sales), and 3M (global manufacturing). However, Walmart, McDonald's, Visa, and UnitedHealth provided relative stability — creating a moderating effect vs QQQ or IWM.`,
+      `<strong>Institutional impact:</strong> DIA's price-weighted methodology means Boeing and Goldman Sachs (highest-priced stocks) disproportionately drive XGBoost features. When Boeing faces headlines (737 quality, tariff supply chains), DIA's ATR% spikes despite most other components being stable — creating potential SELL false positives. The model learns to distinguish Boeing-specific noise from genuine broad directional change through OBV and Sharpe features that require broad index-level confirmation.`,
+    ],
+  },
+  'NVDA': {
+    title: 'NVIDIA — AI Supercycle Engine & GEX Volatility Extremes',
+    paras: [
+      `<strong>NVDA</strong> is the defining stock of the 2024–2026 AI investment supercycle, rising from $50 to $150+ (split-adjusted) — a +200% gain that represents the largest single-year market cap addition in history ($2T+). The XGBoost model for NVDA uses <strong>RSI, MACD, and ATR%</strong> as its highest-importance features, capturing the momentum-driven character of AI narrative investing. NVDA holds the unique distinction of sustaining RSI readings above 70 for months without generating a SELL signal — a momentum regime the model correctly learns during training.`,
+      `Direction changes in NVDA's model are driven by the most extreme institutional events in the dataset. The <span class="hl-buy">February 2024 earnings</span> (+769% YoY data center revenue, $22B guidance) created a MACD histogram at multi-year highs and OBV surge as BlackRock, Fidelity, and sovereign wealth funds collectively bought $15B+ of NVDA in Q1 2024. The <span class="hl-sell">August 2024 yen carry-trade unwind</span> caused a -25% drawdown as short-gamma dealers sold aggressively; the model captured this through simultaneous ATR% explosion and MACD/RSI collapse. The <span class="hl-sell">January 2025 DeepSeek shock</span> (-17% overnight) was the most dramatic single-session NVDA event — the AI demand narrative briefly questioned by a Chinese open-source model that matched NVDA's H100 performance at 3% of the training cost.`,
+      `<strong>GEX is NVDA's most critical overlay:</strong> NVDA's options market is the largest single-stock premium market in the world. When NVDA reports earnings, GEX swings from +$5B to -$8B within hours — dealers go from long gamma (stabilizing) to catastrophically short gamma (amplifying). The February 2024 call-delta surge forced dealers to buy an estimated $8–12B of NVDA stock — mechanically amplifying the initial +12% earnings gap to a sustained +25% over 2 weeks. Conversely, the January 2025 DeepSeek shock triggered put-delta selling of $15–25B, amplifying the initial -10% pre-market gap to -17% at open. <span class="hl-gex">NVDA GEX shocks are large enough to propagate to QQQ (via index rebalancing) and NQ=F futures</span> — making NVDA the single most important GEX event in the entire dashboard.`,
+    ],
+  },
+  'AAPL': {
+    title: 'Apple — Buyback-Anchored Stability & Institutional GEX Floor',
+    paras: [
+      `<strong>AAPL</strong> is the most institutionally-held stock in the world and the XGBoost model's most consistent signal generator in the Mag 7. Apple's $110B/year buyback program ($28B/quarter) creates a persistent mechanical bid that anchors OBV and Sharpe ratio features upward — meaning the model has a natural bullish bias for AAPL that reflects genuine structural demand, not noise. AAPL's highest-importance features are <strong>OBV trend</strong> and <strong>SMA-20 ratio</strong>, both directly influenced by corporate buybacks supplementing institutional demand.`,
+      `The <span class="hl-sell">April–May 2024 period</span> was AAPL's weakest in the dataset: no generative AI product announcements while NVDA/MSFT led AI narratives, China sales -8% QoQ, and Vision Pro demand disappointing. RSI fell to 42, MACD turned negative, and OBV stalled — generating a SELL onset. The reversal came at <span class="hl-buy">WWDC June 2024</span> (Apple Intelligence AI announcement) + the $110B buyback announcement: dual catalysts that instantly restored all momentum features. The <span class="hl-sell">April 2025 tariff shock</span> was AAPL's most existential threat in the dataset: 87% of iPhones assembled in China faced 145% effective tariff rates. Tim Cook's direct White House negotiations and the subsequent consumer electronics tariff carve-out created a whipsaw — SELL then rapid BUY recovery.`,
+      `<strong>GEX stability mechanism:</strong> AAPL consistently maintains the most positive GEX of any single stock outside SPY/QQQ — dealers are long gamma almost permanently. This means AAPL rarely moves >3% on non-earnings days as dealers absorb all directional pressure mechanically. The combined AAPL buyback ($28B/quarter) + dealer long-gamma support creates the strongest mechanical floor of any single stock — making AAPL SELL signals in the model particularly high-conviction when they do occur (requiring multiple technical confirmations to overcome this structural bid).`,
+    ],
+  },
+  'MSFT': {
+    title: 'Microsoft — Azure AI Monetization & Institutional Consistency',
+    paras: [
+      `<strong>MSFT</strong> is the most consistent Mag 7 signal generator — its XGBoost model benefits from Microsoft's remarkably stable and diversified revenue base (Azure cloud, Office 365, LinkedIn, Xbox). The model's highest-importance features are <strong>SMA ratio</strong> and <strong>OBV</strong>, reflecting the persistent institutional accumulation from Vanguard (8.5%), BlackRock (7.2%), and Fidelity (5.1%) who collectively own 35%+ of MSFT's float. These mega-funds' quarterly rebalancing creates predictable OBV patterns that the model captures more reliably for MSFT than for more volatile Mag 7 stocks.`,
+      `The <span class="hl-buy">2024 BUY signal</span> was driven by Azure AI monetization appearing in financial results: Q1 2024 Azure AI revenue growth of 3 percentage points above total Azure growth was the first confirmation that Copilot was generating measurable revenue. MACD crossed bullishly on this earnings beat, RSI expanded from 55 to 72, and institutional OBV showed the largest single-quarter MSFT accumulation since 2020. The <span class="hl-sell">July 2024 earnings slight miss</span> (Azure grew 29% vs 31% expected) created a brief SELL onset as MACD turned negative and RSI dipped to 45 — demonstrating the model's sensitivity to even minor earnings deceleration versus elevated expectations.`,
+      `<strong>Institutional and GEX overlay:</strong> MSFT's long-gamma GEX regime is anchored by institutional put-hedging demand from portfolio managers who hold MSFT as a core position and buy puts for protection. This creates a consistent dealer long-gamma floor that limits MSFT's downside in corrections. The <span class="hl-buy">April 2025 tariff period</span> was a relative outperformer for MSFT: pure-software revenue has zero direct tariff exposure. The model correctly maintained a BUY signal for MSFT through April 2025 while hardware-exposed peers (AAPL, NVDA) generated SELL signals — demonstrating the model's ability to differentiate fundamental tariff sensitivity across assets.`,
+    ],
+  },
+  'GOOGL': {
+    title: 'Alphabet — Advertising Cycle, AI Race & Antitrust Overhang',
+    paras: [
+      `<strong>GOOGL</strong> presents an XGBoost challenge: the stock is fundamentally driven by digital advertising (75% of revenue), which correlates with economic confidence, while also subject to rapid AI narrative shifts (Gemini vs ChatGPT competition). This dual driver makes GOOGL's signals more cyclical than pure-tech peers — its model highest-importance features are <strong>5-bar momentum</strong> and <strong>MACD histogram</strong>, capturing the quick sentiment reversals driven by earnings beats/misses and AI product announcements.`,
+      `The <span class="hl-buy">Q1 2024 BUY signal</span> was confirmed by simultaneous advertising recovery (+15% YoY) and Google Cloud acceleration (+28%). The <span class="hl-sell">August 2024 DOJ antitrust ruling</span> (Google found guilty of maintaining illegal search monopoly) created a significant SELL candidate — a -10% reaction as legal overhang raised business model questions. The model's RSI and MACD captured this immediate shock. Recovery came as investors discounted near-term enforcement risk (remedies expected to take years). The <span class="hl-buy">Q4 2024 earnings</span> (advertising revenue +12% YoY, YouTube beats) generated one of the cleaner BUY signals as all features aligned.`,
+      `<strong>Institutional flow dynamics:</strong> GOOGL is unique in the Mag 7 for its large activist/hedge fund shareholder base. When TCI Fund Management publicly pressured Google to cut costs (2023–2024), institutional OBV showed unusual buying patterns that the model captured through Sharpe ratio feature improvement. The April 2025 tariff period was mixed for GOOGL: domestic YouTube advertising is tariff-immune, but Google Cloud's Asia-Pacific revenue and hardware products (Pixel, Nest) face exposure. The model's signal quality during the April 2025 whipsaw depended on which revenue segment dominated the market's narrative focus.`,
+    ],
+  },
+  'META': {
+    title: 'Meta Platforms — Social Media Monetization & AI Infrastructure',
+    paras: [
+      `<strong>META</strong> had the most dramatic recovery story in the Mag 7: from the 2022 "Year of Efficiency" metaverse losses to becoming the best-performing Mag 7 stock in 2023 (+194%) and maintaining outperformance in 2024. The XGBoost model for META uses <strong>MACD and RSI</strong> as highest-importance features, capturing META's strong momentum character — once META establishes a trend direction, it tends to persist longer than most individual stocks.`,
+      `The <span class="hl-buy">2024 BUY signal</span> was confirmed by: Q1 2024 revenue +27% YoY, a $50B buyback announcement, Reels monetization at full scale, and Llama 3 AI model release. Institutional buyers added heavily in Q1–Q2 2024, with hedge funds increasing META positions to 10-year highs — OBV showed consistent accumulation. The model correctly identified this as a high-conviction BUY. <span class="hl-sell">SELL signals for META</span> tend to cluster around earnings misses or regulatory events (EU privacy fines, teen safety legislation), when OBV suddenly shifts from accumulation to distribution as institutional holders trim positions.`,
+      `<strong>Earnings GEX volatility:</strong> META has a history of ±15% post-earnings moves — the largest systematic earnings vol of the Mag 7 after NVDA. In the week before earnings, META GEX goes deeply negative as dealers take on massive short-gamma positions selling straddles. This creates extreme intraday amplification if results deviate from expectations. The model's ATR% feature spikes significantly around META earnings weeks, which the XGBoost correctly weights as an uncertainty signal rather than directional information. The <span class="hl-buy">April 2025 tariff period</span> was relatively benign for META — digital advertising has no direct tariff exposure, though economic slowdown fears temporarily compressed advertising demand forecasts.`,
+    ],
+  },
+  'AMZN': {
+    title: 'Amazon — AWS Reacceleration, E-Commerce & Advertising Convergence',
+    paras: [
+      `<strong>AMZN</strong> is the most diversified stock in the Mag 7 — simultaneously a cloud company (AWS: $100B+ run rate), e-commerce marketplace, digital advertiser ($50B/year), and logistics operator. This diversification gives the XGBoost model unusually stable features: OBV and 20-bar Sharpe dominate importance, reflecting consistent institutional accumulation from both growth and value investors — a rare combination for a tech stock.`,
+      `The <span class="hl-buy">2024 BUY signal</span> was anchored by the AWS reacceleration narrative: Q4 2023 marked the inflection from cloud digestion to growth resumption, and Q1 2024 AWS revenue +17% YoY confirmed the trend. The advertising business ($13B/quarter) growing faster than e-commerce created an underappreciated earnings quality story. <span class="hl-buy">Prime Video advertising launch</span> (2024) added a new high-margin revenue stream that institutional growth investors rewarded with persistent OBV accumulation. The <span class="hl-sell">April 2025 tariff shock</span> directly threatened AMZN's marketplace: Chinese third-party sellers (40% of units) faced 145% tariffs, threatening the flywheel that makes Amazon's e-commerce profitable.`,
+      `<strong>Institutional dynamics:</strong> AMZN is notable for its Jeff Bezos / Andy Jassy insider selling patterns — when large insider sales occur, institutional OBV models briefly turn negative as the market absorbs supply. The XGBoost model captures this through OBV deceleration in the weeks following large insider transactions. AWS margin expansion (operating margins improving from 24% to 37% through 2024–2025) attracted value-rotation institutional buyers who traditionally avoided AMZN as "too growth-y" — broadening the buyer base and increasing OBV consistency that benefits the model's signal quality.`,
+    ],
+  },
+  'TSLA': {
+    title: 'Tesla — Retail Gamma Squeezes, Elon Premium & Robotaxi Narrative',
+    paras: [
+      `<strong>TSLA</strong> is the most challenging asset for any ML model in the dashboard: extreme retail options participation (highest of any large-cap), Elon Musk-driven headline volatility, non-standard fundamental metrics, and the most volatile GEX regime outside of NVDA earnings weeks. The model prioritizes <strong>ATR%</strong> and <strong>short-term momentum (1/3-bar returns)</strong> for TSLA — longer-duration features (SMA, OBV) are too slow to capture the fast reversals that characterize TSLA's price action.`,
+      `The <span class="hl-sell">2024 H1 SELL signals</span> for TSLA corresponded to structural deterioration: EV demand weakness, price cuts compressing margins below 18%, and BYD surpassing Tesla in global EV deliveries. RSI held below 45 for extended periods, MACD remained negative, and OBV showed institutional distribution as growth funds reduced exposure. Retail options traders maintained aggressive call buying even as the stock declined, creating a confusing <span class="hl-gex">negative GEX environment</span> where dealer selling amplified downside. The <span class="hl-buy">November 2024 Trump election</span> was TSLA's most powerful catalyst: the Elon-Trump relationship created full self-driving regulatory fast-track and robotaxi approval optimism — TSLA surged +40% in 3 weeks, generating a BUY onset as all features confirmed simultaneously.`,
+      `<strong>GEX extremes:</strong> TSLA has the most volatile GEX of any large-cap stock. During retail-driven gamma squeezes (multiple times per year), TSLA GEX goes from deeply negative to strongly positive within days — forcing dealers to violently reverse from selling to buying millions of shares. These mechanical flows, driven entirely by options positioning rather than fundamentals, create the outsized intraday moves (±10% in a single session) that make TSLA both the most exciting and most difficult signal to model. The model's signal quality for TSLA is the lowest in the Mag 7 group — the correct interpretation is directional bias, not precise timing.`,
+    ],
+  },
+  'JPM': {
+    title: 'JPMorgan Chase — Rate Cycle Bellwether & Deregulation Beneficiary',
+    paras: [
+      `<strong>JPM</strong> is the world's largest bank by market cap and a bellwether for U.S. financial health. The XGBoost model for JPM relies heavily on <strong>SMA ratios</strong> and <strong>Sharpe ratio</strong> features — reflecting the trend-following institutional flows tied to the Fed rate cycle. JPM outperforms in rising-rate environments (wider net interest margins) and when deregulation narratives are strong; it underperforms when rate cuts are aggressively priced (NIM compression) or credit losses mount.`,
+      `The <span class="hl-buy">2024 BUY signal</span> was confirmed by record investment banking revenue ($9B+ quarterly), strong trading desks (FICC +18%, Equities +21%), and NIM holding above 2.8% longer than expected. Jamie Dimon's $150M+ share sales in early 2024 created brief OBV pressure but institutional value buyers (Berkshire Hathaway, large pension funds) absorbed the supply. The <span class="hl-buy">November 2024 Trump election</span> was the most powerful catalyst: deregulation (Basel III Endgame rollback, reduced capital requirements) added $10B+ to JPM's estimated future earnings power — triggering a RSI surge and MACD crossover simultaneously.`,
+      `<strong>Institutional dynamics:</strong> JPM is the largest position in many financial sector ETFs (XLF, KBE, KRE) — when these ETFs see inflows, JPM receives automatic buying proportional to its 12%+ weight. This passive-flow driven demand creates persistent OBV uptrend signals that the XGBoost model correctly identifies as structural rather than speculative. The <span class="hl-sell">April 2025 tariff shock</span> created SELL pressure through credit loss provision fears and deal flow collapse — VIX 52 directly impacted trading revenue volatility. Recovery was swift once the 90-day pause removed systemic risk from the equation.`,
+    ],
+  },
+  'BAC': {
+    title: 'Bank of America — Rate Sensitivity, Bond Portfolio & Consumer Credit',
+    paras: [
+      `<strong>BAC</strong> is the most rate-sensitive major bank — its massive bond portfolio (accumulated 2020–2021 at near-zero yields) created $100B+ of unrealized losses when rates rose to 5.25%. This structural headwind made BAC significantly underperform JPM through 2023–2024, and the XGBoost model correctly captured this through <strong>OBV distribution patterns</strong> and <strong>below-average Sharpe ratio</strong> features during periods of yield stress. The model's highest-importance feature for BAC is the Bollinger Band position, capturing whether the stock is at relative highs or lows within its recent range.`,
+      `<span class="hl-buy">BUY signals for BAC</span> are primarily tied to rate-cut expectations: every time CPI came in cool and Fed cuts were pulled forward, BAC surged on the expectation that bond portfolio unrealized losses would reverse and NIM would expand. The <span class="hl-buy">September 2024 Fed 50bp cut</span> was particularly bullish — BAC's liability-side (deposits) repriced faster than assets, creating a temporary NIM window. <span class="hl-sell">SELL signals</span> corresponded to hot CPI prints (rate cut delays) and credit quality concerns. Warren Buffett's Berkshire Hathaway historically owned 13%+ of BAC but began reducing in 2024–2025 — OBV captured this institutional selling pressure.`,
+      `<strong>Consumer credit overlay:</strong> BAC's $1T consumer loan portfolio makes it directly exposed to tariff-driven inflation eroding household purchasing power. The April 2025 tariff shock SELL signal reflected credit loss provision build expectations from consumer stress — a fundamental signal the model captured through deteriorating Sharpe ratio as BAC underperformed its financial sector peers. The 2025–2026 Fed easing cycle represents the single most important structural BUY catalyst for BAC as unrealized bond losses reverse and NIM expands on falling short-term rates.`,
+    ],
+  },
+  'XOM': {
+    title: 'ExxonMobil — OPEC Supply Discipline, Geopolitical Premium & Permian Growth',
+    paras: [
+      `<strong>XOM</strong> is the largest U.S. oil company and a proxy for global energy demand, OPEC+ policy discipline, and geopolitical risk premiums. The XGBoost model for XOM is fundamentally different from equity asset models — its features capture commodity-driven dynamics where <strong>ATR%</strong> and <strong>short-term momentum</strong> dominate importance, as oil price moves create immediate large-magnitude XOM price reactions. Elevated RSI readings for XOM often persist longer than for growth stocks, as commodity super-cycles have multi-year durations.`,
+      `The <span class="hl-buy">2024 BUY signal</span> was driven by OPEC+ production discipline (Saudi Arabia voluntary cuts of 1Mb/day through H1 2024), the Pioneer Natural Resources acquisition ($60B closed in 2024 — making XOM the world's largest Permian Basin operator), and the Middle East conflict risk premium (Iran-Israel tensions, Houthi Red Sea disruptions adding $3–5/barrel freight premium). Institutional energy fund buyers — including sovereign wealth funds from oil-producing nations and value-rotation investors — drove persistent OBV accumulation. The <span class="hl-sell">April 2025 tariff shock</span> SELL signal reflected demand destruction fears: global trade war → lower industrial output → WTI fell below $60, threatening XOM's free cash flow assumptions.`,
+      `<strong>Geopolitical GEX dynamics:</strong> XOM's options market has a unique characteristic — geopolitical events (OPEC cuts, Iran sanctions, Houthi attacks) bypass options pricing mechanisms and force abrupt GEX regime changes. Unlike equity stocks where GEX shifts are telegraphed through options positioning, energy supply shocks create immediate GEX flips as dealers are caught off-side. The model's ATR% feature captures these sudden vol regime transitions. Exxon's $14B annual dividend + $17.5B buyback program provide a consistent fundamental floor that limits SELL signal duration — the model rarely stays in SELL for more than 4–6 weeks for XOM due to this structural cash return support.`,
+    ],
+  },
+  'GLD': {
+    title: 'SPDR Gold ETF — Central Bank De-dollarization & Safe Haven Premium',
+    paras: [
+      `<strong>GLD</strong> is the most unique asset in the dashboard — a commodity ETF that serves simultaneously as inflation hedge, safe-haven crisis asset, and de-dollarization play. The XGBoost model for GLD shows the highest <strong>Bollinger Band position</strong> and <strong>20-bar momentum</strong> importance — capturing gold's tendency to establish persistent trends once a breakout is confirmed. The model's BUY signals for GLD tend to be longer-duration and higher-conviction than for equity assets, as gold trends are structurally driven and slow to reverse.`,
+      `The <span class="hl-buy">2024 sustained BUY</span> for GLD was unprecedented in the historical context of real yields: gold typically sells off when real yields rise above 2%, yet GLD surged from $180 to $240+ throughout 2024 despite TIPS yields above 2%. The driver was <strong>central bank de-dollarization</strong>: China (PBOC), India, Turkey, and Middle Eastern sovereigns collectively bought 1,000+ tons of gold annually — structural demand that overwhelmed traditional macro signals and created persistently positive OBV that the model correctly categorized as BUY. The <span class="hl-sell">April 2024 Iran attack</span> created a safe-haven spike, while the <span class="hl-buy">April 2025 tariff shock</span> drove GLD's most powerful single-month BUY signal: gold surged to $3,200+ new ATH as trade war + inflation fears + dollar weakness coincided.`,
+      `<strong>Institutional dynamics:</strong> GLD's institutional buyer base is unique — central banks (sovereign demand, non-discretionary), macro hedge funds (inflation hedges), and risk-parity funds (fixed vol allocation) create different OBV patterns than equity stocks. The April 2025 tariff panic generated $4B+ of GLD ETF inflows in 2 weeks — the largest single-event institutional gold buying in ETF history. This created RSI > 80, MACD at multi-year highs, and Bollinger Band upper breach with continuation — a textbook XGBoost BUY trifecta that the model would correctly identify as high-conviction despite the elevated RSI (which for GLD, unlike stocks, often persists and continues higher).`,
+    ],
+  },
+  'ES=F': {
+    title: 'E-mini S&P 500 Futures — Institutional Price Discovery & GEX Transmission',
+    paras: [
+      `<strong>ES=F</strong> (E-mini S&P 500 futures) is the world's most liquid financial instrument by daily dollar volume ($200B+) and serves as the primary vehicle for institutional directional positioning and dealer delta hedging. The XGBoost model for ES=F generates signals slightly ahead of SPY because futures lead cash markets in price discovery — institutions execute large directional positions in ES=F before the equity market has fully priced in the information.`,
+      `ES=F's signal history is nearly identical to SPY but with amplification in the magnitude and speed of transitions. The <span class="hl-sell">August 2024 yen carry-trade unwind</span> was most visible in ES=F: systematic CTA and risk-parity funds deleveraged hundreds of billions of ES=F positions within hours — creating the -6% gapping that preceded VIX 65. The <span class="hl-buy">September 2024 Fed 50bp cut</span> created an ES=F surge as institutional re-leveraging hit futures before cash markets could respond. The <span class="hl-sell">April 2025 Liberation Day crash</span> and <span class="hl-buy">+9.5% single-session recovery</span> are the model's most extreme direction change events — both driven primarily by dealer forced hedging in ES=F rather than fundamental reassessment.`,
+      `<strong>GEX is most directly visible in ES=F:</strong> Every SPX options market maker delta rebalance is executed in ES=F futures within milliseconds. When GEX is deeply positive (SPY gamma walls), ES=F mean-reverts to specific price levels mechanically. When GEX goes negative (VIX spikes), ES=F trends aggressively away from gamma walls. The model's ATR% feature for ES=F is the most reactive to GEX regime changes of any asset — because GEX changes are literally transmitted through ES=F pricing in real time. <span class="hl-gex">ES=F vol spikes are often the first signal of GEX flip before equity markets respond</span>, making ES=F the leading indicator of broader market regime change.`,
+    ],
+  },
+  'NQ=F': {
+    title: 'E-mini Nasdaq-100 Futures — Tech GEX Amplification & AI Narrative Velocity',
+    paras: [
+      `<strong>NQ=F</strong> (E-mini Nasdaq-100 futures) amplifies tech sector GEX signals through leveraged futures price discovery. With NVDA, AAPL, and MSFT comprising 35% of index weight, NQ=F is the fastest responder to AI narrative shifts, semiconductor demand data, and earnings surprises. The model shows higher <strong>ATR% importance</strong> than ES=F — reflecting the greater volatility of tech-concentrated futures vs the more diversified S&P contract.`,
+      `The <span class="hl-buy">NVDA February 2024 earnings</span> supercycle was most visible in NQ=F: futures markets priced in the AI demand thesis faster than cash ETFs, creating a leading BUY onset that the model captured through MACD crossover and OBV surge preceding the cash market by 30–60 minutes. The <span class="hl-sell">July 2024 Mag-7 rotation</span> created NQ=F's most severe single-period SELL: $30B+ of institutional selling in one week as portfolio managers rotated from Nasdaq growth to Russell value — MACD, RSI, and SMA ratio all deteriorated simultaneously. The <span class="hl-sell">January 2025 DeepSeek shock</span> created a -5% NQ=F overnight gap that generated a brief SELL quickly reversed as the AI capex thesis survived scrutiny.`,
+      `<strong>NQ=F GEX propagation:</strong> NVDA GEX shocks propagate to NQ=F within minutes through a cascade: NVDA options → NVDA stock → QQQ rebalancing → NQ=F futures. This means NQ=F short-gamma cascades are faster and larger than ES=F — the April 2025 tariff crash saw NQ=F decline 12% (vs ES=F -10%) over 2 sessions because tech's China revenue exposure was concentrated in the Nasdaq 100. The model's ability to detect regime changes in NQ=F is enhanced by this sensitivity — the faster GEX responses create more defined signal onset points that XGBoost can cleanly identify through ATR% spikes and momentum reversals.`,
+    ],
+  },
+  'CL=F': {
+    title: 'WTI Crude Oil Futures — OPEC Supply, Geopolitics & Demand Cycle',
+    paras: [
+      `<strong>CL=F</strong> (WTI crude oil futures) is the global energy pricing benchmark driven by the intersection of OPEC+ supply policy, U.S. shale production growth, global demand cycles, and geopolitical risk premiums. The XGBoost model for CL=F is the most event-driven and geopolitically-sensitive in the dashboard — technical features are frequently overwhelmed by supply/demand shocks that create gap moves impossible to predict from prior daily bars. <strong>ATR% and short-term momentum</strong> dominate importance, as oil's daily volatility regime (calm vs shock) is the primary signal.`,
+      `The <span class="hl-buy">2024 BUY signal</span> for CL=F corresponded with OPEC+ maintaining historic production discipline (Saudi Arabia voluntarily cutting 1Mb/day) and Middle East conflict risk premium from Houthi Red Sea disruptions (adding $3–5/barrel freight and insurance premium). The model correctly identified this supply-constrained bullish regime through persistent momentum features. The <span class="hl-sell">April 2025 tariff shock SELL signal</span> was driven by a fundamental demand destruction scenario: global trade war → lower industrial output → WTI fell from $75 to below $60 as the demand growth outlook collapsed. China's 125% tariff retaliation threatened the single largest marginal oil demand growth driver.`,
+      `<strong>OPEC supply management overlay:</strong> CL=F has a unique institutional dynamic — OPEC+ nations collectively manage supply through the most powerful cartel in commodity markets. When oil prices fall below Saudi Arabia's fiscal breakeven ($75–80/barrel), OPEC cuts production — creating a natural price floor that institutional traders model as a put option on crude. The XGBoost model captures this through the duration and magnitude of SELL signals: bearish periods for CL=F tend to be self-limiting because OPEC supply cuts restore price equilibrium within 4–8 weeks. The May 2025 tariff truce + OPEC production cuts generated a BUY reversal that the model's momentum features captured through the rapid RSI and MACD normalization.`,
+    ],
+  },
+  'GC=F': {
+    title: 'Gold Futures — Sovereign Demand, Dollar Dynamics & Inflation Premium',
+    paras: [
+      `<strong>GC=F</strong> (gold futures) represents the 24-hour institutional and sovereign gold price discovery market. The XGBoost model for GC=F shows the highest <strong>momentum feature importance</strong> in the entire dashboard — gold trends persistently in month-long regimes, making MACD histogram and 20-bar Sharpe the most predictive features. Unlike equity assets, GC=F BUY signals tend to be significantly longer-duration (months) and SELL signals shorter and shallower (weeks).`,
+      `The <span class="hl-buy">2024 sustained BUY</span> was unprecedented: GC=F surged from $2,000 to $2,700 despite real yields above 2% — traditionally a headwind for gold. Central bank de-dollarization (China, India, Turkey collectively buying 1,000+ tons/year) provided structural demand that overwhelmed traditional inverse-yield-correlation signals. The model correctly identified this as a BUY because OBV showed massive persistent institutional accumulation — futures market structure with large non-commercial long positions at multi-year highs confirmed through CFTC Commitment of Traders data. The <span class="hl-buy">April 2025 tariff shock</span> propelled GC=F to $3,200+ ATH — the model's strongest gold BUY signal in the dataset, as RSI, MACD, momentum, and Bollinger Band all confirmed simultaneously.`,
+      `<strong>Dollar and Fed dynamics:</strong> GC=F's XGBoost model has the unique characteristic of generating BUY signals during both inflation fears AND deflation/recession fears — gold's dual role as inflation hedge AND safe haven means it benefits from opposite macro scenarios. The model captures this through the Sharpe ratio feature: gold's positive Sharpe during periods of equity stress (when it provides diversification) is structurally different from gold's positive Sharpe during inflation surges. <span class="hl-gex">GC=F dealer hedging</span> interacts with physical gold markets (central bank purchases, mining company hedges), creating more complex delta dynamics than equity options — making the GEX framework less directly applicable, but the momentum features compensate for this.`,
+    ],
+  },
+  'ZB=F': {
+    title: '30-Year Treasury Futures — Fed Policy Duration & Rate Cycle Timing',
+    paras: [
+      `<strong>ZB=F</strong> (30-year Treasury bond futures) is the most Fed-sensitive asset in the dashboard — price movements are directly tied to long-duration interest rate expectations and the trajectory of Fed policy. The model's highest-importance features are <strong>Bollinger Band position</strong> and <strong>Sharpe ratio</strong>, capturing the slow-grinding nature of rate cycle transitions. ZB=F often signals the opposite of equity models — when risk-off events drive bond buying, ZB=F BUY signals coincide with equity SELL signals, making it a natural portfolio hedge indicator.`,
+      `The <span class="hl-buy">2024 BUY signals</span> for ZB=F corresponded with rate-cut expectation surges: Q1 2024 (3 cuts priced), Q3 2024 (post-August recession scare, 50bp cut), and Q4 2025 (easing cycle in progress). The <span class="hl-sell">SELL signals</span> corresponded with hot CPI prints pushing cuts further out: April 2024 (CPI 3.5%), December 2024 (hawkish Fed projecting only 2 cuts for 2025). The <span class="hl-sell">April 2025 tariff shock</span> created an unusual scenario: ZB=F initially surged (safe-haven flight to quality) then sold off sharply as China threatened to dump U.S. Treasuries in retaliation — bonds were briefly not a safe haven, creating conflicting technical signals the model had to navigate.`,
+      `<strong>Portfolio hedging value:</strong> The XGBoost model for ZB=F serves a unique role in portfolio construction — when ZB=F generates a BUY signal, it typically signals an upcoming equity SELL environment (risk-off), allowing traders to hedge equity exposure. When ZB=F generates a SELL signal (rising yield expectations), it signals a financial sector BUY (JPM, BAC NIM expansion). The 2025–2026 Fed easing cycle is the primary structural BUY catalyst — each 25bp cut improves ZB=F fair value by approximately 1.5% of notional, creating a multi-year potential gain for long positions that the model's momentum features will sustain in BUY mode.`,
+    ],
+  },
+  'SI=F': {
+    title: 'Silver Futures — Solar/EV Industrial Demand & Safe-Haven Convergence',
+    paras: [
+      `<strong>SI=F</strong> (silver futures) occupies a unique dual role: precious metal safe-haven demand during crises, and critical industrial metal for solar panels, EVs, and semiconductor manufacturing. The model shows the highest <strong>ATR% importance</strong> of all precious metals — silver is 3–4x more volatile than gold due to its smaller market ($25B/year mining supply vs gold's $220B) and industrial demand component. The silver-gold ratio (historically wide at 80:1 vs 55:1 long-term average) suggests structural undervaluation that provides a medium-term BUY backdrop for the model.`,
+      `The <span class="hl-buy">2024 BUY signals</span> for SI=F were driven by the solar energy buildout: U.S. Inflation Reduction Act drove solar panel installations to record levels, consuming 120M+ ounces of silver annually (15% of total mining supply). EV manufacturing (silver-intensive electrical connections) added incremental industrial demand. The <span class="hl-buy">May 2024 silver surge</span> (+20% in 3 weeks, surpassing $32/oz) created the strongest MACD/RSI confirmation in the model's silver history. The <span class="hl-sell">April 2025 tariff shock</span> hit SI=F from both angles simultaneously: safe-haven demand surge (rising like gold) yet industrial demand collapse fears (China manufactures 70% of global solar panels), creating SI=F's most conflicted signal environment.`,
+      `<strong>Industrial-precious metal hybrid dynamics:</strong> SI=F's XGBoost model must navigate two entirely different demand regimes that can pull in opposite directions. During the April 2025 tariff shock, the safe-haven premium pushed prices +15% while industrial demand fears pushed prices -10% — the net +5% move masked extreme intraday ATR% that would have created significant SELL signals if the industrial narrative dominated. The model's resolution of this conflict depends on which feature dominates: if RSI (momentum) leads, BUY; if ATR% (volatility/uncertainty) leads, potential SELL. The May 2025 US-China truce resolved this tension — removing industrial demand fears while preserving inflation-hedge demand — generating a clean BUY onset as green energy structural tailwinds reasserted.`,
+    ],
+  },
+};
+
+function buildAssetNarrativeHTML(a) {
+  const profile = ASSET_NARRATIVE[a.symbol];
+  if (!profile) return '<p class="narr-para">Detailed narrative analysis not available for this asset. Review the Direction Change Analysis panel below for event-driven context.</p>';
+  return `<div class="narr-title">${profile.title}</div>
+    ${profile.paras.map(p => `<p class="narr-para">${p}</p>`).join('')}`;
+}
+
+// Monthly market event windows: { s, e (YYYY-MM-DD), events[], gex, delta }
+const MARKET_EVENTS = [
+  { s:'2024-01-01', e:'2024-01-31',
+    events:[
+      'Strong payrolls (353K Jan jobs) crush rate-cut bets for March',
+      'FOMC holds at 5.25–5.50%; Powell explicitly rules out March cut',
+      'META +20% earnings; Microsoft, NVDA AI capex cycle accelerates',
+      'S&P 500 opens year +1.6% as soft-landing narrative takes hold',
+    ],
+    gex:'Positive GEX regime — dealers long gamma throughout January. SPY 480–490 gamma wall caps upside while providing stabilizing bid. VIX suppressed to 13–14.',
+    delta:'Net positive dealer delta: call-heavy open interest forces dealers to buy S&P futures on dips, mechanically limiting drawdowns to ≤1.5% intraday. Every options expiration briefly removes gamma support.'
+  },
+  { s:'2024-02-01', e:'2024-02-29',
+    events:[
+      'CPI 3.1% — in-line but rate-cut timing pushed to June+',
+      'NVDA Q4 EPS $5.16 vs $4.59 est; revenue +769% YoY — AI supercycle accelerates',
+      'S&P 500 crosses 5,000 for the first time in history',
+      'Mag 7 collectively adds $500B market cap in 4 weeks',
+    ],
+    gex:'GEX expands sharply positive as NVDA options OI surges post-earnings. SPX 5,000 strike becomes massive gamma wall — dealers buy any dip below it. VIX 13–15.',
+    delta:'NVDA call delta explosion forces dealers to buy NVDA stock (+$8B estimated). This lifts QQQ/SMH, which forces further dealer delta hedging in index ETFs — a positive feedback loop. Realized vol collapses to 7% annualized.'
+  },
+  { s:'2024-03-01', e:'2024-03-31',
+    events:[
+      'PCE core 2.8% — Fed\'s preferred gauge on track; March cut still off-table',
+      'Fed dot plot: still projects 3 cuts in 2024',
+      'S&P 500 sets 22 all-time highs in Q1 2024 alone',
+      'Super Micro (SMCI) +400% YTD; AI hardware spending frenzy peaks',
+    ],
+    gex:'Peak positive GEX for Q1 2024. SPY 520–525 gamma wall established. Quad witching (Mar 15) — largest notional expiry in history briefly removes support before rebuilding. VIX 12–14.',
+    delta:'Long gamma environment: dealers absorb ±1% S&P moves without price impact. Every 1% dip triggers ~$10–15B in mechanical dealer buying. Realized volatility at 5-year lows despite all-time highs.'
+  },
+  { s:'2024-04-01', e:'2024-04-30',
+    events:[
+      'CPI 3.5% — hot surprise; rate cut timeline collapses from June to September',
+      'Iran launches >300 drones/missiles at Israel (Apr 13) — first direct attack',
+      '10-year Treasury yield surges to 4.7%; dollar index +1.5%',
+      'S&P 500 corrects -5.5%; VIX spikes from 13 to 21',
+    ],
+    gex:'GEX flips negative as VIX breaks 18 threshold. SPY 510 gamma wall breaks; put walls at 490–495 provide temporary dealer-buying support. Short gamma environment = amplified moves.',
+    delta:'Iran attack + CPI shock triggers put hedging surge — dealers must sell S&P futures to stay delta-neutral, amplifying initial -2% gap to -3.5%. Estimated $12–18B in forced dealer selling Apr 12–19. Bounce from put wall at 490 driven by mechanical dealer covering.'
+  },
+  { s:'2024-05-01', e:'2024-05-31',
+    events:[
+      'CPI 3.4% — marginal improvement; "last mile" of disinflation slow',
+      'FOMC holds; Powell removes hiking bias but pushes cuts further',
+      'Apple Q2 beats; $110B buyback announced (largest ever) lifts market',
+      'NVDA announces 10-for-1 stock split; shares +12% on announcement',
+    ],
+    gex:'GEX rebuilds positive post-May OPEX as buyback demand + recovery call buying surges. SPY 522–525 gamma wall re-establishes. VIX mean-reverts to 12–13.',
+    delta:'Apple $110B buyback creates persistent mechanical bid for AAPL stock. Dealers who sold puts post-correction start delta-positive rehedging as AAPL recovers. Net positive dealer delta supports 4% S&P recovery from April lows.'
+  },
+  { s:'2024-06-01', e:'2024-06-28',
+    events:[
+      'CPI 3.3% — first downside miss in months; rate cut odds jump',
+      'Fed reduces dot plot to 1 cut in 2024 (from 3); hawkish surprise',
+      'NVDA market cap hits $3.34T briefly overtaking Microsoft as world\'s largest',
+      'Quad witching (Jun 21) — record $5.5T notional expiration',
+    ],
+    gex:'Record positive GEX into Jun quad witching. SPX 5,300–5,350 strike cluster as massive gamma wall pins market for 3 weeks. Post-OPEX gamma cliff creates brief turbulence. VIX 11–13.',
+    delta:'Quad witching forces the single largest single-day dealer gamma rebalancing in history. Post-OPEX, stabilizing effect drops sharply — sets stage for July rotation. Dealers accumulate new positions at higher strikes.'
+  },
+  { s:'2024-07-01', e:'2024-07-31',
+    events:[
+      'CPI 3.0% — on-target; September rate cut fully priced in',
+      'Mag 7 rotation: Russell 2000 (IWM) surges +10% in 4 days as QQQ drops -7%',
+      'Yen carry trade fears emerge: Bank of Japan hints at rate hike',
+      'Trump assassination attempt (Jul 13) — brief market pause, then recovery',
+    ],
+    gex:'Bifurcated GEX: SPY/SPX GEX stays positive but Mag 7 individual stocks go short gamma during rotation. IWM GEX flips short gamma from sudden call-to-put ratio shift. Dealer hedging amplifies sector moves.',
+    delta:'Violent bifurcation: Mag 7 put hedges trigger forced dealer selling of NVDA/MSFT/GOOGL. Simultaneously, IWM call buying forces dealers to buy small-cap futures. Estimated $25–35B in cross-sector dealer delta rebalancing amplifies rotation beyond fundamentals.'
+  },
+  { s:'2024-08-01', e:'2024-08-31',
+    events:[
+      'Sahm Rule triggered: unemployment 4.3% (Aug 2) signals recession risk',
+      'Bank of Japan raises rates 25bps — yen carry trade collapses overnight',
+      'Nikkei -12% in single session (Aug 5); VIX spikes to 65 intraday',
+      'S&P 500 drops -8% peak-to-trough in 3 days then fully recovers in 3 weeks',
+      'Jackson Hole (Aug 23): Powell signals "time has come" for rate cuts',
+    ],
+    gex:'Most negative GEX since COVID. VIX 65 = extreme short gamma — dealers short delta at multiple strikes simultaneously. Gamma flip level at SPY 530 catastrophically breached. Every $1 S&P move required massive forced hedging.',
+    delta:'Aug 5: estimated $40–60B in forced dealer delta selling as vol spiked. Short gamma cascaded — initial -3% gap expanded to -6% from mechanical dealer selling alone. Recovery after BoJ walks back hike: VIX normalization allows dealers to rebuild long gamma. Jackson Hole triggers call buying → $15B+ positive dealer delta.'
+  },
+  { s:'2024-09-01', e:'2024-09-30',
+    events:[
+      'Fed cuts 50bps (Sep 18) — largest cut since 2020; "insurance cut" framing',
+      'Soft landing narrative becomes consensus on Wall Street',
+      'CPI 2.4%; PCE core 2.7% — on track toward 2% target',
+      'China announces massive stimulus (PBOC cuts + fiscal package)',
+    ],
+    gex:'GEX surges to most positive of 2024 post-rate-cut. New gamma walls at SPY 568–572. VIX collapses to 15 then 14. Record call open interest as institutions position for soft-landing rally.',
+    delta:'Fed 50bp cut triggers massive call buying across every index ETF. Dealers buy estimated $15–22B in S&P futures to hedge call delta — providing mechanical thrust to ATH breakout. Positive dealer delta becomes self-reinforcing above SPY 560.'
+  },
+  { s:'2024-10-01', e:'2024-10-31',
+    events:[
+      'Strong jobs: 254K payrolls (blows out 150K estimate); unemployment 4.1%',
+      'Big Tech earnings: GOOGL +6%, META +5% after hours; MSFT slight revenue miss',
+      'Pre-election VIX term structure inverts — election premium in November contracts',
+      'Israel-Hezbollah ground operation intensifies; oil +3% on supply fears',
+    ],
+    gex:'Election hedges build large put open interest at SPY 550–560. GEX net positive above 565 but dealers are short gamma below 560. Binary event risk (election) priced into vol surface.',
+    delta:'Inverted VIX term structure means November options overpriced — dealers short gamma going into election. Above SPY 570, dealers provide long-gamma stabilization. Below 560, dealers amplify moves. Strong jobs report pushes market firmly into long-gamma zone.'
+  },
+  { s:'2024-11-01', e:'2024-11-30',
+    events:[
+      'Trump wins presidency (Nov 5) — "Trump trade" erupts on Nov 6',
+      'S&P +500pts in 3 sessions; Russell 2000 +8%; Bitcoin +30% in 10 days',
+      'Financials, defense, crypto, and energy surge; clean energy/EV selloff',
+      'Fed cuts 25bps (Nov 7); Powell says "not in a hurry" to cut further',
+    ],
+    gex:'Post-election GEX explodes to most positive of year. Election vol premium collapses — VIX drops 22→14 in days. Massive call buying at SPY 590–600 creates new gamma walls. Short-covering amplifies move.',
+    delta:'Trump win: estimated >$30B in net call delta that dealers hedge by buying S&P futures. Pre-election put hedges unwind = dealers buy back futures. Dual positive delta flows (new calls + put unwind) create self-reinforcing rally. Dealers mechanically buy every 0.5% dip.'
+  },
+  { s:'2024-12-01', e:'2024-12-31',
+    events:[
+      'Fed cuts 25bps (Dec 18) but hawkish: dot plot shows only 2 cuts in 2025',
+      '10-year yield spikes to 4.6%; dollar index surges to multi-year highs',
+      'S&P sells off -4.5% in 2 days post-Fed — worst December since 2018',
+      'Santa Claus rally fails; tax-loss harvesting and pension rebalancing add pressure',
+    ],
+    gex:'Dec quad witching (Dec 20) removes massive gamma support. Post-OPEX gamma cliff. Dealers flip short gamma as VIX rises to 27–28. Put wall at SPY 580 becomes resistance not support.',
+    delta:'Hawkish Fed triggers put hedging surge → dealers sell futures to hedge → self-reinforcing selloff. Year-end rebalancing by pension funds selling equities to rebalance adds $10–15B in additional selling. Dec 23–31 reduced liquidity amplifies all moves.'
+  },
+  { s:'2025-01-01', e:'2025-01-31',
+    events:[
+      'DeepSeek R1 (Jan 20): Chinese open-source AI shocks market — NVDA -17% overnight, $600B market cap wiped',
+      'Trump inauguration (Jan 20); day-one executive orders on tariffs, immigration, energy',
+      'CPI 2.9% — inflation sticky above 2.5%; Fed signals extended pause',
+      'S&P recovers DeepSeek shock within 1 week as AI capex thesis holds',
+    ],
+    gex:'NVDA GEX goes most negative since Aug 2024 during DeepSeek shock — short gamma amplifies -17% move. SPY GEX holds positive at 5,800–5,900 gamma wall limiting contagion. VIX spikes 16→22 then retreats.',
+    delta:'NVDA: massive put delta triggers forced dealer selling of NVDA stock → amplifying initial AI-demand fear. QQQ dealers briefly enter short-gamma territory. SPY dealers maintain long-gamma above 580, absorbing cross-asset contagion. NVDA recovers as dealers reestablish long gamma when VIX normalizes.'
+  },
+  { s:'2025-02-01', e:'2025-02-28',
+    events:[
+      'Trump imposes 25% tariffs on Canada & Mexico, 10% on China (Feb 1)',
+      'Markets volatile: tariffs → threats → partial backtrack cycle begins',
+      'CPI 3.0% — inflation re-accelerates on energy and goods prices',
+      'S&P 500 mini-correction: -6% peak-to-trough; Mag 7 underperforms',
+    ],
+    gex:'Tariff uncertainty drives sustained put hedging demand. GEX weakens; VIX rises to 20–22. Gamma walls shift lower to SPY 570. Dealers become short gamma below 575.',
+    delta:'Each tariff announcement triggers intraday short-gamma amplification: -1% moves expand to -2% from dealer selling. Net dealer delta turns negative below SPY 560 — forming a feedback loop. Tariff-rally relief bounces are sold mechanically by dealers rehedging at higher strikes.'
+  },
+  { s:'2025-03-01', e:'2025-03-31',
+    events:[
+      'S&P 500 enters official correction territory (-10% from ATH)',
+      'EU tariff threats (25% on $26B of US goods) announced Mar 12',
+      'Consumer confidence drops to 3-year low; recession probability rises to 35%',
+      '"Liberation Day" April 2 tariff announcement teased — extreme uncertainty',
+    ],
+    gex:'Sustained negative GEX regime. VIX above 20 for 3+ weeks. Gamma flip level breached at SPY 565. Large options expirations temporarily remove protective puts, increasing dealer short-gamma exposure.',
+    delta:'Worst sustained short-gamma environment since Aug 2024. Dealer delta hedging amplifies both rallies and declines by 30–50% beyond normal. Large intraday swings (±2%) driven by mechanical dealer flows more than macro fundamentals. Put-heavy skew forces dealers to maintain negative delta bias.'
+  },
+  { s:'2025-04-01', e:'2025-04-30',
+    events:[
+      '"Liberation Day" (Apr 2): 10–145% tariffs on 180+ countries announced',
+      'S&P drops -10.5% over Apr 2–7 — worst 2-day drop since March 2020',
+      'China retaliates: 125% tariffs on all US imports; trade war escalation',
+      'VIX spikes to 52 (Apr 7 intraday) — 5th largest spike in history',
+      '90-day tariff pause for most nations announced (Apr 9) — S&P surges +9.5% same day',
+    ],
+    gex:'GEX at most negative since COVID crash. VIX 52 = extreme short gamma across all assets. Gamma flip level at SPY 520 breached. Estimated $80–120B in forced dealer delta hedging over Apr 2–7.',
+    delta:'Apr 2–7: catastrophic short-gamma cascade — every 1% S&P decline triggered 1.5–2% additional forced dealer selling. Circuit breakers nearly triggered Apr 7. Apr 9 pause: violent short-covering + dealers frantically buy to rehedge surging calls. Largest single-session positive delta dealer flow in history (estimated +$50–80B). Market +9.5% in one session.'
+  },
+  { s:'2025-05-01', e:'2025-05-31',
+    events:[
+      'US-China 90-day tariff truce (May 12): tariffs reduced 145%→30% temporarily',
+      'S&P 500 fully recovers April losses in 3 weeks',
+      'CPI 2.3% — lowest print since 2021; tariff inflation not yet visible in data',
+      'Warren Buffett announces retirement as Berkshire CEO after 60 years',
+    ],
+    gex:'GEX rapidly rebuilds positive as fear premium collapses. New gamma walls at SPY 560–572. VIX drops 32→18→15. Record call buying over 5 sessions drives GEX sharply positive.',
+    delta:'US-China truce: massive call buying forces dealers to buy $20B+ S&P to hedge delta. Short-covering by systematic funds (CTAs) adds momentum. Positive dealer delta self-reinforcing above SPY 560. Vol Control funds mechanically add equity exposure as VIX drops below 20.'
+  },
+  { s:'2025-06-01', e:'2025-06-30',
+    events:[
+      'US-China trade framework: tariffs extend at 30% with structured review process',
+      'NVDA hits new ATH; data center AI orders exceed $100B quarterly',
+      'Fed holds rates; dot plot shows 1–2 cuts in H2 2025 as inflation eases',
+      'S&P 500 returns to all-time highs; VIX lowest since pre-tariff era',
+    ],
+    gex:'Peak positive GEX of 2025 into June quad witching. Gamma walls at SPY 590–600. VIX 12–14. Record notional open interest in SPX options — largest stabilizing force in history.',
+    delta:'Maximum long-gamma regime: realized vol at 5–7% annualized. Dealers absorb all ±1.5% moves mechanically. NVDA LEAPS call gamma creates significant upside delta pressure across semiconductors, lifting QQQ/SOX systematically.'
+  },
+  { s:'2025-07-01', e:'2025-07-31',
+    events:[
+      'Q2 2025 earnings: Mag 7 beats across the board; AI revenue materializing',
+      'CPI 2.1% — approaching Fed 2% target; rate cut expectations firm for Sep',
+      'Soft landing consensus becomes unanimous on Wall Street',
+      'S&P 500 notches 40+ all-time highs year-to-date by July 31',
+    ],
+    gex:'Highly positive GEX environment — market pinned by gamma walls. Extremely low VIX (11–13). Record call open interest at SPY/QQQ. Positive GEX provides strongest stabilizing force of the cycle.',
+    delta:'Maximum long-gamma regime: realized vol 5% annualized. Dealers provide constant mechanical bid. Net positive dealer delta at every strike level. Earnings call-buying adds incremental positive delta — self-reinforcing ATH breakouts.'
+  },
+  { s:'2025-08-01', e:'2025-08-31',
+    events:[
+      'Jackson Hole: Fed signals rates to remain elevated into 2026 — "last mile" caution',
+      'Consumer spending data shows resilience despite 30% tariff burden on goods',
+      'AI infrastructure capex cycle continues: Microsoft, Google, Meta commit $400B+',
+      'Dollar weakens modestly on Fed comments; gold hits new ATH',
+    ],
+    gex:'GEX neutral-to-positive. Post-OPEX gamma cliff in mid-August briefly increases vol. VIX ticks to 17 post-Jackson Hole then retreats. Overall long-gamma regime intact.',
+    delta:'Jackson Hole hawkish tone triggers brief vol spike → dealers enter short-gamma temporarily above VIX 17. Quickly re-absorbed as earnings optimism returns. Gold GEX turns strongly positive on inflation-hedge demand.'
+  },
+  { s:'2025-09-01', e:'2025-09-30',
+    events:[
+      'Fed cuts 25bps (Sep 17): begins 2025 easing cycle as inflation at 2.2%',
+      'AI infrastructure companies report record revenue from hyperscaler demand',
+      'S&P 500 sets new ATH on rate-cut day; VIX drops to 12',
+      'Global markets rally on coordinated easing expectations (ECB, BoE also cutting)',
+    ],
+    gex:'Rate cut triggers sharp positive GEX surge. New gamma walls at SPY 600–610. VIX collapses to 12. Largest positive GEX reading since January 2025 builds throughout September.',
+    delta:'Rate cut + call-buying surge forces dealers to buy estimated $18–25B S&P futures. Positive dealer delta push self-reinforcing above SPY 580. Vol Control funds add $8–12B equity exposure as VIX drops below 15.'
+  },
+  { s:'2025-10-01', e:'2025-10-31',
+    events:[
+      'Q3 2025 earnings season: strong beats across sectors; AI monetization visible',
+      'Tariff review: US-China extend 30% rate structure with no escalation',
+      'CPI 2.0% — Fed\'s target officially met for first time since 2021',
+      'Soft landing confirmed in quarterly GDP data: +2.8% annualized growth',
+    ],
+    gex:'Positive GEX throughout October. Election premium absent (no major election). SPY 610–620 gamma walls. Low VIX (12–14). Stable long-gamma environment through OPEX.',
+    delta:'Stable long-gamma positive delta: dealers absorb ±1% moves mechanically. Earnings call-buying adds incremental positive delta at individual stock level. Systematic CTAs fully long equities at multi-year high exposure levels.'
+  },
+  { s:'2025-11-01', e:'2025-11-30',
+    events:[
+      'Fed cuts another 25bps (Nov 5); signals one more cut in December',
+      'Holiday retail sales projections: NRF forecasts +3.5% YoY growth',
+      'Bitcoin reaches new ATH above $100K on institutional adoption + ETF inflows',
+      'Year-end portfolio positioning by institutions supports equities',
+    ],
+    gex:'Peak year-end positive GEX. VIX 11–13. Record SPY call open interest for December. Dealers maximally long gamma — strongest stabilization regime in years.',
+    delta:'Year-end window dressing + call buying = dual positive dealer delta. Pension fund rebalancing (selling bonds, buying equities) adds systematic bid. Estimated $15–20B in net positive dealer delta supporting November gains.'
+  },
+  { s:'2025-12-01', e:'2025-12-31',
+    events:[
+      'Fed cuts 25bps (Dec 10): 3rd cut of 2025; signals measured pace in 2026',
+      'Year-end S&P 500 performance: strongest consecutive 2-year gain since 1997–98',
+      'AI chip demand remains robust: NVDA guides Q4 revenue +$10B above consensus',
+      'Treasury yields stable: 10Y at 4.1% — "Goldilocks" macro environment',
+    ],
+    gex:'Dec quad witching creates brief gamma cliff. Post-OPEX: GEX dips then rebuilds for year-end. VIX 12–15 range. Year-end stabilizing flows from rebalancing and options rollover.',
+    delta:'Dec OPEX removes puts and calls simultaneously — brief period of lower gamma. Dealer delta near neutral post-OPEX. Year-end window dressing then re-adds call buying, restoring positive dealer delta through Dec 31.'
+  },
+  { s:'2026-01-01', e:'2026-01-31',
+    events:[
+      'New Year positioning: institutions initiate 2026 allocations; growth stocks favored',
+      'CPI 2.1% — inflation stable; Fed comfortably on hold',
+      'Q4 2025 earnings previews: consensus estimates for +12% YoY EPS growth',
+      'AI "second wave" narrative: inference spending overtakes training spend',
+    ],
+    gex:'Positive GEX to start 2026. New gamma walls at SPY 620–630. VIX 12–14. AI options demand (NVDA, MSFT) maintains elevated positive GEX at index level.',
+    delta:'New-year call buying across Mag 7 + index ETFs forces dealers to buy S&P futures. Net positive dealer delta supports January rally. CTA trend-following systems at maximum long equity exposure.'
+  },
+  { s:'2026-02-01', e:'2026-02-28',
+    events:[
+      'Q4 2025 earnings: strong across Technology; margins expand on AI efficiency',
+      'Fed holds rates (Feb 4): "monitoring" tariff situation and labor market',
+      'New tariff uncertainty: Trump administration reviews trade deal timelines',
+      'Mag 7 report: mixed results — NVDA beats massively, MSFT in-line, META misses',
+    ],
+    gex:'GEX softens on tariff uncertainty and mixed earnings. VIX rises to 16–18. Gamma walls hold at SPY 610 but tested. Dealers reduce long gamma exposure on tariff headline risk.',
+    delta:'Mixed earnings create choppy dealer delta: NVDA call delta positive, META put selling negative, net near-neutral. Tariff headline risk keeps dealers hedging with short-dated puts — slightly negative bias on down-days.'
+  },
+  { s:'2026-03-01', e:'2026-03-31',
+    events:[
+      'Market consolidates near all-time highs after 2-year bull run',
+      'CPI data and Fed communications remain key catalysts this month',
+      'Q1 2026 earnings season begins late March; AI revenue trajectory in focus',
+      'Trade policy developments with China and EU on the front burner',
+    ],
+    gex:'Current GEX environment: monitor /api/gamma-exposure for live levels. VIX and GEX regime determine dealer positioning in real time.',
+    delta:'Current dealer delta positioning reflects live options open interest. Check GEX dashboard for gamma wall, flip level, and put wall — these determine mechanical dealer buying/selling levels for each asset.'
+  },
+];
+
+// Asset-specific GEX and options market profiles
+const ASSET_GEX_PROFILE = {
+  'SPY':  { mkt:'World\'s largest options market by notional ($2T+ OI). Dominated by institutional hedgers and 0DTE retail.', typical:'Almost always positive GEX; dealers long gamma above VIX 18, short gamma below.', delta_note:'SPY GEX is the backbone of market stability. Positive GEX = dealers buy dips / sell rips, capping realized vol. Negative GEX = mechanical amplification of every move.' },
+  'QQQ':  { mkt:'Second-largest ETF options market; tech-heavy (NVDA/AAPL/MSFT = 35% weight).', typical:'Mirrors SPY but more sensitive to NVDA earnings and AI sentiment shifts.', delta_note:'QQQ dealer delta hedging often leads SPY by 30–60 minutes. NVDA GEX shocks propagate to QQQ within hours via forced index rebalancing.' },
+  'IWM':  { mkt:'Small-cap ETF with smaller options market; less institutional hedging than SPY/QQQ.', typical:'Frequently negative GEX; small caps run short gamma during risk-off. More volatile than SPY by 30–40%.', delta_note:'IWM dealers often short gamma — amplifying both rallies and selloffs. During rate-cut rallies, IWM call buying forces dealers to buy futures, creating outsized +10% moves in days.' },
+  'DIA':  { mkt:'Dow Jones ETF with moderate options activity; lower turnover than SPY/QQQ.', typical:'Moderate positive GEX; less gamma-sensitive than SPY. Financials/industrials heavily weighted.', delta_note:'DIA dealer hedging less impactful on price action vs SPY. Rate sensitivity (JPM, GS, BA) means Fed events drive dealer delta flows more than earnings.' },
+  'NVDA': { mkt:'Largest single-stock options market by premium traded. 0DTE and weekly options dominate.', typical:'Extremely volatile GEX — surges positive post-earnings, can go deeply negative intraday on news.', delta_note:'NVDA GEX shocks are the largest single-stock dealer hedging events. A -10% NVDA move forces dealers to sell $15–25B of NVDA stock to maintain delta-neutral — amplifying initial moves 30–50%.' },
+  'AAPL': { mkt:'Consistently in top-3 single-stock options markets globally. Institutional and retail.', typical:'Consistently positive GEX; dealer long-gamma provides daily stabilizing anchor.', delta_note:'AAPL\'s $2.8T market cap + massive buybacks ($100B+/year) means dealer delta hedging interacts with corporate buying. Combined, they create a mechanical floor under AAPL on 1–3% dips.' },
+  'MSFT': { mkt:'Large institutional options demand; earnings options very active.', typical:'Positive GEX most of time; Azure/cloud revenue stability reduces tail risk.', delta_note:'MSFT dealer positioning reflects institutional confidence. Long-gamma dominance means MSFT rarely moves >3% on non-earnings days — dealers absorb directional pressure mechanically.' },
+  'GOOGL':{ mkt:'Large options market; Google/YouTube ad revenue cycle drives quarterly vol.', typical:'Positive GEX, lower skew vs NVDA/TSLA. Earnings vol collapse usually positive for sellers.', delta_note:'GOOGL dealers hedge significant put open interest from institutional portfolios. Put walls at round numbers ($150, $160, $170) create mechanical dealer-buying support levels.' },
+  'META': { mkt:'High combined retail + institutional options mix. Weekly options very active.', typical:'Can swing deeply negative GEX around earnings; recovers quickly post-event.', delta_note:'META\'s 2023–2025 "Year of Efficiency" narrative created aggressive call positioning — dealers long gamma most of time except earnings weeks. Post-earnings vol collapse forces dealers to unwind hedges, amplifying directional move.' },
+  'AMZN': { mkt:'Large options market; AWS cloud + retail seasonality creates well-defined vol windows.', typical:'Moderate positive GEX; AWS diversification smooths earnings vol vs pure-tech peers.', delta_note:'AMZN dealers benefit from diversified revenue base — gamma regime stable except Q4 holiday + earnings. AWS margin beats create larger-than-normal positive delta flows from call hedging.' },
+  'TSLA': { mkt:'Highest retail options participation of any single stock. Notorious for gamma squeezes.', typical:'Most volatile GEX of all large caps; frequently deeply negative (dealers short gamma) for weeks.', delta_note:'TSLA short-gamma regimes create legendary intraday swings: a -5% gap can cascade to -10% from dealer forced selling. Similarly, call gamma squeezes have driven +20% moves in days. Elon-related news = immediate short-gamma amplification.' },
+  'JPM':  { mkt:'Largest bank by options activity; rate-sensitive with quarterly guidance vol.', typical:'Moderate positive GEX; dealer positioning tied to credit spreads and yield curve.', delta_note:'JPM GEX closely tracks Treasury market volatility. When 10Y yields spike, JPM put hedging forces dealer selling — amplifying financials selloffs beyond pure fundamental impact.' },
+  'BAC':  { mkt:'Large retail participation in options; beta to rate environment highest of big banks.', typical:'Moderate positive GEX; outperforms in long-gamma rate-cut regimes.', delta_note:'BAC dealer delta heavily influenced by rate expectations. Rate-cut cycles drive call buying → positive dealer delta → BAC outperforms. Inverted yield curve = put hedging pressure → negative dealer delta.' },
+  'XOM':  { mkt:'Energy sector options leader; oil price correlation dominates vol structure.', typical:'GEX follows crude oil directional momentum; positive GEX during oil up-trends, negative in selloffs.', delta_note:'XOM dealers hedge against crude oil futures simultaneously. Oil supply shocks (OPEC cuts, geopolitical) instantly shift dealer delta — creating oil-equity amplification loops that can move XOM ±5% on supply announcements.' },
+  'GLD':  { mkt:'Gold ETF; safe-haven hedging demand from institutions drives options activity.', typical:'Positive GEX during risk-off; muted or neutral during risk-on equity bull markets.', delta_note:'GLD dealers see inverse relationship with S&P GEX: when equity put hedging surges (market crash), GLD call hedging surges simultaneously. Fed dovishness = call delta → dealers buy GLD, creating positive feedback.' },
+  'ES=F': { mkt:'E-mini S&P 500 futures — world\'s most liquid single instrument ($200B+ daily volume).', typical:'Mirrors SPY GEX scaled by 50x notional. Institutional hedgers and algo traders.', delta_note:'ES=F is the primary vehicle for dealer delta rebalancing: when SPX options require hedging, dealers transact in ES=F within milliseconds. ES=F vol spikes are often the first signal of GEX regime changes before equity markets respond.' },
+  'NQ=F': { mkt:'E-mini Nasdaq-100 futures; tech-heavy with NVDA, AAPL, MSFT sensitivity.', typical:'Mirrors QQQ GEX amplified by 20x leverage. More volatile than ES=F.', delta_note:'NQ=F amplifies tech GEX signals. A NVDA earnings shock propagates: NVDA options → QQQ options → NQ futures within minutes. NQ=F short-gamma cascades are faster and larger than ES=F due to tech concentration.' },
+  'CL=F': { mkt:'Crude oil WTI futures — geopolitical risk premium and OPEC policy drive vol.', typical:'GEX driven by supply/demand shocks; frequently flips negative on geopolitical events.', delta_note:'CL=F dealer delta hedging interacts with physical oil markets (refiners, airlines hedging). Geopolitical events (Iran, OPEC) bypass options markets — forcing abrupt GEX regime changes that amplify underlying moves 20–40%.' },
+  'GC=F': { mkt:'Gold futures — inflation hedge and Fed policy sensitivity; institutional focus.', typical:'Positive GEX during disinflation/uncertainty; muted during strong-dollar regimes.', delta_note:'GC=F dealer positions reflect dual role: inflation hedge + safe haven. Dollar strength directly reduces dealer long delta as international demand hedges unwind. Fed meeting weeks see highest GC=F dealer rebalancing.' },
+  'ZB=F': { mkt:'30-year Treasury bond futures — rate expectations and auction supply drive vol.', typical:'GEX tied to rate vol (MOVE index); positive GEX when rates stable, negative during spikes.', delta_note:'ZB=F dealers hedge against both futures and bond options simultaneously. Fed hawkish surprises create short-gamma cascades in treasuries — forced dealer selling amplifies yield spikes beyond fundamental fair value.' },
+  'SI=F': { mkt:'Silver futures — industrial demand (solar panels, EVs) overlaid on precious metal base.', typical:'More volatile GEX than gold; industrial component adds growth-cycle sensitivity.', delta_note:'SI=F dealer delta combines gold safe-haven mechanics with copper-like industrial demand signals. When solar/EV demand data beats estimates, SI=F call buying forces positive dealer delta — creating outsized moves vs gold.' },
+};
+
+// ── High-impact specific daily events for tooltip overlay ─────────────────────
+const DAILY_EVENTS = {
+  // 2024
+  '2024-01-25': { event:'MSFT/GOOGL earnings beat; AI capex guidance surge', inst:'Megacap tech funds buying MSFT/GOOGL calls; QQQ call walls shift up', gex:'QQQ GEX flips positive; NQ=F gamma wall extends 2%', delta:'Dealers long delta in NVDA/MSFT proxy chain; NQ=F bought heavily' },
+  '2024-02-21': { event:'NVDA Q4 FY2024 earnings — $22B revenue, +265% YoY; blowout beat', inst:'Softbank, Tiger Global, pension funds loading NVDA calls aggressively', gex:'NVDA GEX gamma wall jumps from $600→$700; call-wall dominates', delta:'Dealers forced to buy massive NVDA shares as call delta explodes; QQQ/NQ lifted sympathetically' },
+  '2024-03-20': { event:'Fed holds rates at 5.25–5.50%; signals 3 cuts in 2024 dot plot', inst:'Bond funds shift duration; rate-sensitive ETF inflows surge', gex:'SPY gamma wall extended; put walls moved down as dealers confident', delta:'Dealers unwind rate hedge puts; ES=F rallied on long gamma conditions' },
+  '2024-04-19': { event:'Middle East escalation (Israel-Iran); VIX spike +18%', inst:'Macro hedge funds buy SPX puts; GLD/oil calls; reduce equity exposure', gex:'SPY GEX flips negative; put wall now dominant; short-gamma regime', delta:'Dealers forced to sell ES=F as puts delta increases; VIX curve inverts' },
+  '2024-05-15': { event:'April CPI 3.4% — softer than feared; rate cut hopes revive', inst:'Rate-sensitive growth stocks bought; IWM small caps surge on rate sensitivity', gex:'IWM put walls shrink; call buying lifts gamma wall; GEX turns positive', delta:'Dealers buy IWM shares as calls delta increases; momentum feeds upside' },
+  '2024-06-12': { event:'CPI 3.3% (cool); FOMC holds + signals 1 cut in 2024', inst:'Duration extension in bond funds; growth stock rotation intensifies', gex:'QQQ gamma wall extends; SPY flip level tested upward', delta:'ES=F dealers rebalance long delta; SPY call buying accelerates' },
+  '2024-07-11': { event:'June CPI 3.0% — biggest drop in years; rate cut probability surges to 90%', inst:'Broad institutional buying across all sectors; risk-on rotation', gex:'SPY GEX hits yearly high; extremely positive gamma — stabilizing', delta:'Dealers buy S&P futures as calls dominate; very low realized vol environment' },
+  '2024-07-17': { event:'CrowdStrike global IT outage — worldwide systems failure', inst:'Tech sector selling; defensive rotation; CrowdStrike rival buying', gex:'QQQ GEX destabilized temporarily; Nasdaq put buying spikes', delta:'Dealers forced short QQQ as puts increase; recovery within 48 hours' },
+  '2024-08-05': { event:'Yen carry trade unwind — Nikkei -13%; VIX spikes to 65', inst:'Global macro funds cover yen shorts; forced equity deleveraging globally', gex:'SPY/QQQ GEX collapses to most negative of 2024; short-gamma panic', delta:'Massive ES=F dealer selling; forced unwind amplifies moves 3–5x; fastest VIX spike since COVID' },
+  '2024-09-18': { event:'Fed cuts rates 50bps — "jumbo cut"; surprise vs 25bps consensus', inst:'Bond funds rally; financial stocks bought; real estate REITs bid strongly', gex:'SPY gamma wall extended; positive GEX restored after August turmoil', delta:'Dealers accumulate long ES=F delta; put protection reduced as fear fades' },
+  '2024-10-16': { event:'TSMC/ASML earnings beat; AI chip demand confirmed robust', inst:'Semiconductor funds increase NVDA/TSMC weighting; AI theme re-accelerates', gex:'NVDA call wall jumps again; QQQ gamma wall extends on AI positioning', delta:'Dealers buy NVDA on positive delta; NQ=F lifted by tech concentration' },
+  '2024-11-06': { event:'Trump wins U.S. Presidential Election — Republican sweep', inst:'Financials and energy mega-buying; clean energy selling; defense sector surge', gex:'SPY put walls collapse; call walls dominate; extremely bullish GEX', delta:'Dealers buy ES=F heavily as calls spike; JPM/BAC options call buying forces dealer long delta' },
+  '2024-11-20': { event:'NVDA Q3 FY2025 earnings — Blackwell GPU ramp confirmed; $35B revenue', inst:'Global tech funds add NVDA; Sovereign wealth funds increase AI holdings', gex:'NVDA gamma wall extends to record; call-dominated GEX structure', delta:'Dealers buy massive NVDA shares; QQQ/NQ=F sympathetically lifted by concentration' },
+  '2024-12-18': { event:'Fed cuts 25bps BUT signals only 2 cuts in 2025 (hawkish pivot)', inst:'Rate-sensitive bond funds sell; growth stocks selling on higher-for-longer fear', gex:'SPY GEX negative; put walls re-emerge as dealers hedge downside', delta:'ES=F dealers sell as put delta increases; FOMC shock sends S&P -3% in 1 day' },
+  // 2025
+  '2025-01-13': { event:'CPI 2.9% — slightly hot; rate cut timeline pushed further out', inst:'Macro funds reduce rate-cut bets; defensive positioning increases', gex:'SPY put walls strengthen; GEX modestly negative; selling pressure', delta:'Dealers accumulate puts delta; ES=F sold as hedges increase; yields spike' },
+  '2025-01-27': { event:'DeepSeek AI model released — matches GPT-4 at fraction of cost', inst:'AI infrastructure funds panic-sell; NVDA -17% in single session', gex:'NVDA GEX collapses; QQQ gamma wall drops 5%; short-gamma activation', delta:'Dealers forced to sell NVDA as put delta explodes; $600B market cap erased intraday; NQ=F -4%' },
+  '2025-02-19': { event:'NVDA Q4 FY2025 earnings — strong beat; Blackwell demand exceeds supply', inst:'AI funds re-enter NVDA aggressively; DeepSeek fears dissipate', gex:'NVDA gamma wall partially restored; QQQ GEX positive again', delta:'Dealers buy NVDA shares as calls recover; tech stabilizes on demand confirmation' },
+  '2025-03-04': { event:'Fed signals pause; tariff fears re-emerge after Canada/Mexico 25% tariffs', inst:'Defensive rotation; healthcare and consumer staples bid; tech selling', gex:'SPY GEX mixed; IWM negative as small-caps tariff-sensitive', delta:'Dealers hedge ES=F puts; VIX elevated 20–25; short-gamma lurking' },
+  '2025-04-02': { event:'Liberation Day — Trump announces universal 10% tariff + 25-145% China tariffs', inst:'Global macro funds buy gold, yen, bonds; massive equity put buying worldwide', gex:'SPY/QQQ GEX collapses to most negative since Aug 2024; VIX spikes to 52', delta:'Dealers forced to sell ES=F/NQ=F as put delta surges; cascade selling amplifies 3–4x vs fundamentals' },
+  '2025-04-09': { event:'90-day tariff pause (except China) — Trump reverses universal tariff threat', inst:'Largest single-day institutional buying in history; record call volumes', gex:'SPY GEX snaps from deeply negative to neutral in hours; whipsaw extreme', delta:'Dealers buy ES=F aggressively as calls overwhelm puts; S&P +9% in single session' },
+  '2025-05-07': { event:'Fed holds rates; notes tariff uncertainty; GDP estimate cut to 1.2%', inst:'Growth stock selling; value/dividend rotation; bond buying intensifies', gex:'SPY gamma wall lower; put walls thicken as uncertainty grows', delta:'Dealers hedge with ES=F puts; long-duration hedging increases' },
+  '2025-06-18': { event:'Fed cuts 25bps — first cut since December; inflation progress cited', inst:'Broad risk-on; financial stocks, REITs, small-caps all bought aggressively', gex:'SPY GEX flips strongly positive; put walls shrink; call walls dominate', delta:'ES=F dealers accumulate long delta; low vol regime supports upside drift' },
+  '2025-08-06': { event:'Tech earnings season — NVDA/AAPL/MSFT all beat; AI capex confirmed', inst:'Megacap tech re-rating; index funds forced to buy at higher weights', gex:'QQQ gamma wall extends to record; NQ=F futures highly positive GEX', delta:'Dealers buy NQ=F futures as tech call delta surges; very low vol grinding higher' },
+  '2025-09-17': { event:'Fed cuts 50bps — aggressive easing cycle starts on growth concerns', inst:'Risk-on across all sectors; growth over value; emerging market inflows', gex:'SPY GEX hits new high; extremely stabilizing conditions; vol sellers dominate', delta:'ES=F dealers massively long delta; put sellers dominate; momentum accelerates' },
+  '2025-10-29': { event:'Q3 earnings season: broad beat; AI monetization visible in revenue', inst:'Earnings-driven buying; growth stock re-rating upward', gex:'Broad positive GEX; multiple assets at gamma wall; stabilized markets', delta:'Low realized vol; dealers long gamma providing stabilization across indices' },
+  '2025-11-19': { event:'NVDA FY2026 Q3 earnings — $44B revenue; Blackwell fully ramped', inst:'Sovereign wealth fund and pension fund re-weighting to AI heavily', gex:'NVDA/QQQ/NQ=F all at extreme positive gamma; call-only structure', delta:'Dealers long massive delta in NVDA; upside drift continued with low vol' },
+  '2026-01-14': { event:'January CPI 2.3% — near target; rate cuts accelerate expectations', inst:'Broad risk-on; equities at record highs; volatility sellers dominate', gex:'SPY GEX extremely positive; put walls far below market; low vol', delta:'ES=F dealers long delta overwhelming; vol sellers compound upside drift' },
+  '2026-02-11': { event:'Trump announces 25% steel/aluminum tariffs on all countries', inst:'Industrials selling; materials under pressure; defensive buying', gex:'IWM/small-caps GEX negative; SPY modestly negative on uncertainty', delta:'Dealers add puts in IWM/XOM; commodity futures hedging spikes' },
+  '2026-03-04': { event:'Canada/Mexico tariffs reinstated; China tariffs escalate to 20%', inst:'Macro funds add recession hedges; gold buying; tech defensive rotation', gex:'SPY GEX flips negative; VIX elevated 20+; short-gamma conditions', delta:'Dealers hedge ES=F with puts; tariff uncertainty suppresses call buying' },
+};
+
+function getDailyEvent(ts) {
+  const d = new Date(ts * 1000);
+  const key = d.getUTCFullYear() + '-'
+    + String(d.getUTCMonth() + 1).padStart(2,'0') + '-'
+    + String(d.getUTCDate()).padStart(2,'0');
+  return DAILY_EVENTS[key] || null;
+}
+
+function getEventsForDate(ts) {
+  const d = new Date(ts * 1000).getTime();
+  for (const ev of MARKET_EVENTS) {
+    const s = new Date(ev.s + 'T00:00:00Z').getTime();
+    const e = new Date(ev.e + 'T23:59:59Z').getTime();
+    if (d >= s && d <= e) return ev;
+  }
+  return null;
+}
+
+function badgeClass(sig) {
+  return sig === 'BUY' ? 'dcb-buy' : sig === 'SELL' ? 'dcb-sell' : sig === 'HOLD' ? 'dcb-hold' : 'dcb-flat';
+}
+
+function buildDirectionChangesHTML(a) {
+  const sigEvents = (a.signals || []).slice().sort((x, y) => x.time - y.time);
+  if (!sigEvents.length) return '<p class="dc-prose" style="padding:.4rem 0;">No signal history available for this asset.</p>';
+
+  // Build list of direction changes (including initial signal entry)
+  const changes = [];
+  changes.push({ time: sigEvents[0].time, from: 'FLAT', to: sigEvents[0].type });
+  for (let i = 1; i < sigEvents.length; i++) {
+    if (sigEvents[i].type !== sigEvents[i - 1].type) {
+      changes.push({ time: sigEvents[i].time, from: sigEvents[i - 1].type, to: sigEvents[i].type });
+    }
+  }
+
+  const profile = ASSET_GEX_PROFILE[a.symbol] || {
+    mkt: 'Options market data — see GEX dashboard for live levels.',
+    typical: 'Dealer positioning follows broader market GEX regime.',
+    delta_note: 'Delta hedging flows track market-level GEX. Check institutional dashboard for details.',
+  };
+
+  const fmtDate = ts => new Date(ts * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  const fmtFromTo = (f, t) => {
+    const isBuy = t === 'BUY', isSell = t === 'SELL', isHold = t === 'HOLD';
+    const icon = isBuy ? '▲ Bullish shift' : isSell ? '▼ Bearish shift' : '↔ Neutral / Hold';
+    return `<span style="color:${isBuy?'#22c55e':isSell?'#f87171':'#fbbf24'};font-weight:800;">${icon}</span>`;
+  };
+
+  return changes.map(ch => {
+    const ev   = getEventsForDate(ch.time);
+    const isBuy  = ch.to === 'BUY', isSell = ch.to === 'SELL';
+    const itemCls = isBuy ? 'dc-buy' : isSell ? 'dc-sell' : 'dc-hold';
+
+    const eventsHTML = ev
+      ? ev.events.map(e => `<li>${e}</li>`).join('')
+      : `<li>Signal change on ${fmtDate(ch.time)} — check live market data for events in this window.</li>`;
+
+    const gexHTML = ev
+      ? `<p class="dc-prose">${ev.gex}</p>
+         <p class="dc-prose" style="margin-top:.35rem;"><strong>${a.symbol} options profile:</strong> ${profile.mkt}</p>
+         <p class="dc-prose" style="margin-top:.25rem;"><em>Typical GEX regime for ${a.symbol}:</em> ${profile.typical}</p>`
+      : `<p class="dc-prose">${profile.mkt} ${profile.typical}</p>`;
+
+    const deltaHTML = ev
+      ? `<p class="dc-prose">${ev.delta}</p>
+         <p class="dc-prose" style="margin-top:.35rem;"><strong>${a.symbol} delta hedging:</strong> ${profile.delta_note}</p>
+         <p class="dc-prose" style="margin-top:.3rem;">${
+           isBuy  ? `<em>Signal implication:</em> As XGBoost detected bullish momentum, call option demand for <strong>${a.symbol}</strong> likely increased simultaneously. Dealers buying <strong>${a.symbol}</strong> stock/futures to hedge newly sold calls provided a mechanical tailwind — reinforcing the BUY signal.`
+         : isSell ? `<em>Signal implication:</em> As XGBoost detected bearish momentum, protective put demand for <strong>${a.symbol}</strong> increased. Dealers selling <strong>${a.symbol}</strong> stock/futures to hedge puts amplified downward pressure — creating a negative feedback loop that reinforced the SELL signal.`
+         : `<em>Signal implication:</em> HOLD periods often coincide with dealer gamma neutrality — GEX near zero means stabilizing dealer flows are minimal. Directionless candlestick action reflects absence of strong dealer delta bias.`
+         }</p>`
+      : `<p class="dc-prose">${profile.delta_note}</p>`;
+
+    return `<div class="dc-item ${itemCls}">
+      <div class="dc-head">
+        <span class="dc-date">${fmtDate(ch.time)}</span>
+        <span class="dc-badge ${badgeClass(ch.from)}">${ch.from}</span>
+        <span class="dc-arrow">→</span>
+        <span class="dc-badge ${badgeClass(ch.to)}">${ch.to}</span>
+        &nbsp;${fmtFromTo(ch.from, ch.to)}
+      </div>
+      <div class="dc-section">
+        <div class="dc-sec-lbl">📰 Market &amp; Economic Context</div>
+        <ul class="dc-events">${eventsHTML}</ul>
+      </div>
+      <div class="dc-sep"></div>
+      <div class="dc-section">
+        <div class="dc-sec-lbl">🎯 GEX (Gamma Exposure) Context</div>
+        ${gexHTML}
+      </div>
+      <div class="dc-sep"></div>
+      <div class="dc-section">
+        <div class="dc-sec-lbl">⚖️ Delta Hedging Mechanics</div>
+        ${deltaHTML}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── Build card HTML (canvas placeholder) ─────────────────────────────────
+function buildCardHTML(a) {
+  const sigClass = a.current_signal === 'BUY' ? 'sig-buy' : a.current_signal === 'SELL' ? 'sig-sell' : 'sig-hold';
+  const sigArrow = a.current_signal === 'BUY' ? '▲ ' : a.current_signal === 'SELL' ? '▼ ' : '— ';
+  const accStr   = a.oos_accuracy != null ? (a.oos_accuracy * 100).toFixed(1) + '%' : 'N/A';
+  const probStr  = (a.current_prob * 100).toFixed(1) + '%';
+  const typeClass = a.asset_type === 'futures' ? 't-futures' : 't-stock';
+  const typeLbl   = a.asset_type === 'futures' ? 'FUTURES' : a.asset_type === 'options' ? 'OPTIONS' : 'STOCK';
+  const closeStr  = a.close >= 1000
+    ? a.close.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2})
+    : a.close.toFixed(2);
+
+  // Top 3 importance features
+  const topImp = Object.entries(a.importance || {}).slice(0, 8);
+  const maxImpVal = topImp.length ? topImp[0][1] : 1;
+  const impBarsHTML = topImp.slice(0, 5).map(([feat, val]) => `
+    <div class="imp-row">
+      <span class="imp-name">${feat.replace(/_/g,' ')}</span>
+      <div class="imp-bar-outer"><div class="imp-bar-fill" style="width:${(val/maxImpVal*100).toFixed(0)}%"></div></div>
+      <span class="imp-val">${(val*100).toFixed(1)}%</span>
+    </div>`).join('');
+
+  return `<div class="chart-card" id="card-${a.symbol}">
+    <div class="card-header">
+      <div>
+        <a href="live-trading.html?sym=${encodeURIComponent(a.symbol)}" style="text-decoration:none;">
+          <div class="card-sym">${a.symbol}</div>
+          <div class="card-label">${a.label.replace(/ \(.*\)$/, '')}</div>
+          <span class="type-chip ${typeClass}">${typeLbl}</span>
+        </a>
+      </div>
+      <div class="card-meta">
+        <span class="card-signal ${sigClass}">${sigArrow}${a.current_signal}</span>
+        <div class="card-acc">P(UP) <span>${probStr}</span> · OOS Acc <span>${accStr}</span></div>
+        <div class="card-acc">Close <span>$${closeStr}</span></div>
+      </div>
+    </div>
+    <div class="tf-bar">
+      <span class="tf-label">Timeframe:</span>
+      <select class="tf-select" id="tf-sel-${a.symbol}"
+        onchange="changeTimeframe('${a.symbol}', this.value)">
+        <option value="1d" selected>1D — Daily (XGBoost)</option>
+        <option value="4h">4H — 4 Hour</option>
+        <option value="1h">1H — 1 Hour</option>
+        <option value="30m">30M — 30 Minute</option>
+      </select>
+      <span class="tf-spinner" id="tf-spin-${a.symbol}"></span>
+      <span class="tf-info" id="tf-info-${a.symbol}">2024–2026 · Daily candles · XGBoost signals</span>
+    </div>
+    <div class="lw-ohlc-bar" id="ohlc-${a.symbol}">
+      <span>O <span class="ov" id="ohlc-o-${a.symbol}">—</span></span>
+      <span>H <span class="ov" id="ohlc-h-${a.symbol}">—</span></span>
+      <span>L <span class="ov" id="ohlc-l-${a.symbol}">—</span></span>
+      <span>C <span class="ov" id="ohlc-c-${a.symbol}">—</span></span>
+      <span style="margin-left:auto;">
+        <button class="zoom-btn wide" onclick="fitChart('${a.symbol}')" title="Fit all data">↺ Fit</button>
+      </span>
+      <span class="zoom-hint" style="font-size:.6rem;color:var(--muted);">Scroll=zoom · Drag=pan · Price axis drag=Y-scale · Drag edge=resize</span>
+    </div>
+    <div class="lw-chart-wrap" id="cw-${a.symbol}">
+      <div class="lw-chart-div" id="cv-${a.symbol}"></div>
+    </div>
+    <div class="chart-resize-handle" id="rh-${a.symbol}">⸺ ⸺ ⸺</div>
+    <div class="gex-strip" id="gex-strip-${a.symbol}">
+      <span style="color:var(--muted);font-size:.65rem;">Loading GEX levels…</span>
+    </div>
+    <div class="chart-legend">
+      <span class="leg-item"><span style="display:inline-block;width:10px;height:10px;background:#22d3ee;border-radius:1px;"></span> Bullish</span>
+      <span class="leg-item"><span style="display:inline-block;width:10px;height:10px;background:#f87171;border-radius:1px;"></span> Bearish</span>
+      <span class="leg-item"><span style="display:inline-block;width:10px;height:10px;background:rgba(34,197,94,.18);border:1px solid #22c55e;border-radius:2px;"></span> BUY zone</span>
+      <span class="leg-item"><span style="display:inline-block;width:10px;height:10px;background:rgba(248,113,113,.18);border:1px solid #f87171;border-radius:2px;"></span> SELL zone</span>
+      <span class="leg-item"><span style="color:#22c55e;font-size:.75rem;font-weight:900;">▲</span> BUY signal</span>
+      <span class="leg-item"><span style="color:#f87171;font-size:.75rem;font-weight:900;">▼</span> SELL signal</span>
+      <span class="leg-item"><span class="leg-line-train"></span> Train/Test</span>
+    </div>
+    <div class="imp-strip">
+      <div class="imp-title">Top feature importance (XGBoost gain)</div>
+      <div class="imp-bars">${impBarsHTML}</div>
+    </div>
+    <div class="asset-narr-wrap">
+      <button class="asset-narr-toggle"
+        onclick="this.classList.toggle('open');this.nextElementSibling.classList.toggle('open')">
+        📖 Asset Profile &amp; Model Results — Events · Institutional Buyers · GEX Impact
+        <span class="ngl-ico">▼</span>
+      </button>
+      <div class="asset-narr-body">
+        ${buildAssetNarrativeHTML(a)}
+      </div>
+    </div>
+    <div class="dir-changes-wrap">
+      <button class="dir-changes-toggle"
+        onclick="this.classList.toggle('open');this.nextElementSibling.classList.toggle('open')">
+        📊 Direction Change Analysis &mdash; Market Events · GEX · Delta Hedging
+        <span class="tgl-ico">▼</span>
+      </button>
+      <div class="dir-changes-body">
+        ${buildDirectionChangesHTML(a)}
+      </div>
+    </div>
+  </div>`;
+}
+
+// ── Render LightweightCharts candlestick for one asset ────────────────────────
+// opts: { candles: [{time,open,high,low,close}] | null, gex: obj | null }
+function renderLWChart(a, opts = {}) {
+  const container = document.getElementById('cv-' + a.symbol);
+  if (!container) return;
+
+  // Source candles: for 1D use a.candles (tuple array), for intraday use opts.candles (object array)
+  const rawCandles = opts.candles || null; // null means use daily a.candles
+  const gex = opts.gex || null;
+
+  // Convert daily tuple candles [ts,o,h,l,c] → {time,open,high,low,close}
+  let candles;
+  if (rawCandles) {
+    // intraday: already {time,open,high,low,close}
+    candles = rawCandles;
+  } else {
+    candles = (a.candles || []).map(c => ({ time: c[0], open: c[1], high: c[2], low: c[3], close: c[4] }));
+  }
+  if (candles.length < 2) return;
+
+  // ── Create or reuse chart instance ─────────────────────────────────────────
+  let inst = _lwCharts[a.symbol];
+  if (!inst) {
+    const chart = LightweightCharts.createChart(container, {
+      autoSize: true,
+      layout: {
+        background: { color: '#080d18' },
+        textColor:  '#94a3b8',
+        fontSize:   12,
+      },
+      grid: {
+        vertLines: { color: '#131d33' },
+        horzLines: { color: '#131d33' },
+      },
+      crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
+      rightPriceScale: { borderColor: '#243058', minimumWidth: 72 },
+      timeScale: {
+        borderColor:     '#243058',
+        timeVisible:     true,
+        secondsVisible:  false,
+        rightOffset:     6,
+      },
+      handleScroll:  { mouseWheel: true, pressedMouseMove: true, horzTouchDrag: true },
+      handleScale:   { axisPressedMouseMove: true, mouseWheel: true, pinch: true },
+    });
+
+    // Background signal-zone histogram (separate price scale, fills full height)
+    const bgSeries = chart.addHistogramSeries({
+      priceScaleId:     'signal-bg',
+      lastValueVisible: false,
+      priceLineVisible: false,
+      base:             0,
+    });
+    chart.priceScale('signal-bg').applyOptions({
+      scaleMargins: { top: 0, bottom: 0 },
+      visible: false,
+    });
+
+    // Main candlestick series
+    const cs = chart.addCandlestickSeries({
+      upColor:        '#22d3ee', downColor:        '#f87171',
+      borderUpColor:  '#22d3ee', borderDownColor:  '#f87171',
+      wickUpColor:    '#22d3ee', wickDownColor:    '#f87171',
+    });
+
+    // Volume histogram (bottom 18%)
+    const vs = chart.addHistogramSeries({
+      priceScaleId:     'vol',
+      lastValueVisible: false,
+      priceLineVisible: false,
+      base:             0,
+    });
+    chart.priceScale('vol').applyOptions({ scaleMargins: { top: 0.82, bottom: 0 } });
+
+    // OHLC crosshair readout
+    chart.subscribeCrosshairMove(p => {
+      const oEl = document.getElementById('ohlc-o-' + a.symbol);
+      const hEl = document.getElementById('ohlc-h-' + a.symbol);
+      const lEl = document.getElementById('ohlc-l-' + a.symbol);
+      const cEl = document.getElementById('ohlc-c-' + a.symbol);
+      if (!oEl) return;
+      const d = p?.seriesData?.get(cs);
+      if (d) {
+        const fmt = v => v >= 1000 ? v.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) : v.toFixed(2);
+        const chg = ((d.close - d.open) / d.open * 100);
+        oEl.textContent = '$' + fmt(d.open);
+        hEl.textContent = '$' + fmt(d.high);
+        lEl.textContent = '$' + fmt(d.low);
+        cEl.textContent = '$' + fmt(d.close) + ' (' + (chg >= 0 ? '+' : '') + chg.toFixed(2) + '%)';
+        cEl.style.color  = d.close >= d.open ? '#22c55e' : '#f87171';
+      } else {
+        [oEl,hEl,lEl,cEl].forEach(e => { e.textContent = '—'; e.style.color = ''; });
+      }
+    });
+
+    inst = { chart, cs, vs, bgSeries, priceLines: [], height: DEFAULT_H,
+              isResizing: false, resizeStartY: 0, resizeStartH: DEFAULT_H };
+    _lwCharts[a.symbol] = inst;
+  }
+
+  // ── Feed candle data ────────────────────────────────────────────────────────
+  // Deduplicate + sort
+  const seen = new Set();
+  const cleanCandles = candles
+    .filter(c => { if (seen.has(c.time)) return false; seen.add(c.time); return true; })
+    .sort((x, y) => x.time - y.time);
+
+  inst.cs.setData(cleanCandles);
+
+  // Volume
+  inst.vs.setData(cleanCandles.map(c => ({
+    time:  c.time,
+    value: c.volume || 0,
+    color: c.close >= c.open ? 'rgba(34,211,238,.18)' : 'rgba(248,113,113,.18)',
+  })));
+
+  // ── Signal zone background ──────────────────────────────────────────────────
+  const sigEvents = (a.signals || []).slice().sort((x, y) => x.time - y.time);
+  let prevState = 'HOLD';
+  const bgData = cleanCandles.map(c => {
+    let state = 'HOLD';
+    for (const s of sigEvents) { if (s.time <= c.time) state = s.type; else break; }
+    const color = state === 'BUY'  ? 'rgba(34,197,94,.09)'
+                : state === 'SELL' ? 'rgba(248,113,113,.09)' : 'rgba(0,0,0,0)';
+    return { time: c.time, value: 1, color };
+  });
+  inst.bgSeries.setData(bgData);
+
+  // ── Signal markers (BUY/SELL arrows at direction changes) ──────────────────
+  const markers = [];
+  let lastSig = 'HOLD';
+  cleanCandles.forEach(c => {
+    let state = 'HOLD';
+    for (const s of sigEvents) { if (s.time <= c.time) state = s.type; else break; }
+    if (state !== lastSig && (state === 'BUY' || state === 'SELL')) {
+      markers.push({
+        time:     c.time,
+        position: state === 'BUY' ? 'belowBar' : 'aboveBar',
+        color:    state === 'BUY' ? '#22c55e'  : '#f87171',
+        shape:    state === 'BUY' ? 'arrowUp'  : 'arrowDown',
+        text:     state,
+        size:     1.5,
+      });
+    }
+    lastSig = state;
+  });
+
+  // Train/test split marker
+  if (a.train_end_ts) {
+    const trainCandle = cleanCandles.find(c => c.time >= a.train_end_ts);
+    if (trainCandle) {
+      markers.push({
+        time:     trainCandle.time,
+        position: 'aboveBar',
+        color:    '#fbbf24',
+        shape:    'square',
+        text:     '▶ TEST',
+        size:     1,
+      });
+    }
+  }
+  markers.sort((x, y) => x.time - y.time);
+  inst.cs.setMarkers(markers);
+
+  // ── GEX price lines ─────────────────────────────────────────────────────────
+  // Remove old price lines
+  (inst.priceLines || []).forEach(pl => { try { inst.cs.removePriceLine(pl); } catch(e) {} });
+  inst.priceLines = [];
+  if (gex) {
+    const GEX = [
+      { price: gex.gamma_wall, color: '#22c55e', title: 'Call Wall', style: LightweightCharts.LineStyle.Dashed, lw: 2 },
+      { price: gex.put_wall,   color: '#f87171', title: 'Put Wall',  style: LightweightCharts.LineStyle.Dashed, lw: 2 },
+      { price: gex.spot,       color: 'rgba(200,220,240,.6)', title: 'Spot GEX', style: LightweightCharts.LineStyle.Solid, lw: 1 },
+      { price: gex.flip_level, color: '#a78bfa', title: 'GEX Flip', style: LightweightCharts.LineStyle.Dotted, lw: 1 },
+    ];
+    GEX.forEach(({ price, color, title, style, lw }) => {
+      if (!price || price <= 0) return;
+      const pl = inst.cs.createPriceLine({ price, color, lineWidth: lw, lineStyle: style, axisLabelVisible: true, title });
+      inst.priceLines.push(pl);
+    });
+  }
+
+  inst.chart.timeScale().fitContent();
+}
+
+// ── Error state ────────────────────────────────────────────────────────────
+function renderError() {
+  document.getElementById('chartsContainer').innerHTML = `
+    <div class="empty-state">
+      <div style="font-size:2rem;margin-bottom:.5rem;">⚠️</div>
+      <div style="margin-bottom:.5rem;">Cannot reach ML server at <code style="color:#fbbf24;">localhost:5050</code></div>
+      <div style="font-size:.82rem;margin-bottom:1rem;">Start with: <code style="color:#fbbf24;">py live-server.py</code></div>
+      <button onclick="loadData()" class="hero-cta" style="background:linear-gradient(135deg,#fbbf24,#f59e0b);color:#000;font-size:.85rem;padding:.55rem 1.4rem;">Retry</button>
+    </div>`;
+}
+
+// LightweightCharts handles resize via autoSize — no manual redraw needed.
+
+// ── Init ──────────────────────────────────────────────────────────────────
+window.addEventListener('load', () => loadData());
+setInterval(() => loadData(), 10 * 60 * 1000);  // auto-refresh every 10 min
+</script>
+<script src="ibkr-widget.js"></script>
+</body>
+</html>

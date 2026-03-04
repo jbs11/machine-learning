@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Options Gamma Exposure — All Assets</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    /* ── Layout ── */
+    .gex-wrap { max-width: 1600px; margin: 0 auto; padding: 0 1.5rem 6rem; }
+
+    /* ── Page nav ── */
+    .page-nav {
+      display: flex; align-items: center; gap: 1rem;
+      padding: .6rem 1.5rem; background: var(--surface);
+      border-bottom: 1px solid var(--border); font-size: .83rem; flex-wrap: wrap;
+    }
+    .page-nav a { color: var(--muted); text-decoration: none; padding: .3rem .7rem; border-radius: 5px; transition: color .15s, background .15s; }
+    .page-nav a:hover { color: var(--text); background: rgba(255,255,255,.06); }
+    .page-nav a.active { color: #a78bfa; font-weight: 700; }
+    .page-nav-sep { color: var(--border); }
+
+    /* ── Hero ── */
+    .gex-hero {
+      padding: 3.5rem 1.5rem 2.5rem; text-align: center;
+      background: radial-gradient(ellipse 80% 55% at 50% -5%, rgba(167,139,250,.12) 0%, transparent 65%), var(--bg);
+      border-bottom: 1px solid var(--border);
+    }
+    .gex-hero h1 {
+      font-size: clamp(1.8rem, 4vw, 3rem); font-weight: 900;
+      letter-spacing: -.03em; line-height: 1.15; margin-bottom: .8rem;
+      background: linear-gradient(135deg, #a78bfa 0%, #c4b5fd 40%, #fff 80%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    .gex-hero p { color: var(--muted); font-size: 1.05rem; max-width: 740px; margin: 0 auto 1.5rem; line-height: 1.7; }
+    .gex-badge {
+      display: inline-flex; align-items: center; gap: .5rem;
+      padding: .3rem 1rem; background: rgba(167,139,250,.1);
+      border: 1px solid rgba(167,139,250,.25); border-radius: 999px;
+      color: #a78bfa; font-size: .78rem; font-weight: 600;
+      letter-spacing: .08em; text-transform: uppercase; margin-bottom: 1rem;
+    }
+
+    /* ── Stats strip ── */
+    .stats-strip { display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr));
+      gap:1px; background:var(--border); border-top:1px solid var(--border); border-bottom:1px solid var(--border); }
+    .stat-cell { background:var(--surface); padding:1rem 1.2rem; text-align:center; }
+    .stat-val { font-size:1.4rem; font-weight:900; margin-bottom:.1rem; }
+    .stat-lbl { font-size:.7rem; font-weight:600; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); }
+
+    /* ── Server bar ── */
+    .server-bar { display:flex;align-items:center;gap:.75rem;background:var(--surface);
+      border:1px solid var(--border);border-radius:8px;padding:.55rem 1.1rem;
+      margin:1.2rem 0;font-size:.85rem; }
+    .sdot { width:9px;height:9px;border-radius:50%;background:#f87171;flex-shrink:0;transition:background .3s; }
+    .sdot.on { background:#4ade80; } .sdot.loading { background:#fbbf24;animation:pulse 1s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1}50%{opacity:.35} }
+    .smsg { color:var(--muted); flex:1; }
+    .rbtn { background:transparent;border:1px solid var(--border);color:var(--muted);
+      padding:.28rem .75rem;border-radius:6px;cursor:pointer;font-size:.8rem;transition:border-color .2s,color .2s; }
+    .rbtn:hover { border-color:#a78bfa;color:#a78bfa; }
+
+    /* ── Filter bar ── */
+    .filter-bar { display:flex;flex-wrap:wrap;align-items:center;gap:.6rem;margin:1.2rem 0; }
+    .filter-pill { padding:.3rem .85rem;border-radius:99px;border:1px solid var(--border);
+      background:transparent;color:var(--muted);font-size:.78rem;font-weight:700;cursor:pointer;transition:all .15s; }
+    .filter-pill.active { background:rgba(167,139,250,.12);border-color:#a78bfa;color:#a78bfa; }
+    .filter-pill:hover:not(.active) { border-color:var(--muted);color:var(--text); }
+
+    /* ── Group header ── */
+    .grp-hdr {
+      font-size:.72rem; font-weight:700; text-transform:uppercase; letter-spacing:.1em;
+      color:#a78bfa; padding:.6rem 0 .4rem;
+      border-bottom:1px solid rgba(167,139,250,.18); margin-bottom:.7rem; margin-top:1.4rem;
+      display:flex; align-items:center; gap:.75rem;
+    }
+    .grp-hdr:first-child { margin-top:.3rem; }
+    .grp-count { font-weight:400; color:var(--muted); font-size:.7rem; }
+
+    /* ── Cards grid ── */
+    .cards-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(500px,1fr)); gap:1.2rem; }
+    @media(max-width:600px) { .cards-grid { grid-template-columns:1fr; } }
+
+    /* ── GEX Card ── */
+    .gex-card { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; transition:border-color .2s,box-shadow .2s; }
+    .gex-card:hover { border-color:rgba(167,139,250,.35); box-shadow:0 4px 24px rgba(0,0,0,.25); }
+
+    /* Card header */
+    .gc-head { padding:.75rem 1rem .6rem; display:flex; align-items:flex-start; gap:.65rem; }
+    .gc-sym { font-family:'Consolas',monospace; font-size:1.05rem; font-weight:900; color:var(--text); }
+    .gc-label { font-size:.73rem; color:var(--muted); margin-top:.1rem; }
+    .gc-meta { margin-left:auto; text-align:right; }
+    .regime-badge { font-size:.72rem; font-weight:800; padding:.2rem .65rem; border-radius:6px; display:inline-block; }
+    .r-long  { background:rgba(34,197,94,.15);  color:#22c55e; border:1px solid rgba(34,197,94,.3); }
+    .r-short { background:rgba(248,113,113,.15); color:#f87171; border:1px solid rgba(248,113,113,.3); }
+    .gc-gex  { font-size:.75rem; color:var(--muted); margin-top:.25rem; }
+    .gc-gex span { font-weight:700; }
+    .type-chip { display:inline-block;font-size:.62rem;font-weight:700;letter-spacing:.06em;
+      padding:.1rem .45rem;border-radius:4px;margin-top:.2rem; }
+    .t-stock   { background:rgba(34,211,238,.12);color:#22d3ee; }
+    .t-futures { background:rgba(251,191,36,.12);color:#fbbf24; }
+
+    /* Key levels row */
+    .gc-levels { display:flex; flex-wrap:wrap; gap:.5rem; padding:.4rem 1rem .55rem; border-bottom:1px solid var(--border); }
+    .kl { display:flex;align-items:center;gap:.3rem;font-size:.72rem; }
+    .kl-dot { width:8px;height:8px;border-radius:50%;flex-shrink:0; }
+    .kl-name { color:var(--muted); }
+    .kl-val  { font-family:'Consolas',monospace; font-weight:700; }
+
+    /* Canvas chart */
+    .gc-chart { background:#070d18; position:relative; }
+    canvas.gex-cv { display:block; width:100%; }
+
+    /* Chart legend */
+    .gc-legend { display:flex;gap:1rem;padding:.45rem 1rem;border-top:1px solid var(--border);flex-wrap:wrap; }
+    .gl-item { display:flex;align-items:center;gap:.35rem;font-size:.7rem;color:var(--muted); }
+    .gl-green { width:10px;height:10px;background:rgba(34,197,94,.7);border-radius:2px;flex-shrink:0; }
+    .gl-red   { width:10px;height:10px;background:rgba(248,113,113,.7);border-radius:2px;flex-shrink:0; }
+    .gl-yellow{ width:12px;height:2px;background:#fbbf24;flex-shrink:0; }
+    .gl-green-line { width:12px;height:2px;background:#22c55e;flex-shrink:0; border-top:1px dashed #22c55e; }
+    .gl-red-line   { width:12px;height:2px;background:#f87171;flex-shrink:0; border-top:1px dashed #f87171; }
+    .gl-purple-line{ width:12px;height:2px;background:#a78bfa;flex-shrink:0; border-top:1px dotted #a78bfa; }
+
+    /* Description text */
+    .gc-desc { padding:.65rem 1rem .85rem; font-size:.82rem; color:var(--muted); line-height:1.7; border-top:1px solid var(--border); }
+
+    /* No-options card */
+    .gc-noopts { padding:1.5rem 1rem; text-align:center; color:var(--muted); font-size:.85rem; }
+
+    /* Proxy data badge */
+    .proxy-badge { display:inline-flex;align-items:center;gap:.3rem;font-size:.65rem;font-weight:700;
+      padding:.1rem .5rem;border-radius:4px;margin-top:.25rem;letter-spacing:.04em;
+      background:rgba(251,191,36,.12);color:#fbbf24;border:1px solid rgba(251,191,36,.25); }
+
+    /* ── Explanation section ── */
+    .explain-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(270px,1fr)); gap:.9rem; margin:1.2rem 0; }
+    .ex-card { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:1rem 1.1rem; }
+    .ex-icon { font-size:1.3rem; margin-bottom:.4rem; }
+    .ex-title { font-weight:800; font-size:.88rem; color:var(--text); margin-bottom:.4rem; }
+    .ex-body  { font-size:.8rem; color:var(--muted); line-height:1.65; }
+    .ex-range { display:flex; justify-content:space-between; margin-top:.5rem; font-size:.72rem; }
+    .er-bull { color:#22c55e; } .er-bear { color:#f87171; }
+
+    /* ── Empty state ── */
+    .empty-state { text-align:center; padding:4rem; color:var(--muted); grid-column:1/-1; }
+
+    @media(max-width:800px) { .gex-hero h1{font-size:1.6rem;} }
+  </style>
+</head>
+<body>
+
+<!-- ── Main Nav ── -->
+<nav class="nav">
+  <a href="index.html" class="nav-logo">
+    <img src="images/steve.jpg" class="nav-logo-photo" alt="Stephen Borick">
+    <div class="nav-logo-text">
+      <span class="nav-company">Artificial Intelligence</span>
+      <span class="nav-name">Solutions, Inc.</span>
+    </div>
+  </a>
+  <ul class="nav-links">
+    <li><a href="index.html">Home</a></li>
+    <li><a href="neural-networks.html">Neural Networks</a></li>
+    <li><a href="machine-learning.html">Machine Learning</a></li>
+    <li><a href="ml-trading.html">ML in Trading</a></li>
+    <li><a href="ml-sp500-example.html">ML Example</a></li>
+    <li><a href="stock-trading.html">Stock Trading</a></li>
+    <li><a href="options-trading.html">Options</a></li>
+    <li><a href="futures-trading.html">Futures</a></li>
+    <li><a href="live-trading.html">Live Trading</a></li>
+  </ul>
+</nav>
+
+<!-- ── Page Nav ── -->
+<nav class="page-nav">
+  <a href="live-trading.html">← Live Trading</a>
+  <span class="page-nav-sep">|</span>
+  <a href="market-summary.html">Market Summary</a>
+  <span class="page-nav-sep">|</span>
+  <a href="terminology.html">Terminology 📖</a>
+  <span class="page-nav-sep">|</span>
+  <a href="ml-sp500-example.html">ML Example 🧠</a>
+  <span class="page-nav-sep">|</span>
+  <a href="ml-key-assets.html">ML Key Assets 📋</a>
+  <span class="page-nav-sep">|</span>
+  <a href="ml-xgboost-assets.html">XGBoost Charts 📊</a>
+  <span class="page-nav-sep">|</span>
+  <a href="gamma-exposure.html" class="active">GEX Charts 🎯</a>
+  <span class="page-nav-sep">|</span>
+  <a href="options-strategy.html">Options Strategy 📈</a>
+  <span class="page-nav-sep">|</span>
+  <a href="option-flows.html">Option Flows 🌊</a>
+  <span class="page-nav-sep">|</span>
+  <a href="options-summary.html">Options Summary 📊</a>
+  <span class="page-nav-sep">|</span>
+  <a href="0dte-options.html">0DTE 🔥</a>
+  <span class="page-nav-sep">|</span>
+  <a href="fundamentals.html">Fundamentals 📋</a>
+  <span class="page-nav-sep">|</span>
+  <a href="institutional-buyers.html">Institutional 🏦</a>
+</nav>
+
+<!-- ── Hero ── -->
+<section class="gex-hero">
+  <div class="gex-badge">🎯 Options · Gamma Exposure · SpotGamma-Style</div>
+  <h1>Options Gamma Exposure<br>All Assets</h1>
+  <p>
+    <strong style="color:var(--text);">Net Dealer Gamma Exposure (GEX)</strong> by strike price for every
+    tracked stock and ETF — calculated from live options chains using
+    <strong style="color:var(--text);">Black-Scholes gamma</strong> and open interest.
+    Green bars = stabilizing long gamma. Red bars = destabilizing short gamma.
+    The <strong style="color:#fbbf24;">yellow line</strong> marks current spot price;
+    the <strong style="color:#a78bfa;">purple line</strong> is the Gamma Flip — the key volatility threshold.
+  </p>
+</section>
+
+<!-- ── Stats Strip ── -->
+<div class="stats-strip" id="statsStrip">
+  <div class="stat-cell"><div class="stat-val" id="statTotal" style="color:#22d3ee;">—</div><div class="stat-lbl">Assets</div></div>
+  <div class="stat-cell"><div class="stat-val" id="statLong"  style="color:#22c55e;">—</div><div class="stat-lbl">Long Gamma</div></div>
+  <div class="stat-cell"><div class="stat-val" id="statShort" style="color:#f87171;">—</div><div class="stat-lbl">Short Gamma</div></div>
+  <div class="stat-cell"><div class="stat-val" id="statNoOpts"style="color:#fbbf24;">—</div><div class="stat-lbl">No Options Data</div></div>
+  <div class="stat-cell"><div class="stat-val" id="statPCR"  style="color:#a78bfa;">—</div><div class="stat-lbl">Avg Put/Call Ratio</div></div>
+  <div class="stat-cell"><div class="stat-val" id="statTs"   style="color:#7fa3be;font-size:.85rem;">—</div><div class="stat-lbl">Last Updated</div></div>
+</div>
+
+<div class="gex-wrap" style="padding-top:1.2rem;">
+
+  <!-- Server bar -->
+  <div class="server-bar">
+    <div class="sdot loading" id="sdot"></div>
+    <span class="smsg" id="smsg">Fetching options chains and computing gamma exposure…</span>
+    <button class="rbtn" onclick="loadData(true)">↻ Refresh</button>
+    <a href="live-trading.html" class="rbtn" style="text-decoration:none;">📡 Live Trading</a>
+  </div>
+
+  <!-- Filter bar -->
+  <div class="filter-bar">
+    <span style="font-size:.75rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;">Show:</span>
+    <button class="filter-pill active" onclick="setFilter('all',this)">All Assets</button>
+    <button class="filter-pill" onclick="setFilter('ETFs',this)">ETFs</button>
+    <button class="filter-pill" onclick="setFilter('Mag 7',this)">Mag 7</button>
+    <button class="filter-pill" onclick="setFilter('Blue Chips',this)">Blue Chips</button>
+    <button class="filter-pill" onclick="setFilter('Futures',this)">Futures</button>
+    <button class="filter-pill" onclick="setFilter('Long Gamma',this)" style="margin-left:.5rem;border-color:rgba(34,197,94,.35);color:#22c55e;">Long Gamma</button>
+    <button class="filter-pill" onclick="setFilter('Short Gamma',this)" style="border-color:rgba(248,113,113,.35);color:#f87171;">Short Gamma</button>
+  </div>
+
+  <!-- Charts container -->
+  <div id="chartsContainer"></div>
+
+  <!-- ── Concepts Explained ── -->
+  <hr style="border:none;border-top:1px solid var(--border);margin:2.5rem 0;">
+  <div style="font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin-bottom:1rem;">SpotGamma Concepts Explained</div>
+
+  <div style="background:rgba(167,139,250,.06);border:1px solid rgba(167,139,250,.2);border-left:3px solid #a78bfa;border-radius:8px;padding:.9rem 1.2rem;margin-bottom:1.2rem;font-size:.88rem;line-height:1.75;">
+    <strong style="color:var(--text);">Gamma Exposure (GEX)</strong> measures the net dollar gamma that
+    market makers (dealers) must hedge across all options strikes. When dealers are
+    <strong style="color:#22c55e;">net long gamma</strong>, they sell rallies and buy dips — stabilizing
+    price around key strikes (like the famous "gamma squeeze" in reverse). When dealers are
+    <strong style="color:#f87171;">net short gamma</strong>, they must chase the market — amplifying moves
+    in both directions. GEX is calculated as:
+    <span style="background:rgba(0,0,0,.3);padding:.15rem .5rem;border-radius:4px;font-family:'Consolas',monospace;font-size:.82rem;">
+      Net GEX = (Call γ × Call OI − Put γ × Put OI) × 100 × Spot
+    </span>
+    where γ is Black-Scholes gamma computed from each strike's implied volatility.
+  </div>
+
+  <div class="explain-grid">
+    <div class="ex-card">
+      <div class="ex-icon">🟢</div>
+      <div class="ex-title">Gamma Wall (Call Wall)</div>
+      <div class="ex-body">The strike with the highest <em>positive</em> net GEX. Market makers are most aggressively hedging here — they'll sell into any rally that approaches this level and buy on any dip away from it. Acts as a strong magnet, pulling price toward it and resisting breakouts.</div>
+      <div class="ex-range"><span class="er-bull">Above spot → Strong resistance</span><span class="er-bull">Below spot → Strong support</span></div>
+    </div>
+    <div class="ex-card">
+      <div class="ex-icon">🔴</div>
+      <div class="ex-title">Put Wall</div>
+      <div class="ex-body">The strike with the highest <em>negative</em> net GEX — typically where heavy put open interest concentrates. Dealers who sold puts must buy underlying when price approaches this level (delta-hedging). Creates mechanical buying pressure; often a key support floor during selloffs.</div>
+      <div class="ex-range"><span class="er-bear">High put OI = dealer buying floor</span><span class="er-bull">Bounce zone in corrections</span></div>
+    </div>
+    <div class="ex-card">
+      <div class="ex-icon">🟣</div>
+      <div class="ex-title">Gamma Flip Level</div>
+      <div class="ex-body">The strike where cumulative GEX transitions from positive to negative (or vice versa). Above the flip: market is in long-gamma (stabilizing) territory. Below the flip: short-gamma (trending) territory. Crossing the Gamma Flip is the most important level to watch — it signals a regime change in realized volatility.</div>
+      <div class="ex-range"><span class="er-bull">Above flip → Lower vol, range-bound</span><span class="er-bear">Below flip → Higher vol, trending</span></div>
+    </div>
+    <div class="ex-card">
+      <div class="ex-icon">⚖️</div>
+      <div class="ex-title">Long vs Short Gamma Regime</div>
+      <div class="ex-body">When total net GEX is positive (Long Gamma), dealers act as vol-sellers — dampening moves and keeping realized vol below implied vol. When net GEX is negative (Short Gamma), dealers become forced buyers/sellers at inopportune times — realized vol rises and trending moves extend further than expected.</div>
+      <div class="ex-range"><span class="er-bull">Long Gamma → Mean-reversion</span><span class="er-bear">Short Gamma → Trending/volatile</span></div>
+    </div>
+    <div class="ex-card">
+      <div class="ex-icon">📊</div>
+      <div class="ex-title">Put/Call Ratio (PCR)</div>
+      <div class="ex-body">Open interest in puts divided by open interest in calls. PCR &gt;1.0 means more puts than calls (bearish hedging dominates). PCR &lt;0.7 is bullish (call buying dominates). Extreme values often act as contrarian signals — very high PCR can signal a sentiment bottom; very low PCR can signal complacency.</div>
+      <div class="ex-range"><span class="er-bear">PCR &gt;1.2 Bearish hedging</span><span class="er-bull">PCR &lt;0.7 Bullish sentiment</span></div>
+    </div>
+    <div class="ex-card">
+      <div class="ex-icon">🔢</div>
+      <div class="ex-title">How to Read the Chart</div>
+      <div class="ex-body">Strikes are on the Y-axis (high at top, low at bottom). GEX dollar value on the X-axis. <span style="color:#22c55e;">Green bars</span> extend right = positive GEX (stabilizing). <span style="color:#f87171;">Red bars</span> extend left = negative GEX (destabilizing). The wider the bar, the more gamma concentration at that strike. All values computed from front-month options expiring within 60 days.</div>
+      <div class="ex-range"><span class="er-bull">Wide green = strong support/resist</span><span class="er-bear">Wide red = vol catalyst zone</span></div>
+    </div>
+  </div>
+
+  <!-- Bottom nav -->
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-top:3rem;flex-wrap:wrap;gap:1rem;border-top:1px solid var(--border);padding-top:1.5rem;">
+    <a href="ml-xgboost-assets.html" style="color:var(--muted);text-decoration:none;font-size:.9rem;">← XGBoost Charts</a>
+    <a href="live-trading.html" class="hero-cta" style="font-size:.88rem;padding:.6rem 1.4rem;background:linear-gradient(135deg,#a78bfa,#7c3aed);color:#fff;">Open Live Dashboard →</a>
+  </div>
+
+</div><!-- /gex-wrap -->
+
+<script>
+const API = 'http://localhost:5050';
+let _allData = null;
+let _activeFilter = 'all';
+
+// ── Load ────────────────────────────────────────────────────────────────────
+async function loadData(nocache = false) {
+  setStatus('loading', 'Fetching options chains and computing gamma exposure…');
+  try {
+    const url = `${API}/api/gamma-exposure${nocache ? '?nocache=1' : ''}`;
+    const res = await fetch(url, { cache: 'no-store' });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    if (!data.assets || !data.assets.length) throw new Error('No assets returned');
+
+    _allData = data;
+    renderAll(data.assets);
+    renderStats(data.assets);
+    const ts = data.timestamp ? new Date(data.timestamp).toLocaleTimeString() : '';
+    setStatus('ok', `${data.count} assets loaded · ${ts} · refreshes every 8 min`);
+    document.getElementById('statTs').textContent = ts || '—';
+  } catch (e) {
+    setStatus('error', `Cannot reach server: ${e.message}. Start Flask: py live-server.py`);
+    renderError();
+  }
+}
+
+function setStatus(s, msg) {
+  const d = document.getElementById('sdot');
+  d.className = 'sdot ' + (s === 'ok' ? 'on' : s === 'loading' ? 'loading' : '');
+  document.getElementById('smsg').textContent = msg;
+}
+
+// ── Filter ────────────────────────────────────────────────────────────────
+function setFilter(f, btn) {
+  _activeFilter = f;
+  document.querySelectorAll('.filter-pill').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  if (_allData) renderAll(_allData.assets);
+}
+
+function filtered(assets) {
+  return assets.filter(a => {
+    if (_activeFilter === 'all') return true;
+    if (_activeFilter === 'Long Gamma')  return !a.no_options && a.regime === 'Long Gamma';
+    if (_activeFilter === 'Short Gamma') return !a.no_options && a.regime === 'Short Gamma';
+    return a.group === _activeFilter;
+  });
+}
+
+// ── Stats ──────────────────────────────────────────────────────────────────
+function renderStats(assets) {
+  const withOpts = assets.filter(a => !a.no_options);
+  const long  = withOpts.filter(a => a.regime === 'Long Gamma').length;
+  const short = withOpts.filter(a => a.regime === 'Short Gamma').length;
+  const noOpt = assets.filter(a => a.no_options).length;
+  const pcrs  = withOpts.map(a => a.pcr).filter(Boolean);
+  const avgPCR = pcrs.length ? (pcrs.reduce((s,v)=>s+v,0)/pcrs.length).toFixed(2) : '—';
+  document.getElementById('statTotal').textContent = assets.length;
+  document.getElementById('statLong').textContent  = long;
+  document.getElementById('statShort').textContent = short;
+  document.getElementById('statNoOpts').textContent= noOpt;
+  document.getElementById('statPCR').textContent   = avgPCR;
+}
+
+// ── Render all ─────────────────────────────────────────────────────────────
+function renderAll(assets) {
+  const container = document.getElementById('chartsContainer');
+  const list = filtered(assets);
+  if (!list.length) {
+    container.innerHTML = `<div class="empty-state"><div style="font-size:2rem;margin-bottom:.5rem;">🔍</div>No assets match filter.</div>`;
+    return;
+  }
+
+  const ORDER = ['ETFs', 'Mag 7', 'Blue Chips', 'Futures'];
+  const groups = {};
+  list.forEach(a => { (groups[a.group] = groups[a.group] || []).push(a); });
+
+  let html = '';
+  ORDER.forEach(grp => {
+    if (!groups[grp]) return;
+    const g = groups[grp];
+    const lng = g.filter(a => !a.no_options && a.regime === 'Long Gamma').length;
+    const sht = g.filter(a => !a.no_options && a.regime === 'Short Gamma').length;
+    html += `<div class="grp-hdr">${grp}
+      <span class="grp-count">${g.length} assets —
+        <span style="color:#22c55e;">${lng} Long</span> /
+        <span style="color:#f87171;">${sht} Short</span>
+      </span></div>
+    <div class="cards-grid" id="grid-${grp.replace(/\s/g,'_')}">`;
+    g.forEach(a => { html += buildCard(a); });
+    html += `</div>`;
+  });
+  container.innerHTML = html;
+  requestAnimationFrame(() => { list.forEach(a => { if (!a.no_options) drawGexChart(a); }); });
+}
+
+// ── Build card HTML ────────────────────────────────────────────────────────
+function buildCard(a) {
+  const typeClass = a.asset_type === 'futures' ? 't-futures' : 't-stock';
+  const typeLbl   = a.asset_type === 'futures' ? 'FUTURES' : a.asset_type === 'options' ? 'OPTIONS' : 'STOCK';
+  const spotStr   = a.spot >= 1000 ? a.spot.toLocaleString('en-US',{maximumFractionDigits:2}) : a.spot.toFixed(2);
+
+  if (a.no_options) {
+    return `<div class="gex-card" id="card-${a.symbol}">
+      <div class="gc-head">
+        <div><div class="gc-sym">${a.symbol}</div>
+          <div class="gc-label">${(a.label||'').replace(/ \(.*\)$/,'')}</div>
+          <span class="type-chip ${typeClass}">${typeLbl}</span></div>
+        <div class="gc-meta"><div class="gc-gex">Spot: <span>$${spotStr}</span></div></div>
+      </div>
+      <div class="gc-noopts">📋 No options data available for this symbol.<br>
+        <span style="font-size:.78rem;margin-top:.3rem;display:block;">Futures options require a dedicated data provider.</span>
+      </div>
+    </div>`;
+  }
+
+  const isLong = a.regime === 'Long Gamma';
+  const rClass  = isLong ? 'r-long' : 'r-short';
+  const rIcon   = isLong ? '▲' : '▼';
+  const gexAbs  = Math.abs(a.total_gex_m);
+  const gexStr  = gexAbs >= 1000
+    ? (isLong ? '+' : '−') + '$' + (gexAbs/1000).toFixed(2) + 'B'
+    : (isLong ? '+' : '−') + '$' + gexAbs.toFixed(1) + 'M';
+
+  const fmt = v => v >= 1000 ? '$'+v.toLocaleString('en-US',{maximumFractionDigits:0})
+                : v >= 10   ? '$'+v.toFixed(1)
+                : '$'+v.toFixed(2);
+
+  const levels = [
+    a.gamma_wall ? {color:'#22c55e', name:'γ Wall',   val: fmt(a.gamma_wall)} : null,
+    a.put_wall   ? {color:'#f87171', name:'Put Wall', val: fmt(a.put_wall)}   : null,
+    a.flip_level ? {color:'#a78bfa', name:'Flip',     val: fmt(a.flip_level)} : null,
+    a.call_wall  ? {color:'#22d3ee', name:'Call OI',  val: fmt(a.call_wall)}  : null,
+    {color:'#fbbf24', name:'Spot', val: fmt(a.spot)},
+    a.pcr != null ? {color:'#7fa3be', name:'PCR', val: a.pcr.toFixed(2)} : null,
+  ].filter(Boolean);
+
+  const lvlHTML = levels.map(l =>
+    `<span class="kl"><span class="kl-dot" style="background:${l.color}"></span>
+     <span class="kl-name">${l.name}:</span>
+     <span class="kl-val" style="color:${l.color}">${l.val}</span></span>`
+  ).join('');
+
+  const proxyBadge = a.proxy_symbol
+    ? `<span class="proxy-badge">⚡ Via ${a.proxy_symbol}</span>`
+    : '';
+
+  return `<div class="gex-card" id="card-${a.symbol}">
+    <div class="gc-head">
+      <div>
+        <a href="live-trading.html?sym=${encodeURIComponent(a.symbol)}" style="text-decoration:none;">
+          <div class="gc-sym">${a.symbol}</div>
+          <div class="gc-label">${(a.label||'').replace(/ \(.*\)$/,'')}</div>
+          <span class="type-chip ${typeClass}">${typeLbl}</span>${proxyBadge}
+        </a>
+      </div>
+      <div class="gc-meta">
+        <span class="regime-badge ${rClass}">${rIcon} ${a.regime}</span>
+        <div class="gc-gex">Net GEX: <span style="color:${isLong?'#22c55e':'#f87171'}">${gexStr}</span></div>
+        <div class="gc-gex">Spot: <span>$${spotStr}</span></div>
+      </div>
+    </div>
+    <div class="gc-levels">${lvlHTML}</div>
+    <div class="gc-chart"><canvas class="gex-cv" id="cv-${a.symbol}" height="280"></canvas></div>
+    <div class="gc-legend">
+      <span class="gl-item"><span class="gl-green"></span>Positive GEX (stabilizing)</span>
+      <span class="gl-item"><span class="gl-red"></span>Negative GEX (destabilizing)</span>
+      <span class="gl-item"><span class="gl-yellow"></span>Spot price</span>
+      <span class="gl-item"><span class="gl-green-line"></span>Gamma Wall</span>
+      <span class="gl-item"><span class="gl-red-line"></span>Put Wall</span>
+      <span class="gl-item"><span class="gl-purple-line"></span>Gamma Flip</span>
+    </div>
+    <div class="gc-desc" id="desc-${a.symbol}">${generateDesc(a)}</div>
+  </div>`;
+}
+
+// ── Generate text description ──────────────────────────────────────────────
+function generateDesc(a) {
+  const isLong = a.regime === 'Long Gamma';
+  const gexAbs = Math.abs(a.total_gex_m);
+  const gexStr = gexAbs >= 1000 ? '$'+(gexAbs/1000).toFixed(2)+'B net' : '$'+gexAbs.toFixed(1)+'M net';
+  const fmt = v => v >= 1000 ? v.toLocaleString('en-US',{maximumFractionDigits:0}) : v.toFixed(2);
+  const pcr  = a.pcr != null ? ` The put/call open interest ratio is <strong style="color:#a78bfa">${a.pcr.toFixed(2)}</strong>${a.pcr > 1.2 ? ' (bearish hedging dominant)' : a.pcr < 0.7 ? ' (bullish sentiment dominant)' : ' (balanced sentiment)'}.` : '';
+
+  const proxyNote = a.proxy_symbol
+    ? ` <em style="font-size:.78rem;opacity:.7;">(GEX estimated via ${a.proxy_symbol} options, strikes scaled to ${a.symbol} price levels)</em>`
+    : '';
+
+  if (isLong) {
+    const wallRel  = a.gamma_wall ? (a.gamma_wall > a.spot ? 'above' : 'below') : '';
+    const flipRel  = a.flip_level ? (a.flip_level > a.spot ? 'above' : 'below') : '';
+    return `<strong style="color:#22c55e;">Long Gamma (Stabilizing)</strong> — Dealers hold ${gexStr} long gamma.${proxyNote}
+      Market makers will <strong>sell into rallies and buy on dips</strong> as they delta-hedge, creating a gravitational pull toward key strikes and dampening realized volatility.
+      ${a.gamma_wall ? `The <strong style="color:#22c55e;">Gamma Wall at $${fmt(a.gamma_wall)}</strong> is ${wallRel} current price — expect strong resistance or support near this level as dealers defend their hedges.` : ''}
+      ${a.flip_level ? `If price breaks ${flipRel === 'above' ? 'below' : 'above'} the <strong style="color:#a78bfa;">Gamma Flip at $${fmt(a.flip_level)}</strong>, the regime turns short-gamma and volatility will expand sharply.` : ''}${pcr}`;
+  } else {
+    const flipRel  = a.flip_level ? (a.flip_level > a.spot ? 'above' : 'below') : '';
+    return `<strong style="color:#f87171;">Short Gamma (Trending)</strong> — Dealers hold ${gexStr} short gamma.${proxyNote}
+      Market makers must <strong>buy into rallies and sell into dips</strong> to stay hedged — this amplifies price moves in both directions and raises realized volatility.
+      ${a.put_wall ? `The <strong style="color:#f87171;">Put Wall at $${fmt(a.put_wall)}</strong> represents key mechanical support from dealer delta-hedging on heavy put open interest.` : ''}
+      ${a.flip_level ? `Reclaiming the <strong style="color:#a78bfa;">Gamma Flip at $${fmt(a.flip_level)}</strong> (${flipRel} current spot) would return dealers to a stabilizing long-gamma posture and reduce vol.` : ''}${pcr}`;
+  }
+}
+
+// ── Draw SpotGamma-style horizontal bar chart ──────────────────────────────
+function drawGexChart(a) {
+  const cv = document.getElementById('cv-' + a.symbol);
+  if (!cv || !a.strikes || !a.strikes.length) return;
+
+  const dpr = window.devicePixelRatio || 1;
+  const W   = cv.parentElement.clientWidth;
+
+  // Number of strikes to show — limit to 50 for readability
+  const allPairs = a.strikes.map((k, i) => ({k, g: a.gex[i]}))
+                             .sort((a, b) => b.k - a.k);          // high → low
+  const pairs = allPairs.length > 50
+    ? allPairs.filter((_, i) => i % Math.ceil(allPairs.length / 50) === 0)
+    : allPairs;
+  const N = pairs.length;
+
+  const ROW_H = Math.max(6, Math.min(16, Math.floor(280 / N)));
+  const H     = N * ROW_H + 36;
+
+  cv.width  = W * dpr; cv.height = H * dpr;
+  cv.style.width = W + 'px'; cv.style.height = H + 'px';
+  const ctx = cv.getContext('2d');
+  ctx.scale(dpr, dpr);
+
+  const PAD_L = 60, PAD_R = 60, PAD_T = 20, PAD_B = 16;
+  const chartW = W - PAD_L - PAD_R;
+  const chartH = H - PAD_T - PAD_B;
+  const halfW  = chartW / 2;
+  const zeroX  = PAD_L + halfW;
+
+  // Background
+  ctx.fillStyle = '#070d18';
+  ctx.fillRect(0, 0, W, H);
+
+  // Subtle grid — vertical quarter lines
+  ctx.strokeStyle = 'rgba(255,255,255,.04)';
+  ctx.lineWidth = 1;
+  [0.25, 0.5, 0.75].forEach(f => {
+    const x = PAD_L + chartW * f;
+    ctx.beginPath(); ctx.moveTo(x, PAD_T); ctx.lineTo(x, H - PAD_B); ctx.stroke();
+  });
+
+  const maxGex = Math.max(...pairs.map(p => Math.abs(p.g)), 1e-9);
+
+  // Scale labels (top)
+  const scaleStr = maxGex >= 1000 ? (maxGex/1000).toFixed(1)+'B' : maxGex.toFixed(1)+'M';
+  ctx.fillStyle = 'rgba(127,163,190,.55)';
+  ctx.font = '9px sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('−$'+scaleStr, PAD_L, PAD_T - 4);
+  ctx.textAlign = 'center';
+  ctx.fillText('$0', zeroX, PAD_T - 4);
+  ctx.textAlign = 'right';
+  ctx.fillText('+$'+scaleStr, W - PAD_R, PAD_T - 4);
+
+  // ── Draw bars ────────────────────────────────────────────────────────────
+  pairs.forEach((p, i) => {
+    const barY  = PAD_T + i * ROW_H;
+    const barH  = Math.max(2, ROW_H - 1);
+    const barW  = (Math.abs(p.g) / maxGex) * (halfW - 6);
+
+    if (p.g >= 0) {
+      // Positive → green, extends RIGHT from zero
+      const grad = ctx.createLinearGradient(zeroX, 0, zeroX + barW, 0);
+      grad.addColorStop(0, 'rgba(34,197,94,0.9)');
+      grad.addColorStop(1, 'rgba(34,197,94,0.35)');
+      ctx.fillStyle = grad;
+      ctx.fillRect(zeroX, barY + 1, barW, barH - 2);
+    } else {
+      // Negative → red, extends LEFT from zero
+      const grad = ctx.createLinearGradient(zeroX - barW, 0, zeroX, 0);
+      grad.addColorStop(0, 'rgba(248,113,113,0.35)');
+      grad.addColorStop(1, 'rgba(248,113,113,0.9)');
+      ctx.fillStyle = grad;
+      ctx.fillRect(zeroX - barW, barY + 1, barW, barH - 2);
+    }
+  });
+
+  // ── Strike labels (left side) ─────────────────────────────────────────────
+  const labelStep = Math.max(1, Math.ceil(N / 22));
+  ctx.fillStyle = 'rgba(127,163,190,.75)';
+  ctx.font = '9px Consolas, monospace';
+  ctx.textAlign = 'right';
+  pairs.forEach((p, i) => {
+    if (i % labelStep !== 0) return;
+    const y = PAD_T + i * ROW_H + ROW_H / 2 + 3;
+    const lbl = p.k >= 1000 ? p.k.toLocaleString('en-US',{maximumFractionDigits:0})
+              : p.k >= 100  ? p.k.toFixed(1)
+              : p.k.toFixed(2);
+    ctx.fillText(lbl, PAD_L - 4, y);
+  });
+
+  // ── Helper: draw horizontal level line ───────────────────────────────────
+  function drawLevel(strike, color, dash, labelLeft, labelRight) {
+    const idx = pairs.findIndex(p => p.k <= strike);
+    if (idx < 0) return;
+    const y = PAD_T + idx * ROW_H + ROW_H / 2;
+    ctx.save();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1.2;
+    ctx.setLineDash(dash);
+    ctx.beginPath(); ctx.moveTo(PAD_L, y); ctx.lineTo(W - PAD_R, y); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.font = '8px sans-serif';
+    ctx.fillStyle = color;
+    if (labelLeft) { ctx.textAlign = 'right'; ctx.fillText(labelLeft, PAD_L - 2, y - 2); }
+    if (labelRight){ ctx.textAlign = 'left';  ctx.fillText(labelRight, W - PAD_R + 3, y - 2); }
+    ctx.restore();
+  }
+
+  // Spot price (yellow solid)
+  drawLevel(a.spot,        'rgba(251,191,36,.9)',  [4,3], `$${a.spot>=1000?a.spot.toLocaleString():a.spot.toFixed(1)}`, 'SPOT');
+  // Gamma wall (green dashed)
+  if (a.gamma_wall) drawLevel(a.gamma_wall, 'rgba(34,197,94,.75)',  [5,4], null, 'γ Wall');
+  // Put wall (red dashed)
+  if (a.put_wall)   drawLevel(a.put_wall,   'rgba(248,113,113,.75)', [5,4], null, 'Put Wall');
+  // Gamma flip (purple dotted)
+  if (a.flip_level) drawLevel(a.flip_level, 'rgba(167,139,250,.75)', [2,4], null, 'Flip');
+  // Call wall (cyan dotted)
+  if (a.call_wall && a.call_wall !== a.gamma_wall)
+    drawLevel(a.call_wall, 'rgba(34,211,238,.55)', [2,4], null, 'Call OI');
+}
+
+// ── Error state ────────────────────────────────────────────────────────────
+function renderError() {
+  document.getElementById('chartsContainer').innerHTML = `
+    <div class="empty-state">
+      <div style="font-size:2rem;margin-bottom:.5rem;">⚠️</div>
+      <div style="margin-bottom:.5rem;">Cannot reach ML server at <code style="color:#a78bfa;">localhost:5050</code></div>
+      <div style="font-size:.82rem;margin-bottom:1rem;">Start with: <code style="color:#a78bfa;">py live-server.py</code></div>
+      <button onclick="loadData()" class="hero-cta" style="background:linear-gradient(135deg,#a78bfa,#7c3aed);color:#fff;font-size:.85rem;padding:.55rem 1.4rem;">Retry</button>
+    </div>`;
+}
+
+// ── Resize ─────────────────────────────────────────────────────────────────
+let _rt = null;
+window.addEventListener('resize', () => {
+  clearTimeout(_rt);
+  _rt = setTimeout(() => {
+    if (_allData) filtered(_allData.assets).forEach(a => { if (!a.no_options) drawGexChart(a); });
+  }, 200);
+});
+
+// ── Init ──────────────────────────────────────────────────────────────────
+window.addEventListener('load', () => loadData());
+setInterval(() => loadData(), 8 * 60 * 1000);
+</script>
+<script src="ibkr-widget.js"></script>
+</body>
+</html>
