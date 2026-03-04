@@ -136,6 +136,63 @@
 
     .skew-legend { display:flex;gap:1.5rem;margin-top:.5rem;font-size:.75rem; }
     .skew-dot { width:12px;height:3px;border-radius:2px;display:inline-block;margin-right:.4rem;vertical-align:middle; }
+
+    /* ── Daily Impact Section ── */
+    .dh-metrics-strip { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:.7rem; margin-bottom:1rem; }
+    .dh-metric { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:.7rem 1rem; text-align:center; }
+    .dh-metric-val { font-size:1.25rem; font-weight:900; font-family:'Consolas',monospace; }
+    .dh-metric-lbl { font-size:.65rem; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; margin-top:.15rem; }
+    .dh-live-card { background:var(--surface); border:1px solid var(--border); border-radius:12px; overflow:hidden; margin-bottom:1rem; }
+    .dh-live-hdr  { display:flex; align-items:center; justify-content:space-between; padding:.65rem 1rem; border-bottom:1px solid var(--border); }
+    .dh-live-title { font-weight:800; font-size:.88rem; }
+    .dh-live-sub  { font-size:.72rem; color:var(--muted); }
+
+    /* ── GEX Stress Test Table ── */
+    .stress-tbl { width:100%; border-collapse:collapse; font-size:.79rem; }
+    .stress-tbl th { background:var(--surface); color:var(--muted); padding:.4rem .7rem; text-align:left; border-bottom:1px solid var(--border); font-size:.7rem; font-weight:700; letter-spacing:.04em; }
+    .stress-tbl td { padding:.38rem .7rem; border-bottom:1px solid rgba(36,48,88,.4); font-family:'Consolas',monospace; }
+    .stress-tbl tr:hover td { background:rgba(255,255,255,.02); }
+    .stress-up   { color:#4ade80; font-weight:800; }
+    .stress-down { color:#f87171; font-weight:800; }
+
+    /* ── Macro Events ── */
+    .macro-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(310px,1fr)); gap:1rem; margin-bottom:1.5rem; }
+    .macro-card { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:1.1rem 1.2rem; border-left:4px solid var(--accent); }
+    .macro-card.fed   { border-left-color:#a78bfa; }
+    .macro-card.cpi   { border-left-color:#f87171; }
+    .macro-card.nfp   { border-left-color:#4ade80; }
+    .macro-card.geo   { border-left-color:#fbbf24; }
+    .macro-card.earn  { border-left-color:#22d3ee; }
+    .macro-card.global{ border-left-color:#f59e0b; }
+    .macro-icon  { font-size:1.5rem; margin-bottom:.4rem; }
+    .macro-title { font-size:.92rem; font-weight:800; margin-bottom:.3rem; }
+    .macro-body  { font-size:.79rem; color:var(--muted); line-height:1.65; }
+    .macro-impact { display:flex; gap:.35rem; flex-wrap:wrap; margin-top:.6rem; }
+    .impact-badge { font-size:.64rem; font-weight:700; padding:.12rem .42rem; border-radius:4px; letter-spacing:.03em; }
+    .ib-iv   { background:rgba(167,139,250,.12); color:#a78bfa; border:1px solid rgba(167,139,250,.25); }
+    .ib-gex  { background:rgba(34,211,238,.12);  color:#22d3ee; border:1px solid rgba(34,211,238,.25); }
+    .ib-flow { background:rgba(251,191,36,.12);  color:#fbbf24; border:1px solid rgba(251,191,36,.25); }
+    .ib-dh   { background:rgba(34,197,94,.12);   color:#4ade80; border:1px solid rgba(34,197,94,.25);  }
+    .ib-crsh { background:rgba(248,113,113,.12); color:#f87171; border:1px solid rgba(248,113,113,.25); }
+
+    /* ── Case Studies ── */
+    .case-study { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:1.1rem 1.3rem; margin-bottom:.85rem; }
+    .cs-date   { font-size:.72rem; font-weight:700; color:#fbbf24; letter-spacing:.06em; text-transform:uppercase; margin-bottom:.25rem; }
+    .cs-event  { font-size:.92rem; font-weight:800; margin-bottom:.4rem; }
+    .cs-body   { font-size:.8rem; color:var(--muted); line-height:1.65; }
+    .cs-metrics { display:flex; gap:.55rem; flex-wrap:wrap; margin-top:.6rem; }
+    .cs-metric { background:var(--card); border-radius:6px; padding:.32rem .6rem; font-size:.72rem; border:1px solid var(--border); }
+    .cs-metric .v { font-weight:800; }
+
+    /* ── Macro Calendar Table ── */
+    .macro-cal-tbl { width:100%; border-collapse:collapse; font-size:.79rem; }
+    .macro-cal-tbl th { background:var(--surface); color:var(--muted); padding:.42rem .8rem; text-align:left; border-bottom:1px solid var(--border); font-size:.7rem; font-weight:700; letter-spacing:.04em; }
+    .macro-cal-tbl td { padding:.4rem .8rem; border-bottom:1px solid rgba(36,48,88,.4); vertical-align:middle; }
+    .macro-cal-tbl tr:hover td { background:rgba(255,255,255,.02); }
+    .impact-dot { display:inline-block; width:9px; height:9px; border-radius:50%; margin-right:.3rem; vertical-align:middle; }
+    .imp-high   { background:#f87171; }
+    .imp-med    { background:#fbbf24; }
+    .imp-low    { background:#4ade80; }
   </style>
 </head>
 <body>
@@ -590,6 +647,125 @@
     </div>
   </div>
 
+  <!-- GEX — DIA / IWM row -->
+  <div class="two-col">
+    <div>
+      <div class="chart-card">
+        <div class="chart-hdr">
+          <div>
+            <div class="chart-title">DIA — 4H Candlestick with GEX Levels</div>
+            <div class="chart-sub">Dow Jones Industrial Avg institutional positioning</div>
+          </div>
+          <span id="dia-regime-chip" class="chip chip-neut" style="font-size:.7rem;">Loading…</span>
+        </div>
+        <div class="lw-chart-container" id="dia-candle-chart" style="height:260px;"></div>
+      </div>
+    </div>
+    <div>
+      <div class="chart-card">
+        <div class="chart-hdr">
+          <div>
+            <div class="chart-title">IWM — 4H Candlestick with GEX Levels</div>
+            <div class="chart-sub">Russell 2000 small-cap dealer positioning</div>
+          </div>
+          <span id="iwm-regime-chip" class="chip chip-neut" style="font-size:.7rem;">Loading…</span>
+        </div>
+        <div class="lw-chart-container" id="iwm-candle-chart" style="height:260px;"></div>
+      </div>
+    </div>
+  </div>
+  <div class="two-col">
+    <div class="chart-card">
+      <div class="chart-hdr">
+        <div>
+          <div class="chart-title">DIA — Gamma Exposure by Strike</div>
+          <div class="chart-sub">Dow Jones dealer positioning · Green = stabilizing · Red = destabilizing</div>
+        </div>
+      </div>
+      <div class="chart-body"><canvas class="live-cv" id="cv-dia-gex" height="220"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-hdr">
+        <div>
+          <div class="chart-title">IWM — Gamma Exposure by Strike</div>
+          <div class="chart-sub">Small-cap risk appetite indicator · High PCR = fear</div>
+        </div>
+      </div>
+      <div class="chart-body"><canvas class="live-cv" id="cv-iwm-gex" height="220"></canvas></div>
+    </div>
+  </div>
+
+  <!-- GEX — Futures (ES=F / NQ=F) -->
+  <div class="sec-hdr" style="margin-top:1.5rem;">
+    <span class="sec-num" style="background:#fbbf24;">4b</span>
+    <span class="sec-title">Equity Futures GEX — ES &amp; NQ</span>
+    <span class="sec-sub">— S&amp;P 500 &amp; Nasdaq-100 futures dealer gamma · Overnight &amp; pre-market positioning</span>
+  </div>
+  <div class="info-block" style="margin-bottom:1rem;">
+    <h3>Why Futures GEX Matters for Daily Institutional Impact</h3>
+    <p>Equity index futures (ES=F, NQ=F) trade nearly 24 hours. Market makers in futures options must delta-hedge just like equity options dealers — but across overnight sessions when cash equities are closed. <strong>Futures GEX levels act as magnetic attractors during pre-market and overnight sessions</strong>, determining where ES and NQ stabilize or accelerate. When futures break below their futures gamma flip level, dealers begin amplifying overnight moves — which often translate into gap-down opens in cash equities.</p>
+    <div class="three-col" style="margin-top:.8rem;">
+      <div style="background:var(--card);border-radius:8px;padding:.7rem;font-size:.78rem;border:1px solid var(--border);">
+        <div style="font-weight:800;color:#fbbf24;margin-bottom:.25rem;">ES=F (S&amp;P 500 Futures)</div>
+        <div style="color:var(--muted);">~$70B daily notional · 23/5 trading · Citadel + Virtu dominant market makers · Most liquid futures contract in the world</div>
+      </div>
+      <div style="background:var(--card);border-radius:8px;padding:.7rem;font-size:.78rem;border:1px solid var(--border);">
+        <div style="font-weight:800;color:#22d3ee;margin-bottom:.25rem;">NQ=F (Nasdaq Futures)</div>
+        <div style="color:var(--muted);">High beta to mega-cap tech · Amplifies SPY moves by ~1.5× · Extremely gamma-sensitive near major tech earnings</div>
+      </div>
+      <div style="background:var(--card);border-radius:8px;padding:.7rem;font-size:.78rem;border:1px solid var(--border);">
+        <div style="font-weight:800;color:#a78bfa;margin-bottom:.25rem;">Futures Options Expiry</div>
+        <div style="color:var(--muted);">Quarterly futures options expiry (3rd Friday of March/June/Sept/Dec) creates largest single-day GEX reset of the year — "Triple Witching"</div>
+      </div>
+    </div>
+  </div>
+  <div class="two-col">
+    <div>
+      <div class="chart-card">
+        <div class="chart-hdr">
+          <div>
+            <div class="chart-title">ES=F — 4H Candlestick with GEX Levels</div>
+            <div class="chart-sub">S&amp;P 500 Futures · Overnight gamma levels visible</div>
+          </div>
+          <span id="es-regime-chip" class="chip chip-neut" style="font-size:.7rem;">Loading…</span>
+        </div>
+        <div class="lw-chart-container" id="es-candle-chart" style="height:280px;"></div>
+      </div>
+    </div>
+    <div>
+      <div class="chart-card">
+        <div class="chart-hdr">
+          <div>
+            <div class="chart-title">NQ=F — 4H Candlestick with GEX Levels</div>
+            <div class="chart-sub">Nasdaq-100 Futures · Tech-beta amplifier</div>
+          </div>
+          <span id="nq-regime-chip" class="chip chip-neut" style="font-size:.7rem;">Loading…</span>
+        </div>
+        <div class="lw-chart-container" id="nq-candle-chart" style="height:280px;"></div>
+      </div>
+    </div>
+  </div>
+  <div class="two-col">
+    <div class="chart-card">
+      <div class="chart-hdr">
+        <div>
+          <div class="chart-title">ES=F — Gamma Exposure by Strike</div>
+          <div class="chart-sub">S&amp;P futures gamma · Green = long gamma (stabilizing) · Red = short gamma</div>
+        </div>
+      </div>
+      <div class="chart-body"><canvas class="live-cv" id="cv-es-gex" height="230"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-hdr">
+        <div>
+          <div class="chart-title">NQ=F — Gamma Exposure by Strike</div>
+          <div class="chart-sub">Nasdaq futures gamma · Tech dealer positioning</div>
+        </div>
+      </div>
+      <div class="chart-body"><canvas class="live-cv" id="cv-nq-gex" height="230"></canvas></div>
+    </div>
+  </div>
+
   <!-- §5 Volatility Surface & IV Skew -->
   <div class="sec-hdr">
     <span class="sec-num">5</span>
@@ -981,6 +1157,349 @@
           </ol>
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- §11 Daily Institutional Impact Analysis -->
+  <div class="sec-hdr">
+    <span class="sec-num">11</span>
+    <span class="sec-title">Daily Institutional Impact Analysis</span>
+    <span class="sec-sub">— Live delta hedging pressure, intraday flow footprint, and regime change signals</span>
+  </div>
+
+  <div class="dh-metrics-strip" id="dh-metrics-strip">
+    <div class="dh-metric"><div class="dh-metric-val" id="dh-dealer-buy" style="color:#4ade80;">—</div><div class="dh-metric-lbl">Est. Dealer Buy Flow</div></div>
+    <div class="dh-metric"><div class="dh-metric-val" id="dh-dealer-sell" style="color:#f87171;">—</div><div class="dh-metric-lbl">Est. Dealer Sell Flow</div></div>
+    <div class="dh-metric"><div class="dh-metric-val" id="dh-net-flow" style="color:#22d3ee;">—</div><div class="dh-metric-lbl">Net Dealer Δ Flow</div></div>
+    <div class="dh-metric"><div class="dh-metric-val" id="dh-gex-regime">—</div><div class="dh-metric-lbl">GEX Regime</div></div>
+    <div class="dh-metric"><div class="dh-metric-val" id="dh-gamma-flip" style="color:#a78bfa;">—</div><div class="dh-metric-lbl">Gamma Flip Level</div></div>
+    <div class="dh-metric"><div class="dh-metric-val" id="dh-spot-to-flip">—</div><div class="dh-metric-lbl">Spot → Flip Distance</div></div>
+  </div>
+
+  <div class="two-col">
+    <div>
+      <div class="dh-live-card">
+        <div class="dh-live-hdr">
+          <div>
+            <div class="dh-live-title">Intraday Dealer Delta Hedging Pressure (Simulated)</div>
+            <div class="dh-live-sub">Estimated dealer share buying/selling pressure through the trading day</div>
+          </div>
+        </div>
+        <div style="background:#070d18;"><canvas class="live-cv" id="cv-dh-intraday" height="200"></canvas></div>
+      </div>
+
+      <!-- GEX Stress Test -->
+      <div class="dh-live-card">
+        <div class="dh-live-hdr">
+          <div>
+            <div class="dh-live-title">GEX Stress Test — Dealer Response to Price Moves</div>
+            <div class="dh-live-sub">Estimated dealer share buying/selling if SPY moves from current spot</div>
+          </div>
+        </div>
+        <div style="overflow-x:auto;padding:.6rem;">
+          <table class="stress-tbl">
+            <thead><tr>
+              <th>Scenario</th><th>SPY Level</th><th>Dealer Action</th><th>Est. Dollar Flow</th><th>Regime Impact</th>
+            </tr></thead>
+            <tbody id="stress-tbody">
+              <tr><td colspan="5" class="loading-msg">Loading GEX data…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="info-block" style="margin-bottom:1rem;">
+        <h3>📊 Today's Institutional Impact Summary</h3>
+        <div id="daily-impact-narrative"><div class="loading-msg">Loading institutional impact analysis…</div></div>
+      </div>
+
+      <div class="info-block" style="margin-bottom:1rem;">
+        <h3>⏰ Today's Intraday Delta Hedging Timeline</h3>
+        <div style="font-size:.8rem;color:var(--muted);">How delta hedging activity unfolds throughout the current trading day based on GEX levels and options open interest:</div>
+        <div id="dh-timeline" style="margin-top:.7rem;"></div>
+      </div>
+
+      <div class="info-block">
+        <h3>📈 Institutional Breadth — Delta Pressure by Asset Class</h3>
+        <div id="dh-breadth"><div class="loading-msg">Loading breadth data…</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- §12 Global Economic Events & Institutional Behavior -->
+  <div class="sec-hdr">
+    <span class="sec-num">12</span>
+    <span class="sec-title">Global Economic Events &amp; Institutional Behavior</span>
+    <span class="sec-sub">— How macro, geopolitical, and policy events reshape dealer positioning, GEX, and delta hedging daily</span>
+  </div>
+
+  <div class="info-block" style="margin-bottom:1.5rem;">
+    <h3>The Macro Event Transmission Mechanism — How Global Events Reach Your Chart</h3>
+    <p>Every macro event — from a Fed rate decision to a military conflict to a Chinese PMI miss — affects markets through a predictable institutional transmission chain. Understanding this chain explains why markets react not just to the news, but to the <em>surprise relative to institutional positioning</em>:</p>
+    <div class="four-col" style="margin-top:.9rem;">
+      <div style="background:var(--card);border-radius:8px;padding:.75rem;font-size:.78rem;border:1px solid var(--border);border-top:3px solid #a78bfa;">
+        <div style="font-weight:800;color:#a78bfa;margin-bottom:.3rem;">① Event Occurs</div>
+        <div style="color:var(--muted);">Fed rate decision · CPI print · War outbreak · Earnings miss · Central bank policy shift. The event creates an <em>information shock</em> that forces re-pricing of risk.</div>
+      </div>
+      <div style="background:var(--card);border-radius:8px;padding:.75rem;font-size:.78rem;border:1px solid var(--border);border-top:3px solid #fbbf24;">
+        <div style="font-weight:800;color:#fbbf24;margin-bottom:.3rem;">② Options Market Reprices</div>
+        <div style="color:var(--muted);">Implied volatility spikes (or collapses). Options delta changes across every strike and expiry. Dealers' existing hedges are now wrong — they must rebalance <em>immediately</em>.</div>
+      </div>
+      <div style="background:var(--card);border-radius:8px;padding:.75rem;font-size:.78rem;border:1px solid var(--border);border-top:3px solid #22d3ee;">
+        <div style="font-weight:800;color:#22d3ee;margin-bottom:.3rem;">③ Forced Delta Hedging</div>
+        <div style="color:var(--muted);">Market makers must buy/sell billions in equities and futures to re-delta. If GEX is negative (Short Gamma), they move WITH the market → cascade. If positive → dampen.</div>
+      </div>
+      <div style="background:var(--card);border-radius:8px;padding:.75rem;font-size:.78rem;border:1px solid var(--border);border-top:3px solid #4ade80;">
+        <div style="font-weight:800;color:#4ade80;margin-bottom:.3rem;">④ Systematic Flows Follow</div>
+        <div style="color:var(--muted);">CTAs flip trend signals. Vol control funds de-risk. Risk parity rebalances. Pension funds re-evaluate allocation. These mechanical flows amplify or dampen the initial move over hours/days.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="macro-grid">
+    <div class="macro-card fed">
+      <div class="macro-icon">🏛️</div>
+      <div class="macro-title">Federal Reserve — Monetary Policy</div>
+      <div class="macro-body">
+        The single most powerful institutional trigger. FOMC meetings (8 per year) create predictable pre-event positioning — dealers accumulate gamma before the event, then rapidly unwind after.<br><br>
+        <strong>Pre-FOMC positioning (T-5 to T-1):</strong> Institutions buy straddles on SPY/SPX to position for the vol event. Dealers are long gamma → markets stabilize in the week before Fed.<br><br>
+        <strong>FOMC day mechanics:</strong> The 2:00pm ET release triggers simultaneous repricing across every options contract. Dealers must rehedge within seconds. In Short Gamma environments, a 25bps surprise can move SPY 2–3% in minutes.<br><br>
+        <strong>Post-FOMC gamma collapse:</strong> Within 24–48 hours of the meeting, dealers sell their pre-event gamma — IV collapses, GEX shifts, and the market often reverses the initial FOMC reaction.<br><br>
+        <strong>2022 rate hike cycle:</strong> Persistent hawkishness kept institutions in defensive positioning for 18 months — negative GEX persisted throughout, amplifying every 25bps hike into 3–5% SPY drops.
+      </div>
+      <div class="macro-impact">
+        <span class="impact-badge ib-iv">IV Spike +50–200%</span>
+        <span class="impact-badge ib-gex">GEX Flip Risk</span>
+        <span class="impact-badge ib-dh">Forced Rehedge</span>
+        <span class="impact-badge ib-flow">CTA Signals</span>
+      </div>
+    </div>
+
+    <div class="macro-card cpi">
+      <div class="macro-icon">📊</div>
+      <div class="macro-title">Inflation Data — CPI, PCE, PPI</div>
+      <div class="macro-body">
+        Monthly CPI (released ~8:30am ET, second week of month) is the most market-moving scheduled data release. Institutions pre-position in options, creating elevated IV in the 3–5 days before release.<br><br>
+        <strong>Hot CPI (above consensus):</strong> Rate expectations rise → bond prices fall → equity risk premium increases → dealers face massive put delta increases → forced to short equities. 2022 CPI prints of 9%+ routinely moved SPY 3–5% in minutes.<br><br>
+        <strong>Cool CPI (below consensus):</strong> Disinflation narrative strengthens → bond yields fall → equity multiples expand → call delta buying by dealers creates mechanical bid.<br><br>
+        <strong>PCE vs CPI:</strong> The Fed's preferred inflation measure (Core PCE, released last business day of month) affects longer-duration assets more strongly — growth stocks (QQQ) reprice more dramatically than value (DIA).<br><br>
+        <strong>Pre-CPI IV crush:</strong> After the number, IV collapses 20–40% regardless of direction — option buyers lose to theta even if they're directionally correct.
+      </div>
+      <div class="macro-impact">
+        <span class="impact-badge ib-iv">IV Spike Pre-Release</span>
+        <span class="impact-badge ib-crsh">IV Crush Post-Release</span>
+        <span class="impact-badge ib-gex">GEX Shift</span>
+        <span class="impact-badge ib-flow">Bond → Equity Flows</span>
+      </div>
+    </div>
+
+    <div class="macro-card nfp">
+      <div class="macro-icon">💼</div>
+      <div class="macro-title">Labor Market — NFP, JOLTS, Claims</div>
+      <div class="macro-body">
+        Non-Farm Payrolls (first Friday of month, 8:30am ET) directly affects Fed rate expectations — and thus dealer positioning across all assets.<br><br>
+        <strong>Strong NFP (above consensus):</strong> Fed-on-hold narrative → yield curve steepens → financials outperform, rate-sensitive tech underperforms. Dealer GEX for XLF and KRE shifts bullish while QQQ dealers become defensive.<br><br>
+        <strong>Weak NFP:</strong> Recession fears or rate cut expectations → growth stocks surge as rate cuts mean higher valuations → QQQ/NVDA/MSFT see massive call-buying from institutional desks.<br><br>
+        <strong>JOLTS (Job Openings):</strong> Released Tuesday of the week before NFP. Institutional algo models use this to revise NFP estimates — often creates significant pre-NFP positioning on Wednesday/Thursday.<br><br>
+        <strong>Weekly Claims:</strong> Thursday 8:30am ET. Low-noise but high-frequency signal. Sustained rise above 250K initiates CTA selling signals and vol control de-risking.
+      </div>
+      <div class="macro-impact">
+        <span class="impact-badge ib-flow">Rate Curve Shift</span>
+        <span class="impact-badge ib-dh">Sector Rotation</span>
+        <span class="impact-badge ib-gex">Futures Rehedge</span>
+        <span class="impact-badge ib-iv">Pre-NFP IV Bid</span>
+      </div>
+    </div>
+
+    <div class="macro-card geo">
+      <div class="macro-icon">🌍</div>
+      <div class="macro-title">Geopolitical Events — Wars, Elections, Sanctions</div>
+      <div class="macro-body">
+        Geopolitical shocks are the hardest to predict but create some of the most violent delta hedging cascades. Unlike macro data, they often arrive outside market hours — creating massive gap-open hedging requirements.<br><br>
+        <strong>Military conflicts:</strong> Oil-producing region conflicts spike WTI/Brent → energy stocks surge, airlines and consumer discretionary plunge → institutional sector rotation creates $50–100B in flow within hours. Feb 2022 Russia-Ukraine invasion moved ES -2.5% in the first 30 minutes.<br><br>
+        <strong>Elections:</strong> US Presidential elections are the ultimate "known uncertainty" event. Dealers build enormous straddles in October — IV peaks 5–7 days before election. The post-election IV collapse ("Volatility Monday") has been one of the most consistent institutional trades of the past decade.<br><br>
+        <strong>Sanctions &amp; Trade Wars:</strong> US-China tariff escalations create predictable tech/supply-chain sector rotation. Apple, NVDA, TSMC, and ASML see correlated selling as supply chain re-pricing forces institutional portfolio restructuring.<br><br>
+        <strong>Flight-to-safety flows:</strong> VIX spikes → sovereign bonds bid → gold/USD surge → emerging market ETFs dumped. These flows are mechanical — risk parity, vol control, and pension funds all de-risk simultaneously.
+      </div>
+      <div class="macro-impact">
+        <span class="impact-badge ib-crsh">Gap-Open GEX Reset</span>
+        <span class="impact-badge ib-iv">VIX Spike 20–80%</span>
+        <span class="impact-badge ib-flow">Safe-Haven Flows</span>
+        <span class="impact-badge ib-dh">Oil/Commodity Hedge</span>
+      </div>
+    </div>
+
+    <div class="macro-card earn">
+      <div class="macro-icon">💰</div>
+      <div class="macro-title">Earnings Seasons — Mega-Cap Positioning</div>
+      <div class="macro-body">
+        Earnings seasons (January, April, July, October) create predictable institutional positioning patterns. The "Magnificent 7" (AAPL, MSFT, NVDA, AMZN, META, GOOGL, TSLA) now represent ~30% of S&P 500 — their earnings directly move index GEX.<br><br>
+        <strong>Pre-earnings IV bid (T-10 to T-1):</strong> Institutions buy straddles, dealers accumulate long gamma. GEX for the individual stock becomes strongly positive (Long Gamma) as dealers' net position is long options they bought to hedge.<br><br>
+        <strong>Earnings day mechanics:</strong> If the stock moves beyond the expected move (implied by IV), puts or calls go deep ITM → dealer delta explodes → forced hedging creates exaggerated after-hours moves. NVDA has moved ±15% after earnings, triggering $20B+ in dealer share hedging.<br><br>
+        <strong>Post-earnings IV crush:</strong> 40–60% IV collapse the morning after earnings. Option buyers lose from vega even if direction is correct. The "buy the rumor, sell the news" pattern is often dealer GEX mechanics: they're long gamma pre-earnings, and sell hedges post-earnings, removing support.<br><br>
+        <strong>Index GEX ripple effect:</strong> A 10% AAPL move affects SPY GEX levels because AAPL is 7% of SPY. Dealers adjust their SPY hedges after major constituent moves.
+      </div>
+      <div class="macro-impact">
+        <span class="impact-badge ib-iv">IV Bid Pre-Earnings</span>
+        <span class="impact-badge ib-crsh">IV Crush Post-Earnings</span>
+        <span class="impact-badge ib-gex">Index GEX Shift</span>
+        <span class="impact-badge ib-dh">Straddle Delta Hedge</span>
+      </div>
+    </div>
+
+    <div class="macro-card global">
+      <div class="macro-icon">🌐</div>
+      <div class="macro-title">Global Macro — China, EU, Japan, Oil</div>
+      <div class="macro-body">
+        Non-US macro events increasingly drive US institutional flows as global portfolios cross-reference international signals:<br><br>
+        <strong>China PMI &amp; Policy:</strong> Weak China PMI hits commodity ETFs (GDX, USO), materials stocks, and luxury goods. PBoC stimulus announcements create correlated global equity rallies — often front-run by systematic EM funds 2–3 days early.<br><br>
+        <strong>EU Banking Stress:</strong> European bank stress (Deutsche Bank, Credit Suisse 2023, Silicon Valley Bank) creates global financial contagion. US banks see correlated selling as prime brokers require hedge funds to reduce leverage — forced selling cascades.<br><br>
+        <strong>Japan Yen Carry Trade:</strong> The largest structural position in global markets. Low Japanese rates enable borrowing in yen to buy US equities/bonds. When BoJ raises rates (as in August 2024), the yen strengthens → carry traders must sell US assets → VIX spiked to 65 in August 2024, largest single-day spike since 2020.<br><br>
+        <strong>Oil Supply Shocks (OPEC):</strong> OPEC+ production cuts → higher energy prices → stagflation fears → Fed forced to stay hawkish → equity multiples compress. Energy-heavy portfolios (sovereign wealth funds) see GEX shifts as XLE/XOM calls are added.
+      </div>
+      <div class="macro-impact">
+        <span class="impact-badge ib-flow">Cross-Asset Flows</span>
+        <span class="impact-badge ib-iv">Overnight IV Spikes</span>
+        <span class="impact-badge ib-crsh">Carry Unwind Risk</span>
+        <span class="impact-badge ib-gex">Futures Gap GEX</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Historical Case Studies -->
+  <div class="sec-hdr" style="margin-top:1rem;">
+    <span class="sec-num" style="background:#f59e0b;color:#080d1a;">12b</span>
+    <span class="sec-title">Historical Case Studies — Institutional Mechanics in Action</span>
+    <span class="sec-sub">— How global events translated into dealer flows, GEX regimes, and cascading market moves</span>
+  </div>
+
+  <div class="case-study">
+    <div class="cs-date">March 2020 — COVID-19 Pandemic Crash</div>
+    <div class="cs-event">The Textbook Short Gamma Cascade + Vol Control Doom Loop</div>
+    <div class="cs-body">
+      As COVID spread globally, institutional put buying accelerated from late February. The gamma flip level on SPY was breached on Feb 24th — this single event flipped dealer positioning from stabilizing (Long Gamma) to destabilizing (Short Gamma). From that point, every 1% SPY decline forced dealers to sell ~$2–3B in equities to re-hedge puts going deeper ITM.
+      <br><br>
+      Simultaneously, VIX rising from 15 → 80 forced volatility control funds (Bridgewater, AQR, Man Investments) to mechanically sell equities at every increment of VIX increase — estimated $300B+ in forced selling from vol control and risk parity alone.
+      <br><br>
+      The March 16th single-day drop of -12% (circuit breakers triggered twice) was almost entirely dealer-driven: massive put open interest from January OPEX and February earnings positions forced dealers into emergency rehedging. SPX dropped from 3350 to 2200 (-34%) in 23 trading days — the fastest bear market in history.
+      <br><br>
+      <strong>Recovery mechanics:</strong> Fed QE on March 23rd simultaneously: (1) collapsed yields → call buying resumed → dealers went Long Gamma, (2) VIX peaked at 85 → vol control funds were already sold out → buying resumed mechanically as VIX fell, (3) CTA trend signals flipped bullish after 20-day reversal.
+    </div>
+    <div class="cs-metrics">
+      <div class="cs-metric">SPX Move: <span class="v" style="color:#f87171">−34% in 23 days</span></div>
+      <div class="cs-metric">VIX Peak: <span class="v" style="color:#f87171">85.47</span></div>
+      <div class="cs-metric">Forced Selling: <span class="v" style="color:#fbbf24">~$400B+</span></div>
+      <div class="cs-metric">GEX Regime: <span class="v" style="color:#f87171">Short Gamma</span></div>
+      <div class="cs-metric">Recovery: <span class="v" style="color:#4ade80">V-shape in 5 months</span></div>
+    </div>
+  </div>
+
+  <div class="case-study">
+    <div class="cs-date">2022 — Federal Reserve Rate Hike Cycle</div>
+    <div class="cs-event">Persistent Short Gamma Regime — 18 Months of Dealer Amplification</div>
+    <div class="cs-body">
+      The Fed's pivot from near-zero rates to the fastest rate hiking cycle since 1980 created a unique institutional dynamic: persistent Short Gamma for most of 2022. As rate expectations rose, institutions bought massive quantities of SPX puts to hedge equity duration risk — keeping dealer GEX in negative territory month after month.
+      <br><br>
+      This meant every down-day was amplified. Normal Long Gamma markets see 0.5–0.8% daily ranges; the 2022 Short Gamma regime produced 1.5–3% daily moves constantly. Each 25–75bps Fed rate hike triggered a new wave of put buying → GEX went more negative → next move was amplified.
+      <br><br>
+      The technical breakdown of the 200-day moving average in April 2022 triggered an estimated $40–60B in CTA selling within one week. This mechanical, price-agnostic selling drove SPX below its "fair value" floor — exactly the Short Gamma regime amplification at work.
+      <br><br>
+      <strong>JEPI/JEPQ Impact:</strong> JPMorgan's covered-call ETFs (JEPI, JEPQ) wrote hundreds of millions in SPX/SPY call contracts throughout 2022 — persistently suppressing upside rallies. Every bounce was capped by dealer call-delta selling from JEPI's covered call overlay.
+    </div>
+    <div class="cs-metrics">
+      <div class="cs-metric">SPX Peak-to-Trough: <span class="v" style="color:#f87171">−27.5%</span></div>
+      <div class="cs-metric">Average Daily Range: <span class="v" style="color:#fbbf24">1.8%</span></div>
+      <div class="cs-metric">CTA Selling: <span class="v" style="color:#fbbf24">~$50B+</span></div>
+      <div class="cs-metric">VIX Average: <span class="v" style="color:#f87171">26.5</span></div>
+      <div class="cs-metric">Duration: <span class="v">18 months Short Gamma</span></div>
+    </div>
+  </div>
+
+  <div class="case-study">
+    <div class="cs-date">March 2023 — Silicon Valley Bank Collapse</div>
+    <div class="cs-event">Regional Banking Contagion + Sector GEX Collapse</div>
+    <div class="cs-body">
+      SVB's collapse on March 10th created a perfect storm of institutional mechanisms: (1) Bank sector GEX went sharply negative as massive put buying appeared in KRE, KBE, and individual bank stocks; (2) dealers short the banking sector were forced to sell bank shares to re-hedge rapidly increasing put deltas; (3) flight-to-quality flows moved $500B+ into T-bills and money market funds in 72 hours.
+      <br><br>
+      The FDIC weekend bailout announcement (March 12th) triggered the exact inverse of the crash mechanics: (1) banking puts went OTM → dealers bought back their bank shares → massive mechanical short squeeze; (2) Signature Bank, First Republic, Credit Suisse contagion fears drove new put buying in European banks → global financial sector GEX reset; (3) Fed emergency bank term lending facility eliminated tail risk → GEX rapidly returned to Long Gamma for financials.
+      <br><br>
+      <strong>Rate expectation flip:</strong> Prior to SVB, institutions were positioned for 25+ more Fed rate hikes. Post-SVB, December 2023 Fed funds futures instantly priced 100bps of cuts — creating massive duration trade, sending 2-year yields from 5.1% to 4.0% in 5 trading days.
+    </div>
+    <div class="cs-metrics">
+      <div class="cs-metric">KRE Drawdown: <span class="v" style="color:#f87171">−30% in 3 days</span></div>
+      <div class="cs-metric">Money Market Inflows: <span class="v" style="color:#fbbf24">$500B+</span></div>
+      <div class="cs-metric">2Y Yield Move: <span class="v" style="color:#4ade80">−110bps in 5 days</span></div>
+      <div class="cs-metric">FDIC Action: <span class="v">48-hour turnaround</span></div>
+    </div>
+  </div>
+
+  <div class="case-study">
+    <div class="cs-date">August 5, 2024 — Japan Carry Trade Unwind</div>
+    <div class="cs-event">VIX 65+ — The Largest Single-Day Volatility Spike Since 2020</div>
+    <div class="cs-body">
+      The Bank of Japan unexpectedly raised rates on July 31, 2024 — triggering the unwinding of the largest structural position in global financial markets: the yen carry trade. Institutions had borrowed trillions in low-rate yen to buy US tech, US treasuries, and emerging market assets. As the yen strengthened 10% in weeks, those positions became loss-making — forced selling was mechanical, not fundamental.
+      <br><br>
+      On August 5th (Monday gap-down due to Japanese markets closing over the weekend), US markets opened -3% and immediately triggered: (1) Vol control selling — VIX rising → all vol control funds de-risked simultaneously; (2) CTA signals flipped short as momentum broke through 50-day MA; (3) Dealer GEX was already negative heading into the move → every 1% decline was amplified by dealer selling; (4) VIX hit 65 in the first 30 minutes — the highest since COVID.
+      <br><br>
+      The reversal was equally mechanical: within 3 hours, VIX fell back to 30 as (1) Bank of Japan reversed course → yen weakened → carry trade re-established; (2) vol control funds had already finished selling → buying resumed; (3) GEX improved as put buyers took profits.
+    </div>
+    <div class="cs-metrics">
+      <div class="cs-metric">VIX Peak: <span class="v" style="color:#f87171">65.7</span></div>
+      <div class="cs-metric">SPX Gap Down: <span class="v" style="color:#f87171">−3% open</span></div>
+      <div class="cs-metric">Yen Carry Size: <span class="v" style="color:#fbbf24">~$4T estimated</span></div>
+      <div class="cs-metric">Recovery Speed: <span class="v" style="color:#4ade80">3 hours to close -1%</span></div>
+      <div class="cs-metric">VIX Collapse: <span class="v" style="color:#4ade80">65 → 30 intraday</span></div>
+    </div>
+  </div>
+
+  <div class="case-study">
+    <div class="cs-date">2023–2025 — AI Bull Market (NVDA / Magnificent 7)</div>
+    <div class="cs-event">Long Gamma + Systematic Call Buying = Structural Bull Regime</div>
+    <div class="cs-body">
+      The AI investment cycle created a sustained Long Gamma bull market in mega-cap tech — one of the most favorable institutional environments for long equity holders in decades. NVDA's revenue growth (+200%+ YoY in 2024) drove institutional call-buying so aggressive that dealers went structurally Long Gamma in NVDA, QQQ, and subsequently SPY.
+      <br><br>
+      With dealers long gamma, they automatically stabilized every NVDA dip by buying shares and sold every rip — creating the "climbing a wall of worry" price action where every 5–10% pullback was quickly recovered. Systematic funds (CTAs, momentum) remained near maximum long allocation for 24+ months.
+      <br><br>
+      <strong>Concentration risk:</strong> By 2025, the top 7 stocks represented ~32% of SPY. Their combined GEX dominated SPY's total gamma profile — meaning NVDA earnings now meaningfully affect SPY's gamma flip level. This concentration creates a structural fragility: if Magnificent 7 corrects simultaneously, SPY's GEX would flip negative even with 493 other stocks stable.
+      <br><br>
+      <strong>JEPI/JEPQ covered call drag:</strong> $30B+ in covered call ETF assets systematically capped upside in SPX and QQQ via persistent negative GEX from call selling — creating the pattern where rallies above the gamma wall were consistently faded by dealer selling.
+    </div>
+    <div class="cs-metrics">
+      <div class="cs-metric">NVDA Peak Return: <span class="v" style="color:#4ade80">+800%+ (2023–24)</span></div>
+      <div class="cs-metric">SPY GEX Regime: <span class="v" style="color:#4ade80">Long Gamma 18+ months</span></div>
+      <div class="cs-metric">Mag 7 SPY Weight: <span class="v" style="color:#fbbf24">~32%</span></div>
+      <div class="cs-metric">AI Option Flows: <span class="v" style="color:#22d3ee">$2B+/month call prem</span></div>
+    </div>
+  </div>
+
+  <!-- Macro Calendar -->
+  <div class="info-block" style="margin-top:1.5rem;">
+    <h3>📅 Recurring Macro Events — Institutional Impact Calendar</h3>
+    <p style="margin-bottom:.8rem;">These events repeat monthly, quarterly, or annually. Institutions pre-position for all of them — understanding the timing gives you the edge of knowing when forced flows are coming:</p>
+    <div style="overflow-x:auto;">
+      <table class="macro-cal-tbl">
+        <thead><tr>
+          <th>Event</th><th>Timing</th><th>Frequency</th><th>Impact Level</th><th>Primary Effect on Institutions</th><th>Typical GEX Impact</th>
+        </tr></thead>
+        <tbody>
+          <tr><td><strong>FOMC Rate Decision</strong></td><td>2:00pm ET · 2 days</td><td>8× per year</td><td><span class="impact-dot imp-high"></span>Very High</td><td>Entire options surface reprices. Dealers rehedge all delta simultaneously. CTA signals may flip.</td><td>GEX flip risk if surprise; IV crush after</td></tr>
+          <tr><td><strong>CPI Release</strong></td><td>8:30am ET · 2nd Tue</td><td>Monthly</td><td><span class="impact-dot imp-high"></span>Very High</td><td>Rate expectations shift. Bond/equity duration trade reprices. Dealer deltas jump on gap open.</td><td>Short Gamma if hot; Long Gamma if cool</td></tr>
+          <tr><td><strong>Non-Farm Payrolls</strong></td><td>8:30am ET · 1st Fri</td><td>Monthly</td><td><span class="impact-dot imp-high"></span>High</td><td>Fed rate path repriced. Financials/growth sector rotation. CTA trend recalibrates.</td><td>Moderate GEX shift; IV crush after</td></tr>
+          <tr><td><strong>PCE Inflation</strong></td><td>Last business day</td><td>Monthly</td><td><span class="impact-dot imp-med"></span>Medium-High</td><td>Fed's preferred measure. Duration trades adjust. Month-end rebalancing compounds flow.</td><td>Often compounded by month-end</td></tr>
+          <tr><td><strong>S&P 500 Rebalance</strong></td><td>3rd Friday (quarterly)</td><td>Quarterly</td><td><span class="impact-dot imp-high"></span>Very High</td><td>$20–50B in MOC orders. APs buy additions, sell removals. ETF inflows force basket buys.</td><td>GEX levels shift for additions/removals</td></tr>
+          <tr><td><strong>Triple Witching</strong></td><td>3rd Fri (Mar/Jun/Sep/Dec)</td><td>Quarterly</td><td><span class="impact-dot imp-high"></span>Very High</td><td>Stock + index options + futures all expire simultaneously. Largest dealer hedging unwind of quarter.</td><td>GEX collapses to zero at 4pm, resets</td></tr>
+          <tr><td><strong>Monthly OPEX</strong></td><td>3rd Friday every month</td><td>Monthly</td><td><span class="impact-dot imp-med"></span>Medium-High</td><td>Max pain pinning. Charm effects. Dealers unwind delta hedges as gamma collapses.</td><td>GEX reset · Max pain magnet AM</td></tr>
+          <tr><td><strong>Earnings Season</strong></td><td>Jan/Apr/Jul/Oct weeks 2–4</td><td>Quarterly</td><td><span class="impact-dot imp-high"></span>Very High</td><td>Mega-cap straddle buying drives IV. Post-earnings IV crush removes GEX. Index reweighting.</td><td>Long Gamma pre-earnings; crashes post</td></tr>
+          <tr><td><strong>GDP Release</strong></td><td>8:30am ET · Last Wed of month</td><td>Quarterly (advance)</td><td><span class="impact-dot imp-med"></span>Medium</td><td>Growth expectations shift. Cyclical vs defensive rotation. Recession threshold monitoring.</td><td>Moderate; often pre-positioned by CPI</td></tr>
+          <tr><td><strong>ISM Manufacturing</strong></td><td>10:00am ET · 1st business day</td><td>Monthly</td><td><span class="impact-dot imp-med"></span>Medium</td><td>Industrial/commodity sector flows. Below 50 = contraction signal for CTA models.</td><td>Sector-level GEX shifts (XLI, XLB, XLE)</td></tr>
+          <tr><td><strong>Fed Chair Speech / Jackson Hole</strong></td><td>August annually</td><td>Annual</td><td><span class="impact-dot imp-high"></span>Very High</td><td>Annual policy framework signal. 2022 Jackson Hole confirmed hawkishness → -3.4% SPY in 2 hours.</td><td>Often GEX flip trigger if policy surprise</td></tr>
+          <tr><td><strong>Month-End Rebalancing</strong></td><td>Last 3 trading days</td><td>Monthly</td><td><span class="impact-dot imp-med"></span>Medium</td><td>Pension/endowment rebalancing. If equities up, they sell. Predictable MOC pressure.</td><td>Directionally predictable; 3–4pm peak</td></tr>
+          <tr><td><strong>OPEC Meeting</strong></td><td>Varies</td><td>~6× per year</td><td><span class="impact-dot imp-med"></span>Medium</td><td>Oil supply decisions. Energy sector GEX shifts. Stagflation/growth narrative repricing.</td><td>XLE, USO GEX moves; SPY indirect</td></tr>
+          <tr><td><strong>BoJ / ECB Policy</strong></td><td>Varies</td><td>~6–8× per year</td><td><span class="impact-dot imp-med"></span>Medium-High</td><td>Yen carry trade risk. European bank contagion. Global bond yield curve shifts affecting US rates.</td><td>Overnight futures GEX reset</td></tr>
+        </tbody>
+      </table>
     </div>
   </div>
 
@@ -1420,67 +1939,7 @@ function drawVixGex(cv, gexData) {
   ctx.textAlign='right'; ctx.fillText('Short Gamma ▼',PAD.l-2,toY2(-0.8));
 }
 
-// ── Lightweight Charts candlestick ──────────────────────────────────────────
-let spyCandleChart = null, qqCandleChart = null;
-async function loadCandles(sym, container, gexLevels) {
-  const el = document.getElementById(container);
-  if (!el) return;
-  let data = [];
-  try {
-    const r = await fetch(API+'/api/candles/'+sym);
-    data = await r.json();
-  } catch(e) { el.innerHTML='<div class="loading-msg" style="height:100%;display:flex;align-items:center;justify-content:center;">No candle data</div>'; return; }
-  if (!Array.isArray(data) || !data.length) { el.innerHTML='<div class="loading-msg" style="height:100%;display:flex;align-items:center;justify-content:center;">No candle data</div>'; return; }
-
-  const chart = LightweightCharts.createChart(el, {
-    width: el.clientWidth,
-    height: el.clientHeight || 300,
-    layout: { background:{color:'#070d18'}, textColor:'#94a3b8' },
-    grid: { vertLines:{color:'rgba(255,255,255,.04)'}, horzLines:{color:'rgba(255,255,255,.04)'} },
-    crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
-    rightPriceScale: { borderColor:'rgba(255,255,255,.08)' },
-    timeScale: { borderColor:'rgba(255,255,255,.08)', timeVisible:true, secondsVisible:false },
-  });
-
-  const candleSeries = chart.addCandlestickSeries({
-    upColor:'#22c55e', downColor:'#f87171',
-    borderUpColor:'#22c55e', borderDownColor:'#f87171',
-    wickUpColor:'rgba(34,197,94,.5)', wickDownColor:'rgba(248,113,113,.5)',
-  });
-
-  const formatted = data.map(d=>({
-    time: typeof d.time==='number' ? d.time : Math.floor(new Date(d.time).getTime()/1000),
-    open:d.open, high:d.high, low:d.low, close:d.close,
-  })).filter(d=>d.open&&d.high&&d.low&&d.close)
-    .sort((a,b)=>a.time-b.time);
-
-  candleSeries.setData(formatted);
-
-  // Add GEX level lines
-  if (gexLevels) {
-    const levels = [
-      { value: gexLevels.gamma_wall, color:'rgba(34,197,94,.7)',  lineStyle:LightweightCharts.LineStyle.Dashed, title:'Gamma Wall' },
-      { value: gexLevels.put_wall,   color:'rgba(248,113,113,.7)',lineStyle:LightweightCharts.LineStyle.Dashed, title:'Put Wall' },
-      { value: gexLevels.flip_level, color:'rgba(167,139,250,.7)',lineStyle:LightweightCharts.LineStyle.Dotted, title:'Flip Level' },
-      { value: gexLevels.max_pain_strike, color:'rgba(251,191,36,.6)',lineStyle:LightweightCharts.LineStyle.SparseDotted, title:'Max Pain' },
-    ];
-    levels.forEach(lvl=>{
-      if(!lvl.value) return;
-      const line = chart.addPriceLine({ price:lvl.value, color:lvl.color, lineWidth:1, lineStyle:lvl.lineStyle, axisLabelVisible:true, title:lvl.title });
-    });
-  }
-
-  // Fit content
-  chart.timeScale().fitContent();
-
-  // Resize observer
-  const ro = new ResizeObserver(entries=>{
-    entries.forEach(e=>{ chart.applyOptions({width:e.contentRect.width}); });
-  });
-  ro.observe(el);
-
-  return chart;
-}
+// (loadCandlesFor defined in the new JS section above)
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 function fmt(v,d=0){if(v==null)return'—';return v>=1000?'$'+v.toLocaleString('en-US',{maximumFractionDigits:d}):'$'+v.toFixed(d);}
@@ -1627,6 +2086,341 @@ function renderCurrentSetup(gex, flows) {
     </div>`;
 }
 
+// ── Intraday Delta Hedging Pressure Chart ─────────────────────────────────────
+function drawDHIntraday(cv, gex, flows) {
+  if (!cv) return;
+  const dpr = window.devicePixelRatio || 1;
+  const W   = cv.parentElement.clientWidth || 600;
+  const H   = 200;
+  cv.width  = W * dpr; cv.height = H * dpr;
+  cv.style.width = W + 'px'; cv.style.height = H + 'px';
+  const ctx = cv.getContext('2d'); ctx.scale(dpr, dpr);
+  ctx.fillStyle = '#070d18'; ctx.fillRect(0, 0, W, H);
+  const PAD = { l: 55, r: 20, t: 20, b: 32 };
+  const cW = W - PAD.l - PAD.r, cH = H - PAD.t - PAD.b;
+
+  // Generate simulated intraday dealer flow based on GEX regime and known time patterns
+  const spy = gex ? (gex.assets || []).find(a => a.symbol === 'SPY') : null;
+  const spyF = flows ? (flows.assets || []).find(a => a.symbol === 'SPY') : null;
+  const isLong = spy ? (spy.regime || '').includes('Long') : true;
+  const netDelta = spyF ? (spyF.net_dealer_delta_m || 0) : 0;
+
+  // Time segments: 9:30, 10:00, 10:30, 11:00, 11:30, 12:00, 12:30, 13:00, 13:30, 14:00, 14:30, 15:00, 15:30, 16:00
+  const labels = ['9:30','10:00','10:30','11:00','11:30','12:00','12:30','13:00','13:30','14:00','14:30','15:00','15:30','16:00'];
+  // Typical intraday dealer flow pattern (normalized -1 to +1, positive = net buying)
+  const basePattern = [
+    0.8, 0.6, 0.4, 0.3, 0.1, -0.05, 0.0, 0.05, 0.1, 0.3, 0.4, 0.6, 0.85, 0.5
+  ];
+  // Modulate by regime and net delta
+  const sign = netDelta >= 0 ? 1 : -1;
+  const magnitude = Math.min(Math.abs(netDelta) / 500, 1);
+  const pattern = basePattern.map((v, i) => {
+    const base = isLong ? v * 0.6 : v * (1 + magnitude);
+    return base + sign * magnitude * 0.3 + (Math.random() - 0.5) * 0.1;
+  });
+
+  const maxAbs = Math.max(...pattern.map(v => Math.abs(v)), 0.1);
+  const toY  = v => PAD.t + (1 - (v + maxAbs) / (2 * maxAbs)) * cH;
+  const zeroY = toY(0);
+  const N = labels.length;
+
+  // Grid lines
+  ctx.strokeStyle = 'rgba(255,255,255,.05)'; ctx.lineWidth = 1;
+  [-0.5, 0, 0.5].forEach(v => {
+    const y = toY(v / maxAbs * maxAbs);
+    ctx.beginPath(); ctx.moveTo(PAD.l, y); ctx.lineTo(W - PAD.r, y); ctx.stroke();
+  });
+
+  // Zero line
+  ctx.strokeStyle = 'rgba(255,255,255,.15)'; ctx.lineWidth = 1; ctx.setLineDash([4, 4]);
+  ctx.beginPath(); ctx.moveTo(PAD.l, zeroY); ctx.lineTo(W - PAD.r, zeroY); ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Bar chart
+  const barW = (cW / N) * 0.65;
+  pattern.forEach((v, i) => {
+    const x = PAD.l + (i / (N - 1)) * cW;
+    const y = toY(v);
+    const h = Math.abs(y - zeroY);
+    const isPos = v >= 0;
+    const g = ctx.createLinearGradient(0, isPos ? y : zeroY, 0, isPos ? zeroY : y + h);
+    if (isPos) {
+      g.addColorStop(0, 'rgba(34,197,94,.85)'); g.addColorStop(1, 'rgba(34,197,94,.2)');
+    } else {
+      g.addColorStop(0, 'rgba(248,113,113,.2)'); g.addColorStop(1, 'rgba(248,113,113,.85)');
+    }
+    ctx.fillStyle = g;
+    ctx.fillRect(x - barW / 2, Math.min(y, zeroY), barW, h || 1);
+  });
+
+  // Connecting line
+  ctx.beginPath();
+  pattern.forEach((v, i) => {
+    const x = PAD.l + (i / (N - 1)) * cW;
+    const y = toY(v);
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  });
+  ctx.strokeStyle = 'rgba(34,211,238,.5)'; ctx.lineWidth = 1.5; ctx.stroke();
+
+  // X labels
+  ctx.fillStyle = 'rgba(127,163,190,.6)'; ctx.font = '8px Consolas,monospace'; ctx.textAlign = 'center';
+  labels.forEach((lbl, i) => {
+    if (i % 2 !== 0) return;
+    const x = PAD.l + (i / (N - 1)) * cW;
+    ctx.fillText(lbl, x, H - PAD.b + 12);
+  });
+
+  // Y labels
+  ctx.textAlign = 'right';
+  ctx.fillText('Buy', PAD.l - 4, PAD.t + 12);
+  ctx.fillText('Sell', PAD.l - 4, H - PAD.b - 4);
+
+  // Regime label
+  ctx.fillStyle = isLong ? '#4ade80' : '#f87171';
+  ctx.font = 'bold 8px sans-serif'; ctx.textAlign = 'left';
+  ctx.fillText(isLong ? '▲ Long Gamma — Dealers absorb moves' : '▼ Short Gamma — Dealers amplify moves', PAD.l + 4, PAD.t - 5);
+}
+
+// ── GEX Stress Test ───────────────────────────────────────────────────────────
+function renderStressTest(gex) {
+  const tbody = document.getElementById('stress-tbody');
+  if (!tbody) return;
+  const spy = gex ? (gex.assets || []).find(a => a.symbol === 'SPY') : null;
+  if (!spy || !spy.spot) {
+    tbody.innerHTML = '<tr><td colspan="5" class="loading-msg">No GEX data available</td></tr>';
+    return;
+  }
+  const spot = spy.spot;
+  const totalGex = spy.total_gex_m || 0;
+  const isLong = (spy.regime || '').includes('Long');
+  const scenarios = [
+    { label: 'Large Rally +5%',  pct: +0.05, icon: '▲▲' },
+    { label: 'Moderate Rally +2%', pct: +0.02, icon: '▲' },
+    { label: 'Moderate Decline −2%', pct: -0.02, icon: '▼' },
+    { label: 'Large Decline −5%', pct: -0.05, icon: '▼▼' },
+    { label: 'Crash −10%', pct: -0.10, icon: '💥' },
+  ];
+  tbody.innerHTML = scenarios.map(sc => {
+    const lvl = (spot * (1 + sc.pct)).toFixed(2);
+    const distFromFlip = spy.flip_level ? ((spot * (1 + sc.pct) - spy.flip_level) / spy.flip_level * 100).toFixed(1) : '—';
+    // Estimate dealer flow: in Long Gamma, dealers act counter to price; in Short Gamma, pro-cyclical
+    const rawFlow = Math.abs(totalGex) * Math.abs(sc.pct) * 15; // rough scaling
+    const isCounterCyclical = isLong;
+    const dealerAction = sc.pct > 0
+      ? (isCounterCyclical ? 'SELL (counter-trend)' : 'BUY (momentum add)')
+      : (isCounterCyclical ? 'BUY (counter-trend)' : 'SELL (cascade risk)');
+    const actionColor = sc.pct > 0
+      ? (isCounterCyclical ? '#f87171' : '#4ade80')
+      : (isCounterCyclical ? '#4ade80' : '#f87171');
+    const flowAmt = rawFlow >= 1000 ? '$' + (rawFlow / 1000).toFixed(1) + 'B' : '$' + rawFlow.toFixed(0) + 'M';
+    const regimeImpact = spy.flip_level
+      ? (parseFloat(lvl) > spy.flip_level ? '<span style="color:#4ade80">Stays Long Gamma</span>' : '<span style="color:#f87171">Flips Short Gamma</span>')
+      : '—';
+    const isDown = sc.pct < 0;
+    return `<tr>
+      <td>${sc.icon} ${sc.label}</td>
+      <td class="mono ${isDown ? 'stress-down' : 'stress-up'}">$${lvl}</td>
+      <td style="color:${actionColor};font-weight:700;font-size:.78rem;">${dealerAction}</td>
+      <td class="mono" style="color:#fbbf24;font-weight:700;">~${flowAmt}</td>
+      <td>${regimeImpact}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ── Daily Impact Narrative ────────────────────────────────────────────────────
+function renderDailyImpact(gex, flows) {
+  const el = document.getElementById('daily-impact-narrative');
+  if (!el) return;
+  const spy  = gex   ? (gex.assets   || []).find(a => a.symbol === 'SPY') : null;
+  const spyF = flows ? (flows.assets || []).find(a => a.symbol === 'SPY') : null;
+  if (!spy && !spyF) { el.innerHTML = '<div class="hl-warn">⚠️ Server offline — run <code>py live-server.py</code></div>'; return; }
+
+  const regime  = spy ? (spy.regime || 'Unknown') : 'Unknown';
+  const isLong  = regime.includes('Long');
+  const netGex  = spy ? (spy.total_gex_m || 0) : 0;
+  const spot    = spy ? (spy.spot || 0) : 0;
+  const flip    = spy ? (spy.flip_level || 0) : 0;
+  const wall    = spy ? (spy.gamma_wall || 0) : 0;
+  const putW    = spy ? (spy.put_wall || 0) : 0;
+  const netDD   = spyF ? (spyF.net_dealer_delta_m || 0) : 0;
+  const pcr     = spyF ? (spyF.pcr_vol || 0) : 0;
+  const sent    = spyF ? (spyF.flow_sentiment || 'NEUTRAL').toUpperCase() : 'NEUTRAL';
+  const distFlip= flip ? ((spot - flip) / flip * 100).toFixed(1) : '—';
+  const distWall= wall ? ((wall - spot) / spot * 100).toFixed(1) : '—';
+
+  const regimeDesc = isLong
+    ? `Market makers are currently in a <strong style="color:#4ade80">Long Gamma regime</strong>. They mechanically buy dips and sell rips — every decline is met with dealer buying pressure and every rally with dealer selling. This stabilizes the market and keeps daily ranges compressed.`
+    : `Market makers are in a <strong style="color:#f87171">Short Gamma regime</strong>. Dealers are forced to sell into declines and buy into rallies — <em>amplifying</em> all price moves. Expect above-average daily ranges, momentum continuation, and stop-loss cascade risk on breakdowns.`;
+
+  const dhDesc = netDD >= 0
+    ? `<strong>Dealers are net long ${fmtM(netDD)} in shares</strong> as of the latest reading. They will be mechanical sellers on rallies as they reduce their long delta position — creating overhead supply above spot.`
+    : `<strong>Dealers are net short ${fmtM(Math.abs(netDD))} in shares</strong>. They must buy on dips to cover their short delta — providing structural support below spot.`;
+
+  const keyLevels = [];
+  if (wall)  keyLevels.push(`<strong style="color:#4ade80">Gamma Wall $${wall.toFixed(0)}</strong> (${distWall}% above spot — hard resistance)`);
+  if (putW)  keyLevels.push(`<strong style="color:#f87171">Put Wall $${putW.toFixed(0)}</strong> (structural support floor)`);
+  if (flip)  keyLevels.push(`<strong style="color:#a78bfa">Gamma Flip $${flip.toFixed(0)}</strong> (${distFlip}% from spot — regime change trigger)`);
+
+  el.innerHTML = `
+    <div style="font-size:.81rem;line-height:1.7;margin-bottom:.7rem;">${regimeDesc}</div>
+    <div style="font-size:.81rem;line-height:1.7;margin-bottom:.7rem;">${dhDesc}</div>
+    <div style="font-size:.81rem;margin-bottom:.6rem;">
+      <strong>Today's key institutional levels:</strong>
+      <ul style="padding-left:1.1rem;margin-top:.3rem;">${keyLevels.map(l => `<li>${l}</li>`).join('')}</ul>
+    </div>
+    <div class="hl-${isLong ? 'bull' : 'bear'}" style="font-size:.78rem;margin-top:.5rem;">
+      <strong>Institutional strategy bias today:</strong> ${isLong
+        ? 'Fade moves to gamma wall · Buy dips at put wall · Sell directional breakouts · Option sellers favored'
+        : 'Follow momentum · Widen stops · Avoid mean-reversion · Breakouts extend further than expected'}
+    </div>
+    <div style="font-size:.72rem;color:var(--muted);margin-top:.5rem;">
+      Flow sentiment: <strong style="color:${sent.includes('BULL') ? '#4ade80' : sent.includes('BEAR') ? '#f87171' : 'var(--muted)'}">${sent}</strong>
+      · PCR: <strong style="color:${pcr > 1 ? '#f87171' : '#4ade80'}">${pcr.toFixed(2)}</strong>
+      · Net GEX: <strong style="color:${netGex >= 0 ? '#4ade80' : '#f87171'}">${netGex >= 0 ? '+' : ''}${netGex.toFixed(0)}M</strong>
+    </div>`;
+
+  // Delta hedging timeline
+  const tlEl = document.getElementById('dh-timeline');
+  if (tlEl) {
+    const events = [
+      { time: '9:30–10:00am', title: 'Opening Gamma Spike', desc: isLong
+          ? 'Dealers rehedge gap moves. Long gamma dampens the open — expect morning reversal of any overnight gap.'
+          : 'Short gamma amplifies the gap. First 30 min direction likely extends further through 10am.' },
+      { time: '10:00–11:30am', title: 'Institutional TWAP Execution', desc: `Pension and hedge fund orders flow via VWAP algorithms. Net dealer delta of ${fmtM(netDD)} creates ${netDD >= 0 ? 'overhead supply on rallies' : 'structural bid on dips'} throughout this window.` },
+      { time: '11:30am–2:00pm', title: 'Low Volume HFT Period', desc: 'Institutional volume drops. Market makers adjust hedges in small clips. Theta decay accelerates — option sellers collecting daily income.' },
+      { time: '2:00–3:00pm', title: 'Macro Catalyst Window', desc: 'Fed speakers, economic data, FOMC minutes. In ' + (isLong ? 'Long Gamma, surprises are dampened.' : 'Short Gamma, any surprise creates cascading dealer selling/buying.') },
+      { time: '3:00–4:00pm', title: 'MOC + 0DTE Gamma Peak', desc: `Largest institutional flow window. 0DTE gamma at maximum. ${wall ? `Gamma wall at $${wall.toFixed(0)} is the key cap — dealers sell aggressively at this level.` : 'Watch for MOC imbalance direction to set end-of-day flow.'}` },
+    ];
+    tlEl.innerHTML = events.map(ev => `
+      <div style="margin-bottom:.6rem;padding:.5rem .7rem;background:var(--card);border-radius:7px;border-left:3px solid var(--accent);">
+        <div style="font-size:.7rem;font-weight:700;color:var(--accent);margin-bottom:.2rem;">${ev.time}</div>
+        <div style="font-size:.8rem;font-weight:700;margin-bottom:.15rem;">${ev.title}</div>
+        <div style="font-size:.76rem;color:var(--muted);">${ev.desc}</div>
+      </div>`).join('');
+  }
+
+  // Breadth
+  const breadthEl = document.getElementById('dh-breadth');
+  if (breadthEl && flows) {
+    const all = flows.assets || [];
+    const byGroup = { 'ETFs': [], 'Mag 7': [], 'Blue Chips': [], 'Futures': [] };
+    all.forEach(a => {
+      const g = a.group || 'Other';
+      if (!byGroup[g]) byGroup[g] = [];
+      byGroup[g].push(a);
+    });
+    breadthEl.innerHTML = Object.entries(byGroup).filter(([,v]) => v.length).map(([grp, assets]) => {
+      const bulls = assets.filter(a => (a.flow_sentiment || '').toUpperCase().includes('BULL')).length;
+      const bears = assets.filter(a => (a.flow_sentiment || '').toUpperCase().includes('BEAR')).length;
+      const neut  = assets.length - bulls - bears;
+      const pct   = assets.length ? (bulls / assets.length * 100).toFixed(0) : 0;
+      return `<div style="margin-bottom:.6rem;">
+        <div style="display:flex;justify-content:space-between;font-size:.76rem;margin-bottom:.2rem;">
+          <span style="font-weight:700;">${grp}</span>
+          <span style="color:#4ade80;font-weight:700;">${bulls}B</span>
+          <span style="color:var(--muted);">${neut}N</span>
+          <span style="color:#f87171;font-weight:700;">${bears}S</span>
+        </div>
+        <div class="pres-bar-wrap" style="height:14px;">
+          <div class="pres-bull" style="width:${pct}%"></div>
+          <div class="pres-bear" style="width:${(bears / (assets.length || 1) * 100).toFixed(0)}%"></div>
+        </div></div>`;
+    }).join('');
+  }
+}
+
+// ── Update DH metrics strip ───────────────────────────────────────────────────
+function renderDHMetrics(gex, flows) {
+  const spy  = gex   ? (gex.assets   || []).find(a => a.symbol === 'SPY') : null;
+  const spyF = flows ? (flows.assets || []).find(a => a.symbol === 'SPY') : null;
+  if (!spy) return;
+  const spot    = spy.spot || 0;
+  const flip    = spy.flip_level || 0;
+  const regime  = spy.regime || 'Unknown';
+  const isLong  = regime.includes('Long');
+  const netDD   = spyF ? (spyF.net_dealer_delta_m || 0) : 0;
+  const absBuy  = Math.max(0,  netDD);
+  const absSell = Math.max(0, -netDD);
+  const distFlip = flip ? ((spot - flip) / spot * 100).toFixed(1) + '%' : '—';
+
+  const set = (id, val, color) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = val;
+    if (color) el.style.color = color;
+  };
+  set('dh-dealer-buy',  absBuy  > 0 ? fmtM(absBuy)  : '< $1M', '#4ade80');
+  set('dh-dealer-sell', absSell > 0 ? fmtM(absSell) : '< $1M', '#f87171');
+  set('dh-net-flow',    fmtM(netDD), netDD >= 0 ? '#4ade80' : '#f87171');
+  set('dh-gex-regime',  regime, isLong ? '#4ade80' : '#f87171');
+  set('dh-gamma-flip',  flip ? '$' + flip.toFixed(0) : '—', '#a78bfa');
+  set('dh-spot-to-flip', distFlip, Math.abs(parseFloat(distFlip)) < 1 ? '#f87171' : '#7fa3be');
+}
+
+// ── Candlestick chart loader (shared helper) ─────────────────────────────────
+let _chartInstances = {};
+async function loadCandlesFor(sym, containerId, gexLevels, regimeChipId) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  if (_chartInstances[containerId]) {
+    _chartInstances[containerId].remove();
+    _chartInstances[containerId] = null;
+  }
+  let data = [];
+  try {
+    const r = await fetch(API + '/api/candles/' + encodeURIComponent(sym));
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    data = await r.json();
+  } catch (e) {
+    el.innerHTML = '<div class="loading-msg" style="height:100%;display:flex;align-items:center;justify-content:center;">No data — ' + sym + '</div>';
+    return;
+  }
+  if (!Array.isArray(data) || !data.length) {
+    el.innerHTML = '<div class="loading-msg" style="height:100%;display:flex;align-items:center;justify-content:center;">No candle data</div>';
+    return;
+  }
+  const chart = LightweightCharts.createChart(el, {
+    width: el.clientWidth, height: el.clientHeight || 260,
+    layout: { background: { color: '#070d18' }, textColor: '#94a3b8' },
+    grid:   { vertLines: { color: 'rgba(255,255,255,.04)' }, horzLines: { color: 'rgba(255,255,255,.04)' } },
+    crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
+    rightPriceScale: { borderColor: 'rgba(255,255,255,.08)' },
+    timeScale: { borderColor: 'rgba(255,255,255,.08)', timeVisible: true, secondsVisible: false },
+    handleScale: { axisPressedMouseMove: true, mouseWheel: true },
+    handleScroll: { mouseWheel: true, pressedMouseMove: true },
+  });
+  const cs = chart.addCandlestickSeries({
+    upColor: '#22c55e', downColor: '#f87171',
+    borderUpColor: '#22c55e', borderDownColor: '#f87171',
+    wickUpColor: 'rgba(34,197,94,.5)', wickDownColor: 'rgba(248,113,113,.5)',
+  });
+  const seen = new Set();
+  const formatted = data
+    .filter(d => { const t = typeof d.time === 'number' ? d.time : Math.floor(new Date(d.time).getTime() / 1000); if (seen.has(t)) return false; seen.add(t); return d.open && d.close; })
+    .map(d => ({ time: typeof d.time === 'number' ? d.time : Math.floor(new Date(d.time).getTime() / 1000), open: d.open, high: d.high, low: d.low, close: d.close }))
+    .sort((a, b) => a.time - b.time);
+  cs.setData(formatted);
+  if (gexLevels) {
+    [
+      { v: gexLevels.gamma_wall,     color: 'rgba(34,197,94,.75)',   style: LightweightCharts.LineStyle.Dashed,       title: 'Gamma Wall' },
+      { v: gexLevels.put_wall,       color: 'rgba(248,113,113,.75)', style: LightweightCharts.LineStyle.Dashed,       title: 'Put Wall'   },
+      { v: gexLevels.flip_level,     color: 'rgba(167,139,250,.75)', style: LightweightCharts.LineStyle.Dotted,       title: 'Flip'       },
+      { v: gexLevels.max_pain_strike,color: 'rgba(251,191,36,.6)',   style: LightweightCharts.LineStyle.SparseDotted, title: 'Max Pain'   },
+    ].forEach(({ v, color, style, title }) => {
+      if (!v) return;
+      cs.createPriceLine({ price: v, color, lineWidth: 1, lineStyle: style, axisLabelVisible: true, title });
+    });
+  }
+  chart.timeScale().fitContent();
+  const ro = new ResizeObserver(entries => entries.forEach(e => chart.applyOptions({ width: e.contentRect.width })));
+  ro.observe(el);
+  _chartInstances[containerId] = chart;
+  if (regimeChipId && gexLevels) {
+    const c = document.getElementById(regimeChipId);
+    if (c) { c.textContent = gexLevels.regime || '—'; c.className = 'chip ' + ((gexLevels.regime || '').includes('Long') ? 'chip-long' : 'chip-short'); }
+  }
+}
+
 // ── Main data load ───────────────────────────────────────────────────────────
 async function loadData() {
   const [gexRes, flowsRes] = await Promise.all([
@@ -1635,36 +2429,47 @@ async function loadData() {
   ]);
 
   // Static educational charts (no API needed)
-  requestAnimationFrame(()=>{
+  requestAnimationFrame(() => {
     drawDHSim(document.getElementById('cv-dh-sim'));
     drawIVSkew(document.getElementById('cv-iv-skew'));
     drawVixGex(document.getElementById('cv-vix-gex'), gexRes);
+    drawDHIntraday(document.getElementById('cv-dh-intraday'), gexRes, flowsRes);
   });
 
   if (gexRes) {
     renderGEXStats(gexRes);
-    const spy=(gexRes.assets||[]).find(a=>a.symbol==='SPY');
-    const qqq=(gexRes.assets||[]).find(a=>a.symbol==='QQQ');
+    renderDHMetrics(gexRes, flowsRes);
+    renderStressTest(gexRes);
+    const spy = (gexRes.assets||[]).find(a=>a.symbol==='SPY');
+    const qqq = (gexRes.assets||[]).find(a=>a.symbol==='QQQ');
+    const dia = (gexRes.assets||[]).find(a=>a.symbol==='DIA');
+    const iwm = (gexRes.assets||[]).find(a=>a.symbol==='IWM');
+    const es  = (gexRes.assets||[]).find(a=>a.symbol==='ES=F');
+    const nq  = (gexRes.assets||[]).find(a=>a.symbol==='NQ=F');
 
-    requestAnimationFrame(()=>{
-      if(spy) drawGex(spy, document.getElementById('cv-spy-gex'), 260);
-      if(qqq) drawGex(qqq, document.getElementById('cv-qqq-gex'), 220);
-      if(spy) drawCumGex(spy, document.getElementById('cv-spy-cumgex'));
+    requestAnimationFrame(() => {
+      if (spy) { drawGex(spy, document.getElementById('cv-spy-gex'), 260); drawCumGex(spy, document.getElementById('cv-spy-cumgex')); }
+      if (qqq) drawGex(qqq, document.getElementById('cv-qqq-gex'), 220);
+      if (dia) drawGex(dia, document.getElementById('cv-dia-gex'), 220);
+      if (iwm) drawGex(iwm, document.getElementById('cv-iwm-gex'), 220);
+      if (es)  drawGex(es,  document.getElementById('cv-es-gex'),  230);
+      if (nq)  drawGex(nq,  document.getElementById('cv-nq-gex'),  230);
     });
 
-    // Load candlestick charts
-    if(spy && !spyCandleChart) {
-      loadCandles('SPY','spy-candle-chart', spy).then(c=>{ spyCandleChart=c; });
-    }
-    if(qqq && !qqCandleChart) {
-      loadCandles('QQQ','qqq-candle-chart', qqq).then(c=>{ qqCandleChart=c; });
-    } else if(!spy) {
-      loadCandles('SPY','spy-candle-chart', null);
-      loadCandles('QQQ','qqq-candle-chart', null);
-    }
+    // Candlestick charts — SPY/QQQ
+    loadCandlesFor('SPY', 'spy-candle-chart', spy, 'spy-regime-chip');
+    loadCandlesFor('QQQ', 'qqq-candle-chart', qqq, 'qqq-regime-chip');
+    // DIA / IWM
+    loadCandlesFor('DIA', 'dia-candle-chart', dia, 'dia-regime-chip');
+    loadCandlesFor('IWM', 'iwm-candle-chart', iwm, 'iwm-regime-chip');
+    // Futures
+    loadCandlesFor('ES=F', 'es-candle-chart', es, 'es-regime-chip');
+    loadCandlesFor('NQ=F', 'nq-candle-chart', nq, 'nq-regime-chip');
   } else {
-    loadCandles('SPY','spy-candle-chart', null);
-    loadCandles('QQQ','qqq-candle-chart', null);
+    ['SPY','QQQ','DIA','IWM','ES=F','NQ=F'].forEach((sym, i) => {
+      const ids = ['spy-candle-chart','qqq-candle-chart','dia-candle-chart','iwm-candle-chart','es-candle-chart','nq-candle-chart'];
+      loadCandlesFor(sym, ids[i], null, null);
+    });
     document.getElementById('current-setup').innerHTML =
       '<div class="hl-warn">⚠️ Server offline — run <code>py live-server.py</code></div>';
   }
@@ -1672,15 +2477,20 @@ async function loadData() {
   if (flowsRes) {
     renderFlows(flowsRes);
     renderUnusual(flowsRes);
-    requestAnimationFrame(()=>{
-      const spy=(flowsRes.assets||[]).find(a=>a.symbol==='SPY'&&a.strikes&&a.strikes.length);
-      const qqq=(flowsRes.assets||[]).find(a=>a.symbol==='QQQ'&&a.strikes&&a.strikes.length);
-      if(spy) drawTornado(spy, document.getElementById('cv-spy-flow'), 280);
-      if(qqq) drawTornado(qqq, document.getElementById('cv-qqq-flow'), 260);
+    requestAnimationFrame(() => {
+      const spy = (flowsRes.assets||[]).find(a=>a.symbol==='SPY'&&a.strikes&&a.strikes.length);
+      const qqq = (flowsRes.assets||[]).find(a=>a.symbol==='QQQ'&&a.strikes&&a.strikes.length);
+      if (spy) drawTornado(spy, document.getElementById('cv-spy-flow'), 280);
+      if (qqq) drawTornado(qqq, document.getElementById('cv-qqq-flow'), 260);
     });
   }
 
-  if (gexRes && flowsRes) renderCurrentSetup(gexRes, flowsRes);
+  if (gexRes && flowsRes) {
+    renderCurrentSetup(gexRes, flowsRes);
+    renderDailyImpact(gexRes, flowsRes);
+  } else if (gexRes) {
+    renderDailyImpact(gexRes, null);
+  }
 }
 
 loadData();
