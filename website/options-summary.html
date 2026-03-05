@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Options Summary — All Assets</title>
   <link rel="stylesheet" href="style.css">
+  <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
   <style>
     /* ── Layout ── */
     .os-wrap { max-width: 1600px; margin: 0 auto; padding: 0 1.5rem 6rem; }
@@ -178,6 +179,165 @@
     .sq-shortγ   { background:rgba(248,113,113,.1);color:#fca5a5;border:1px solid rgba(248,113,113,.2); }
 
     @media(max-width:800px) { .os-hero h1 { font-size:1.6rem; } }
+
+    /* ── Section dividers ── */
+    .section-divider {
+      display: flex; align-items: center; gap: 1rem;
+      margin: 3rem 0 1.5rem;
+      padding: 1rem 1.4rem;
+      background: linear-gradient(135deg, rgba(34,211,238,.06) 0%, transparent 70%);
+      border: 1px solid var(--border);
+      border-left: 4px solid #22d3ee;
+      border-radius: 0 10px 10px 0;
+    }
+    .section-divider.amber { border-left-color: #fbbf24; background: linear-gradient(135deg, rgba(251,191,36,.06) 0%, transparent 70%); }
+    .section-divider.purple { border-left-color: #a78bfa; background: linear-gradient(135deg, rgba(167,139,250,.06) 0%, transparent 70%); }
+    .section-num { font-size: 1.5rem; font-weight: 900; font-family: 'Consolas', monospace; color: var(--muted); flex-shrink: 0; }
+    .section-title-text { font-size: 1.05rem; font-weight: 900; color: var(--text); }
+    .section-subtitle-text { font-size: .78rem; color: var(--muted); margin-top: .2rem; }
+
+    /* ── Volatility Forecast Section ── */
+    .vf-section {
+      margin: 0 0 3rem;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+      background: var(--card);
+    }
+    .vf-header {
+      display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;
+      padding: 1rem 1.3rem .8rem;
+      border-bottom: 1px solid var(--border);
+      background: linear-gradient(135deg, rgba(167,139,250,.06) 0%, transparent 60%);
+    }
+    .vf-title { font-size: 1.05rem; font-weight: 900; color: var(--text); display: flex; align-items: center; gap: .45rem; }
+    .vf-subtitle { font-size: .77rem; color: var(--muted); margin-top: .12rem; }
+    .vf-live-badge {
+      font-size: .63rem; font-weight: 700; letter-spacing: .07em; text-transform: uppercase;
+      padding: .18rem .6rem; border-radius: 99px;
+      background: rgba(167,139,250,.1); border: 1px solid rgba(167,139,250,.3); color: #a78bfa;
+    }
+    .vf-refresh-btn {
+      margin-left: auto; background: transparent;
+      border: 1px solid var(--border); color: var(--muted);
+      padding: .3rem .8rem; border-radius: 6px; cursor: pointer;
+      font-size: .78rem; transition: border-color .2s, color .2s;
+    }
+    .vf-refresh-btn:hover { border-color: #a78bfa; color: #a78bfa; }
+
+    /* Forecast stats row */
+    .vf-stats-row {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+      gap: 0; border-bottom: 1px solid var(--border);
+    }
+    .vf-stat-cell {
+      padding: .65rem .9rem; text-align: center;
+      border-right: 1px solid var(--border);
+    }
+    .vf-stat-cell:last-child { border-right: none; }
+    .vf-stat-val { font-size: 1rem; font-weight: 900; font-family: 'Consolas', monospace; }
+    .vf-stat-lbl { font-size: .6rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin-top: .1rem; }
+
+    /* Asset bar */
+    .vf-asset-bar {
+      display: flex; flex-wrap: wrap; gap: .4rem;
+      padding: .7rem 1rem;
+      border-bottom: 1px solid var(--border);
+      background: rgba(255,255,255,.015);
+    }
+    .vf-asset-btn {
+      font-family: 'Consolas', monospace; font-size: .73rem; font-weight: 700;
+      padding: .25rem .7rem; border-radius: 6px;
+      border: 1px solid var(--border); background: transparent; color: var(--muted);
+      cursor: pointer; transition: all .15s;
+    }
+    .vf-asset-btn:hover { border-color: #a78bfa; color: #a78bfa; }
+    .vf-asset-btn.active { background: rgba(167,139,250,.12); border-color: #a78bfa; color: #a78bfa; }
+
+    /* Forecast chart area */
+    .vf-chart-body { padding: 1rem 1.2rem; }
+    .vf-chart-wrap {
+      background: #070d18; border: 1px solid var(--border);
+      border-radius: 10px; overflow: hidden; margin-bottom: .8rem;
+      position: relative;
+    }
+    .vf-chart-wrap .vd-canvas-label { padding: .45rem .9rem .35rem; border-bottom: 1px solid var(--border); font-size: .67rem; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); }
+    .vf-chart-inner { height: 380px; }
+    .vf-chart-legend {
+      display: flex; flex-wrap: wrap; gap: .7rem;
+      font-size: .67rem; color: var(--muted);
+      padding: .3rem 0 .6rem;
+    }
+    .vf-chart-legend span { display: flex; align-items: center; gap: .3rem; }
+
+    /* Horizon cards */
+    .vf-horizon-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 1rem; padding: 0 1.2rem 1.2rem;
+    }
+    @media(max-width:900px) { .vf-horizon-grid { grid-template-columns: 1fr; } }
+    .vf-horizon-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; padding: 1rem 1.1rem;
+      border-top: 3px solid transparent;
+    }
+    .vfh-horizon { font-size: 1rem; font-weight: 900; margin-bottom: .1rem; }
+    .vfh-timeframe { font-size: .72rem; color: var(--muted); margin-bottom: .6rem; }
+    .vfh-move { font-size: 1.5rem; font-weight: 900; font-family: 'Consolas', monospace; }
+    .vfh-pct { font-size: .78rem; color: var(--muted); margin-top: .1rem; }
+    .vfh-range-grid {
+      display: grid; grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
+      gap: 2px; margin: .65rem 0;
+      background: var(--border); border-radius: 6px; overflow: hidden;
+    }
+    .vfh-range-cell { background: var(--card); padding: .4rem .35rem; text-align: center; }
+    .vfh-range-cell.center { background: rgba(34,211,238,.06); }
+    .vfh-range-label { font-size: .55rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin-bottom: .2rem; }
+    .vfh-range-val { font-size: .72rem; font-weight: 700; font-family: 'Consolas', monospace; }
+    .vfh-desc { font-size: .77rem; color: var(--muted); line-height: 1.65; margin-top: .55rem; }
+    .vfh-trading {
+      font-size: .75rem; color: var(--muted); line-height: 1.6;
+      margin-top: .5rem; padding: .55rem .7rem;
+      background: rgba(255,255,255,.03);
+      border-left: 2px solid rgba(255,255,255,.1);
+      border-radius: 0 6px 6px 0;
+    }
+    .vfh-trading strong { color: var(--text); }
+
+    /* Forecast table */
+    .vf-table-wrap { padding: 0 1.2rem 1.2rem; overflow-x: auto; }
+    .vf-tbl {
+      width: 100%; border-collapse: collapse;
+      font-size: .73rem; min-width: 750px;
+    }
+    .vf-tbl th {
+      color: var(--muted); font-weight: 700; font-size: .63rem;
+      text-transform: uppercase; letter-spacing: .08em;
+      padding: .35rem .6rem; border-bottom: 1px solid var(--border);
+      text-align: right; white-space: nowrap;
+    }
+    .vf-tbl th:first-child { text-align: left; }
+    .vf-tbl td {
+      padding: .32rem .6rem; text-align: right;
+      font-family: 'Consolas', monospace;
+      border-bottom: 1px solid rgba(36,48,88,.4);
+    }
+    .vf-tbl td:first-child { text-align: left; font-family: inherit; }
+    .vf-tbl tr:hover td { background: rgba(255,255,255,.025); }
+    .vf-tbl tr.vf-row-active td { background: rgba(167,139,250,.07); }
+    .vf-tbl-section-hdr { font-size: .68rem; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; color: #a78bfa; padding: .7rem 1.2rem .3rem; }
+
+    /* Forecast guide */
+    .vf-guide { padding: 0 1.2rem 1.5rem; }
+    .vf-guide-title {
+      font-size: .72rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .1em; color: #a78bfa; margin-bottom: 1rem;
+      padding-top: .5rem;
+    }
+    .vf-guide-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 1rem;
+    }
 
     /* ══════════════════════════════════════════════
        VOLATILITY DASHBOARD
@@ -503,9 +663,16 @@
     <a href="gamma-exposure.html" class="rbtn" style="text-decoration:none;">🎯 GEX</a>
   </div>
 
-  <!-- ══════════════════════════════════════════
-       VOLATILITY DASHBOARD
-  ══════════════════════════════════════════ -->
+  <!-- ════════════════════════════════════════════════════
+       SECTION 1: VOLATILITY DASHBOARD
+  ════════════════════════════════════════════════════ -->
+  <div class="section-divider amber">
+    <div class="section-num">§1</div>
+    <div>
+      <div class="section-title-text">📊 Volatility Dashboard</div>
+      <div class="section-subtitle-text">Fixed Strike IV Matrix · Term Structure · Volatility Skew · IV Surface</div>
+    </div>
+  </div>
   <div class="vd-section" id="vd-section">
 
     <!-- Header -->
@@ -565,7 +732,7 @@
       <div class="vd-panel" id="vdp-term">
         <div class="vd-canvas-wrap">
           <div class="vd-canvas-label">ATM Implied Volatility vs Days to Expiry (Term Structure)</div>
-          <canvas id="vd-term-canvas" height="280"></canvas>
+          <div id="vd-term-chart" style="height:280px;"></div>
         </div>
         <div class="vd-skew-legend" id="vd-term-legend">
           <span><span class="vd-legend-line" style="background:#22d3ee;"></span>ATM IV</span>
@@ -599,6 +766,86 @@
 
   <!-- ── Volatility Dashboard Educational Guide ── -->
   <div class="vd-guide" id="vd-guide"></div>
+
+  <!-- ════════════════════════════════════════════════════
+       SECTION 2: VOLATILITY FORECASTS
+  ════════════════════════════════════════════════════ -->
+  <div class="section-divider purple">
+    <div class="section-num">§2</div>
+    <div>
+      <div class="section-title-text">📉 Volatility Forecasts</div>
+      <div class="section-subtitle-text">Options-Implied Price Ranges · 1 Day · 1 Week · 1 Month · All Key Assets</div>
+    </div>
+  </div>
+  <div class="vf-section" id="vf-section">
+
+    <!-- Header -->
+    <div class="vf-header">
+      <div>
+        <div class="vf-title">📉 Volatility Forecasts <span class="vf-live-badge">Options-Implied</span></div>
+        <div class="vf-subtitle">Expected price ranges derived from real-time implied volatility — 1D, 1W, 1M horizons for all key assets</div>
+      </div>
+      <button class="vf-refresh-btn" onclick="initVolForecast(_vfSym, true)">↻ Refresh</button>
+    </div>
+
+    <!-- Stats strip (updates per asset) -->
+    <div class="vf-stats-row" id="vf-stats-row">
+      <div class="vf-stat-cell"><div class="vf-stat-val" id="vfs-spot"   style="color:#22d3ee;">—</div><div class="vf-stat-lbl">Spot Price</div></div>
+      <div class="vf-stat-cell"><div class="vf-stat-val" id="vfs-iv"     style="color:#fbbf24;">—</div><div class="vf-stat-lbl">ATM IV</div></div>
+      <div class="vf-stat-cell"><div class="vf-stat-val" id="vfs-rank"   style="color:#38bdf8;">—</div><div class="vf-stat-lbl">IV Rank</div></div>
+      <div class="vf-stat-cell"><div class="vf-stat-val" id="vfs-1d"     style="color:#fbbf24;">—</div><div class="vf-stat-lbl">1D ±Move</div></div>
+      <div class="vf-stat-cell"><div class="vf-stat-val" id="vfs-1w"     style="color:#22d3ee;">—</div><div class="vf-stat-lbl">1W ±Move</div></div>
+      <div class="vf-stat-cell"><div class="vf-stat-val" id="vfs-1m"     style="color:#a78bfa;">—</div><div class="vf-stat-lbl">1M ±Move</div></div>
+      <div class="vf-stat-cell"><div class="vf-stat-val" id="vfs-signal" style="color:#4ade80;">—</div><div class="vf-stat-lbl">Vol Signal</div></div>
+    </div>
+
+    <!-- Asset selector -->
+    <div class="vf-asset-bar" id="vf-asset-bar">
+      <span style="font-size:.78rem;color:var(--muted);">Loading…</span>
+    </div>
+
+    <!-- Chart + horizon cards -->
+    <div class="vf-chart-body">
+      <div class="vf-chart-wrap">
+        <div class="vd-canvas-label">📈 Candlestick History + Options-Implied Forecast Cone (±1σ, ±2σ)</div>
+        <div id="vf-chart" class="vf-chart-inner"></div>
+      </div>
+      <div class="vf-chart-legend">
+        <span><span style="display:inline-block;width:22px;height:2px;background:#fbbf24;border-radius:1px;"></span>±1σ Range (68%)</span>
+        <span><span style="display:inline-block;width:22px;height:2px;background:rgba(248,113,113,.7);border-radius:1px;"></span>±2σ Range (95%)</span>
+        <span><span style="display:inline-block;width:22px;height:2px;background:#22d3ee;border-radius:1px;border-top:2px dashed #22d3ee;height:0;"></span>Center Projection</span>
+        <span style="font-size:.65rem;margin-left:.5rem;">📐 Calculated: Spot × IV × √(t/252) · Lognormal distribution assumption</span>
+      </div>
+    </div>
+
+    <!-- Horizon cards: 1D / 1W / 1M -->
+    <div class="vf-horizon-grid" id="vf-horizon-cards">
+      <!-- Populated by JS -->
+    </div>
+
+    <!-- All-assets forecast table -->
+    <div class="vf-tbl-section-hdr">All Assets — Forecast Summary Table</div>
+    <div class="vf-table-wrap">
+      <div id="vf-table-wrap">
+        <div style="padding:2rem;text-align:center;color:var(--muted);">Loading forecast data…</div>
+      </div>
+    </div>
+
+    <!-- Educational guide -->
+    <div class="vf-guide" id="vf-forecast-guide"></div>
+
+  </div><!-- /vf-section -->
+
+  <!-- ════════════════════════════════════════════════════
+       SECTION 3: OPTIONS SUMMARY — ALL ASSETS
+  ════════════════════════════════════════════════════ -->
+  <div class="section-divider" style="border-left-color:#818cf8;background:linear-gradient(135deg,rgba(99,102,241,.06) 0%,transparent 70%);">
+    <div class="section-num">§3</div>
+    <div>
+      <div class="section-title-text">📊 Options Summary — All Assets</div>
+      <div class="section-subtitle-text">Conviction scores · GEX regime · Strategy recommendations · All signal sources unified</div>
+    </div>
+  </div>
 
   <!-- Filter bar -->
   <div class="filter-bar">
@@ -1117,18 +1364,22 @@ function drawMiniGex(a) {
 }
 
 /* ── Init ── */
-window.addEventListener('load', () => { loadAll(); loadVolSurface(); });
+window.addEventListener('load', () => {
+  loadAll();
+  loadVolSurface();
+});
 
 /* ════════════════════════════════════════════════════════════
-   VOLATILITY DASHBOARD
+   SECTION 1 — VOLATILITY DASHBOARD
 ════════════════════════════════════════════════════════════ */
 
-let _volData     = null;  // full API response
-let _volAssets   = [];    // array of asset objects
-let _volSym      = 'SPY'; // currently selected symbol
+let _volData     = null;
+let _volAssets   = [];
+let _volSym      = 'SPY';
 let _volTab      = 'matrix';
+const _vdCharts  = {};   // { term: LW instance }
 
-/* ── Fetch ── */
+/* ── Fetch vol surface ── */
 async function loadVolSurface(nocache = false) {
   const qs = nocache ? '?nocache=1' : '';
   try {
@@ -1138,62 +1389,62 @@ async function loadVolSurface(nocache = false) {
     _volData   = j;
     _volAssets = j.assets || [];
 
-    document.getElementById('vd-loading').style.display = 'none';
-    document.getElementById('vd-panels').style.display  = 'block';
+    document.getElementById('vd-loading').style.display  = 'none';
+    document.getElementById('vd-panels').style.display   = 'block';
 
-    buildAssetBar();
-    selectVolAsset(_volSym in Object.fromEntries(_volAssets.map(a => [a.symbol,1]))
-                   ? _volSym : (_volAssets[0]?.symbol || 'SPY'));
+    buildVdAssetBar();
+    const startSym = _volAssets.find(a => a.symbol === _volSym) ? _volSym : (_volAssets[0]?.symbol || 'SPY');
+    selectVolAsset(startSym);
     renderVolGuide();
+
+    // Populate forecast section now that vol data is available
+    buildVfAssetBar();
+    renderForecastTable();
+    initVolForecast(_vfSym);
+    renderForecastGuide();
   } catch(e) {
-    document.getElementById('vd-loading').innerHTML =
-      `<div class="vd-offline">⚠️ Volatility data unavailable — ensure server is running: <code>py live-server.py</code><br><small style="opacity:.7;">${e.message}</small></div>`;
+    const ldEl = document.getElementById('vd-loading');
+    if (ldEl) ldEl.innerHTML = `<div class="vd-offline">⚠️ Volatility data unavailable — ensure server running: <code>py live-server.py</code><br><small>${e.message}</small></div>`;
   }
 }
 
-/* ── Asset selector ── */
-function buildAssetBar() {
+/* ── Volatility Dashboard asset bar ── */
+function buildVdAssetBar() {
   const bar = document.getElementById('vd-asset-bar');
+  if (!bar) return;
   bar.innerHTML = _volAssets.map(a => {
     const ivp = a.atm_iv ? (a.atm_iv * 100).toFixed(1) + '%' : '';
     return `<button class="vd-asset-btn${a.symbol === _volSym ? ' active' : ''}"
-              data-sym="${a.symbol}"
-              onclick="selectVolAsset('${a.symbol}')"
-              title="ATM IV: ${ivp} | IV Rank: ${a.iv_rank}%">${a.symbol}</button>`;
+      data-sym="${a.symbol}" onclick="selectVolAsset('${a.symbol}')"
+      title="ATM IV: ${ivp} | IV Rank: ${a.iv_rank != null ? a.iv_rank.toFixed(0) : '—'}%">${a.symbol}</button>`;
   }).join('');
 }
 
-/* ── Select asset ── */
+/* ── Select asset in dashboard ── */
 function selectVolAsset(sym) {
   _volSym = sym;
   document.querySelectorAll('.vd-asset-btn').forEach(b =>
     b.classList.toggle('active', b.dataset.sym === sym));
-
   const a = _volAssets.find(x => x.symbol === sym);
   if (!a) return;
-
   updateVolStats(a);
-  drawCurrentTab(a);
+  drawCurrentVdTab(a);
 }
 
 /* ── Stats strip ── */
 function updateVolStats(a) {
-  const fmtIV = v => v != null ? (v * 100).toFixed(1) + '%' : '—';
-  const atmIV = a.atm_iv;
-  const hv30  = a.hv30;
-  const spread = a.iv_rv_spread;
-  const skewVal = a.term_structure && a.term_structure[0] ? a.term_structure[0].skew : null;
-
-  document.getElementById('vs-atm-iv').textContent  = fmtIV(atmIV);
-  document.getElementById('vs-hv30').textContent    = fmtIV(hv30);
-  document.getElementById('vs-iv-rank').textContent = a.iv_rank != null ? a.iv_rank.toFixed(0) + 'th pct' : '—';
-  document.getElementById('vs-spread').textContent  = spread != null ? (spread >= 0 ? '+' : '') + (spread * 100).toFixed(1) + '%' : '—';
-  document.getElementById('vs-skew').textContent    = skewVal != null ? (skewVal * 100).toFixed(1) + '%' : '—';
-
+  const fv = v => v != null ? (v * 100).toFixed(1) + '%' : '—';
+  const spread   = a.iv_rv_spread;
+  const skewVal  = a.term_structure && a.term_structure[0] ? a.term_structure[0].skew : null;
+  document.getElementById('vs-atm-iv').textContent  = fv(a.atm_iv);
+  document.getElementById('vs-hv30').textContent    = fv(a.hv30);
+  document.getElementById('vs-iv-rank').textContent = a.iv_rank != null ? a.iv_rank.toFixed(0) + 'th' : '—';
   const spreadEl = document.getElementById('vs-spread');
-  spreadEl.style.color = spread == null ? '' : spread > 0 ? '#f87171' : '#4ade80';
+  spreadEl.textContent  = spread != null ? (spread >= 0 ? '+' : '') + (spread * 100).toFixed(1) + '%' : '—';
+  spreadEl.style.color  = spread == null ? '' : spread > 0 ? '#f87171' : '#4ade80';
   const skewEl = document.getElementById('vs-skew');
-  skewEl.style.color = skewVal == null ? '' : skewVal > 0.02 ? '#f87171' : skewVal < 0 ? '#4ade80' : '#fbbf24';
+  skewEl.textContent   = skewVal != null ? (skewVal * 100).toFixed(1) + '%' : '—';
+  skewEl.style.color   = skewVal == null ? '' : skewVal > 0.02 ? '#f87171' : skewVal < 0 ? '#4ade80' : '#fbbf24';
 }
 
 /* ── Tab switching ── */
@@ -1202,537 +1453,663 @@ function switchVdTab(tab, el) {
   document.querySelectorAll('.vd-tab').forEach(t => t.classList.remove('active'));
   el.classList.add('active');
   document.querySelectorAll('.vd-panel').forEach(p => p.classList.remove('active'));
-  document.getElementById(`vdp-${tab}`).classList.add('active');
-
+  document.getElementById('vdp-' + tab).classList.add('active');
   const a = _volAssets.find(x => x.symbol === _volSym);
-  if (a) drawCurrentTab(a);
+  if (a) setTimeout(() => drawCurrentVdTab(a), 10);
 }
 
-function drawCurrentTab(a) {
+function drawCurrentVdTab(a) {
   if (_volTab === 'matrix')  renderMatrix(a);
   if (_volTab === 'term')    drawTermStructure(a);
   if (_volTab === 'skew')    drawSkew(a);
   if (_volTab === 'surface') drawSurface(a);
 }
 
-/* ════════════════════════════════════════════════
-   ① FIXED STRIKE MATRIX
-════════════════════════════════════════════════ */
+/* ── ① Fixed Strike Matrix ── */
 function renderMatrix(a) {
   const mx = a.matrix;
+  const container = document.getElementById('vd-matrix-container');
   if (!mx || !mx.expirations || !mx.expirations.length) {
-    document.getElementById('vd-matrix-container').innerHTML =
-      '<div class="vd-offline">No matrix data available for ' + a.symbol + '</div>';
+    if (container) container.innerHTML = '<div class="vd-offline" style="margin:.5rem;">No matrix data for ' + a.symbol + '</div>';
     return;
   }
+  const { expirations, dtes, moneyness: monos, strikes, iv_grid: ivGrid } = mx;
+  const atmIdx = monos.reduce((b, m, i) => Math.abs(m - 1) < Math.abs(monos[b] - 1) ? i : b, 0);
 
-  const exps     = mx.expirations;
-  const dtes     = mx.dtes;
-  const monos    = mx.moneyness;
-  const strikes  = mx.strikes;
-  const ivGrid   = mx.iv_grid;
-  const spot     = a.spot;
-
-  // Find ATM moneyness row (closest to 1.0)
-  const atmIdx   = monos.reduce((best, m, i) => Math.abs(m - 1) < Math.abs(monos[best] - 1) ? i : best, 0);
-
-  // IV color: map 0 → blue, 0.15 → green, 0.25 → yellow, 0.35+ → red
   function ivColor(iv) {
-    if (iv == null || iv <= 0) return { bg: '#111827', txt: '#4b5563' };
+    if (!iv || iv <= 0) return { bg: '#111827', txt: '#374151' };
     const v = iv * 100;
     let r, g, b;
-    if (v <= 10) {
-      r=10; g=30; b=80;       // deep blue
-    } else if (v <= 15) {
-      const t=(v-10)/5; r=Math.round(10+t*10); g=Math.round(30+t*60); b=Math.round(80+t*10);
-    } else if (v <= 25) {
-      const t=(v-15)/10; r=Math.round(20+t*100); g=Math.round(90+t*80); b=Math.round(90-t*60);
-    } else if (v <= 35) {
-      const t=(v-25)/10; r=Math.round(120+t*100); g=Math.round(170-t*130); b=Math.round(30);
-    } else {
-      const t=Math.min((v-35)/20, 1); r=Math.round(220+t*35); g=Math.round(40-t*20); b=20;
-    }
-    const brightness = (r*0.299 + g*0.587 + b*0.114);
-    return {
-      bg: `rgb(${r},${g},${b})`,
-      txt: brightness > 128 ? '#111' : '#eee',
-    };
+    if (v <= 10)       { r=8;   g=20;  b=70;  }
+    else if (v <= 15)  { const t=(v-10)/5;  r=8+t*12;   g=20+t*70;  b=70+t*15; }
+    else if (v <= 25)  { const t=(v-15)/10; r=20+t*120; g=90+t*75;  b=85-t*55; }
+    else if (v <= 35)  { const t=(v-25)/10; r=140+t*85; g=165-t*125;b=30; }
+    else               { const t=Math.min((v-35)/25,1); r=Math.round(225+t*30); g=Math.round(40-t*20); b=20; }
+    r = Math.min(255, Math.round(r)); g = Math.min(255, Math.round(g)); b = Math.min(255, Math.round(b));
+    const bright = r*0.299 + g*0.587 + b*0.114;
+    return { bg: `rgb(${r},${g},${b})`, txt: bright > 110 ? '#111' : '#eee' };
   }
 
-  // Header row
-  let html = '<table class="vd-matrix-table"><thead><tr>';
-  html += '<th class="row-head">Strike / Mono</th>';
-  exps.forEach((exp, i) => {
-    const dte = dtes[i];
-    const label = dte <= 7 ? `${dte}d` : dte <= 35 ? `${Math.round(dte/7)}w` : `${Math.round(dte/30)}mo`;
-    html += `<th title="${exp}">${label}<br><span style="font-size:.55rem;font-weight:400;">${exp.slice(5)}</span></th>`;
+  let html = '<table class="vd-matrix-table"><thead><tr><th class="row-head">Strike</th>';
+  expirations.forEach((exp, i) => {
+    const d = dtes[i];
+    const lbl = d <= 7 ? `${d}d` : d <= 35 ? `${Math.round(d/7)}w` : `${Math.round(d/30)}m`;
+    html += `<th title="${exp}">${lbl}<br><span style="font-size:.55rem;font-weight:400;">${exp.slice(5)}</span></th>`;
   });
   html += '</tr></thead><tbody>';
 
   monos.forEach((mono, ri) => {
-    const strikeLabel = `$${(strikes[ri]||0).toFixed(0)}`;
-    const monoLabel   = (mono * 100).toFixed(0) + '%';
-    const isAtm       = ri === atmIdx;
-    html += `<tr>`;
-    html += `<td style="background:#0f1729;font-weight:700;font-family:'Consolas',monospace;font-size:.7rem;color:${isAtm ? '#22d3ee' : 'var(--muted)'};">`;
-    html += `${strikeLabel} <span style="font-size:.6rem;color:var(--muted);">(${monoLabel})</span>`;
-    if (isAtm) html += ` <span style="color:#22d3ee;font-size:.58rem;">◀ ATM</span>`;
-    html += `</td>`;
-
-    exps.forEach((exp, ci) => {
+    const isAtm = ri === atmIdx;
+    html += '<tr>';
+    html += `<td style="background:#0f1729;font-weight:700;font-family:'Consolas',monospace;font-size:.7rem;color:${isAtm?'#22d3ee':'var(--muted)'};">`;
+    html += `$${(strikes[ri]||0).toFixed(0)} <span style="font-size:.58rem;color:var(--muted);">(${(mono*100).toFixed(0)}%)</span>`;
+    if (isAtm) html += ` <span style="color:#22d3ee;font-size:.58rem;">◀ATM</span>`;
+    html += '</td>';
+    expirations.forEach((_, ci) => {
       const iv = (ivGrid[String(mono)] || [])[ci];
       const { bg, txt } = ivColor(iv);
-      const label = iv != null && iv > 0 ? (iv * 100).toFixed(1) + '%' : '—';
-      html += `<td class="vd-matrix-cell${isAtm ? ' atm-row' : ''}" style="background:${bg};color:${txt};" title="${exp} | Strike $${(strikes[ri]||0).toFixed(0)} | IV ${label}">${label}</td>`;
+      const label = iv && iv > 0 ? (iv * 100).toFixed(1) + '%' : '—';
+      html += `<td class="vd-matrix-cell${isAtm?' atm-row':''}" style="background:${bg};color:${txt};" title="IV ${label}">${label}</td>`;
     });
     html += '</tr>';
   });
-
   html += '</tbody></table>';
-  document.getElementById('vd-matrix-container').innerHTML = html;
+  if (container) container.innerHTML = html;
 }
 
-/* ════════════════════════════════════════════════
-   ② TERM STRUCTURE CHART
-════════════════════════════════════════════════ */
+/* ── ② Term Structure (LightweightCharts) ── */
 function drawTermStructure(a) {
   const ts = a.term_structure;
-  if (!ts || !ts.length) return;
+  const el = document.getElementById('vd-term-chart');
+  if (!el || !ts || !ts.length) return;
 
-  const cv  = document.getElementById('vd-term-canvas');
-  const dpr = window.devicePixelRatio || 1;
-  const W   = cv.parentElement.clientWidth || 700;
-  const H   = 280;
-  cv.width  = W * dpr; cv.height = H * dpr;
-  cv.style.width = W + 'px'; cv.style.height = H + 'px';
-  const ctx = cv.getContext('2d');
-  ctx.scale(dpr, dpr);
-
-  const pad = { l: 52, r: 22, t: 18, b: 40 };
-  const cw  = W - pad.l - pad.r;
-  const ch  = H - pad.t - pad.b;
-
-  // Background
-  ctx.fillStyle = '#070d18';
-  ctx.fillRect(0, 0, W, H);
-
-  const dtes   = ts.map(t => t.dte);
-  const atmIVs = ts.map(t => t.atm_iv * 100);
-  const callIVs = ts.map(t => t.call_iv * 100);
-  const putIVs  = ts.map(t => t.put_iv  * 100);
-  const hv30pct = (a.hv30 || 0) * 100;
-
-  const allVals = [...atmIVs, ...callIVs, ...putIVs, hv30pct].filter(v => v > 0);
-  const minV = Math.max(0, Math.min(...allVals) - 2);
-  const maxV = Math.max(...allVals) + 3;
-  const maxDTE = Math.max(...dtes);
-
-  function xp(dte)  { return pad.l + (dte / maxDTE) * cw; }
-  function yp(iv)   { return pad.t + (1 - (iv - minV) / (maxV - minV)) * ch; }
-
-  // Grid
-  ctx.strokeStyle = 'rgba(36,48,88,.55)'; ctx.lineWidth = 1;
-  for (let iv = Math.ceil(minV); iv <= maxV; iv += 5) {
-    const y = yp(iv);
-    ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(pad.l + cw, y); ctx.stroke();
-    ctx.fillStyle = 'rgba(127,163,190,.65)'; ctx.font = `${10}px Consolas, monospace`;
-    ctx.textAlign = 'right';
-    ctx.fillText(iv.toFixed(0) + '%', pad.l - 5, y + 4);
+  // Destroy previous instance
+  if (_vdCharts.term) {
+    try { _vdCharts.term.remove(); } catch(e) {}
+    delete _vdCharts.term;
   }
+  el.innerHTML = '';
 
-  // X axis labels (DTE)
-  ctx.textAlign = 'center';
-  ts.forEach(t => {
-    const x = xp(t.dte);
-    ctx.fillStyle = 'rgba(127,163,190,.65)';
-    ctx.fillText(t.dte + 'd', x, H - pad.b + 14);
-    ctx.strokeStyle = 'rgba(36,48,88,.4)'; ctx.lineWidth = .5;
-    ctx.setLineDash([3,3]);
-    ctx.beginPath(); ctx.moveTo(x, pad.t); ctx.lineTo(x, pad.t + ch); ctx.stroke();
-    ctx.setLineDash([]);
+  const LW = LightweightCharts;
+  const chart = LW.createChart(el, {
+    autoSize: true,
+    layout: { background: { type: 'solid', color: '#070d18' }, textColor: '#94a3b8' },
+    grid: { vertLines: { color: '#1e293b' }, horzLines: { color: '#1e293b' } },
+    timeScale: { borderColor: '#1e293b', timeVisible: false },
+    rightPriceScale: { borderColor: '#1e293b', autoScale: true },
+    crosshair: { mode: 1 },
+    handleScroll: true, handleScale: true,
   });
 
-  // HV30 reference line
-  if (hv30pct > 0) {
-    const y = yp(hv30pct);
-    ctx.strokeStyle = '#a78bfa'; ctx.lineWidth = 1.2;
-    ctx.setLineDash([4,4]);
-    ctx.globalAlpha = 0.6;
-    ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(pad.l + cw, y); ctx.stroke();
-    ctx.setLineDash([]); ctx.globalAlpha = 1;
-    ctx.fillStyle = '#a78bfa'; ctx.font = '9px Consolas, monospace'; ctx.textAlign = 'left';
-    ctx.fillText(`HV30 ${hv30pct.toFixed(1)}%`, pad.l + 4, y - 4);
-  }
+  const mkSeries = (color, dash, width, title) => {
+    const s = chart.addLineSeries({
+      color, lineWidth: width,
+      lineStyle: dash ? LW.LineStyle.Dashed : LW.LineStyle.Solid,
+      crosshairMarkerVisible: true,
+      lastValueVisible: true,
+      title,
+    });
+    return s;
+  };
 
-  // Normal/inverted region
-  if (ts.length >= 2) {
-    const front = atmIVs[0], back = atmIVs[atmIVs.length - 1];
-    const isInverted = front > back + 1;
-    ctx.fillStyle = isInverted ? 'rgba(248,113,113,.04)' : 'rgba(74,222,128,.03)';
-    ctx.fillRect(pad.l, pad.t, cw, ch);
-  }
+  const toData = (key) => ts.map(t => ({ time: t.expiry, value: +((t[key] || 0) * 100).toFixed(3) }));
 
-  function drawLine(pts, color, dash = []) {
-    ctx.strokeStyle = color; ctx.lineWidth = 2;
-    ctx.setLineDash(dash);
-    ctx.beginPath();
-    pts.forEach(([x, y], i) => i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y));
-    ctx.stroke();
-    ctx.setLineDash([]);
-    // Dots
-    pts.forEach(([x, y]) => {
-      ctx.beginPath(); ctx.arc(x, y, 3.5, 0, Math.PI * 2);
-      ctx.fillStyle = color; ctx.fill();
+  const atmS  = mkSeries('#22d3ee', false, 2.5, 'ATM IV');
+  const callS = mkSeries('#4ade80', true,  1.5, 'Call IV');
+  const putS  = mkSeries('#f87171', true,  1.5, 'Put IV');
+
+  atmS.setData(toData('atm_iv'));
+  callS.setData(toData('call_iv'));
+  putS.setData(toData('put_iv'));
+
+  // HV30 reference price line
+  if (a.hv30 && a.hv30 > 0) {
+    atmS.createPriceLine({
+      price: +(a.hv30 * 100).toFixed(2),
+      color: '#a78bfa', lineWidth: 1,
+      lineStyle: LW.LineStyle.Dashed,
+      axisLabelVisible: true,
+      title: `HV30 ${(a.hv30 * 100).toFixed(1)}%`,
     });
   }
 
-  const atmPts  = ts.map((t, i) => [xp(t.dte), yp(atmIVs[i])]);
-  const callPts = ts.map((t, i) => [xp(t.dte), yp(callIVs[i])]);
-  const putPts  = ts.map((t, i) => [xp(t.dte), yp(putIVs[i])]);
+  chart.timeScale().fitContent();
+  _vdCharts.term = chart;
 
-  drawLine(callPts, 'rgba(74,222,128,.7)',  [4,4]);
-  drawLine(putPts,  'rgba(248,113,113,.7)', [4,4]);
-  drawLine(atmPts,  '#22d3ee');
-
-  // Labels
-  ctx.fillStyle = '#22d3ee'; ctx.font = 'bold 10px Consolas, monospace'; ctx.textAlign = 'left';
-  const lastAtm = atmPts[atmPts.length - 1];
-  ctx.fillText(`ATM ${atmIVs[atmIVs.length - 1].toFixed(1)}%`, lastAtm[0] + 6, lastAtm[1] + 4);
-
-  // Render term table below canvas
-  let tblHtml = `<table class="vd-metric-tbl"><thead><tr>
+  // Data table below chart
+  let html = `<table class="vd-metric-tbl"><thead><tr>
     <th>Expiry</th><th>DTE</th><th>ATM IV</th><th>Call IV</th><th>Put IV</th><th>Skew</th><th>25Δ RR</th>
   </tr></thead><tbody>`;
   ts.forEach(t => {
-    const ivColor = t.atm_iv > 0.35 ? '#f87171' : t.atm_iv > 0.25 ? '#fbbf24' : t.atm_iv > 0.15 ? '#4ade80' : '#22d3ee';
-    const skewColor = t.skew > 0.03 ? '#f87171' : t.skew > 0.01 ? '#fbbf24' : '#4ade80';
-    tblHtml += `<tr>
-      <td>${t.expiry}</td>
-      <td style="color:#7fa3be;">${t.dte}d</td>
-      <td style="color:${ivColor};">${(t.atm_iv * 100).toFixed(1)}%</td>
-      <td style="color:#4ade80;">${(t.call_iv * 100).toFixed(1)}%</td>
-      <td style="color:#f87171;">${(t.put_iv * 100).toFixed(1)}%</td>
-      <td style="color:${skewColor};">${(t.skew * 100).toFixed(2)}%</td>
-      <td style="color:#a78bfa;">${t.rr25 != null ? (t.rr25 * 100).toFixed(2) + '%' : '—'}</td>
+    const ic = t.atm_iv > 0.35 ? '#f87171' : t.atm_iv > 0.25 ? '#fbbf24' : t.atm_iv > 0.15 ? '#4ade80' : '#22d3ee';
+    const sc = t.skew > 0.03 ? '#f87171' : t.skew > 0.01 ? '#fbbf24' : '#4ade80';
+    html += `<tr>
+      <td>${t.expiry}</td><td style="color:#7fa3be;">${t.dte}d</td>
+      <td style="color:${ic};">${(t.atm_iv*100).toFixed(1)}%</td>
+      <td style="color:#4ade80;">${(t.call_iv*100).toFixed(1)}%</td>
+      <td style="color:#f87171;">${(t.put_iv*100).toFixed(1)}%</td>
+      <td style="color:${sc};">${(t.skew*100).toFixed(2)}%</td>
+      <td style="color:#a78bfa;">${t.rr25!=null?(t.rr25*100).toFixed(2)+'%':'—'}</td>
     </tr>`;
   });
-  tblHtml += '</tbody></table>';
-  document.getElementById('vd-term-table-wrap').innerHTML = tblHtml;
+  html += '</tbody></table>';
+  const wrap = document.getElementById('vd-term-table-wrap');
+  if (wrap) wrap.innerHTML = html;
 }
 
-/* ════════════════════════════════════════════════
-   ③ VOLATILITY SKEW CHART
-════════════════════════════════════════════════ */
+/* ── ③ Volatility Skew (canvas) ── */
 function drawSkew(a) {
+  setTimeout(() => _drawSkewCanvas(a), 20);
+}
+function _drawSkewCanvas(a) {
   const skewByExp = a.skew_by_exp;
   const ts        = a.term_structure;
-  if (!skewByExp || !ts || !ts.length) return;
-
-  const cv  = document.getElementById('vd-skew-canvas');
+  const cv        = document.getElementById('vd-skew-canvas');
+  if (!cv || !skewByExp || !ts || !ts.length) return;
   const dpr = window.devicePixelRatio || 1;
-  const W   = cv.parentElement.clientWidth || 700;
+  const W   = Math.max(cv.parentElement.clientWidth || 0, 400);
   const H   = 280;
   cv.width  = W * dpr; cv.height = H * dpr;
   cv.style.width = W + 'px'; cv.style.height = H + 'px';
   const ctx = cv.getContext('2d');
   ctx.scale(dpr, dpr);
-
   ctx.fillStyle = '#070d18';
   ctx.fillRect(0, 0, W, H);
 
+  const COLORS = ['#22d3ee','#a78bfa','#fbbf24','#f87171'];
+  const expsToPlot = ts.slice(0, 4).map(t => t.expiry);
   const pad = { l: 52, r: 24, t: 18, b: 38 };
   const cw  = W - pad.l - pad.r;
   const ch  = H - pad.t - pad.b;
-
-  const COLORS = ['#22d3ee','#a78bfa','#fbbf24','#f87171'];
-  const expsToPlot = ts.slice(0, 4).map(t => t.expiry);
-
-  // Collect all IV values to set axis range
-  let allIVs = [], allMonos = [];
-  expsToPlot.forEach(exp => {
-    (skewByExp[exp] || []).forEach(pt => {
-      allIVs.push(pt.iv * 100);
-      allMonos.push(pt.moneyness);
-    });
-  });
-  if (!allIVs.length) return;
-
   const minM = 0.80, maxM = 1.22;
+
+  let allIVs = [];
+  expsToPlot.forEach(exp => (skewByExp[exp] || []).forEach(p => allIVs.push(p.iv * 100)));
+  if (!allIVs.length) { ctx.fillStyle='rgba(127,163,190,.6)'; ctx.font='12px sans-serif'; ctx.textAlign='center'; ctx.fillText('No skew data', W/2, H/2); return; }
+
   const minV = Math.max(0, Math.min(...allIVs) - 2);
-  const maxV = Math.min(Math.max(...allIVs) + 5, 150);
+  const maxV = Math.min(Math.max(...allIVs) + 5, 180);
+  const xp = m  => pad.l + ((m - minM) / (maxM - minM)) * cw;
+  const yp = iv => pad.t + (1 - (iv - minV) / (maxV - minV)) * ch;
 
-  function xp(m) { return pad.l + ((m - minM) / (maxM - minM)) * cw; }
-  function yp(iv) { return pad.t + (1 - (iv - minV) / (maxV - minV)) * ch; }
-
-  // Gridlines
+  // Grid
   ctx.strokeStyle = 'rgba(36,48,88,.55)'; ctx.lineWidth = 1;
-  for (let v = Math.ceil(minV / 5) * 5; v <= maxV; v += 5) {
+  for (let v = Math.ceil(minV/5)*5; v <= maxV; v += 5) {
     const y = yp(v);
     ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(pad.l + cw, y); ctx.stroke();
-    ctx.fillStyle = 'rgba(127,163,190,.65)'; ctx.font = '10px Consolas, monospace';
-    ctx.textAlign = 'right';
-    ctx.fillText(v.toFixed(0) + '%', pad.l - 5, y + 4);
+    ctx.fillStyle = 'rgba(127,163,190,.65)'; ctx.font = '9.5px Consolas, monospace'; ctx.textAlign = 'right';
+    ctx.fillText(v + '%', pad.l - 4, y + 4);
   }
-
-  // X axis: moneyness labels
-  [0.80, 0.85, 0.90, 0.95, 1.00, 1.05, 1.10, 1.15, 1.20].forEach(m => {
+  [0.80,0.85,0.90,0.95,1.00,1.05,1.10,1.15,1.20].forEach(m => {
     const x = xp(m);
-    ctx.fillStyle = m === 1.0 ? '#22d3ee' : 'rgba(127,163,190,.65)';
-    ctx.font = '9px Consolas, monospace'; ctx.textAlign = 'center';
-    ctx.fillText((m * 100).toFixed(0) + '%', x, H - pad.b + 13);
-    // Vertical gridline
-    if (m !== 1.0) {
-      ctx.strokeStyle = 'rgba(36,48,88,.4)'; ctx.lineWidth = .5;
-      ctx.setLineDash([3,3]);
-    } else {
-      ctx.strokeStyle = 'rgba(34,211,238,.3)'; ctx.lineWidth = 1;
-      ctx.setLineDash([]);
-    }
+    ctx.strokeStyle = m === 1 ? 'rgba(34,211,238,.3)' : 'rgba(36,48,88,.4)';
+    ctx.lineWidth = m === 1 ? 1 : .5;
+    ctx.setLineDash(m === 1 ? [] : [3,3]);
     ctx.beginPath(); ctx.moveTo(x, pad.t); ctx.lineTo(x, pad.t + ch); ctx.stroke();
     ctx.setLineDash([]);
+    ctx.fillStyle = m === 1 ? '#22d3ee' : 'rgba(127,163,190,.65)';
+    ctx.font = '9px Consolas, monospace'; ctx.textAlign = 'center';
+    ctx.fillText((m*100).toFixed(0) + '%', x, H - pad.b + 13);
   });
+  ctx.fillStyle = '#22d3ee'; ctx.font = '9px sans-serif'; ctx.textAlign = 'center';
+  ctx.fillText('ATM', xp(1), pad.t + 12);
 
-  // ATM label
-  const xAtm = xp(1.0);
-  ctx.fillStyle = '#22d3ee'; ctx.font = '9px Consolas, monospace'; ctx.textAlign = 'center';
-  ctx.fillText('ATM', xAtm, pad.t + 12);
-
-  // Draw each expiration curve
-  const legendItems = [];
+  const legItems = [];
   expsToPlot.forEach((exp, ci) => {
-    const pts = (skewByExp[exp] || [])
-      .filter(p => p.moneyness >= minM && p.moneyness <= maxM)
-      .sort((a, b) => a.moneyness - b.moneyness);
+    const pts = (skewByExp[exp] || []).filter(p => p.moneyness >= minM && p.moneyness <= maxM)
+                  .sort((a,b) => a.moneyness - b.moneyness);
     if (!pts.length) return;
-
     const color = COLORS[ci % COLORS.length];
     const t = ts.find(x => x.expiry === exp);
-    const dteLabel = t ? `${t.dte}d` : exp.slice(5);
-    legendItems.push({ color, label: `${dteLabel} (${exp})` });
-
-    // Use put IV left of ATM, call IV right of ATM (conventional smile)
-    const curvePts = pts.map(p => [xp(p.moneyness), yp(p.iv * 100)]);
-
-    ctx.strokeStyle = color; ctx.lineWidth = 1.8;
-    ctx.setLineDash(ci > 0 ? [5,3] : []);
+    legItems.push({ color, label: `${t ? t.dte + 'd' : exp.slice(5)} (${exp})` });
+    ctx.strokeStyle = color; ctx.lineWidth = ci === 0 ? 2 : 1.5;
     ctx.globalAlpha = ci === 0 ? 1 : 0.65;
+    ctx.setLineDash(ci > 0 ? [5,3] : []);
     ctx.beginPath();
-    curvePts.forEach(([x, y], idx) => idx === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y));
+    pts.forEach((p, i) => i === 0 ? ctx.moveTo(xp(p.moneyness), yp(p.iv*100)) : ctx.lineTo(xp(p.moneyness), yp(p.iv*100)));
     ctx.stroke();
     ctx.setLineDash([]); ctx.globalAlpha = 1;
   });
-
-  // Legend
   const legEl = document.getElementById('vd-skew-legend');
-  legEl.innerHTML = legendItems.map(l =>
-    `<span><span class="vd-legend-line" style="background:${l.color};"></span>${l.label}</span>`
-  ).join('');
+  if (legEl) legEl.innerHTML = legItems.map(l =>
+    `<span><span class="vd-legend-line" style="background:${l.color};"></span>${l.label}</span>`).join('');
 }
 
-/* ════════════════════════════════════════════════
-   ④ IV SURFACE (2-D heatmap on canvas)
-════════════════════════════════════════════════ */
+/* ── ④ IV Surface (canvas heatmap) ── */
 function drawSurface(a) {
+  setTimeout(() => _drawSurfaceCanvas(a), 20);
+}
+function _drawSurfaceCanvas(a) {
   const mx = a.matrix;
-  if (!mx || !mx.expirations || !mx.expirations.length) return;
-
-  const cv  = document.getElementById('vd-surface-canvas');
+  const cv = document.getElementById('vd-surface-canvas');
+  if (!cv || !mx || !mx.expirations || !mx.expirations.length) return;
   const dpr = window.devicePixelRatio || 1;
-  const W   = cv.parentElement.clientWidth || 700;
+  const W   = Math.max(cv.parentElement.clientWidth || 0, 400);
   const H   = 360;
   cv.width  = W * dpr; cv.height = H * dpr;
   cv.style.width = W + 'px'; cv.style.height = H + 'px';
   const ctx = cv.getContext('2d');
   ctx.scale(dpr, dpr);
+  ctx.fillStyle = '#070d18'; ctx.fillRect(0, 0, W, H);
 
-  ctx.fillStyle = '#070d18';
-  ctx.fillRect(0, 0, W, H);
+  const { expirations, dtes, moneyness: monos, strikes, iv_grid: ivGrid } = mx;
+  const nC = expirations.length, nR = monos.length;
+  const pL = 72, pT = 14, pR = 26, pB = 32;
+  const cw = W - pL - pR, ch = H - pT - pB;
+  const cellW = cw / nC, cellH = ch / nR;
+  const atmIdx = monos.reduce((b, m, i) => Math.abs(m-1) < Math.abs(monos[b]-1) ? i : b, 0);
 
-  const exps    = mx.expirations;
-  const dtes    = mx.dtes;
-  const monos   = mx.moneyness;
-  const strikes = mx.strikes;
-  const ivGrid  = mx.iv_grid;
-
-  const nCols = exps.length;
-  const nRows = monos.length;
-  const padL  = 72, padT = 14, padR = 22, padB = 32;
-  const cw    = W - padL - padR;
-  const ch    = H - padT - padB;
-  const cellW = cw / nCols;
-  const cellH = ch / nRows;
-
-  // ATM row
-  const atmIdx = monos.reduce((b, m, i) => Math.abs(m - 1) < Math.abs(monos[b] - 1) ? i : b, 0);
-
-  function ivToRGBA(iv) {
-    if (!iv || iv <= 0) return 'rgba(20,27,52,1)';
+  function ivRGB(iv) {
+    if (!iv || iv <= 0) return [14,21,42];
     const v = iv * 100;
     let r, g, b;
-    if      (v <= 10) { r=10;  g=25;  b=80;  }
-    else if (v <= 15) { const t=(v-10)/5;  r=10+t*10;  g=25+t*75;  b=80+t*10; }
-    else if (v <= 25) { const t=(v-15)/10; r=20+t*130; g=100+t*70; b=90-t*60; }
-    else if (v <= 35) { const t=(v-25)/10; r=150+t*80; g=170-t*130; b=30; }
-    else              { const t=Math.min((v-35)/25,1); r=230+t*25; g=40-t*20; b=20; }
-    return `rgba(${Math.round(r)},${Math.round(g)},${Math.round(b)},1)`;
+    if (v <= 10)      { r=8;   g=20; b=70; }
+    else if (v <= 15) { const t=(v-10)/5;  r=8+t*12;   g=20+t*70;  b=70+t*15; }
+    else if (v <= 25) { const t=(v-15)/10; r=20+t*120; g=90+t*75;  b=85-t*55; }
+    else if (v <= 35) { const t=(v-25)/10; r=140+t*85; g=165-t*125;b=30; }
+    else              { const t=Math.min((v-35)/25,1); r=225+t*30; g=40-t*20; b=20; }
+    return [Math.min(255,Math.round(r)),Math.min(255,Math.round(g)),Math.min(255,Math.round(b))];
   }
 
-  // Draw cells
   monos.forEach((mono, ri) => {
-    exps.forEach((exp, ci) => {
-      const iv = (ivGrid[String(mono)] || [])[ci];
-      const x  = padL + ci * cellW;
-      const y  = padT + ri * cellH;
-
-      ctx.fillStyle = ivToRGBA(iv);
-      ctx.fillRect(x, y, cellW - 1, cellH - 1);
-
-      // ATM row highlight
+    expirations.forEach((_, ci) => {
+      const iv  = (ivGrid[String(mono)] || [])[ci];
+      const [r,g,b] = ivRGB(iv);
+      ctx.fillStyle = `rgb(${r},${g},${b})`;
+      ctx.fillRect(pL + ci*cellW, pT + ri*cellH, cellW-1, cellH-1);
       if (ri === atmIdx) {
-        ctx.strokeStyle = 'rgba(34,211,238,.5)';
-        ctx.lineWidth   = 1.5;
-        ctx.strokeRect(x, y, cellW - 1, cellH - 1);
+        ctx.strokeStyle = 'rgba(34,211,238,.55)'; ctx.lineWidth = 1.5;
+        ctx.strokeRect(pL + ci*cellW, pT + ri*cellH, cellW-1, cellH-1);
       }
-
-      // IV text
-      if (iv && iv > 0 && cellW > 30) {
-        const brightness = ivToRGBA(iv).match(/\d+/g).slice(0,3)
-          .reduce((s,c,i)=>s+[0.299,0.587,0.114][i]*+c,0);
-        ctx.fillStyle = brightness > 100 ? '#111' : '#ddd';
-        ctx.font = `${Math.min(10, cellW * 0.3)}px Consolas, monospace`;
+      if (iv && iv > 0 && cellW > 28) {
+        const bright = r*0.299 + g*0.587 + b*0.114;
+        ctx.fillStyle = bright > 100 ? '#111' : '#ddd';
+        ctx.font = `${Math.min(10, cellW * 0.28)}px Consolas, monospace`;
         ctx.textAlign = 'center';
-        ctx.fillText((iv * 100).toFixed(1), x + cellW / 2, y + cellH / 2 + 4);
+        ctx.fillText((iv*100).toFixed(1), pL+ci*cellW+cellW/2, pT+ri*cellH+cellH/2+4);
       }
     });
   });
 
-  // Y axis: moneyness labels
-  ctx.textAlign = 'right'; ctx.fillStyle = 'rgba(127,163,190,.8)';
-  ctx.font = '9.5px Consolas, monospace';
+  ctx.textAlign = 'right'; ctx.font = '9.5px Consolas, monospace';
   monos.forEach((mono, ri) => {
-    const y = padT + ri * cellH + cellH / 2 + 4;
-    const isAtm = ri === atmIdx;
-    ctx.fillStyle = isAtm ? '#22d3ee' : 'rgba(127,163,190,.8)';
-    ctx.fillText(`${(mono * 100).toFixed(0)}%`, padL - 4, y);
+    ctx.fillStyle = ri === atmIdx ? '#22d3ee' : 'rgba(127,163,190,.8)';
+    ctx.fillText(`${(mono*100).toFixed(0)}%`, pL-4, pT+ri*cellH+cellH/2+4);
   });
-
-  // X axis: DTE labels
   ctx.textAlign = 'center'; ctx.fillStyle = 'rgba(127,163,190,.8)';
-  exps.forEach((exp, ci) => {
-    const x   = padL + ci * cellW + cellW / 2;
-    const dte = dtes[ci];
-    const lbl = dte <= 7 ? `${dte}d` : dte <= 45 ? `${Math.round(dte/7)}w` : `${Math.round(dte/30)}m`;
-    ctx.fillStyle = 'rgba(127,163,190,.8)';
-    ctx.fillText(lbl, x, H - padB + 14);
+  expirations.forEach((_, ci) => {
+    const d = dtes[ci];
+    ctx.fillText(d<=7?`${d}d`:d<=45?`${Math.round(d/7)}w`:`${Math.round(d/30)}m`, pL+ci*cellW+cellW/2, H-pB+14);
   });
 
-  // Y axis label
-  ctx.save();
-  ctx.translate(12, H / 2);
-  ctx.rotate(-Math.PI / 2);
-  ctx.fillStyle = 'rgba(127,163,190,.6)';
-  ctx.font = '9px sans-serif';
-  ctx.textAlign = 'center';
-  ctx.fillText('Moneyness (Strike / Spot)', 0, 0);
-  ctx.restore();
-
-  // Color scale bar (right side)
-  const barX = W - padR + 4, barY = padT, barH = ch, barW = 10;
-  for (let i = 0; i < barH; i++) {
-    const t = 1 - i / barH;
-    const iv = 0.10 + t * 0.45;
-    ctx.fillStyle = ivToRGBA(iv);
-    ctx.fillRect(barX, barY + i, barW, 1);
+  // Color scale bar
+  const bx = W - pR + 4, bH = ch;
+  for (let i = 0; i < bH; i++) {
+    const [r,g,b] = ivRGB(0.10 + (1-i/bH)*0.45);
+    ctx.fillStyle = `rgb(${r},${g},${b})`;
+    ctx.fillRect(bx, pT+i, 10, 1);
   }
-  ctx.fillStyle = 'rgba(127,163,190,.7)'; ctx.font = '8px Consolas, monospace'; ctx.textAlign = 'left';
-  ctx.fillText('55%', barX + barW + 2, barY + 6);
-  ctx.fillText('10%', barX + barW + 2, barY + barH - 2);
+  ctx.fillStyle='rgba(127,163,190,.7)'; ctx.font='8px Consolas,monospace'; ctx.textAlign='left';
+  ctx.fillText('55%', bx+12, pT+6); ctx.fillText('10%', bx+12, pT+bH-2);
 }
 
-/* ════════════════════════════════════════════════
-   EDUCATIONAL GUIDE
-════════════════════════════════════════════════ */
+/* ── Volatility Dashboard guide ── */
 function renderVolGuide() {
   const el = document.getElementById('vd-guide');
   if (!el || el.dataset.rendered) return;
   el.dataset.rendered = '1';
-
   const cards = [
+    { color:'#fbbf24', icon:'🔲', title:'Fixed Strike Matrix', body:`Displays IV at every strike × expiration. <strong>Color scale:</strong> blue = low (&lt;15%), green = moderate (15–25%), yellow/orange = elevated (25–35%), red = high (&gt;35%). <strong>ATM row</strong> (cyan outline) shows the options market's expectation for each time horizon. <br><br>Scan for IV anomalies — a single red cell in a mostly blue grid signals unusual positioning. Compare columns (expirations): uniform low IV = complacency; inverted (front red, back green) = near-term stress event.` },
+    { color:'#22d3ee', icon:'📈', title:'Term Structure — Contango vs Backwardation', body:`The term structure chart plots ATM IV at each expiration date. <strong>Normal (contango):</strong> upward slope — longer-dated options carry higher IV, a healthy risk premium. <strong>Inverted (backwardation):</strong> near-term IV higher than back-month — front-month event risk priced in (earnings, FOMC, macro catalyst).<br><br><strong>IV − HV30 spread:</strong> If IV &gt;&gt; HV30 (purple dashed line), sell premium. If IV ≈ HV30, options are fairly valued. Inverted term structure → calendar spreads: sell front-month, buy back-month to capture IV crush.` },
+    { color:'#a78bfa', icon:'〜', title:'Volatility Skew — Put/Call IV Asymmetry', body:`Plots IV at each available strike vs moneyness (strike/spot) for 4 expirations. A flat line = random walk assumption. In practice: <br><br><strong>Put skew (equity smirk):</strong> left side steeply elevated — OTM puts expensive due to protective buying demand. Steep skew → sell OTM put spreads. <strong>Symmetric smile:</strong> both tails up — typical in currencies/commodities. <strong>Call skew:</strong> right side elevated — rare, signals gamma squeeze positioning or hard-to-borrow stock.` },
+    { color:'#4ade80', icon:'🗺', title:'IV Surface Heatmap', body:`2-D heatmap combining all strikes × all expirations. X=expirations (DTE), Y=moneyness, color=IV. <strong>Read it like a topographic map of risk:</strong> peaks = areas of high fear/uncertainty, valleys = complacency.<br><br>Find relative value: if one expiration column is much redder than its neighbors, that month's volatility is expensive vs adjacent months — sell it (calendar spread). Red row at deep OTM puts = heavy put buying = extreme downside hedging demand.` },
+  ];
+  el.style.cssText = 'margin-top:1.5rem;padding:0 1.2rem 1.5rem;';
+  el.innerHTML = `<div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#fbbf24;margin-bottom:.9rem;">📘 Volatility Dashboard — How To Read Each Chart</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:1rem;">
+      ${cards.map(c=>`<div class="vd-guide-card" style="border-top:3px solid ${c.color};background:var(--surface);border:1px solid var(--border);border-top:3px solid ${c.color};border-radius:12px;padding:1rem 1.1rem;">
+        <div style="font-size:1.3rem;margin-bottom:.4rem;">${c.icon}</div>
+        <div style="font-weight:900;font-size:.9rem;color:${c.color};margin-bottom:.45rem;">${c.title}</div>
+        <div style="font-size:.77rem;color:var(--muted);line-height:1.68;">${c.body}</div>
+      </div>`).join('')}
+    </div>`;
+}
+
+/* ════════════════════════════════════════════════════════════
+   SECTION 2 — VOLATILITY FORECASTS
+════════════════════════════════════════════════════════════ */
+
+let _vfSym      = 'SPY';
+const _vfCharts = {};
+
+/* ── Asset bar ── */
+function buildVfAssetBar() {
+  const bar = document.getElementById('vf-asset-bar');
+  if (!bar || !_volAssets.length) return;
+  bar.innerHTML = _volAssets.map(a =>
+    `<button class="vf-asset-btn${a.symbol === _vfSym ? ' active' : ''}"
+      data-sym="${a.symbol}" onclick="initVolForecast('${a.symbol}')"
+      title="${a.symbol}">${a.symbol}</button>`
+  ).join('');
+}
+
+/* ── Expected move helper ── */
+function calcMoves(a) {
+  const iv = a && a.atm_iv > 0 ? a.atm_iv : 0;
+  const sp = a ? (a.spot || 0) : 0;
+  return {
+    pct1D: iv * Math.sqrt(1/252),
+    pct1W: iv * Math.sqrt(5/252),
+    pct1M: iv * Math.sqrt(21/252),
+    move1D: sp * iv * Math.sqrt(1/252),
+    move1W: sp * iv * Math.sqrt(5/252),
+    move1M: sp * iv * Math.sqrt(21/252),
+  };
+}
+
+/* ── Init forecast for a symbol ── */
+async function initVolForecast(sym, nocache = false) {
+  _vfSym = sym;
+  document.querySelectorAll('.vf-asset-btn').forEach(b =>
+    b.classList.toggle('active', b.dataset.sym === sym));
+
+  const a = _volAssets.find(x => x.symbol === sym);
+  if (!a) return;
+
+  updateForecastStats(a);
+  renderForecastHorizonCards(a);
+  renderForecastTable();
+
+  // Fetch candles
+  const chartEl = document.getElementById('vf-chart');
+  if (!chartEl) return;
+  chartEl.innerHTML = '<div style="padding:3rem;text-align:center;color:var(--muted);font-size:.82rem;">Loading candles…</div>';
+
+  try {
+    const qs = nocache ? '?nocache=1' : '';
+    const r  = await fetch(`${API}/api/candles/${sym}${qs}`, { signal: AbortSignal.timeout(20000) });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const j  = await r.json();
+    const raw = j.candles || j || [];
+    const daily = aggregateDailyCandles(raw);
+    drawForecastChart(a, daily);
+  } catch(e) {
+    // Draw forecast-only chart (no candles)
+    drawForecastChart(a, []);
+  }
+}
+
+/* ── Stats strip ── */
+function updateForecastStats(a) {
+  const { pct1D, pct1W, pct1M, move1D, move1W, move1M } = calcMoves(a);
+  const sp = a.spot || 0;
+  const signalColor = a.iv_rank > 70 ? '#f87171' : a.iv_rank < 30 ? '#4ade80' : '#fbbf24';
+  const signal      = a.iv_rank > 70 ? 'Sell Premium' : a.iv_rank < 30 ? 'Buy Premium' : 'Neutral';
+
+  const set = (id, val, color) => {
+    const el = document.getElementById(id);
+    if (el) { el.textContent = val; if (color) el.style.color = color; }
+  };
+  set('vfs-spot',   `$${sp.toFixed(2)}`,                    '#22d3ee');
+  set('vfs-iv',     a.atm_iv ? (a.atm_iv*100).toFixed(1)+'%' : '—', '#fbbf24');
+  set('vfs-rank',   a.iv_rank != null ? a.iv_rank.toFixed(0)+'th' : '—', signalColor);
+  set('vfs-1d',     `±${(pct1D*100).toFixed(2)}%`,          '#fbbf24');
+  set('vfs-1w',     `±${(pct1W*100).toFixed(2)}%`,          '#22d3ee');
+  set('vfs-1m',     `±${(pct1M*100).toFixed(2)}%`,          '#a78bfa');
+  set('vfs-signal', signal,                                  signalColor);
+}
+
+/* ── Aggregate 4H candles to daily ── */
+function aggregateDailyCandles(candles) {
+  if (!candles || !candles.length) return [];
+  const byDay = {};
+  candles.forEach(c => {
+    const ts  = typeof c.time === 'number' ? c.time : Math.floor(new Date(c.time).getTime() / 1000);
+    const day = new Date(ts * 1000).toISOString().slice(0, 10);
+    if (!byDay[day]) {
+      byDay[day] = { time: day, open: +c.open, high: +c.high, low: +c.low, close: +c.close };
+    } else {
+      byDay[day].high  = Math.max(byDay[day].high,  +c.high);
+      byDay[day].low   = Math.min(byDay[day].low,   +c.low);
+      byDay[day].close = +c.close;
+    }
+  });
+  return Object.values(byDay).sort((a, b) => a.time.localeCompare(b.time));
+}
+
+/* ── Add business days ── */
+function addBizDays(dateStr, n) {
+  const d = new Date(dateStr + 'T12:00:00Z');
+  let count = 0;
+  while (count < n) {
+    d.setUTCDate(d.getUTCDate() + 1);
+    if (d.getUTCDay() !== 0 && d.getUTCDay() !== 6) count++;
+  }
+  return d.toISOString().slice(0, 10);
+}
+
+/* ── Draw forecast chart (LightweightCharts) ── */
+function drawForecastChart(a, daily) {
+  const el = document.getElementById('vf-chart');
+  if (!el) return;
+
+  // Destroy previous
+  if (_vfCharts[a.symbol]) {
+    try { _vfCharts[a.symbol].remove(); } catch(e) {}
+    delete _vfCharts[a.symbol];
+  }
+  el.innerHTML = '';
+
+  const LW    = LightweightCharts;
+  const chart = LW.createChart(el, {
+    autoSize: true,
+    layout: { background: { type: 'solid', color: '#070d18' }, textColor: '#94a3b8' },
+    grid: { vertLines: { color: '#1e293b' }, horzLines: { color: '#1e293b' } },
+    timeScale: { borderColor: '#1e293b', timeVisible: false, rightOffset: 12 },
+    rightPriceScale: { borderColor: '#1e293b', autoScale: true },
+    crosshair: { mode: 1,
+      vertLine: { color: 'rgba(255,255,255,.2)', labelBackgroundColor: '#1e293b' },
+      horzLine: { color: 'rgba(255,255,255,.2)', labelBackgroundColor: '#1e293b' } },
+    handleScroll: { mouseWheel: true, pressedMouseMove: true },
+    handleScale: { axisPressedMouseMove: { time: true, price: true }, mouseWheel: true, pinch: true },
+  });
+
+  const recent = daily.slice(-60);
+  const spot   = a.spot || (recent.length ? recent[recent.length-1].close : 0);
+  const lastDay = recent.length ? recent[recent.length-1].time : new Date().toISOString().slice(0,10);
+
+  // Candlestick series
+  if (recent.length > 0) {
+    const cs = chart.addCandlestickSeries({
+      upColor: '#22c55e', downColor: '#f87171',
+      borderUpColor: '#22c55e', borderDownColor: '#f87171',
+      wickUpColor: '#22c55e', wickDownColor: '#f87171',
+    });
+    cs.setData(recent);
+  }
+
+  const { move1D, move1W, move1M } = calcMoves(a);
+
+  // Forecast anchor → horizon time points
+  const t0  = lastDay;
+  const t1D = addBizDays(lastDay, 1);
+  const t1W = addBizDays(lastDay, 5);
+  const t1M = addBizDays(lastDay, 21);
+
+  // Helper: add a forecast line series
+  const addLine = (data, color, dash, width, title) => {
+    const s = chart.addLineSeries({
+      color, lineWidth: width,
+      lineStyle: dash ? LW.LineStyle.Dashed : LW.LineStyle.Solid,
+      crosshairMarkerVisible: false,
+      lastValueVisible: false,
+      priceLineVisible: false,
+      title,
+    });
+    s.setData(data);
+    return s;
+  };
+
+  // Center line (spot projection)
+  addLine([{time:t0,value:spot},{time:t1M,value:spot}], 'rgba(34,211,238,.45)', true, 1, 'Center');
+
+  // ±1σ bands
+  addLine([{time:t0,value:spot},{time:t1D,value:spot+move1D},{time:t1W,value:spot+move1W},{time:t1M,value:spot+move1M}],
+    '#fbbf24', false, 2, '+1σ');
+  addLine([{time:t0,value:spot},{time:t1D,value:spot-move1D},{time:t1W,value:spot-move1W},{time:t1M,value:spot-move1M}],
+    '#fbbf24', false, 2, '-1σ');
+
+  // ±2σ bands
+  addLine([{time:t0,value:spot},{time:t1D,value:spot+move1D*2},{time:t1W,value:spot+move1W*2},{time:t1M,value:spot+move1M*2}],
+    'rgba(248,113,113,.6)', true, 1.5, '+2σ');
+  addLine([{time:t0,value:spot},{time:t1D,value:spot-move1D*2},{time:t1W,value:spot-move1W*2},{time:t1M,value:spot-move1M*2}],
+    'rgba(248,113,113,.6)', true, 1.5, '-2σ');
+
+  // Current spot price line
+  if (recent.length > 0) {
+    const candleSeries = chart.addLineSeries({ color: 'transparent', lastValueVisible: false, priceLineVisible: false });
+    candleSeries.setData([{time: lastDay, value: spot}]);
+  }
+
+  chart.timeScale().fitContent();
+  _vfCharts[a.symbol] = chart;
+}
+
+/* ── Horizon cards (1D / 1W / 1M) ── */
+function renderForecastHorizonCards(a) {
+  const el = document.getElementById('vf-horizon-cards');
+  if (!el) return;
+  const { pct1D, pct1W, pct1M, move1D, move1W, move1M } = calcMoves(a);
+  const sp = a.spot || 0;
+  const iv = a.atm_iv ? (a.atm_iv * 100).toFixed(1) + '%' : '—';
+  const rankStr = a.iv_rank != null ? a.iv_rank.toFixed(0) : '—';
+  const sellPrem = a.iv_rank > 60;
+  const buyPrem  = a.iv_rank < 30;
+
+  const horizons = [
     {
-      color: '#fbbf24', icon: '🔲',
-      title: 'Fixed Strike Volatility Matrix — What It Shows',
-      body: `The Fixed Strike Matrix displays <strong>Implied Volatility (IV) at every available strike price across every expiration date</strong> for the selected asset. Columns = expirations (left=nearest, right=furthest). Rows = strike prices expressed as a % of the current spot price (100% = ATM). Cell color encodes IV intensity: <span class="hl-cyan">blue = low IV</span>, <span class="hl-green">green = moderate</span>, <span class="hl-amber">yellow/orange = elevated</span>, <span class="hl-red">red = high IV</span>.
-      <br><br><strong>How traders use it:</strong> Scan for IV anomalies across the grid — if a single strike shows dramatically higher IV than surrounding strikes, that strike is "pinned" by unusual positioning. Compare front-month vs back-month: uniform low IV (all blue) = complacency; inverted surface (front red, back green) = near-term stress. The ATM row (cyan outline) shows the options market's expectation for realized vol over each time horizon.`,
+      label: '1 Day', tf: 'Next Trading Session', color: '#fbbf24',
+      pct: pct1D, move: move1D,
+      desc: `The options market implies a <strong>68% probability</strong> that ${a.symbol} moves within <strong>±${(pct1D*100).toFixed(2)}%</strong> (±$${move1D.toFixed(2)}) by tomorrow's close. This is the ATM IV annualized to a 1-day timeframe using σ×√(1/252).`,
+      trading: sellPrem
+        ? `IV Rank ${rankStr}% is elevated — volatility is expensive. 0DTE option sellers: Target the ±1σ range ($${(sp+move1D).toFixed(0)}/$${(sp-move1D).toFixed(0)}) as wing strikes for same-day iron condors. Collect premium with 68% probability of max profit.`
+        : buyPrem
+        ? `IV Rank ${rankStr}% is low — volatility is cheap. Buy straddles or ATM calls/puts for directional leverage. Small moves are underpriced; any expansion above the ±1σ level profits significantly.`
+        : `Moderate IV. Set intraday stops just outside the ±1σ range. A break outside $${(sp+move1D).toFixed(0)} or $${(sp-move1D).toFixed(0)} is statistically unusual and signals momentum worth following.`,
     },
     {
-      color: '#22d3ee', icon: '📈',
-      title: 'Volatility Term Structure — Contango vs Backwardation',
-      body: `The Term Structure chart plots <strong>ATM IV at each expiration</strong> to reveal the time-value shape of market uncertainty. <span class="hl-green">Normal contango</span> = upward slope — IV rises with DTE (market expects more uncertainty over longer horizons, a healthy sign). <span class="hl-red">Backwardation / Inversion</span> = downward slope — near-term IV higher than back-month (elevated near-term fear: earnings, FOMC, macro event).
-      <div class="vd-trade-step"><div class="vd-step-num">1</div><div class="vd-step-txt"><strong>Normal curve + low IV Rank:</strong> Sell near-dated premium (straddles, iron condors). IV likely to mean-revert lower.</div></div>
-      <div class="vd-trade-step"><div class="vd-step-num">2</div><div class="vd-step-txt"><strong>Inverted curve:</strong> Front-month event risk is priced in. Consider calendar spreads — buy back-month, sell front-month to capture the IV crush post-event.</div></div>
-      <div class="vd-trade-step"><div class="vd-step-num">3</div><div class="vd-step-txt"><strong>IV − HV spread:</strong> If IV &gt;&gt; HV30 (purple line), options are expensive relative to realized vol — <span class="hl-red">sell premium</span>. If IV ≈ HV30 or IV &lt; HV30 — <span class="hl-green">buy premium</span>.</div></div>
-      <div class="vd-trade-step"><div class="vd-step-num">4</div><div class="vd-step-txt"><strong>25Δ Risk Reversal (RR):</strong> Positive RR = puts more expensive than calls (equity skew is normal). Large positive RR = strong fear of downside. Negative RR = call skew (bullish positioning / supply constraints).</div></div>`,
+      label: '1 Week', tf: 'Next 5 Trading Sessions', color: '#22d3ee',
+      pct: pct1W, move: move1W,
+      desc: `Over the next week, a <strong>68% probability</strong> range spans <strong>±${(pct1W*100).toFixed(2)}%</strong> (±$${move1W.toFixed(2)}). Weekly options use this range to price iron condor strikes. The 95% range is ±${(pct1W*200).toFixed(2)}% — only 5% of occurrences exceed this.`,
+      trading: sellPrem
+        ? `With IV Rank at ${rankStr}%, sell the ${Math.round(100+pct1W*100)}/${Math.round(100-pct1W*100)}% strikes as a weekly iron condor. The 1-week ±1σ range provides the natural wing width. Target 30–40 delta short strikes.`
+        : buyPrem
+        ? `Low IV — buy weekly debit spreads or outright calls/puts. The ±1σ range ($${(sp+move1W).toFixed(0)}/$${(sp-move1W).toFixed(0)}) represents the market's conservative estimate — a strong directional move can easily exceed it.`
+        : `Neutral IV regime. Weekly vertical spreads with $5–10 width between strikes in the ±1σ zone offer balanced risk/reward. Compare weekly vs monthly IV to identify the best horizon to trade.`,
     },
     {
-      color: '#a78bfa', icon: '〜',
-      title: 'Volatility Smile & Skew — Put/Call IV Asymmetry',
-      body: `The Skew chart plots <strong>IV at each strike (x-axis = moneyness, y-axis = IV%)</strong> for the nearest 4 expirations. A pure random walk would show a flat line — all strikes equal IV. In practice, you see distinct shapes:
-      <br><br>
-      <strong>1. Put Skew (Equity Smirk):</strong> Left side of ATM shows significantly higher IV — OTM puts are expensive because buyers (investors hedging long portfolios) drive up their price. The steeper the left side, the more protective demand and fear in the market.
-      <br><br>
-      <strong>2. Symmetric Smile:</strong> Both tails elevated relative to ATM — the market prices crash risk <em>and</em> rally risk (common in currencies, commodities, crypto).
-      <br><br>
-      <strong>3. Call Skew:</strong> Right side elevated — rare in equities, signals supply constraints or gamma squeeze positioning (OTM calls bought in size).
-      <br><br>
-      <strong>How to trade skew:</strong> Large put skew → sells OTM put spreads (collect elevated put premium, limit risk with the bought put). Very flat skew → buy OTM puts as cheap protection. Comparing curves across expirations reveals where the market sees the biggest discrete risk event.`,
-    },
-    {
-      color: '#4ade80', icon: '🗺',
-      title: 'IV Surface Heatmap — Full Volatility Landscape',
-      body: `The IV Surface combines all three views into a single 2-D color map. X = expirations (DTE), Y = strike/moneyness, Color = IV. This gives you the complete volatility landscape at a glance.
-      <br><br>
-      <strong>What to look for:</strong><br>
-      • <span class="hl-red">Red column</span> at front-month = near-term event risk (earnings, FOMC).<br>
-      • <span class="hl-red">Red row</span> at deep OTM puts = strong protective demand / tail-risk buying.<br>
-      • <span class="hl-green">Green/blue surface except one red cell</span> = unusual positioning at that specific strike/expiry — likely institutional order flow.<br>
-      • Uniform gradient = healthy surface with no anomalies.<br><br>
-      <strong>Trading the surface:</strong> Find relative value — if one expiration is elevated vs surrounding months, sell that expiration's straddle and buy the adjacent month. If the 90% put row is much redder than the 95% put row, put spreads are cheaper than single puts.`,
-    },
-    {
-      color: '#f87171', icon: '⚡',
-      title: 'Key Volatility Metrics — IV Rank, HV, Spread, Skew',
-      body: `The stats strip above each chart shows the most important volatility metrics for the selected asset:
-      <table class="vd-ref-table" style="margin-top:.6rem;">
-        <thead><tr><th>Metric</th><th>Definition</th><th>Trading Signal</th></tr></thead>
-        <tbody>
-          <tr><td>ATM IV</td><td>Front-month implied volatility at-the-money</td><td>Absolute vol level; compare to HV30 and IV Rank</td></tr>
-          <tr><td>HV-30</td><td>30-day historical realized volatility (annualised)</td><td>Baseline: how much the stock actually moved recently</td></tr>
-          <tr><td>IV Rank</td><td>Front IV's percentile vs all expirations in current surface</td><td>&gt;80 = sell premium; &lt;20 = buy premium; 40–60 = neutral</td></tr>
-          <tr><td>IV − HV</td><td>Implied minus realized vol spread</td><td>Positive = options overpriced → sell. Negative = cheap → buy.</td></tr>
-          <tr><td>Put Skew</td><td>ATM put IV minus ATM call IV</td><td>&gt;3% = strong fear / downside hedging demand present</td></tr>
-        </tbody>
-      </table>`,
-    },
-    {
-      color: '#38bdf8', icon: '🔬',
-      title: 'Step-by-Step: Trading With the Volatility Dashboard',
-      body: `A complete workflow for using these four views together:
-      <div class="vd-trade-step"><div class="vd-step-num">1</div><div class="vd-step-txt"><strong>Check IV Rank first.</strong> &gt;70 → sell premium strategies (iron condors, credit spreads, covered calls). &lt;30 → buy premium (debit spreads, long straddle into event). 30–70 → directional spread.</div></div>
-      <div class="vd-trade-step"><div class="vd-step-num">2</div><div class="vd-step-txt"><strong>Check Term Structure shape.</strong> Normal → sell front-month. Inverted (near &gt; far) → calendar spread (sell front, buy back). Flat → straddle around the event expiry.</div></div>
-      <div class="vd-trade-step"><div class="vd-step-num">3</div><div class="vd-step-txt"><strong>Check Skew steepness.</strong> Steep put skew → sell OTM put spreads or risk reversals (sell put / buy call). Flat skew → buy OTM puts as cheap tail hedge. Call skew → sell OTM call spreads.</div></div>
-      <div class="vd-trade-step"><div class="vd-step-num">4</div><div class="vd-step-txt"><strong>Use Fixed Strike Matrix</strong> to find the exact expiration and strike with the best risk/reward. Sell the elevated IV strike, buy the cheap hedge strike. This is vertical spread construction via the vol surface.</div></div>
-      <div class="vd-trade-step"><div class="vd-step-num">5</div><div class="vd-step-txt"><strong>Combine with ML signals + GEX.</strong> IV Rank says "sell premium" + ML says "BUY" + Long Gamma → sell OTM put spread (credit, directional bias). IV Rank low + ML "SELL" + Short Gamma → buy ATM put (leveraged directional).</div></div>`,
+      label: '1 Month', tf: 'Next 21 Trading Sessions', color: '#a78bfa',
+      pct: pct1M, move: move1M,
+      desc: `Monthly forecast: <strong>68% probability</strong> of staying within <strong>±${(pct1M*100).toFixed(2)}%</strong> (±$${move1M.toFixed(2)}) over the next month. This is the standard horizon for monthly options expirations. The ±2σ range ($${(sp-move1M*2).toFixed(0)}–$${(sp+move1M*2).toFixed(0)}) captures 95% of outcomes.`,
+      trading: sellPrem
+        ? `High IV Rank (${rankStr}%) makes selling monthly premium attractive. Iron condors with wings at the ±1σ range ($${(sp-move1M).toFixed(0)}–$${(sp+move1M).toFixed(0)}) capture 68% of the probability mass. Theta decay works strongly in your favor at 21+ DTE.`
+        : buyPrem
+        ? `IV Rank ${rankStr}% — near historically low implied volatility. Buy monthly straddles or long calls/puts for leveraged directional exposure. Options are cheap relative to expected moves.`
+        : `Standard monthly range. Trend traders: a close outside the ±1σ boundary ($${(sp-move1M).toFixed(0)}/$${(sp+move1M).toFixed(0)}) represents a breakout signal worth following with a directional position.`,
     },
   ];
 
-  el.innerHTML = `<div class="vd-guide-title">📘 Volatility Dashboard — Complete Trading Guide</div>
-    <div class="vd-guide-grid">
-      ${cards.map(c => `
-        <div class="vd-guide-card" style="border-top-color:${c.color};">
-          <div class="vd-guide-icon">${c.icon}</div>
-          <div class="vd-guide-head" style="color:${c.color};">${c.title}</div>
-          <div class="vd-guide-body">${c.body}</div>
-        </div>`).join('')}
+  el.innerHTML = horizons.map(h => {
+    const u1 = sp + h.move, l1 = sp - h.move;
+    const u2 = sp + h.move*2, l2 = sp - h.move*2;
+    return `<div class="vf-horizon-card" style="border-top-color:${h.color};">
+      <div class="vfh-horizon" style="color:${h.color};">${h.label}</div>
+      <div class="vfh-timeframe">${h.tf}</div>
+      <div class="vfh-move" style="color:${h.color};">±${(h.pct*100).toFixed(2)}%</div>
+      <div class="vfh-pct">±$${h.move.toFixed(2)} expected move · IV ${iv}</div>
+      <div class="vfh-range-grid">
+        <div class="vfh-range-cell"><div class="vfh-range-label">2σ Upper 95%</div><div class="vfh-range-val" style="color:#f87171;">$${u2.toFixed(1)}</div></div>
+        <div class="vfh-range-cell"><div class="vfh-range-label">1σ Upper 68%</div><div class="vfh-range-val" style="color:${h.color};">$${u1.toFixed(1)}</div></div>
+        <div class="vfh-range-cell center"><div class="vfh-range-label">Current</div><div class="vfh-range-val" style="color:#22d3ee;">$${sp.toFixed(1)}</div></div>
+        <div class="vfh-range-cell"><div class="vfh-range-label">1σ Lower 68%</div><div class="vfh-range-val" style="color:${h.color};">$${l1.toFixed(1)}</div></div>
+        <div class="vfh-range-cell"><div class="vfh-range-label">2σ Lower 95%</div><div class="vfh-range-val" style="color:#f87171;">$${l2.toFixed(1)}</div></div>
+      </div>
+      <div class="vfh-desc">${h.desc}</div>
+      <div class="vfh-trading"><strong>Trading Strategy:</strong> ${h.trading}</div>
+    </div>`;
+  }).join('');
+}
+
+/* ── All-assets forecast table ── */
+function renderForecastTable() {
+  const wrap = document.getElementById('vf-table-wrap');
+  if (!wrap || !_volAssets.length) return;
+  let html = `<table class="vf-tbl"><thead><tr>
+    <th>Symbol</th><th>Spot</th><th>ATM IV</th><th>HV30</th><th>IV Rank</th>
+    <th>1D ±%</th><th>1D ±$</th><th>1W ±%</th><th>1W ±$</th><th>1M ±%</th><th>1M ±$</th><th>Vol Signal</th>
+  </tr></thead><tbody>`;
+  _volAssets.forEach(a => {
+    const { pct1D, pct1W, pct1M, move1D, move1W, move1M } = calcMoves(a);
+    const rk = a.iv_rank;
+    const rkC = rk > 70 ? '#f87171' : rk < 30 ? '#4ade80' : '#fbbf24';
+    const sig = rk > 70 ? 'Sell Premium' : rk < 30 ? 'Buy Premium' : 'Neutral';
+    const isActive = a.symbol === _vfSym;
+    html += `<tr class="${isActive?'vf-row-active':''}" onclick="initVolForecast('${a.symbol}')" style="cursor:pointer;">
+      <td style="font-weight:900;color:${isActive?'#a78bfa':'var(--text)'};font-family:'Consolas',monospace;">${a.symbol}</td>
+      <td style="color:#22d3ee;">$${(a.spot||0).toFixed(2)}</td>
+      <td style="color:#fbbf24;">${a.atm_iv?(a.atm_iv*100).toFixed(1)+'%':'—'}</td>
+      <td style="color:#a78bfa;">${a.hv30?(a.hv30*100).toFixed(1)+'%':'—'}</td>
+      <td style="color:${rkC};">${rk!=null?rk.toFixed(0):'—'}</td>
+      <td style="color:#fbbf24;">±${(pct1D*100).toFixed(2)}%</td>
+      <td style="color:#fbbf24;">±$${move1D.toFixed(2)}</td>
+      <td style="color:#22d3ee;">±${(pct1W*100).toFixed(2)}%</td>
+      <td style="color:#22d3ee;">±$${move1W.toFixed(2)}</td>
+      <td style="color:#a78bfa;">±${(pct1M*100).toFixed(2)}%</td>
+      <td style="color:#a78bfa;">±$${move1M.toFixed(2)}</td>
+      <td style="color:${rkC};font-weight:700;">${sig}</td>
+    </tr>`;
+  });
+  html += '</tbody></table>';
+  wrap.innerHTML = html;
+}
+
+/* ── Forecast educational guide ── */
+function renderForecastGuide() {
+  const el = document.getElementById('vf-forecast-guide');
+  if (!el || el.dataset.rendered) return;
+  el.dataset.rendered = '1';
+  const cards = [
+    { color:'#fbbf24', icon:'📐', title:'How Volatility Forecasts Are Calculated',
+      body:`All forecast ranges are derived from the <strong>Black-Scholes implied volatility (IV)</strong> of front-month ATM options using the lognormal model:<br><br>
+      <strong>Expected Move = Spot × IV × √(T/252)</strong><br><br>
+      Where T = trading days (1D=1, 1W=5, 1M=21) and IV is annualized. This gives the ±1σ range, representing a <strong>68% probability</strong> that the stock stays within these bounds. The ±2σ range (multiply by 2) captures <strong>95%</strong> of outcomes.<br><br>
+      These are the exact formulas used by options market-makers and are reflected in the prices of ATM straddles — buying an ATM straddle roughly costs the expected move.` },
+    { color:'#22d3ee', icon:'📊', title:'Using the Forecast Chart',
+      body:`The LightweightCharts candlestick chart shows 60 days of historical price action followed by the forward probability cone:<br><br>
+      • <strong style="color:#fbbf24;">Amber lines (±1σ):</strong> 68% probability range — the inner cone<br>
+      • <strong style="color:#f87171;">Red dashed lines (±2σ):</strong> 95% probability range — extreme move territory<br>
+      • <strong style="color:#22d3ee;">Cyan dashed:</strong> Center (flat) projection — no directional bias from IV alone<br><br>
+      The cone widens over time following the √T rule. A stock in a strong trend will often travel along the upper or lower 1σ boundary — this is normal and expected. Only a move outside the 2σ boundary is statistically extraordinary (5% probability).` },
+    { color:'#a78bfa', icon:'📉', title:'IV Rank & When to Buy vs Sell Volatility',
+      body:`<strong>IV Rank</strong> positions today's ATM IV within the range of IVs seen across the current term structure (0–100th percentile).<br><br>
+      <strong style="color:#f87171;">IV Rank &gt;70 → Sell Premium:</strong> Volatility is historically elevated. Options are expensive relative to likely realized moves. Sell iron condors, covered calls, credit spreads, cash-secured puts. Time decay works in your favor.<br><br>
+      <strong style="color:#4ade80;">IV Rank &lt;30 → Buy Premium:</strong> Volatility is historically low. Options are cheap. Buy straddles/strangles into events, buy protective puts, buy LEAPS for directional leverage. Any volatility expansion pays off.<br><br>
+      <strong style="color:#fbbf24;">IV Rank 30–70 → Neutral:</strong> Neither extreme. Use directional spreads (debit call/put spreads) where the net cost is modest and the risk is defined.` },
+    { color:'#4ade80', icon:'🔬', title:'Step-by-Step: Trading With Volatility Forecasts',
+      body:`<div style="margin-top:.3rem;">
+        <div style="display:flex;gap:.5rem;margin:.35rem 0;"><div style="min-width:20px;height:20px;border-radius:50%;background:rgba(74,222,128,.12);border:1px solid rgba(74,222,128,.3);color:#4ade80;font-size:.65rem;font-weight:900;display:flex;align-items:center;justify-content:center;flex-shrink:0;">1</div><div style="font-size:.76rem;color:var(--muted);line-height:1.55;"><strong style="color:var(--text);">Check IV Rank first.</strong> &gt;70 = sell premium strategies (iron condors, credit spreads, covered calls). &lt;30 = buy premium (debit spreads, long straddle into event).</div></div>
+        <div style="display:flex;gap:.5rem;margin:.35rem 0;"><div style="min-width:20px;height:20px;border-radius:50%;background:rgba(74,222,128,.12);border:1px solid rgba(74,222,128,.3);color:#4ade80;font-size:.65rem;font-weight:900;display:flex;align-items:center;justify-content:center;flex-shrink:0;">2</div><div style="font-size:.76rem;color:var(--muted);line-height:1.55;"><strong style="color:var(--text);">Use the 1D/1W/1M ±1σ levels as strike selection guides.</strong> For iron condors: sell the ±1σ strikes, buy ±1.5σ for protection. For directional spreads: buy ATM, sell ±1σ OTM as your target.</div></div>
+        <div style="display:flex;gap:.5rem;margin:.35rem 0;"><div style="min-width:20px;height:20px;border-radius:50%;background:rgba(74,222,128,.12);border:1px solid rgba(74,222,128,.3);color:#4ade80;font-size:.65rem;font-weight:900;display:flex;align-items:center;justify-content:center;flex-shrink:0;">3</div><div style="font-size:.76rem;color:var(--muted);line-height:1.55;"><strong style="color:var(--text);">Compare across assets.</strong> The forecast table lets you spot which assets have the highest/lowest IV Rank and the largest/smallest expected moves — key for relative value trades (straddles on high-IV vs low-IV pairs).</div></div>
+        <div style="display:flex;gap:.5rem;margin:.35rem 0;"><div style="min-width:20px;height:20px;border-radius:50%;background:rgba(74,222,128,.12);border:1px solid rgba(74,222,128,.3);color:#4ade80;font-size:.65rem;font-weight:900;display:flex;align-items:center;justify-content:center;flex-shrink:0;">4</div><div style="font-size:.76rem;color:var(--muted);line-height:1.55;"><strong style="color:var(--text);">Combine with ML signals + GEX.</strong> ML BUY signal + Low IV Rank → buy debit call spread to the +1σ level. ML SELL + High IV Rank + Short Gamma → sell OTM call spread (credit) using +1σ as short strike. Maximum edge when all three confirm.</div></div>
+      </div>` },
+  ];
+  el.innerHTML = `<div class="vf-guide-title">📘 Volatility Forecasts — Complete Trading Guide</div>
+    <div class="vf-guide-grid">
+      ${cards.map(c=>`<div style="background:var(--surface);border:1px solid var(--border);border-top:3px solid ${c.color};border-radius:12px;padding:1.1rem 1.2rem;">
+        <div style="font-size:1.4rem;margin-bottom:.45rem;">${c.icon}</div>
+        <div style="font-weight:900;font-size:.92rem;color:${c.color};margin-bottom:.5rem;">${c.title}</div>
+        <div style="font-size:.78rem;color:var(--muted);line-height:1.7;">${c.body}</div>
+      </div>`).join('')}
     </div>`;
 }
 </script>
