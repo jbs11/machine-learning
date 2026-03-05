@@ -26,6 +26,7 @@
     <li><a href="options-trading.html">Options</a></li>
     <li><a href="futures-trading.html">Futures</a></li>
     <li><a href="live-trading.html">Live Trading</a></li>
+    <li><a href="report.html" style="color:#22d3ee;font-weight:700;">📄 Report</a></li>
   </ul>
 </nav>
 
@@ -103,6 +104,65 @@
       </div>
     </a>
 
+  </div>
+</div>
+
+
+<!-- ++ Live Trading Dashboards ++ -->
+<div style="background:linear-gradient(180deg,#0a1020 0%,#080d1a 100%); border-top:1px solid #1e2d4a; border-bottom:1px solid #1e2d4a; padding:2.5rem 0;">
+  <div class="section">
+    <div class="section-header">
+      <div class="section-label" style="color:#22d3ee;">Live Dashboards</div>
+      <h2 style="color:#e8f4fc;">Real-Time Market Intelligence</h2>
+      <p style="color:#7fa3be;">Live ML signals, options flow, gamma exposure, and comprehensive market analytics — powered by the local Flask server at localhost:5050.</p>
+    </div>
+    <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:1rem; margin-bottom:1.5rem;">
+      <a href="live-trading.html" style="text-decoration:none; display:block; background:#0f1729; border:1px solid #243058; border-radius:10px; padding:1.2rem; transition:border-color .2s;" onmouseover="this.style.borderColor='#22d3ee'" onmouseout="this.style.borderColor='#243058'">
+        <div style="font-size:1.6rem; margin-bottom:.5rem;">&#128225;</div>
+        <div style="font-weight:700; color:#e8f4fc; margin-bottom:.3rem;">Live Trading</div>
+        <div style="font-size:.78rem; color:#7fa3be;">ML direction signals, IBKR integration, auto-refresh, price charts</div>
+        <div style="margin-top:.7rem; font-size:.7rem; color:#22d3ee; font-weight:600;">LIVE &rsaquo;</div>
+      </a>
+      <a href="market-summary.html" style="text-decoration:none; display:block; background:#0f1729; border:1px solid #243058; border-radius:10px; padding:1.2rem; transition:border-color .2s;" onmouseover="this.style.borderColor='#fbbf24'" onmouseout="this.style.borderColor='#243058'">
+        <div style="font-size:1.6rem; margin-bottom:.5rem;">&#128202;</div>
+        <div style="font-weight:700; color:#e8f4fc; margin-bottom:.3rem;">Market Summary</div>
+        <div style="font-size:.78rem; color:#7fa3be;">Aggregated ML signals, market breadth, GEX overlays, top movers</div>
+        <div style="margin-top:.7rem; font-size:.7rem; color:#fbbf24; font-weight:600;">SUMMARY &rsaquo;</div>
+      </a>
+      <a href="gamma-exposure.html" style="text-decoration:none; display:block; background:#0f1729; border:1px solid #243058; border-radius:10px; padding:1.2rem; transition:border-color .2s;" onmouseover="this.style.borderColor='#4ade80'" onmouseout="this.style.borderColor='#243058'">
+        <div style="font-size:1.6rem; margin-bottom:.5rem;">&#9889;</div>
+        <div style="font-weight:700; color:#e8f4fc; margin-bottom:.3rem;">Gamma Exposure</div>
+        <div style="font-size:.78rem; color:#7fa3be;">SpotGamma-style GEX charts, gamma walls, flip levels, PCR for 24 assets</div>
+        <div style="margin-top:.7rem; font-size:.7rem; color:#4ade80; font-weight:600;">GEX &rsaquo;</div>
+      </a>
+      <a href="option-flows.html" style="text-decoration:none; display:block; background:#0f1729; border:1px solid #243058; border-radius:10px; padding:1.2rem; transition:border-color .2s;" onmouseover="this.style.borderColor='#f87171'" onmouseout="this.style.borderColor='#243058'">
+        <div style="font-size:1.6rem; margin-bottom:.5rem;">&#127754;</div>
+        <div style="font-weight:700; color:#e8f4fc; margin-bottom:.3rem;">Option Flows</div>
+        <div style="font-size:.78rem; color:#7fa3be;">Tornado charts, net premium, unusual flow detection, dealer delta</div>
+        <div style="margin-top:.7rem; font-size:.7rem; color:#f87171; font-weight:600;">FLOWS &rsaquo;</div>
+      </a>
+      <a href="options-summary.html" style="text-decoration:none; display:block; background:#0f1729; border:1px solid #243058; border-radius:10px; padding:1.2rem; transition:border-color .2s;" onmouseover="this.style.borderColor='#a78bfa'" onmouseout="this.style.borderColor='#243058'">
+        <div style="font-size:1.6rem; margin-bottom:.5rem;">&#128201;</div>
+        <div style="font-weight:700; color:#e8f4fc; margin-bottom:.3rem;">Options Summary</div>
+        <div style="font-size:.78rem; color:#7fa3be;">Volatility dashboard, IV surface, term structure, forecasts, strategy cards</div>
+        <div style="margin-top:.7rem; font-size:.7rem; color:#a78bfa; font-weight:600;">OPTIONS &rsaquo;</div>
+      </a>
+      <a href="report.html" target="_blank" style="text-decoration:none; display:block; background:linear-gradient(135deg,#0c1a30 0%,#0f1e38 100%); border:2px solid #22d3ee; border-radius:10px; padding:1.2rem; position:relative; overflow:hidden;" onmouseover="this.style.background='linear-gradient(135deg,#0f2040 0%,#142444 100%)'" onmouseout="this.style.background='linear-gradient(135deg,#0c1a30 0%,#0f1e38 100%)'">
+        <div style="position:absolute;top:.5rem;right:.6rem;font-size:.65rem;font-weight:800;color:#080d1a;background:#22d3ee;padding:.1rem .4rem;border-radius:3px;">NEW</div>
+        <div style="font-size:1.6rem; margin-bottom:.5rem;">&#128196;</div>
+        <div style="font-weight:700; color:#22d3ee; margin-bottom:.3rem;">PDF Report</div>
+        <div style="font-size:.78rem; color:#7fa3be;">Full 8-section printable report: GEX charts, ML signals, flows, strategy, fundamentals</div>
+        <div style="margin-top:.7rem; font-size:.7rem; color:#22d3ee; font-weight:600;">OPEN REPORT &rsaquo;</div>
+      </a>
+    </div>
+    <div style="display:flex; flex-wrap:wrap; gap:.5rem; padding-top:.75rem; border-top:1px solid #1e2d4a;">
+      <span style="font-size:.72rem; color:#7fa3be; align-self:center; margin-right:.3rem;">More:</span>
+      <a href="0dte-options.html" style="font-size:.72rem;color:#7fa3be;text-decoration:none;background:#0f1729;border:1px solid #243058;border-radius:4px;padding:.2rem .55rem;" onmouseover="this.style.color='#e8f4fc'" onmouseout="this.style.color='#7fa3be'">0DTE Options</a>
+      <a href="options-strategy.html" style="font-size:.72rem;color:#7fa3be;text-decoration:none;background:#0f1729;border:1px solid #243058;border-radius:4px;padding:.2rem .55rem;" onmouseover="this.style.color='#e8f4fc'" onmouseout="this.style.color='#7fa3be'">Strategy Advisor</a>
+      <a href="hedging-impact.html" style="font-size:.72rem;color:#7fa3be;text-decoration:none;background:#0f1729;border:1px solid #243058;border-radius:4px;padding:.2rem .55rem;" onmouseover="this.style.color='#e8f4fc'" onmouseout="this.style.color='#7fa3be'">Hedging Impact</a>
+      <a href="institutional-buyers.html" style="font-size:.72rem;color:#7fa3be;text-decoration:none;background:#0f1729;border:1px solid #243058;border-radius:4px;padding:.2rem .55rem;" onmouseover="this.style.color='#e8f4fc'" onmouseout="this.style.color='#7fa3be'">Institutional Buyers</a>
+      <a href="fundamentals.html" style="font-size:.72rem;color:#7fa3be;text-decoration:none;background:#0f1729;border:1px solid #243058;border-radius:4px;padding:.2rem .55rem;" onmouseover="this.style.color='#e8f4fc'" onmouseout="this.style.color='#7fa3be'">Fundamentals</a>
+    </div>
   </div>
 </div>
 

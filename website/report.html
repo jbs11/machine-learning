@@ -190,9 +190,11 @@
 <div id="rpt-loading">
   <h2>📊 ML Trading Dashboard</h2>
   <div style="color:var(--muted);margin-top:-.5rem;">Generating Comprehensive Report…</div>
-  <div class="ld-bar-wrap"><div class="ld-bar" id="rpt-prog-bar"></div></div>
-  <div id="rpt-prog-label">Initializing…</div>
-  <div style="font-size:.78rem;color:var(--muted);">Fetching 6 API endpoints in parallel</div>
+  <div class="ld-bar-wrap"><div id="rpt-prog-bar"></div></div>
+  <div id="rpt-prog-label" style="min-height:1.2em;">Connecting to server…</div>
+  <div id="rpt-ep-status" style="display:grid;grid-template-columns:repeat(3,1fr);gap:.3rem .8rem;margin-top:.5rem;width:min(400px,90vw);"></div>
+  <div style="font-size:.75rem;color:var(--muted);margin-top:.4rem;">APIs may take 20-40 s on first load — data is fetching live from yfinance</div>
+  <button onclick="window.location.reload()" style="margin-top:.8rem;padding:.35rem .9rem;border-radius:5px;border:1px solid var(--border);background:var(--card);color:var(--muted);font-size:.8rem;cursor:pointer;">↻ Retry</button>
 </div>
 
 <!-- ── Report Body ───────────────────────────────────────────────────────── -->
@@ -340,21 +342,50 @@ function dirBadge(d){
 let _progress = 0;
 function addProgress(n, label){
   _progress = Math.min(100, _progress + n);
-  document.getElementById('rpt-prog-bar').style.width = _progress+'%';
-  if(label) document.getElementById('rpt-prog-label').textContent = '✓ '+label;
+  const bar = document.getElementById('rpt-prog-bar');
+  if(bar) bar.style.width = _progress+'%';
+  const lbl = document.getElementById('rpt-prog-label');
+  if(label && lbl) lbl.textContent = '✓ ' + label + ' loaded';
+}
+
+function setEpStatus(key, state, label){
+  const wrap = document.getElementById('rpt-ep-status');
+  if(!wrap) return;
+  let el = document.getElementById('rpt-ep-' + key);
+  if(!el){
+    el = document.createElement('div');
+    el.id = 'rpt-ep-' + key;
+    el.style.cssText = 'font-size:.72rem; display:flex; align-items:center; gap:.3rem;';
+    wrap.appendChild(el);
+  }
+  const dot = state === 'ok'      ? '<span style="color:#4ade80">&#10003;</span>'
+             : state === 'loading' ? '<span style="color:#fbbf24">&#8987;</span>'
+             :                       '<span style="color:#f87171">&#10007;</span>';
+  el.innerHTML = dot + ' ' + label;
 }
 
 /* ── Fetch all endpoints ──────────────────────────────────────────────── */
 async function loadAll(){
+  const TIMEOUT_MS = 90000; // 90 seconds — market-summary runs ML inference
   const step = 100 / ENDPOINTS.length;
   const results = {};
+
+  ENDPOINTS.forEach(ep => setEpStatus(ep.key, 'loading', ep.label));
+
   await Promise.all(ENDPOINTS.map(async ep => {
+    const ctrl = new AbortController();
+    const tid  = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
     try {
-      const r = await fetch(API + ep.url);
-      if(!r.ok) throw new Error(r.status);
+      const r = await fetch(API + ep.url, { signal: ctrl.signal });
+      clearTimeout(tid);
+      if(!r.ok) throw new Error('HTTP ' + r.status);
       results[ep.key] = await r.json();
+      setEpStatus(ep.key, 'ok', ep.label);
     } catch(e) {
+      clearTimeout(tid);
       results[ep.key] = null;
+      setEpStatus(ep.key, 'err', ep.label + (e.name==='AbortError' ? ' (timeout)' : ' (error)'));
+      console.warn('[report] ' + ep.url + ':', e.message);
     }
     addProgress(step, ep.label);
   }));
@@ -542,109 +573,115 @@ function drawTornadoReport(r, cv, H=200, opts={}){
 function renderCover(market){
   const ts = market?.timestamp ? new Date(market.timestamp).toLocaleString() : new Date().toLocaleString();
   const dir = market?.market_direction || '—';
-  const bull = market?.sentiment?.bull_pct??'—';
-  const bear = market?.sentiment?.bear_pct??'—';
+  const sent = market?.sentiment || {};
 
   document.getElementById('cov-sub').textContent =
     'Comprehensive Market Intelligence Report — Generated '+ts;
 
-  document.getElementById('cov-meta').innerHTML = `
-    <div class="rpt-cover-stat"><label>Market Direction</label>${dirBadge(dir)}</div>
-    <div class="rpt-cover-stat"><label>Bull / Bear</label><span style="color:var(--green)">${typeof bull==='number'?(bull*100).toFixed(0):bull}%</span> / <span style="color:var(--red)">${typeof bear==='number'?(bear*100).toFixed(0):bear}%</span></div>
-    <div class="rpt-cover-stat"><label>Server</label><span style="font-size:.82rem;color:var(--muted)">localhost:5050</span></div>
-    <div class="rpt-cover-stat"><label>Report Date</label><span style="font-size:.82rem">${new Date().toLocaleDateString('en-US',{weekday:'short',year:'numeric',month:'short',day:'numeric'})}</span></div>
-  `;
+  // sentiment values are already percentages (e.g. 47.6), not decimals
+  const bullN = sent.bull_pct != null ? (+sent.bull_pct).toFixed(0) : 'N/A';
+  const bearN = sent.bear_pct != null ? (+sent.bear_pct).toFixed(0) : 'N/A';
+  const buyN  = sent.buy  != null ? sent.buy  : '—';
+  const sellN = sent.sell != null ? sent.sell : '—';
+  const totN  = sent.total!= null ? sent.total: '—';
+  document.getElementById('cov-meta').innerHTML =
+    '<div class="rpt-cover-stat"><label>Market Direction</label>' + dirBadge(dir) + '</div>' +
+    '<div class="rpt-cover-stat"><label>Bull / Bear</label>' +
+      '<span style="color:var(--green)">' + bullN + '%</span> / <span style="color:var(--red)">' + bearN + '%</span></div>' +
+    '<div class="rpt-cover-stat"><label>Buy / Sell / Total</label>' +
+      '<span style="color:var(--green);font-weight:700">' + buyN + '</span> / ' +
+      '<span style="color:var(--red);font-weight:700">' + sellN + '</span> of ' + totN + '</div>' +
+    '<div class="rpt-cover-stat"><label>Report Date</label>' +
+      '<span style="font-size:.82rem">' + new Date().toLocaleDateString('en-US',{weekday:'short',year:'numeric',month:'short',day:'numeric'}) + '</span></div>';
 }
 
 /* ── §1 Market Summary ────────────────────────────────────────────────── */
 function renderMarketSummary(market){
   const el = document.getElementById('sec-market-body');
-  if(!market){ el.innerHTML='<div class="rpt-offline">⚠ Market summary data unavailable.</div>'; return; }
+  if(!market){ el.innerHTML='<div class="rpt-offline">&#9888; Market summary data unavailable.</div>'; return; }
 
-  const dir = market.market_direction||'—';
-  const vix = market.vix?.'value'??market.vix??'—';
-  const bull = market?.sentiment?.bull_pct; const bear = market?.sentiment?.bear_pct;
-  const events = market.events || [];
-  const indices = market.indices || [];
-  const notes = market.notes || [];
+  const dir  = market.market_direction || '—';
+  const sent = market.sentiment || {};
+  // bull_pct / bear_pct are already percentages (e.g. 47.6), NOT decimals
+  const bullPct = +(sent.bull_pct ?? 50);
+  const bearPct = +(sent.bear_pct ?? 50);
+  const holdPct = Math.max(0, 100 - bullPct - bearPct);
+  const worldEvents  = market.world_events || [];
+  const notes = (market.notes || []).filter(n => typeof n === 'string' && n.trim()).slice(0,5);
+  const commentary   = market.market_commentary || '';
 
-  // Breadth bar
-  const bullPct = typeof bull==='number' ? bull*100 : 50;
-  const bearPct = typeof bear==='number' ? bear*100 : 50;
+  let html = '<div style="display:flex;align-items:center;gap:1.2rem;flex-wrap:wrap;margin-bottom:1rem;">' +
+    dirBadge(dir) +
+    '<div style="flex:1;min-width:180px;">' +
+      '<div style="font-size:.72rem;color:var(--muted);margin-bottom:.25rem;">Market Breadth (' + (sent.total||0) + ' signals)</div>' +
+      '<div style="height:8px;border-radius:4px;overflow:hidden;background:var(--card);display:flex;">' +
+        '<div style="width:' + bullPct.toFixed(1) + '%;background:var(--green);"></div>' +
+        '<div style="width:' + holdPct.toFixed(1) + '%;background:#fbbf24;"></div>' +
+        '<div style="width:' + bearPct.toFixed(1) + '%;background:var(--red);"></div>' +
+      '</div>' +
+      '<div style="display:flex;justify-content:space-between;font-size:.7rem;margin-top:.2rem;">' +
+        '<span style="color:var(--green)">&#9650; ' + bullPct.toFixed(0) + '% Bull (' + (sent.buy||0) + ')</span>' +
+        '<span style="color:#fbbf24">' + (sent.hold||0) + ' Hold</span>' +
+        '<span style="color:var(--red)">' + bearPct.toFixed(0) + '% Bear (' + (sent.sell||0) + ') &#9660;</span>' +
+      '</div>' +
+    '</div>' +
+  '</div>';
 
-  let html = `
-    <div style="display:flex;align-items:center;gap:1.2rem;flex-wrap:wrap;margin-bottom:1rem;">
-      ${dirBadge(dir)}
-      <div style="flex:1;min-width:180px;">
-        <div style="font-size:.72rem;color:var(--muted);margin-bottom:.25rem;">Market Breadth</div>
-        <div style="height:8px;border-radius:4px;overflow:hidden;background:var(--card);display:flex;">
-          <div style="width:${bullPct.toFixed(1)}%;background:var(--green);"></div>
-          <div style="width:${bearPct.toFixed(1)}%;background:var(--red);"></div>
-        </div>
-        <div style="display:flex;justify-content:space-between;font-size:.7rem;margin-top:.2rem;">
-          <span style="color:var(--green)">▲ ${bullPct.toFixed(0)}% Bull</span>
-          <span style="color:var(--red)">${bearPct.toFixed(0)}% Bear ▼</span>
-        </div>
-      </div>
-    </div>`;
-
-  // Stat grid
-  html += `<div class="rpt-stat-grid">`;
-  if(vix!=='—') html+=`<div class="rpt-stat-card"><label>VIX</label><span style="color:${vix>20?'var(--red)':'var(--green)'}">${typeof vix==='number'?vix.toFixed(2):vix}</span></div>`;
-
-  // Indices grid
-  if(indices.length){
-    indices.slice(0,8).forEach(idx=>{
-      const chg = idx.change_pct;
-      html+=`<div class="rpt-stat-card"><label>${idx.symbol||idx.name||'—'}</label>
-        <span style="color:${chg>0?'var(--green)':chg<0?'var(--red)':'var(--muted)'}">
-          ${idx.price!=null?'$'+fmt(idx.price,2):'—'}
-          ${chg!=null?`<br><small>${chg>0?'+':''}${(chg*100??chg).toFixed(2)}%</small>`:''}
-        </span></div>`;
-    });
-  }
-  html += `</div>`;
-
-  // Events
-  if(events.length){
-    html+=`<div style="margin-top:1rem;"><div style="font-size:.78rem;font-weight:700;color:var(--amber);margin-bottom:.5rem;">📅 Market Events</div>`;
-    html+=`<table class="rpt-tbl"><thead><tr><th>Date</th><th>Event</th><th>Impact</th></tr></thead><tbody>`;
-    events.slice(0,8).forEach(e=>{
-      html+=`<tr><td>${e.date||'—'}</td><td>${e.event||e.name||'—'}</td><td>${e.impact||'—'}</td></tr>`;
-    });
-    html+=`</tbody></table></div>`;
+  if(commentary){
+    html += '<div style="background:var(--card);border-left:3px solid var(--accent);padding:.6rem .9rem;border-radius:4px;font-size:.8rem;color:var(--muted);margin-bottom:1rem;">' + commentary + '</div>';
   }
 
-  // Notes
+  if(worldEvents.length){
+    html += '<div style="font-size:.78rem;font-weight:700;color:var(--amber);margin-bottom:.5rem;margin-top:.5rem;">&#9889; Market-Moving Events</div>' +
+      '<table class="rpt-tbl"><thead><tr><th>Category</th><th>Event</th><th>Impact</th><th>Action</th></tr></thead><tbody>';
+    worldEvents.forEach(function(e){
+      var impColor = (e.impact||'').includes('BULL') ? 'var(--green)' : (e.impact||'').includes('BEAR') ? 'var(--red)' : 'var(--amber)';
+      html += '<tr>' +
+        '<td style="font-size:.72rem;color:var(--muted)">' + (e.category||'—') + '</td>' +
+        '<td><strong>' + (e.event||'—') + '</strong></td>' +
+        '<td style="color:' + impColor + ';font-weight:700;font-size:.75rem">' + (e.impact||'—') + '</td>' +
+        '<td style="font-size:.72rem;color:var(--muted);max-width:200px">' + ((e.action||'').substring(0,80)) + ((e.action||'').length>80?'…':'') + '</td>' +
+      '</tr>';
+    });
+    html += '</tbody></table>';
+  }
+
   if(notes.length){
-    html+=`<div style="margin-top:1rem;"><div style="font-size:.78rem;font-weight:700;color:var(--muted);margin-bottom:.5rem;">📝 Notes</div>`;
-    notes.slice(0,5).forEach(n=>{
-      html+=`<div style="font-size:.78rem;color:var(--muted);padding:.3rem 0;border-bottom:1px solid var(--border)">${n.text||n||''}</div>`;
+    html += '<div style="margin-top:.75rem;"><div style="font-size:.78rem;font-weight:700;color:var(--muted);margin-bottom:.35rem;">&#128221; Notes</div>';
+    notes.forEach(function(n){
+      html += '<div style="font-size:.76rem;color:var(--muted);padding:.25rem 0;border-bottom:1px solid var(--border)">' + n + '</div>';
     });
-    html+=`</div>`;
+    html += '</div>';
   }
 
-  // Top buy/sell signals
-  const byGroup = market.by_group || {};
-  const allSignals = Object.values(byGroup).flat();
-  const topBuy  = allSignals.filter(s=>s.signal==='BUY'||s.direction?.includes('UP')).slice(0,5);
-  const topSell = allSignals.filter(s=>s.signal==='SELL'||s.direction?.includes('DOWN')).slice(0,5);
+  var byGroup = market.by_group || {};
+  var allSignals = [].concat.apply([], Object.values(byGroup));
+  var strongSig = market.strong_signals || [];
+  var allAssets = strongSig.length ? strongSig : allSignals;
+  var topBuy  = allAssets.filter(function(s){ return (s.signal||'').toUpperCase().includes('BUY');  }).slice(0,6);
+  var topSell = allAssets.filter(function(s){ return (s.signal||'').toUpperCase().includes('SELL'); }).slice(0,6);
 
-  if(topBuy.length||topSell.length){
-    html+=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:1rem;">`;
+  if(topBuy.length || topSell.length){
+    html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:1rem;">';
     if(topBuy.length){
-      html+=`<div><div style="font-size:.78rem;font-weight:700;color:var(--green);margin-bottom:.4rem;">▲ Top Buy Signals</div>
-        <table class="rpt-tbl"><thead><tr><th>Symbol</th><th>P(Up)</th></tr></thead><tbody>`;
-      topBuy.forEach(s=>{ html+=`<tr><td>${s.symbol}</td><td>${s.prob_up!=null?(s.prob_up*100).toFixed(0)+'%':'—'}</td></tr>`; });
-      html+=`</tbody></table></div>`;
+      html += '<div><div style="font-size:.78rem;font-weight:700;color:var(--green);margin-bottom:.4rem;">&#9650; Top Buy Signals</div>' +
+        '<table class="rpt-tbl"><thead><tr><th>Symbol</th><th>Signal</th><th>P(Up)</th></tr></thead><tbody>';
+      topBuy.forEach(function(s){
+        html += '<tr><td><strong>' + (s.symbol||s.label||'—') + '</strong></td><td>' + dirChip(s.signal) + '</td>' +
+          '<td style="color:var(--green)">' + (s.prob_up!=null?(s.prob_up*100).toFixed(0)+'%':'—') + '</td></tr>';
+      });
+      html += '</tbody></table></div>';
     }
     if(topSell.length){
-      html+=`<div><div style="font-size:.78rem;font-weight:700;color:var(--red);margin-bottom:.4rem;">▼ Top Sell Signals</div>
-        <table class="rpt-tbl"><thead><tr><th>Symbol</th><th>P(Up)</th></tr></thead><tbody>`;
-      topSell.forEach(s=>{ html+=`<tr><td>${s.symbol}</td><td>${s.prob_up!=null?(s.prob_up*100).toFixed(0)+'%':'—'}</td></tr>`; });
-      html+=`</tbody></table></div>`;
+      html += '<div><div style="font-size:.78rem;font-weight:700;color:var(--red);margin-bottom:.4rem;">&#9660; Top Sell Signals</div>' +
+        '<table class="rpt-tbl"><thead><tr><th>Symbol</th><th>Signal</th><th>P(Up)</th></tr></thead><tbody>';
+      topSell.forEach(function(s){
+        html += '<tr><td><strong>' + (s.symbol||s.label||'—') + '</strong></td><td>' + dirChip(s.signal) + '</td>' +
+          '<td style="color:var(--red)">' + (s.prob_up!=null?(s.prob_up*100).toFixed(0)+'%':'—') + '</td></tr>';
+      });
+      html += '</tbody></table></div>';
     }
-    html+=`</div>`;
+    html += '</div>';
   }
 
   el.innerHTML = html;
