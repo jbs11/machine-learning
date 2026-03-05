@@ -474,7 +474,88 @@
     .cone-tb-btn:hover { color: var(--accent); border-color: var(--accent); }
 
     /* ── LightweightCharts forecast cards — make taller for candle readability ── */
-    .forecast-chart { height: 210px; position: relative; }
+    .forecast-chart { height: 220px; position: relative; }
+
+    /* ── GEX level strip ── */
+    .gex-level-strip {
+      display: flex; gap: .35rem; flex-wrap: wrap; align-items: center;
+      padding: .38rem .85rem; border-top: 1px solid var(--border);
+      background: rgba(0,0,0,.14); min-height: 32px;
+    }
+    .gex-lv {
+      font-size: .66rem; font-weight: 700; padding: .14rem .44rem;
+      border-radius: 3px; display: inline-flex; align-items: center; gap: .26rem;
+      white-space: nowrap; cursor: help;
+    }
+    .gex-lv-bar { width: 14px; height: 2px; border-radius: 1px; flex-shrink: 0; }
+    .gex-lv-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+    .gex-lv.call-wall  { background:rgba(74,222,128,.1); color:#4ade80; border:1px solid rgba(74,222,128,.35); }
+    .gex-lv.put-wall   { background:rgba(248,113,113,.1);color:#f87171; border:1px solid rgba(248,113,113,.35); }
+    .gex-lv.flip-lvl   { background:rgba(251,191,36,.1); color:#fbbf24; border:1px solid rgba(251,191,36,.35); }
+    .gex-lv.spot-lvl   { background:rgba(34,211,238,.1); color:#22d3ee; border:1px solid rgba(34,211,238,.35); }
+    .gex-lv.pcr-lvl    { background:rgba(167,139,250,.1);color:#a78bfa; border:1px solid rgba(167,139,250,.35); }
+
+    /* ── Per-card chart guide ── */
+    .fc-guide-toggle {
+      padding: .42rem .9rem; border-top: 1px solid var(--border);
+      font-size: .72rem; font-weight: 700; color: var(--muted);
+      cursor: pointer; background: rgba(0,0,0,.1); user-select: none; transition: color .15s;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .fc-guide-toggle:hover { color: var(--accent); }
+    .fc-guide-panel { display: none; border-top: 1px solid var(--border);
+      padding: .85rem 1rem; background: rgba(0,0,0,.1); }
+    .fc-guide-panel.open { display: block; }
+    .fc-guide-section { margin-bottom: .6rem; font-size: .75rem; line-height: 1.7; color: var(--muted); }
+    .fc-guide-section:last-child { margin-bottom: 0; }
+    .fc-guide-section strong { color: var(--text); }
+    .fc-guide-label {
+      font-size: .63rem; font-weight: 800; text-transform: uppercase;
+      letter-spacing: .09em; color: var(--accent); margin-bottom: .18rem;
+    }
+    .fc-guide-level-row { display: flex; align-items: flex-start; gap: .5rem; margin: .3rem 0; }
+    .fc-guide-level-swatch { width: 22px; height: 3px; border-radius: 2px; flex-shrink: 0; margin-top: .5rem; }
+
+    /* ── Chart Guide section ── */
+    .chart-guide-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
+      gap: 1.2rem; margin-bottom: 1.5rem;
+    }
+    @media (max-width: 520px) { .chart-guide-grid { grid-template-columns: 1fr; } }
+    .guide-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; overflow: hidden;
+    }
+    .guide-card-header {
+      padding: .8rem 1.1rem; border-bottom: 1px solid var(--border);
+      font-size: .9rem; font-weight: 900;
+      display: flex; align-items: center; gap: .6rem;
+    }
+    .guide-card-body {
+      padding: .9rem 1.1rem; font-size: .77rem; line-height: 1.74; color: var(--muted);
+    }
+    .guide-card-body strong { color: var(--text); }
+    .guide-section { margin-bottom: .75rem; }
+    .guide-section:last-child { margin-bottom: 0; }
+    .guide-label {
+      font-size: .64rem; font-weight: 800; text-transform: uppercase;
+      letter-spacing: .09em; color: var(--accent); margin-bottom: .2rem;
+    }
+    .gex-ref-tbl { width: 100%; border-collapse: collapse; font-size: .75rem; margin-top: .4rem; }
+    .gex-ref-tbl th {
+      text-align: left; padding: .34rem .7rem; font-size: .64rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .07em; color: var(--muted);
+      border-bottom: 1px solid var(--border);
+    }
+    .gex-ref-tbl td { padding: .3rem .7rem; border-bottom: 1px solid rgba(255,255,255,.04); vertical-align: top; }
+    .gex-ref-tbl tr:last-child td { border-bottom: none; }
+    .gex-ref-swatch { display: inline-block; width: 18px; height: 3px; border-radius: 1px; vertical-align: middle; margin-right: .3rem; }
+    .trading-step { display: flex; gap: .6rem; margin: .35rem 0; }
+    .trading-step-num {
+      width: 20px; height: 20px; border-radius: 50%; background: rgba(34,211,238,.15);
+      color: var(--accent); font-size: .68rem; font-weight: 900; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center; margin-top: .1rem;
+    }
   </style>
   <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
 </head>
@@ -663,6 +744,10 @@
   <!-- ── Forecast Analysis & Rationale ─────────────────────────────────────── -->
   <div class="section-title">📝 Forecast Analysis &amp; Rationale</div>
   <div class="fcast-narr-grid" id="fcast-narr-grid"></div>
+
+  <!-- ── Chart Guide & GEX Variables Reference ──────────────────────────────── -->
+  <div class="section-title">📖 Chart Guide &amp; GEX Variables Reference</div>
+  <div class="chart-guide-grid" id="chart-guide-grid"></div>
 
   <!-- Loading state -->
   <div id="loading-overlay">
@@ -1137,6 +1222,9 @@ function forecastCardHTML(sym) {
       </div>
       <div class="forecast-tf-bar">${tfBtns}</div>
       <div class="forecast-chart" id="fc-chart-${id}"></div>
+      <div class="gex-level-strip" id="gex-strip-${id}">
+        <span style="font-size:.66rem;color:var(--muted);font-style:italic;"><span class="spinner" style="width:10px;height:10px;border-width:2px;margin-right:.3rem;"></span>GEX levels loading…</span>
+      </div>
       <table class="forecast-table">
         <thead><tr>
           <th>Horizon</th><th>Signal</th><th>P(UP)</th>
@@ -1148,6 +1236,12 @@ function forecastCardHTML(sym) {
           </td></tr>
         </tbody>
       </table>
+      <div class="fc-guide-toggle" onclick="toggleFcGuide('${id}')">
+        <span>📚 How this chart works &amp; GEX level guide</span><span>▾</span>
+      </div>
+      <div class="fc-guide-panel" id="fc-guide-${id}">
+        ${fcGuideContent(sym)}
+      </div>
     </div>`;
 }
 
@@ -1206,6 +1300,125 @@ function buildForecastChart(sym, candles) {
   cs.setData(candles);
   chart.timeScale().fitContent();
   fCharts[sym] = { chart, cs };
+}
+
+// ── Per-card guide content ─────────────────────────────────────────────────────
+function fcGuideContent(sym) {
+  const isFutures = sym.includes('=F');
+  const assetType = sym === 'GC=F' ? 'Gold Futures' : isFutures ? 'Index Futures' : 'ETF';
+  return `
+    <div class="fc-guide-section">
+      <div class="fc-guide-label">What This Chart Shows</div>
+      A <strong>multi-timeframe OHLC candlestick chart</strong> for <strong>${sym}</strong> (${assetType}) driven by the
+      ML ensemble model. Each candle = one bar at the selected timeframe (default 1H). Key
+      <strong>Gamma Exposure (GEX) levels</strong> from the live options chain are overlaid as horizontal
+      reference lines — the most important structure in options-driven markets.
+    </div>
+    <div class="fc-guide-section">
+      <div class="fc-guide-label">GEX Level Lines on This Chart</div>
+      <div class="fc-guide-level-row">
+        <div class="fc-guide-level-swatch" style="background:#4ade80;border-top:2px dashed #4ade80;"></div>
+        <div><strong style="color:#4ade80;">Call Wall (green dashed)</strong> — Strike with the largest
+        call open interest × gamma. Dealers are <em>short gamma</em> here — a breakout above triggers dealer
+        delta buying that <strong>amplifies the upside move</strong>. Acts as a magnetic price target and resistance ceiling.</div>
+      </div>
+      <div class="fc-guide-level-row">
+        <div class="fc-guide-level-swatch" style="background:#f87171;border-top:2px dashed #f87171;"></div>
+        <div><strong style="color:#f87171;">Put Wall (red dashed)</strong> — Largest put OI × gamma strike.
+        Dealers hold <em>long gamma</em> here — as price falls toward it they BUY shares to delta hedge,
+        creating a <strong>dynamic support floor</strong>. A break below triggers short-gamma cascade selling.</div>
+      </div>
+      <div class="fc-guide-level-row">
+        <div class="fc-guide-level-swatch" style="background:#fbbf24;border-top:2px dashed #fbbf24;"></div>
+        <div><strong style="color:#fbbf24;">Gamma Flip / Zero Gamma (amber dashed)</strong> — Where net
+        dealer gamma crosses zero. <strong>Above flip</strong> = Long Gamma regime (dealers stabilize: buy
+        dips, sell rips). <strong>Below flip</strong> = Short Gamma (dealers amplify: sell dips, buy rips —
+        momentum/cascade risk). This is the <strong>single most important GEX level</strong> for intraday direction.</div>
+      </div>
+      <div class="fc-guide-level-row">
+        <div class="fc-guide-level-swatch" style="background:#22d3ee;border-top:2px dotted #22d3ee;"></div>
+        <div><strong style="color:#22d3ee;">Spot Price (cyan dotted)</strong> — Current market price from
+        the live options chain snapshot, showing where spot sits relative to the GEX structure.</div>
+      </div>
+    </div>
+    <div class="fc-guide-section">
+      <div class="fc-guide-label">ML Forecast Table (1D / 1W / 1M)</div>
+      <strong>Signal</strong>: BUY/SELL/HOLD direction from the ensemble vote.
+      <strong>P(UP)</strong>: probability the horizon closes higher — above 60% is significant, above 70% is high-conviction.
+      <strong>Magnitude</strong>: expected percentage move (scaled by √5 / √21 for weekly/monthly).
+      <strong>Target</strong>: predicted close price. Use in combination with GEX walls to set realistic exits.
+    </div>
+    <div class="fc-guide-section">
+      <div class="fc-guide-label">How To Trade With This Chart</div>
+      <strong>Step 1</strong> — Check regime: is price above or below the Gamma Flip?<br>
+      <strong>Step 2</strong> — Define the range: Put Wall = support floor, Call Wall = resistance ceiling.<br>
+      <strong>Step 3</strong> — Align ML signal with regime: high P(UP) + Long Gamma + price above Flip = strong BUY setup.<br>
+      <strong>Step 4</strong> — Use timeframe switcher: 1M/5M for entries, 1H/4H for trend confirmation, 1D for swing direction.<br>
+      <strong>Step 5</strong> — Set exits: target Call Wall for longs; stop below Flip (aggressive) or Put Wall (conservative).
+    </div>`;
+}
+
+function toggleFcGuide(id) {
+  const panel = document.getElementById(`fc-guide-${id}`);
+  const toggle = panel?.previousElementSibling;
+  if (!panel) return;
+  const isOpen = panel.classList.toggle('open');
+  if (toggle) {
+    const arr = toggle.querySelector('span:last-child');
+    if (arr) arr.textContent = isOpen ? '▴' : '▾';
+  }
+}
+
+// ── GEX overlay functions ──────────────────────────────────────────────────────
+function addGEXLevelLines(sym, g) {
+  const fc = fCharts[sym];
+  if (!fc?.cs || !g) return;
+
+  // Clear old lines
+  if (fc.gexLines) fc.gexLines.forEach(l => { try { fc.cs.removePriceLine(l); } catch(_) {} });
+  fc.gexLines = [];
+
+  const LW = LightweightCharts;
+  const levels = [
+    { price: g.gamma_wall,  color: '#4ade80', title: '▲ Call Wall', style: LW.LineStyle?.Dashed   ?? 1 },
+    { price: g.put_wall,    color: '#f87171', title: '▼ Put Wall',  style: LW.LineStyle?.Dashed   ?? 1 },
+    { price: g.flip_level,  color: '#fbbf24', title: '⊕ Flip',      style: LW.LineStyle?.Dashed   ?? 1 },
+    { price: g.spot,        color: '#22d3ee', title: '● Spot',       style: LW.LineStyle?.Dotted   ?? 3 },
+  ];
+
+  levels.forEach(l => {
+    if (!l.price || l.price <= 0) return;
+    try {
+      fc.gexLines.push(fc.cs.createPriceLine({
+        price: l.price, color: l.color, lineWidth: 1,
+        lineStyle: l.style, axisLabelVisible: true, title: l.title,
+      }));
+    } catch(e) { console.warn(`[GEX priceLine ${sym}]:`, e.message); }
+  });
+}
+
+function renderGEXLevelStrip(sym, g) {
+  const id = sym.replace(/[^a-z0-9]/gi, '_');
+  const el = document.getElementById(`gex-strip-${id}`);
+  if (!el || !g) return;
+
+  const regColor  = (g.regime||'').includes('Long') ? '#4ade80' : '#f87171';
+  const pcrColor  = (g.pcr||1) > 1.3 ? '#f87171' : (g.pcr||1) < 0.7 ? '#4ade80' : '#fbbf24';
+  const gexColor  = (g.total_gex_m||0) >= 0 ? '#4ade80' : '#f87171';
+  const gexSign   = (g.total_gex_m||0) >= 0 ? '+' : '';
+
+  const lvl = (cls, bar, label, title) =>
+    `<span class="gex-lv ${cls}" title="${title}"><span class="gex-lv-bar" style="background:${bar};"></span>${label}</span>`;
+
+  el.innerHTML = [
+    g.spot       && lvl('spot-lvl',  '#22d3ee', `Spot $${fmtPrice(g.spot)}`,         'Current market price from options chain'),
+    g.gamma_wall && lvl('call-wall', '#4ade80', `Call Wall $${fmtPrice(g.gamma_wall)}`, 'Largest call gamma strike — resistance ceiling'),
+    g.put_wall   && lvl('put-wall',  '#f87171', `Put Wall $${fmtPrice(g.put_wall)}`,   'Largest put gamma strike — support floor'),
+    g.flip_level && lvl('flip-lvl',  '#fbbf24', `Flip $${fmtPrice(g.flip_level)}`,     'Zero gamma level — regime divider'),
+    g.regime     && `<span class="gex-lv" style="background:${regColor}18;color:${regColor};border:1px solid ${regColor}40;" title="GEX Regime: Long=stabilizing, Short=amplifying">${g.regime.includes('Long') ? '↔' : '↕'} ${g.regime}</span>`,
+    g.pcr        && `<span class="gex-lv pcr-lvl" title="Put/Call Ratio — >1.3 bearish sentiment; <0.7 bullish">PCR ${g.pcr.toFixed(2)}</span>`,
+    g.total_gex_m != null && `<span class="gex-lv" style="background:${gexColor}15;color:${gexColor};border:1px solid ${gexColor}35;" title="Net Gamma Exposure ($M) — positive=long gamma stabilizing">GEX ${gexSign}$${Math.abs(g.total_gex_m).toFixed(1)}M</span>`,
+  ].filter(Boolean).join('');
 }
 
 function renderForecastRows(sym, forecasts) {
@@ -1277,38 +1490,56 @@ async function loadAllForecasts() {
   grid.style.display = 'grid';
   document.getElementById('forecast-loading').style.display = 'none';
 
-  // Initialize TF state to 1H for each symbol
   FORECAST_SYMBOLS.forEach(s => { fTF[s] = '1h'; });
 
   const summaries = [];
 
-  await Promise.all(FORECAST_SYMBOLS.map(async sym => {
-    // Fetch 1H candles for the chart display and forecast rows in parallel
-    const [candleResp, forecastData] = await Promise.all([
-      fetch(`${API}/api/candles/${encodeURIComponent(sym)}?interval=1h`,
-            { signal: AbortSignal.timeout(20000) }).then(r => r.ok ? r.json() : null).catch(() => null),
-      loadForecast(sym)
-    ]);
+  // Fetch GEX data in parallel with candles + forecasts
+  const [, gexResp] = await Promise.all([
+    Promise.all(FORECAST_SYMBOLS.map(async sym => {
+      const [candleResp, forecastData] = await Promise.all([
+        fetch(`${API}/api/candles/${encodeURIComponent(sym)}?interval=1h`,
+              { signal: AbortSignal.timeout(20000) }).then(r => r.ok ? r.json() : null).catch(() => null),
+        loadForecast(sym)
+      ]);
 
-    const id = sym.replace(/[^a-z0-9]/gi, '_');
+      const id = sym.replace(/[^a-z0-9]/gi, '_');
 
-    // Build chart from 1H candles
-    if (candleResp && Array.isArray(candleResp) && candleResp.length) {
-      const seen = new Set();
-      const clean = candleResp
-        .filter(c => { if (seen.has(c.time)) return false; seen.add(c.time); return true; })
-        .sort((a, b) => a.time - b.time);
-      buildForecastChart(sym, clean);
+      if (candleResp && Array.isArray(candleResp) && candleResp.length) {
+        const seen = new Set();
+        const clean = candleResp
+          .filter(c => { if (seen.has(c.time)) return false; seen.add(c.time); return true; })
+          .sort((a, b) => a.time - b.time);
+        buildForecastChart(sym, clean);
+      }
+
+      if (!forecastData) {
+        const el = document.getElementById(`fc-rows-${id}`);
+        if (el) el.innerHTML = '<tr><td colspan="5" style="color:#f87171;padding:.8rem;">Failed to load forecast</td></tr>';
+        return;
+      }
+      renderForecastRows(sym, forecastData.forecasts || {});
+      summaries.push({ sym, forecasts: forecastData.forecasts || {} });
+    })),
+
+    fetch(`${API}/api/gamma-exposure`, { signal: AbortSignal.timeout(15000) })
+      .then(r => r.ok ? r.json() : null).catch(() => null),
+  ]);
+
+  // Apply GEX level lines + strips to each forecast chart
+  const gexAssets = gexResp?.assets || (Array.isArray(gexResp) ? gexResp : null) || [];
+  FORECAST_SYMBOLS.forEach(sym => {
+    // Map GEX by symbol — ES=F may proxy as ES_F internally
+    const g = gexAssets.find(a => a.symbol === sym || a.symbol === sym.replace('=','_')) || null;
+    if (g) {
+      addGEXLevelLines(sym, g);
+      renderGEXLevelStrip(sym, g);
+    } else {
+      const id = sym.replace(/[^a-z0-9]/gi, '_');
+      const strip = document.getElementById(`gex-strip-${id}`);
+      if (strip) strip.innerHTML = '<span style="font-size:.66rem;color:var(--muted);">GEX data unavailable for this symbol</span>';
     }
-
-    if (!forecastData) {
-      const el = document.getElementById(`fc-rows-${id}`);
-      if (el) el.innerHTML = '<tr><td colspan="5" style="color:#f87171;padding:.8rem;">Failed to load forecast</td></tr>';
-      return;
-    }
-    renderForecastRows(sym, forecastData.forecasts || {});
-    summaries.push({ sym, forecasts: forecastData.forecasts || {} });
-  }));
+  });
 
   const summaryEl = document.getElementById('forecast-summaries');
   if (summaries.length) {
@@ -1341,7 +1572,7 @@ function redrawCone(sym) {
   if (!st) return;
   const cv = document.getElementById(`cone-${sym}`);
   if (!cv) return;
-  drawProbCone(cv, st.candles, st.forecasts, sym, st.vp, st.hoverX, st.hoverY);
+  drawProbCone(cv, st.candles, st.forecasts, sym, st.vp, st.hoverX, st.hoverY, st.gex);
 }
 
 function resetConeView(sym) {
@@ -1423,7 +1654,7 @@ function niceStep(range) {
 }
 
 // ── Probability Cone chart (OHLC + cone + crosshair + full interactivity) ────
-function drawProbCone(cv, candles, forecasts, sym, vp, hoverX, hoverY) {
+function drawProbCone(cv, candles, forecasts, sym, vp, hoverX, hoverY, gexLevels) {
   if (!cv || !candles || !candles.length || !forecasts) return;
 
   const VP = vp || { barOffset: 0, barsVisible: 38, yZoom: 1.0, yCenter: 0 };
@@ -1568,6 +1799,39 @@ function drawProbCone(cv, candles, forecasts, sym, vp, hoverX, hoverY) {
     }
     ctx.fillRect(x - barW/2, bTop, barW, bH);
   });
+
+  // ── GEX Level Overlay Lines ───────────────────────────────────────────────
+  if (gexLevels) {
+    const gLvls = [
+      { price: gexLevels.gamma_wall,  color: '#4ade80', label: 'Call Wall', dash: [4,3] },
+      { price: gexLevels.put_wall,    color: '#f87171', label: 'Put Wall',  dash: [4,3] },
+      { price: gexLevels.flip_level,  color: '#fbbf24', label: 'Flip',      dash: [5,2] },
+      { price: gexLevels.spot,        color: '#22d3ee', label: 'Spot',      dash: [2,3] },
+    ].filter(l => l.price > 0 && l.price >= minP * 0.98 && l.price <= maxP * 1.02);
+
+    gLvls.forEach(l => {
+      const y = yOf(l.price);
+      if (y < pad.t - 2 || y > H - pad.b + 2) return;
+      // Dashed horizontal line
+      ctx.setLineDash(l.dash);
+      ctx.strokeStyle = l.color;
+      ctx.lineWidth = 1.2;
+      ctx.globalAlpha = 0.78;
+      ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(W - pad.r, y); ctx.stroke();
+      ctx.setLineDash([]); ctx.globalAlpha = 1;
+      // Floating label chip at right of chart
+      const lText = `${l.label}  $${l.price >= 1000 ? l.price.toFixed(0) : l.price.toFixed(1)}`;
+      const lFS   = Math.round(7.5 * Math.min(W / 420, 1));
+      ctx.font = `bold ${lFS}px sans-serif`;
+      const lw = ctx.measureText(lText).width + 10;
+      const lx = W - pad.r - lw - 2;
+      ctx.fillStyle = 'rgba(7,13,24,.9)';
+      ctx.fillRect(lx, y - 9, lw, 17);
+      ctx.fillStyle = l.color;
+      ctx.textAlign = 'left';
+      ctx.fillText(lText, lx + 5, y + 4);
+    });
+  }
 
   // Forecast path (dashed)
   ctx.beginPath();
@@ -1998,10 +2262,11 @@ async function loadExtendedForecast(summaries, marketData) {
 
       // Store state for interactivity
       _coneState[sym] = {
-        candles:  coneCandles[sym] || [],
+        candles:   coneCandles[sym] || [],
         forecasts: fc.forecasts,
-        vp:  { barOffset: 0, barsVisible: 38, yZoom: 1.0, yCenter: 0 },
-        hoverX: null, hoverY: null,
+        gex:       null,   // populated after GEX fetch below
+        vp:        { barOffset: 0, barsVisible: 38, yZoom: 1.0, yCenter: 0 },
+        hoverX:    null, hoverY: null,
       };
 
       requestAnimationFrame(() => {
@@ -2030,11 +2295,202 @@ async function loadExtendedForecast(summaries, marketData) {
     flowsData = fR?.assets  || (Array.isArray(fR)  ? fR  : null);
   } catch(e) { console.warn('[ext forecast GEX/flows]:', e.message); }
 
+  // Update cone charts with GEX overlay data
+  if (gexData) {
+    coneSyms.forEach(sym => {
+      const g = gexData.find(a => a.symbol === sym) || null;
+      if (g && _coneState[sym]) {
+        _coneState[sym].gex = g;
+        redrawCone(sym);
+      }
+    });
+  }
+
   // 4. Render all sections
   renderForecastOverviewBanner(summaries);
   renderStockForecastTable(marketData);
   renderOptionsForecastCards(gexData, flowsData, marketData);
   renderForecastNarratives(marketData, summaries);
+  renderChartGuide();
+}
+
+// ── Chart Guide & GEX Reference ───────────────────────────────────────────────
+function renderChartGuide() {
+  const el = document.getElementById('chart-guide-grid');
+  if (!el || el.dataset.rendered) return;
+  el.dataset.rendered = '1';
+
+  const cards = [
+    {
+      icon: '🕯️', title: 'Forecast Candlestick Charts (SPY / QQQ / ES=F / GC=F)',
+      color: '#38bdf8',
+      body: `
+        <div class="guide-section">
+          <div class="guide-label">What It Shows</div>
+          Full OHLC candlestick chart for each benchmark symbol, fetched live from the server at the
+          selected timeframe (1M → 1D). <strong>Green candles</strong> = close ≥ open (bullish bar).
+          <strong>Red candles</strong> = close &lt; open (bearish bar). Wicks show intraday high/low range.
+          Overlaid GEX level lines show where options dealers are positioned relative to price.
+        </div>
+        <div class="guide-section">
+          <div class="guide-label">Interactive Controls</div>
+          <strong>Left-drag</strong> → pan the time axis (scroll through history).
+          <strong>Mouse wheel</strong> → zoom in/out on the time axis.
+          <strong>Drag price axis</strong> (right edge) → stretch/compress the price scale.
+          <strong>Drag time axis</strong> (bottom) → stretch/compress bar spacing.
+          Click any <strong>timeframe button</strong> (1M/5M/15M/30M/1H/4H/1D) to switch resolution.
+          The chart retains your zoom/pan when switching timeframes.
+        </div>
+        <div class="guide-section">
+          <div class="guide-label">How to Use for Trading</div>
+          <div class="trading-step"><div class="trading-step-num">1</div><div>Switch to <strong>1D or 4H</strong> to assess the macro trend direction — confirm with the ML 1W/1M forecast signal.</div></div>
+          <div class="trading-step"><div class="trading-step-num">2</div><div>Zoom into <strong>1H or 15M</strong> to identify precise entry timing relative to GEX levels.</div></div>
+          <div class="trading-step"><div class="trading-step-num">3</div><div>A close <strong>above the Gamma Flip</strong> on the 1H chart in Long Gamma regime = buy pullbacks to the flip level.</div></div>
+          <div class="trading-step"><div class="trading-step-num">4</div><div>A close <strong>below the Flip</strong> = Short Gamma regime — expect momentum; don't fade the move.</div></div>
+          <div class="trading-step"><div class="trading-step-num">5</div><div>Use <strong>Call Wall as profit target</strong> for longs; <strong>Put Wall as stop zone</strong> for longs.</div></div>
+        </div>`
+    },
+    {
+      icon: '📐', title: 'Probability Cone Charts (SPY / QQQ)',
+      color: '#a78bfa',
+      body: `
+        <div class="guide-section">
+          <div class="guide-label">What It Shows</div>
+          A <strong>forward-looking probability fan chart</strong> combining real OHLC candlestick history
+          with ML-projected price ranges. The cone widens over time to reflect increasing uncertainty.
+          <strong>1σ zone</strong> (inner shade, ~68% probability) — price stays inside this range if conditions persist.
+          <strong>2σ zone</strong> (outer shade, ~95% probability) — extreme move scenario.
+          The <strong>center dashed line</strong> is the ML directional forecast path.
+          GEX levels are overlaid to show how dealer positioning intersects with the probability zones.
+        </div>
+        <div class="guide-section">
+          <div class="guide-label">Reading the Cone</div>
+          If the <strong>Call Wall sits inside the 1σ upper band</strong> → it's a realistic near-term target.
+          If the <strong>Put Wall is inside the 1σ lower band</strong> → dealers will defend that level as natural support.
+          If the <strong>Gamma Flip is inside the cone's central zone</strong> → regime change is possible in the forecast window;
+          watch for a volatility spike as gamma flips sign.
+          A cone that <strong>skews above the Flip level</strong> = ML projects continued Long Gamma regime → favorable for trend strategies.
+        </div>
+        <div class="guide-section">
+          <div class="guide-label">Interactive Controls</div>
+          <strong>Left-drag</strong> → pan left/right through candle history.
+          <strong>Scroll wheel</strong> → zoom X-axis (widen/narrow bars visible).
+          <strong>Shift + scroll</strong> → zoom Y-axis (price range).
+          <strong>Right-drag</strong> → pan Y-axis (move price center).
+          <strong>Double-click / Reset button</strong> → return to default view.
+          Hover for live OHLC crosshair showing O/H/L/C of the hovered candle.
+        </div>
+        <div class="guide-section">
+          <div class="guide-label">Volatility Estimation Method</div>
+          Daily vol (σ) is computed from the last 38 sessions of log-returns:
+          <code style="background:rgba(255,255,255,.07);padding:.1rem .4rem;border-radius:3px;font-size:.73rem;">
+            σ = √[Σ(ln(Ct/Ct-1) - μ)² / N]
+          </code>. The cone bands are ±1σ and ±2σ scaled by √t at each forecast step (t=1, 5, 21 days).
+        </div>`
+    },
+    {
+      icon: '⚡', title: 'GEX Variables Reference — Full Glossary',
+      color: '#fbbf24',
+      body: `
+        <div class="guide-section">
+          <div class="guide-label">What Is Gamma Exposure (GEX)?</div>
+          GEX measures the total dollar value of shares dealers must buy or sell to remain delta-neutral
+          as price moves. It's computed as: <code style="background:rgba(255,255,255,.07);padding:.1rem .4rem;border-radius:3px;font-size:.73rem;">GEX(K) = Γ(K) × OI(K) × Spot × 100 × (−1 if put)</code>.
+          Positive GEX = dealers long gamma (stabilizing). Negative GEX = dealers short gamma (amplifying).
+        </div>
+        <table class="gex-ref-tbl">
+          <thead><tr><th>Variable</th><th>Color</th><th>Meaning &amp; Trading Use</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><strong>Call Wall</strong></td>
+              <td><span class="gex-ref-swatch" style="background:#4ade80;"></span>Green dashed</td>
+              <td>Strike with highest call OI × gamma. Acts as magnetic resistance ceiling. A confirmed breakout above (with volume) can trigger a dealer-driven squeeze as they scramble to buy delta. Target for long positions. Often coincides with round number strikes near ATM.</td>
+            </tr>
+            <tr>
+              <td><strong>Put Wall</strong></td>
+              <td><span class="gex-ref-swatch" style="background:#f87171;"></span>Red dashed</td>
+              <td>Strike with highest put OI × gamma. Dealers buy shares as price falls toward it, creating a natural support floor. A break below removes this support and triggers Short Gamma cascade — sellers amplified by dealer hedging. Use as stop-loss reference for longs.</td>
+            </tr>
+            <tr>
+              <td><strong>Gamma Flip / Zero Gamma</strong></td>
+              <td><span class="gex-ref-swatch" style="background:#fbbf24;"></span>Amber dashed</td>
+              <td>The price where net GEX = 0 — regime divider. Above = Long Gamma (mean-reverting, low realized vol). Below = Short Gamma (trending, high realized vol, cascade risk). The most predictive single level in options-driven markets. Also called the "Vol Trigger" by SpotGamma.</td>
+            </tr>
+            <tr>
+              <td><strong>Spot Price</strong></td>
+              <td><span class="gex-ref-swatch" style="background:#22d3ee;"></span>Cyan dotted</td>
+              <td>Current mid-price from the live options chain snapshot. Used to see exactly where price is relative to all GEX levels at a glance. The gap between Spot and Flip shows how far the regime is from flipping.</td>
+            </tr>
+            <tr>
+              <td><strong>Net GEX ($M)</strong></td>
+              <td>Value in strip</td>
+              <td>Sum of all GEX across all strikes in millions. Positive = aggregate long gamma (dealer stabilizing pressure dominates). Negative = aggregate short gamma (amplifying pressure dominates). Large positive GEX near OPEX tends to pin price. Large negative GEX correlates with VIX spikes.</td>
+            </tr>
+            <tr>
+              <td><strong>PCR (Put/Call Ratio)</strong></td>
+              <td>Purple chip</td>
+              <td>Total put OI ÷ call OI. PCR &gt; 1.3 = heavy put buying = bearish sentiment (contrarian bullish at extremes). PCR &lt; 0.7 = heavy call buying = bullish sentiment (contrarian bearish at extremes). Used to identify sentiment extremes and potential reversals.</td>
+            </tr>
+            <tr>
+              <td><strong>GEX Regime</strong></td>
+              <td>Green/Red badge</td>
+              <td><strong>Long Gamma</strong>: price above flip — dealers absorb volatility, market self-stabilizes. Ideal for: selling premium (iron condors), mean-reversion plays, tight range trading. <strong>Short Gamma</strong>: below flip — dealers amplify moves. Ideal for: momentum strategies, trend following, buying premium before breakouts.</td>
+            </tr>
+          </tbody>
+        </table>`
+    },
+    {
+      icon: '🔬', title: 'Trading With ML Signals + GEX Together',
+      color: '#4ade80',
+      body: `
+        <div class="guide-section">
+          <div class="guide-label">The Combined Edge</div>
+          ML models capture statistical patterns in price, volume, and technical features.
+          GEX captures <em>structural</em> options market positioning that directly causes price movement.
+          Using both together creates a <strong>high-conviction signal framework</strong>:
+          the ML model tells you <em>where</em> price is likely to go; GEX tells you <em>what the market
+          structure will do</em> when it gets there.
+        </div>
+        <div class="guide-section">
+          <div class="guide-label">High-Conviction BUY Setup</div>
+          <div class="trading-step"><div class="trading-step-num">✓</div><div>ML signal = <strong style="color:#4ade80;">BUY</strong> with P(UP) ≥ 65%</div></div>
+          <div class="trading-step"><div class="trading-step-num">✓</div><div>Price is <strong>above the Gamma Flip</strong> (Long Gamma regime)</div></div>
+          <div class="trading-step"><div class="trading-step-num">✓</div><div>Net GEX is <strong>positive</strong> (dealers are long gamma, stabilizing)</div></div>
+          <div class="trading-step"><div class="trading-step-num">✓</div><div>PCR is declining or below 0.8 (call accumulation)</div></div>
+          <div class="trading-step"><div class="trading-step-num">✓</div><div>Call Wall is ≥ 1% above current price (room to run)</div></div>
+          <strong>Action</strong>: Enter long near VWAP or Flip level. Target = Call Wall. Stop = below Flip or Put Wall.
+        </div>
+        <div class="guide-section">
+          <div class="guide-label">High-Conviction SELL / Short Setup</div>
+          <div class="trading-step"><div class="trading-step-num">✓</div><div>ML signal = <strong style="color:#f87171;">SELL</strong> with P(UP) ≤ 35%</div></div>
+          <div class="trading-step"><div class="trading-step-num">✓</div><div>Price has broken <strong>below the Gamma Flip</strong> (Short Gamma regime triggered)</div></div>
+          <div class="trading-step"><div class="trading-step-num">✓</div><div>Net GEX is <strong>negative</strong> (dealers amplify selling)</div></div>
+          <div class="trading-step"><div class="trading-step-num">✓</div><div>PCR is rising sharply above 1.2 (put accumulation)</div></div>
+          <strong>Action</strong>: Enter short on rejection of Flip from below. Target = Put Wall. Stop = reclaim above Flip.
+        </div>
+        <div class="guide-section">
+          <div class="guide-label">Range / Neutral Setup (HOLD Signal)</div>
+          Price is within 0.5% of the Flip level — regime is ambiguous. ML P(UP) is between 40–60%.
+          <strong>Strategy</strong>: Sell premium — sell the Call Wall strike call and Put Wall strike put as a strangle / iron condor.
+          Collect premium as dealers pin price near max OI. Exit if price breaks decisively through either wall.
+        </div>
+        <div class="guide-section">
+          <div class="guide-label">Key Risk Factors</div>
+          • <strong>OPEX risk</strong>: GEX levels lose predictive power as monthly expiry approaches — OI rolls to next month.<br>
+          • <strong>Gap risk</strong>: Large overnight gaps (macro events, earnings) can jump through GEX levels instantly.<br>
+          • <strong>IV crush</strong>: Post-event IV compression reduces GEX magnitude — recalculate levels after high-IV events.<br>
+          • <strong>Model lag</strong>: ML forecasts use 4H candles — intraday 1M/5M moves may differ from the model's direction in the first 1-2 hours.
+        </div>`
+    },
+  ];
+
+  el.innerHTML = cards.map(c => `
+    <div class="guide-card" style="border-top:3px solid ${c.color};">
+      <div class="guide-card-header" style="color:${c.color};">
+        <span>${c.icon}</span><span>${c.title}</span>
+      </div>
+      <div class="guide-card-body">${c.body}</div>
+    </div>`).join('');
 }
 
 // ── Main load / render ────────────────────────────────────────────────────────
