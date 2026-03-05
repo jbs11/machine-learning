@@ -178,6 +178,240 @@
     .sq-shortγ   { background:rgba(248,113,113,.1);color:#fca5a5;border:1px solid rgba(248,113,113,.2); }
 
     @media(max-width:800px) { .os-hero h1 { font-size:1.6rem; } }
+
+    /* ══════════════════════════════════════════════
+       VOLATILITY DASHBOARD
+    ══════════════════════════════════════════════ */
+
+    /* Section wrapper */
+    .vd-section {
+      margin: 2rem 0 3rem;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+      background: var(--card);
+    }
+
+    /* Section header */
+    .vd-header {
+      display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;
+      padding: 1rem 1.3rem .8rem;
+      border-bottom: 1px solid var(--border);
+      background: linear-gradient(135deg, rgba(251,191,36,.06) 0%, transparent 60%);
+    }
+    .vd-title {
+      font-size: 1.05rem; font-weight: 900; color: var(--text); letter-spacing: -.01em;
+      display: flex; align-items: center; gap: .45rem;
+    }
+    .vd-subtitle { font-size: .77rem; color: var(--muted); margin-top: .12rem; }
+    .vd-live-badge {
+      font-size: .63rem; font-weight: 700; letter-spacing: .07em; text-transform: uppercase;
+      padding: .18rem .6rem; border-radius: 99px;
+      background: rgba(74,222,128,.1); border: 1px solid rgba(74,222,128,.25); color: #4ade80;
+    }
+    .vd-refresh-btn {
+      margin-left: auto; background: transparent;
+      border: 1px solid var(--border); color: var(--muted);
+      padding: .3rem .8rem; border-radius: 6px; cursor: pointer;
+      font-size: .78rem; transition: border-color .2s, color .2s;
+    }
+    .vd-refresh-btn:hover { border-color: #fbbf24; color: #fbbf24; }
+
+    /* Stats row */
+    .vd-stats { display: flex; gap: 0; border-bottom: 1px solid var(--border); }
+    .vd-stat {
+      flex: 1; padding: .65rem 1rem; text-align: center;
+      border-right: 1px solid var(--border);
+    }
+    .vd-stat:last-child { border-right: none; }
+    .vd-stat-val { font-size: 1.1rem; font-weight: 900; font-family: 'Consolas', monospace; }
+    .vd-stat-lbl { font-size: .62rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .08em; color: var(--muted); margin-top: .1rem; }
+
+    /* Tab bar */
+    .vd-tab-bar {
+      display: flex; gap: 0;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+    }
+    .vd-tab {
+      padding: .65rem 1.4rem; font-size: .82rem; font-weight: 700;
+      color: var(--muted); cursor: pointer; border-bottom: 3px solid transparent;
+      transition: color .15s, border-color .15s;
+      white-space: nowrap;
+    }
+    .vd-tab:hover { color: var(--text); }
+    .vd-tab.active { color: #fbbf24; border-bottom-color: #fbbf24; }
+
+    /* Asset selector */
+    .vd-asset-bar {
+      display: flex; flex-wrap: wrap; gap: .4rem;
+      padding: .7rem 1rem;
+      border-bottom: 1px solid var(--border);
+      background: rgba(255,255,255,.018);
+    }
+    .vd-asset-btn {
+      font-family: 'Consolas', monospace; font-size: .73rem; font-weight: 700;
+      padding: .25rem .7rem; border-radius: 6px;
+      border: 1px solid var(--border); background: transparent; color: var(--muted);
+      cursor: pointer; transition: all .15s;
+    }
+    .vd-asset-btn:hover { border-color: #fbbf24; color: #fbbf24; }
+    .vd-asset-btn.active { background: rgba(251,191,36,.12); border-color: #fbbf24; color: #fbbf24; }
+
+    /* Tab panels */
+    .vd-panel { display: none; padding: 1rem 1.2rem; }
+    .vd-panel.active { display: block; }
+
+    /* Canvas charts */
+    .vd-canvas-wrap {
+      position: relative;
+      background: #070d18;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+      margin-bottom: .8rem;
+    }
+    .vd-canvas-wrap canvas { display: block; width: 100%; }
+    .vd-canvas-label {
+      font-size: .67rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .1em; color: var(--muted);
+      padding: .45rem .9rem .3rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    /* Fixed Strike Matrix */
+    .vd-matrix-grid { overflow-x: auto; }
+    .vd-matrix-table {
+      border-collapse: separate; border-spacing: 1px;
+      font-size: .7rem; font-family: 'Consolas', monospace;
+      min-width: 600px;
+    }
+    .vd-matrix-table th {
+      background: #0f1729; color: var(--muted); font-weight: 700;
+      padding: .35rem .55rem; text-align: center;
+      font-size: .62rem; white-space: nowrap;
+    }
+    .vd-matrix-table th.row-head { text-align: left; min-width: 80px; }
+    .vd-matrix-cell {
+      padding: .3rem .45rem; text-align: center; border-radius: 3px;
+      font-weight: 700; font-size: .69rem; cursor: default;
+      transition: opacity .2s; white-space: nowrap;
+    }
+    .vd-matrix-cell:hover { opacity: .75; }
+    .vd-matrix-cell.atm-row { outline: 2px solid rgba(34,211,238,.45); outline-offset: -1px; }
+    .vd-matrix-legend {
+      display: flex; gap: 1.2rem; flex-wrap: wrap;
+      padding: .45rem .9rem; font-size: .67rem; color: var(--muted);
+      border-top: 1px solid var(--border);
+    }
+    .vd-matrix-legend span { display: flex; align-items: center; gap: .3rem; }
+    .vd-legend-dot {
+      width: 11px; height: 11px; border-radius: 2px; flex-shrink: 0;
+    }
+
+    /* Term structure & skew canvas */
+    .vd-chart-row { display: grid; grid-template-columns: 1fr; gap: .9rem; }
+
+    /* Skew legend */
+    .vd-skew-legend {
+      display: flex; flex-wrap: wrap; gap: .7rem;
+      padding: .4rem .9rem; border-top: 1px solid var(--border);
+      font-size: .67rem; color: var(--muted);
+    }
+    .vd-skew-legend span { display: flex; align-items: center; gap: .3rem; }
+    .vd-legend-line { width: 22px; height: 2px; flex-shrink: 0; border-radius: 1px; }
+
+    /* Loading / offline */
+    .vd-loading {
+      padding: 3rem; text-align: center; color: var(--muted);
+      font-size: .85rem;
+    }
+    .vd-loading-spinner {
+      width: 28px; height: 28px; border-radius: 50%;
+      border: 3px solid rgba(251,191,36,.2);
+      border-top-color: #fbbf24;
+      animation: spin .8s linear infinite;
+      margin: 0 auto .8rem;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .vd-offline {
+      padding: 1.5rem; background: rgba(248,113,113,.05);
+      border: 1px solid rgba(248,113,113,.2); border-radius: 8px;
+      color: #f87171; font-size: .82rem; text-align: center;
+    }
+
+    /* Metric table */
+    .vd-metric-tbl {
+      width: 100%; border-collapse: collapse;
+      font-size: .75rem; margin-top: .6rem;
+    }
+    .vd-metric-tbl th {
+      color: var(--muted); font-weight: 700; font-size: .63rem;
+      text-transform: uppercase; letter-spacing: .08em;
+      padding: .32rem .6rem; border-bottom: 1px solid var(--border);
+      text-align: right;
+    }
+    .vd-metric-tbl th:first-child { text-align: left; }
+    .vd-metric-tbl td {
+      padding: .3rem .6rem; text-align: right;
+      font-family: 'Consolas', monospace; font-size: .73rem;
+      border-bottom: 1px solid rgba(36,48,88,.4);
+    }
+    .vd-metric-tbl td:first-child { text-align: left; font-family: inherit; font-weight: 700; }
+    .vd-metric-tbl tr:hover td { background: rgba(255,255,255,.02); }
+
+    /* ── Educational Guide ── */
+    .vd-guide { margin-top: 2.5rem; }
+    .vd-guide-title {
+      font-size: .72rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .1em; color: #fbbf24; margin-bottom: 1rem;
+    }
+    .vd-guide-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+      gap: 1rem;
+    }
+    .vd-guide-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; padding: 1.1rem 1.2rem;
+      border-top: 3px solid transparent;
+    }
+    .vd-guide-icon { font-size: 1.4rem; margin-bottom: .45rem; }
+    .vd-guide-head { font-weight: 900; font-size: .92rem; color: var(--text); margin-bottom: .5rem; }
+    .vd-guide-body { font-size: .78rem; color: var(--muted); line-height: 1.7; }
+    .vd-guide-body strong { color: var(--text); }
+    .vd-guide-body .hl-green  { color: #4ade80; font-weight: 700; }
+    .vd-guide-body .hl-red    { color: #f87171; font-weight: 700; }
+    .vd-guide-body .hl-amber  { color: #fbbf24; font-weight: 700; }
+    .vd-guide-body .hl-cyan   { color: #22d3ee; font-weight: 700; }
+    .vd-guide-body .hl-purple { color: #a78bfa; font-weight: 700; }
+
+    .vd-trade-step {
+      display: flex; gap: .55rem; margin: .4rem 0; align-items: flex-start;
+    }
+    .vd-step-num {
+      min-width: 20px; height: 20px; border-radius: 50%;
+      background: rgba(251,191,36,.12); border: 1px solid rgba(251,191,36,.3);
+      color: #fbbf24; font-size: .67rem; font-weight: 900;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; margin-top: .1rem;
+    }
+    .vd-step-txt { font-size: .76rem; color: var(--muted); line-height: 1.55; }
+    .vd-step-txt strong { color: var(--text); }
+
+    .vd-ref-table {
+      width: 100%; border-collapse: collapse; font-size: .73rem; margin-top: .5rem;
+    }
+    .vd-ref-table th {
+      font-size: .62rem; text-transform: uppercase; letter-spacing: .07em;
+      color: var(--muted); font-weight: 700;
+      padding: .28rem .5rem; border-bottom: 1px solid var(--border); text-align: left;
+    }
+    .vd-ref-table td {
+      padding: .28rem .5rem; border-bottom: 1px solid rgba(36,48,88,.35);
+      color: var(--muted); font-size: .72rem; line-height: 1.5;
+    }
+    .vd-ref-table td:first-child { font-weight: 700; font-family: 'Consolas', monospace; color: var(--text); }
   </style>
 </head>
 <body>
@@ -268,6 +502,103 @@
     <a href="options-strategy.html" class="rbtn" style="text-decoration:none;">📈 Strategy</a>
     <a href="gamma-exposure.html" class="rbtn" style="text-decoration:none;">🎯 GEX</a>
   </div>
+
+  <!-- ══════════════════════════════════════════
+       VOLATILITY DASHBOARD
+  ══════════════════════════════════════════ -->
+  <div class="vd-section" id="vd-section">
+
+    <!-- Header -->
+    <div class="vd-header">
+      <div>
+        <div class="vd-title">📊 Volatility Dashboard <span class="vd-live-badge">Live Data</span></div>
+        <div class="vd-subtitle">Fixed Strike IV Matrix · Term Structure · Volatility Skew · Real-time option chain analytics</div>
+      </div>
+      <button class="vd-refresh-btn" onclick="loadVolSurface(true)">↻ Refresh</button>
+    </div>
+
+    <!-- IV Stats strip -->
+    <div class="vd-stats" id="vd-stats">
+      <div class="vd-stat"><div class="vd-stat-val" id="vs-atm-iv"  style="color:#fbbf24;">—</div><div class="vd-stat-lbl">Front ATM IV</div></div>
+      <div class="vd-stat"><div class="vd-stat-val" id="vs-hv30"    style="color:#a78bfa;">—</div><div class="vd-stat-lbl">HV-30</div></div>
+      <div class="vd-stat"><div class="vd-stat-val" id="vs-iv-rank" style="color:#38bdf8;">—</div><div class="vd-stat-lbl">IV Rank</div></div>
+      <div class="vd-stat"><div class="vd-stat-val" id="vs-spread"  style="color:#f87171;">—</div><div class="vd-stat-lbl">IV − HV Spread</div></div>
+      <div class="vd-stat"><div class="vd-stat-val" id="vs-skew"    style="color:#4ade80;">—</div><div class="vd-stat-lbl">Put Skew (ATM)</div></div>
+    </div>
+
+    <!-- Tab bar -->
+    <div class="vd-tab-bar">
+      <div class="vd-tab active" data-vdtab="matrix"    onclick="switchVdTab('matrix',this)">🔲 Fixed Strike Matrix</div>
+      <div class="vd-tab"        data-vdtab="term"      onclick="switchVdTab('term',this)">📈 Term Structure</div>
+      <div class="vd-tab"        data-vdtab="skew"      onclick="switchVdTab('skew',this)">〜 Volatility Skew</div>
+      <div class="vd-tab"        data-vdtab="surface"   onclick="switchVdTab('surface',this)">🗺 IV Surface</div>
+    </div>
+
+    <!-- Asset selector -->
+    <div class="vd-asset-bar" id="vd-asset-bar">
+      <!-- Populated by JS after data loads -->
+      <span style="font-size:.78rem;color:var(--muted);">Loading assets…</span>
+    </div>
+
+    <!-- Loading state -->
+    <div class="vd-loading" id="vd-loading">
+      <div class="vd-loading-spinner"></div>
+      Fetching option chains — this may take 15–30 seconds…
+    </div>
+
+    <!-- Tab panels -->
+    <div id="vd-panels" style="display:none;">
+
+      <!-- ① Fixed Strike Matrix -->
+      <div class="vd-panel active" id="vdp-matrix">
+        <div class="vd-matrix-grid" id="vd-matrix-container"></div>
+        <div class="vd-matrix-legend" id="vd-matrix-legend">
+          <span><span class="vd-legend-dot" style="background:#1e3a5f;"></span>Low IV (&lt;15%)</span>
+          <span><span class="vd-legend-dot" style="background:#1a5c2a;"></span>Moderate (15–25%)</span>
+          <span><span class="vd-legend-dot" style="background:#7a5c00;"></span>Elevated (25–35%)</span>
+          <span><span class="vd-legend-dot" style="background:#6b1515;"></span>High IV (&gt;35%)</span>
+          <span><span class="vd-legend-dot" style="background:transparent;outline:2px solid rgba(34,211,238,.5);"></span>ATM Strike</span>
+        </div>
+      </div>
+
+      <!-- ② Term Structure -->
+      <div class="vd-panel" id="vdp-term">
+        <div class="vd-canvas-wrap">
+          <div class="vd-canvas-label">ATM Implied Volatility vs Days to Expiry (Term Structure)</div>
+          <canvas id="vd-term-canvas" height="280"></canvas>
+        </div>
+        <div class="vd-skew-legend" id="vd-term-legend">
+          <span><span class="vd-legend-line" style="background:#22d3ee;"></span>ATM IV</span>
+          <span><span class="vd-legend-line" style="background:#4ade80;border-top:2px dashed #4ade80;height:0;"></span>Call IV</span>
+          <span><span class="vd-legend-line" style="background:#f87171;border-top:2px dashed #f87171;height:0;"></span>Put IV</span>
+          <span><span class="vd-legend-line" style="background:#a78bfa;border-top:2px dotted #a78bfa;height:0;"></span>HV-30</span>
+        </div>
+        <div style="padding:.5rem .9rem 0;" id="vd-term-table-wrap"></div>
+      </div>
+
+      <!-- ③ Volatility Skew -->
+      <div class="vd-panel" id="vdp-skew">
+        <div class="vd-canvas-wrap">
+          <div class="vd-canvas-label">Volatility Smile / Skew — IV by Strike (% of Spot)</div>
+          <canvas id="vd-skew-canvas" height="280"></canvas>
+        </div>
+        <div class="vd-skew-legend" id="vd-skew-legend"></div>
+      </div>
+
+      <!-- ④ IV Surface (3-D canvas heatmap) -->
+      <div class="vd-panel" id="vdp-surface">
+        <div class="vd-canvas-wrap">
+          <div class="vd-canvas-label">IV Surface — All Strikes × All Expirations (colour = IV level)</div>
+          <canvas id="vd-surface-canvas" height="360"></canvas>
+        </div>
+      </div>
+
+    </div><!-- /vd-panels -->
+
+  </div><!-- /vd-section -->
+
+  <!-- ── Volatility Dashboard Educational Guide ── -->
+  <div class="vd-guide" id="vd-guide"></div>
 
   <!-- Filter bar -->
   <div class="filter-bar">
@@ -786,7 +1117,624 @@ function drawMiniGex(a) {
 }
 
 /* ── Init ── */
-window.addEventListener('load', () => loadAll());
+window.addEventListener('load', () => { loadAll(); loadVolSurface(); });
+
+/* ════════════════════════════════════════════════════════════
+   VOLATILITY DASHBOARD
+════════════════════════════════════════════════════════════ */
+
+let _volData     = null;  // full API response
+let _volAssets   = [];    // array of asset objects
+let _volSym      = 'SPY'; // currently selected symbol
+let _volTab      = 'matrix';
+
+/* ── Fetch ── */
+async function loadVolSurface(nocache = false) {
+  const qs = nocache ? '?nocache=1' : '';
+  try {
+    const r = await fetch(`${API}/api/volatility-surface${qs}`, { signal: AbortSignal.timeout(90000) });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const j = await r.json();
+    _volData   = j;
+    _volAssets = j.assets || [];
+
+    document.getElementById('vd-loading').style.display = 'none';
+    document.getElementById('vd-panels').style.display  = 'block';
+
+    buildAssetBar();
+    selectVolAsset(_volSym in Object.fromEntries(_volAssets.map(a => [a.symbol,1]))
+                   ? _volSym : (_volAssets[0]?.symbol || 'SPY'));
+    renderVolGuide();
+  } catch(e) {
+    document.getElementById('vd-loading').innerHTML =
+      `<div class="vd-offline">⚠️ Volatility data unavailable — ensure server is running: <code>py live-server.py</code><br><small style="opacity:.7;">${e.message}</small></div>`;
+  }
+}
+
+/* ── Asset selector ── */
+function buildAssetBar() {
+  const bar = document.getElementById('vd-asset-bar');
+  bar.innerHTML = _volAssets.map(a => {
+    const ivp = a.atm_iv ? (a.atm_iv * 100).toFixed(1) + '%' : '';
+    return `<button class="vd-asset-btn${a.symbol === _volSym ? ' active' : ''}"
+              data-sym="${a.symbol}"
+              onclick="selectVolAsset('${a.symbol}')"
+              title="ATM IV: ${ivp} | IV Rank: ${a.iv_rank}%">${a.symbol}</button>`;
+  }).join('');
+}
+
+/* ── Select asset ── */
+function selectVolAsset(sym) {
+  _volSym = sym;
+  document.querySelectorAll('.vd-asset-btn').forEach(b =>
+    b.classList.toggle('active', b.dataset.sym === sym));
+
+  const a = _volAssets.find(x => x.symbol === sym);
+  if (!a) return;
+
+  updateVolStats(a);
+  drawCurrentTab(a);
+}
+
+/* ── Stats strip ── */
+function updateVolStats(a) {
+  const fmtIV = v => v != null ? (v * 100).toFixed(1) + '%' : '—';
+  const atmIV = a.atm_iv;
+  const hv30  = a.hv30;
+  const spread = a.iv_rv_spread;
+  const skewVal = a.term_structure && a.term_structure[0] ? a.term_structure[0].skew : null;
+
+  document.getElementById('vs-atm-iv').textContent  = fmtIV(atmIV);
+  document.getElementById('vs-hv30').textContent    = fmtIV(hv30);
+  document.getElementById('vs-iv-rank').textContent = a.iv_rank != null ? a.iv_rank.toFixed(0) + 'th pct' : '—';
+  document.getElementById('vs-spread').textContent  = spread != null ? (spread >= 0 ? '+' : '') + (spread * 100).toFixed(1) + '%' : '—';
+  document.getElementById('vs-skew').textContent    = skewVal != null ? (skewVal * 100).toFixed(1) + '%' : '—';
+
+  const spreadEl = document.getElementById('vs-spread');
+  spreadEl.style.color = spread == null ? '' : spread > 0 ? '#f87171' : '#4ade80';
+  const skewEl = document.getElementById('vs-skew');
+  skewEl.style.color = skewVal == null ? '' : skewVal > 0.02 ? '#f87171' : skewVal < 0 ? '#4ade80' : '#fbbf24';
+}
+
+/* ── Tab switching ── */
+function switchVdTab(tab, el) {
+  _volTab = tab;
+  document.querySelectorAll('.vd-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  document.querySelectorAll('.vd-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById(`vdp-${tab}`).classList.add('active');
+
+  const a = _volAssets.find(x => x.symbol === _volSym);
+  if (a) drawCurrentTab(a);
+}
+
+function drawCurrentTab(a) {
+  if (_volTab === 'matrix')  renderMatrix(a);
+  if (_volTab === 'term')    drawTermStructure(a);
+  if (_volTab === 'skew')    drawSkew(a);
+  if (_volTab === 'surface') drawSurface(a);
+}
+
+/* ════════════════════════════════════════════════
+   ① FIXED STRIKE MATRIX
+════════════════════════════════════════════════ */
+function renderMatrix(a) {
+  const mx = a.matrix;
+  if (!mx || !mx.expirations || !mx.expirations.length) {
+    document.getElementById('vd-matrix-container').innerHTML =
+      '<div class="vd-offline">No matrix data available for ' + a.symbol + '</div>';
+    return;
+  }
+
+  const exps     = mx.expirations;
+  const dtes     = mx.dtes;
+  const monos    = mx.moneyness;
+  const strikes  = mx.strikes;
+  const ivGrid   = mx.iv_grid;
+  const spot     = a.spot;
+
+  // Find ATM moneyness row (closest to 1.0)
+  const atmIdx   = monos.reduce((best, m, i) => Math.abs(m - 1) < Math.abs(monos[best] - 1) ? i : best, 0);
+
+  // IV color: map 0 → blue, 0.15 → green, 0.25 → yellow, 0.35+ → red
+  function ivColor(iv) {
+    if (iv == null || iv <= 0) return { bg: '#111827', txt: '#4b5563' };
+    const v = iv * 100;
+    let r, g, b;
+    if (v <= 10) {
+      r=10; g=30; b=80;       // deep blue
+    } else if (v <= 15) {
+      const t=(v-10)/5; r=Math.round(10+t*10); g=Math.round(30+t*60); b=Math.round(80+t*10);
+    } else if (v <= 25) {
+      const t=(v-15)/10; r=Math.round(20+t*100); g=Math.round(90+t*80); b=Math.round(90-t*60);
+    } else if (v <= 35) {
+      const t=(v-25)/10; r=Math.round(120+t*100); g=Math.round(170-t*130); b=Math.round(30);
+    } else {
+      const t=Math.min((v-35)/20, 1); r=Math.round(220+t*35); g=Math.round(40-t*20); b=20;
+    }
+    const brightness = (r*0.299 + g*0.587 + b*0.114);
+    return {
+      bg: `rgb(${r},${g},${b})`,
+      txt: brightness > 128 ? '#111' : '#eee',
+    };
+  }
+
+  // Header row
+  let html = '<table class="vd-matrix-table"><thead><tr>';
+  html += '<th class="row-head">Strike / Mono</th>';
+  exps.forEach((exp, i) => {
+    const dte = dtes[i];
+    const label = dte <= 7 ? `${dte}d` : dte <= 35 ? `${Math.round(dte/7)}w` : `${Math.round(dte/30)}mo`;
+    html += `<th title="${exp}">${label}<br><span style="font-size:.55rem;font-weight:400;">${exp.slice(5)}</span></th>`;
+  });
+  html += '</tr></thead><tbody>';
+
+  monos.forEach((mono, ri) => {
+    const strikeLabel = `$${(strikes[ri]||0).toFixed(0)}`;
+    const monoLabel   = (mono * 100).toFixed(0) + '%';
+    const isAtm       = ri === atmIdx;
+    html += `<tr>`;
+    html += `<td style="background:#0f1729;font-weight:700;font-family:'Consolas',monospace;font-size:.7rem;color:${isAtm ? '#22d3ee' : 'var(--muted)'};">`;
+    html += `${strikeLabel} <span style="font-size:.6rem;color:var(--muted);">(${monoLabel})</span>`;
+    if (isAtm) html += ` <span style="color:#22d3ee;font-size:.58rem;">◀ ATM</span>`;
+    html += `</td>`;
+
+    exps.forEach((exp, ci) => {
+      const iv = (ivGrid[String(mono)] || [])[ci];
+      const { bg, txt } = ivColor(iv);
+      const label = iv != null && iv > 0 ? (iv * 100).toFixed(1) + '%' : '—';
+      html += `<td class="vd-matrix-cell${isAtm ? ' atm-row' : ''}" style="background:${bg};color:${txt};" title="${exp} | Strike $${(strikes[ri]||0).toFixed(0)} | IV ${label}">${label}</td>`;
+    });
+    html += '</tr>';
+  });
+
+  html += '</tbody></table>';
+  document.getElementById('vd-matrix-container').innerHTML = html;
+}
+
+/* ════════════════════════════════════════════════
+   ② TERM STRUCTURE CHART
+════════════════════════════════════════════════ */
+function drawTermStructure(a) {
+  const ts = a.term_structure;
+  if (!ts || !ts.length) return;
+
+  const cv  = document.getElementById('vd-term-canvas');
+  const dpr = window.devicePixelRatio || 1;
+  const W   = cv.parentElement.clientWidth || 700;
+  const H   = 280;
+  cv.width  = W * dpr; cv.height = H * dpr;
+  cv.style.width = W + 'px'; cv.style.height = H + 'px';
+  const ctx = cv.getContext('2d');
+  ctx.scale(dpr, dpr);
+
+  const pad = { l: 52, r: 22, t: 18, b: 40 };
+  const cw  = W - pad.l - pad.r;
+  const ch  = H - pad.t - pad.b;
+
+  // Background
+  ctx.fillStyle = '#070d18';
+  ctx.fillRect(0, 0, W, H);
+
+  const dtes   = ts.map(t => t.dte);
+  const atmIVs = ts.map(t => t.atm_iv * 100);
+  const callIVs = ts.map(t => t.call_iv * 100);
+  const putIVs  = ts.map(t => t.put_iv  * 100);
+  const hv30pct = (a.hv30 || 0) * 100;
+
+  const allVals = [...atmIVs, ...callIVs, ...putIVs, hv30pct].filter(v => v > 0);
+  const minV = Math.max(0, Math.min(...allVals) - 2);
+  const maxV = Math.max(...allVals) + 3;
+  const maxDTE = Math.max(...dtes);
+
+  function xp(dte)  { return pad.l + (dte / maxDTE) * cw; }
+  function yp(iv)   { return pad.t + (1 - (iv - minV) / (maxV - minV)) * ch; }
+
+  // Grid
+  ctx.strokeStyle = 'rgba(36,48,88,.55)'; ctx.lineWidth = 1;
+  for (let iv = Math.ceil(minV); iv <= maxV; iv += 5) {
+    const y = yp(iv);
+    ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(pad.l + cw, y); ctx.stroke();
+    ctx.fillStyle = 'rgba(127,163,190,.65)'; ctx.font = `${10}px Consolas, monospace`;
+    ctx.textAlign = 'right';
+    ctx.fillText(iv.toFixed(0) + '%', pad.l - 5, y + 4);
+  }
+
+  // X axis labels (DTE)
+  ctx.textAlign = 'center';
+  ts.forEach(t => {
+    const x = xp(t.dte);
+    ctx.fillStyle = 'rgba(127,163,190,.65)';
+    ctx.fillText(t.dte + 'd', x, H - pad.b + 14);
+    ctx.strokeStyle = 'rgba(36,48,88,.4)'; ctx.lineWidth = .5;
+    ctx.setLineDash([3,3]);
+    ctx.beginPath(); ctx.moveTo(x, pad.t); ctx.lineTo(x, pad.t + ch); ctx.stroke();
+    ctx.setLineDash([]);
+  });
+
+  // HV30 reference line
+  if (hv30pct > 0) {
+    const y = yp(hv30pct);
+    ctx.strokeStyle = '#a78bfa'; ctx.lineWidth = 1.2;
+    ctx.setLineDash([4,4]);
+    ctx.globalAlpha = 0.6;
+    ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(pad.l + cw, y); ctx.stroke();
+    ctx.setLineDash([]); ctx.globalAlpha = 1;
+    ctx.fillStyle = '#a78bfa'; ctx.font = '9px Consolas, monospace'; ctx.textAlign = 'left';
+    ctx.fillText(`HV30 ${hv30pct.toFixed(1)}%`, pad.l + 4, y - 4);
+  }
+
+  // Normal/inverted region
+  if (ts.length >= 2) {
+    const front = atmIVs[0], back = atmIVs[atmIVs.length - 1];
+    const isInverted = front > back + 1;
+    ctx.fillStyle = isInverted ? 'rgba(248,113,113,.04)' : 'rgba(74,222,128,.03)';
+    ctx.fillRect(pad.l, pad.t, cw, ch);
+  }
+
+  function drawLine(pts, color, dash = []) {
+    ctx.strokeStyle = color; ctx.lineWidth = 2;
+    ctx.setLineDash(dash);
+    ctx.beginPath();
+    pts.forEach(([x, y], i) => i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y));
+    ctx.stroke();
+    ctx.setLineDash([]);
+    // Dots
+    pts.forEach(([x, y]) => {
+      ctx.beginPath(); ctx.arc(x, y, 3.5, 0, Math.PI * 2);
+      ctx.fillStyle = color; ctx.fill();
+    });
+  }
+
+  const atmPts  = ts.map((t, i) => [xp(t.dte), yp(atmIVs[i])]);
+  const callPts = ts.map((t, i) => [xp(t.dte), yp(callIVs[i])]);
+  const putPts  = ts.map((t, i) => [xp(t.dte), yp(putIVs[i])]);
+
+  drawLine(callPts, 'rgba(74,222,128,.7)',  [4,4]);
+  drawLine(putPts,  'rgba(248,113,113,.7)', [4,4]);
+  drawLine(atmPts,  '#22d3ee');
+
+  // Labels
+  ctx.fillStyle = '#22d3ee'; ctx.font = 'bold 10px Consolas, monospace'; ctx.textAlign = 'left';
+  const lastAtm = atmPts[atmPts.length - 1];
+  ctx.fillText(`ATM ${atmIVs[atmIVs.length - 1].toFixed(1)}%`, lastAtm[0] + 6, lastAtm[1] + 4);
+
+  // Render term table below canvas
+  let tblHtml = `<table class="vd-metric-tbl"><thead><tr>
+    <th>Expiry</th><th>DTE</th><th>ATM IV</th><th>Call IV</th><th>Put IV</th><th>Skew</th><th>25Δ RR</th>
+  </tr></thead><tbody>`;
+  ts.forEach(t => {
+    const ivColor = t.atm_iv > 0.35 ? '#f87171' : t.atm_iv > 0.25 ? '#fbbf24' : t.atm_iv > 0.15 ? '#4ade80' : '#22d3ee';
+    const skewColor = t.skew > 0.03 ? '#f87171' : t.skew > 0.01 ? '#fbbf24' : '#4ade80';
+    tblHtml += `<tr>
+      <td>${t.expiry}</td>
+      <td style="color:#7fa3be;">${t.dte}d</td>
+      <td style="color:${ivColor};">${(t.atm_iv * 100).toFixed(1)}%</td>
+      <td style="color:#4ade80;">${(t.call_iv * 100).toFixed(1)}%</td>
+      <td style="color:#f87171;">${(t.put_iv * 100).toFixed(1)}%</td>
+      <td style="color:${skewColor};">${(t.skew * 100).toFixed(2)}%</td>
+      <td style="color:#a78bfa;">${t.rr25 != null ? (t.rr25 * 100).toFixed(2) + '%' : '—'}</td>
+    </tr>`;
+  });
+  tblHtml += '</tbody></table>';
+  document.getElementById('vd-term-table-wrap').innerHTML = tblHtml;
+}
+
+/* ════════════════════════════════════════════════
+   ③ VOLATILITY SKEW CHART
+════════════════════════════════════════════════ */
+function drawSkew(a) {
+  const skewByExp = a.skew_by_exp;
+  const ts        = a.term_structure;
+  if (!skewByExp || !ts || !ts.length) return;
+
+  const cv  = document.getElementById('vd-skew-canvas');
+  const dpr = window.devicePixelRatio || 1;
+  const W   = cv.parentElement.clientWidth || 700;
+  const H   = 280;
+  cv.width  = W * dpr; cv.height = H * dpr;
+  cv.style.width = W + 'px'; cv.style.height = H + 'px';
+  const ctx = cv.getContext('2d');
+  ctx.scale(dpr, dpr);
+
+  ctx.fillStyle = '#070d18';
+  ctx.fillRect(0, 0, W, H);
+
+  const pad = { l: 52, r: 24, t: 18, b: 38 };
+  const cw  = W - pad.l - pad.r;
+  const ch  = H - pad.t - pad.b;
+
+  const COLORS = ['#22d3ee','#a78bfa','#fbbf24','#f87171'];
+  const expsToPlot = ts.slice(0, 4).map(t => t.expiry);
+
+  // Collect all IV values to set axis range
+  let allIVs = [], allMonos = [];
+  expsToPlot.forEach(exp => {
+    (skewByExp[exp] || []).forEach(pt => {
+      allIVs.push(pt.iv * 100);
+      allMonos.push(pt.moneyness);
+    });
+  });
+  if (!allIVs.length) return;
+
+  const minM = 0.80, maxM = 1.22;
+  const minV = Math.max(0, Math.min(...allIVs) - 2);
+  const maxV = Math.min(Math.max(...allIVs) + 5, 150);
+
+  function xp(m) { return pad.l + ((m - minM) / (maxM - minM)) * cw; }
+  function yp(iv) { return pad.t + (1 - (iv - minV) / (maxV - minV)) * ch; }
+
+  // Gridlines
+  ctx.strokeStyle = 'rgba(36,48,88,.55)'; ctx.lineWidth = 1;
+  for (let v = Math.ceil(minV / 5) * 5; v <= maxV; v += 5) {
+    const y = yp(v);
+    ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(pad.l + cw, y); ctx.stroke();
+    ctx.fillStyle = 'rgba(127,163,190,.65)'; ctx.font = '10px Consolas, monospace';
+    ctx.textAlign = 'right';
+    ctx.fillText(v.toFixed(0) + '%', pad.l - 5, y + 4);
+  }
+
+  // X axis: moneyness labels
+  [0.80, 0.85, 0.90, 0.95, 1.00, 1.05, 1.10, 1.15, 1.20].forEach(m => {
+    const x = xp(m);
+    ctx.fillStyle = m === 1.0 ? '#22d3ee' : 'rgba(127,163,190,.65)';
+    ctx.font = '9px Consolas, monospace'; ctx.textAlign = 'center';
+    ctx.fillText((m * 100).toFixed(0) + '%', x, H - pad.b + 13);
+    // Vertical gridline
+    if (m !== 1.0) {
+      ctx.strokeStyle = 'rgba(36,48,88,.4)'; ctx.lineWidth = .5;
+      ctx.setLineDash([3,3]);
+    } else {
+      ctx.strokeStyle = 'rgba(34,211,238,.3)'; ctx.lineWidth = 1;
+      ctx.setLineDash([]);
+    }
+    ctx.beginPath(); ctx.moveTo(x, pad.t); ctx.lineTo(x, pad.t + ch); ctx.stroke();
+    ctx.setLineDash([]);
+  });
+
+  // ATM label
+  const xAtm = xp(1.0);
+  ctx.fillStyle = '#22d3ee'; ctx.font = '9px Consolas, monospace'; ctx.textAlign = 'center';
+  ctx.fillText('ATM', xAtm, pad.t + 12);
+
+  // Draw each expiration curve
+  const legendItems = [];
+  expsToPlot.forEach((exp, ci) => {
+    const pts = (skewByExp[exp] || [])
+      .filter(p => p.moneyness >= minM && p.moneyness <= maxM)
+      .sort((a, b) => a.moneyness - b.moneyness);
+    if (!pts.length) return;
+
+    const color = COLORS[ci % COLORS.length];
+    const t = ts.find(x => x.expiry === exp);
+    const dteLabel = t ? `${t.dte}d` : exp.slice(5);
+    legendItems.push({ color, label: `${dteLabel} (${exp})` });
+
+    // Use put IV left of ATM, call IV right of ATM (conventional smile)
+    const curvePts = pts.map(p => [xp(p.moneyness), yp(p.iv * 100)]);
+
+    ctx.strokeStyle = color; ctx.lineWidth = 1.8;
+    ctx.setLineDash(ci > 0 ? [5,3] : []);
+    ctx.globalAlpha = ci === 0 ? 1 : 0.65;
+    ctx.beginPath();
+    curvePts.forEach(([x, y], idx) => idx === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y));
+    ctx.stroke();
+    ctx.setLineDash([]); ctx.globalAlpha = 1;
+  });
+
+  // Legend
+  const legEl = document.getElementById('vd-skew-legend');
+  legEl.innerHTML = legendItems.map(l =>
+    `<span><span class="vd-legend-line" style="background:${l.color};"></span>${l.label}</span>`
+  ).join('');
+}
+
+/* ════════════════════════════════════════════════
+   ④ IV SURFACE (2-D heatmap on canvas)
+════════════════════════════════════════════════ */
+function drawSurface(a) {
+  const mx = a.matrix;
+  if (!mx || !mx.expirations || !mx.expirations.length) return;
+
+  const cv  = document.getElementById('vd-surface-canvas');
+  const dpr = window.devicePixelRatio || 1;
+  const W   = cv.parentElement.clientWidth || 700;
+  const H   = 360;
+  cv.width  = W * dpr; cv.height = H * dpr;
+  cv.style.width = W + 'px'; cv.style.height = H + 'px';
+  const ctx = cv.getContext('2d');
+  ctx.scale(dpr, dpr);
+
+  ctx.fillStyle = '#070d18';
+  ctx.fillRect(0, 0, W, H);
+
+  const exps    = mx.expirations;
+  const dtes    = mx.dtes;
+  const monos   = mx.moneyness;
+  const strikes = mx.strikes;
+  const ivGrid  = mx.iv_grid;
+
+  const nCols = exps.length;
+  const nRows = monos.length;
+  const padL  = 72, padT = 14, padR = 22, padB = 32;
+  const cw    = W - padL - padR;
+  const ch    = H - padT - padB;
+  const cellW = cw / nCols;
+  const cellH = ch / nRows;
+
+  // ATM row
+  const atmIdx = monos.reduce((b, m, i) => Math.abs(m - 1) < Math.abs(monos[b] - 1) ? i : b, 0);
+
+  function ivToRGBA(iv) {
+    if (!iv || iv <= 0) return 'rgba(20,27,52,1)';
+    const v = iv * 100;
+    let r, g, b;
+    if      (v <= 10) { r=10;  g=25;  b=80;  }
+    else if (v <= 15) { const t=(v-10)/5;  r=10+t*10;  g=25+t*75;  b=80+t*10; }
+    else if (v <= 25) { const t=(v-15)/10; r=20+t*130; g=100+t*70; b=90-t*60; }
+    else if (v <= 35) { const t=(v-25)/10; r=150+t*80; g=170-t*130; b=30; }
+    else              { const t=Math.min((v-35)/25,1); r=230+t*25; g=40-t*20; b=20; }
+    return `rgba(${Math.round(r)},${Math.round(g)},${Math.round(b)},1)`;
+  }
+
+  // Draw cells
+  monos.forEach((mono, ri) => {
+    exps.forEach((exp, ci) => {
+      const iv = (ivGrid[String(mono)] || [])[ci];
+      const x  = padL + ci * cellW;
+      const y  = padT + ri * cellH;
+
+      ctx.fillStyle = ivToRGBA(iv);
+      ctx.fillRect(x, y, cellW - 1, cellH - 1);
+
+      // ATM row highlight
+      if (ri === atmIdx) {
+        ctx.strokeStyle = 'rgba(34,211,238,.5)';
+        ctx.lineWidth   = 1.5;
+        ctx.strokeRect(x, y, cellW - 1, cellH - 1);
+      }
+
+      // IV text
+      if (iv && iv > 0 && cellW > 30) {
+        const brightness = ivToRGBA(iv).match(/\d+/g).slice(0,3)
+          .reduce((s,c,i)=>s+[0.299,0.587,0.114][i]*+c,0);
+        ctx.fillStyle = brightness > 100 ? '#111' : '#ddd';
+        ctx.font = `${Math.min(10, cellW * 0.3)}px Consolas, monospace`;
+        ctx.textAlign = 'center';
+        ctx.fillText((iv * 100).toFixed(1), x + cellW / 2, y + cellH / 2 + 4);
+      }
+    });
+  });
+
+  // Y axis: moneyness labels
+  ctx.textAlign = 'right'; ctx.fillStyle = 'rgba(127,163,190,.8)';
+  ctx.font = '9.5px Consolas, monospace';
+  monos.forEach((mono, ri) => {
+    const y = padT + ri * cellH + cellH / 2 + 4;
+    const isAtm = ri === atmIdx;
+    ctx.fillStyle = isAtm ? '#22d3ee' : 'rgba(127,163,190,.8)';
+    ctx.fillText(`${(mono * 100).toFixed(0)}%`, padL - 4, y);
+  });
+
+  // X axis: DTE labels
+  ctx.textAlign = 'center'; ctx.fillStyle = 'rgba(127,163,190,.8)';
+  exps.forEach((exp, ci) => {
+    const x   = padL + ci * cellW + cellW / 2;
+    const dte = dtes[ci];
+    const lbl = dte <= 7 ? `${dte}d` : dte <= 45 ? `${Math.round(dte/7)}w` : `${Math.round(dte/30)}m`;
+    ctx.fillStyle = 'rgba(127,163,190,.8)';
+    ctx.fillText(lbl, x, H - padB + 14);
+  });
+
+  // Y axis label
+  ctx.save();
+  ctx.translate(12, H / 2);
+  ctx.rotate(-Math.PI / 2);
+  ctx.fillStyle = 'rgba(127,163,190,.6)';
+  ctx.font = '9px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Moneyness (Strike / Spot)', 0, 0);
+  ctx.restore();
+
+  // Color scale bar (right side)
+  const barX = W - padR + 4, barY = padT, barH = ch, barW = 10;
+  for (let i = 0; i < barH; i++) {
+    const t = 1 - i / barH;
+    const iv = 0.10 + t * 0.45;
+    ctx.fillStyle = ivToRGBA(iv);
+    ctx.fillRect(barX, barY + i, barW, 1);
+  }
+  ctx.fillStyle = 'rgba(127,163,190,.7)'; ctx.font = '8px Consolas, monospace'; ctx.textAlign = 'left';
+  ctx.fillText('55%', barX + barW + 2, barY + 6);
+  ctx.fillText('10%', barX + barW + 2, barY + barH - 2);
+}
+
+/* ════════════════════════════════════════════════
+   EDUCATIONAL GUIDE
+════════════════════════════════════════════════ */
+function renderVolGuide() {
+  const el = document.getElementById('vd-guide');
+  if (!el || el.dataset.rendered) return;
+  el.dataset.rendered = '1';
+
+  const cards = [
+    {
+      color: '#fbbf24', icon: '🔲',
+      title: 'Fixed Strike Volatility Matrix — What It Shows',
+      body: `The Fixed Strike Matrix displays <strong>Implied Volatility (IV) at every available strike price across every expiration date</strong> for the selected asset. Columns = expirations (left=nearest, right=furthest). Rows = strike prices expressed as a % of the current spot price (100% = ATM). Cell color encodes IV intensity: <span class="hl-cyan">blue = low IV</span>, <span class="hl-green">green = moderate</span>, <span class="hl-amber">yellow/orange = elevated</span>, <span class="hl-red">red = high IV</span>.
+      <br><br><strong>How traders use it:</strong> Scan for IV anomalies across the grid — if a single strike shows dramatically higher IV than surrounding strikes, that strike is "pinned" by unusual positioning. Compare front-month vs back-month: uniform low IV (all blue) = complacency; inverted surface (front red, back green) = near-term stress. The ATM row (cyan outline) shows the options market's expectation for realized vol over each time horizon.`,
+    },
+    {
+      color: '#22d3ee', icon: '📈',
+      title: 'Volatility Term Structure — Contango vs Backwardation',
+      body: `The Term Structure chart plots <strong>ATM IV at each expiration</strong> to reveal the time-value shape of market uncertainty. <span class="hl-green">Normal contango</span> = upward slope — IV rises with DTE (market expects more uncertainty over longer horizons, a healthy sign). <span class="hl-red">Backwardation / Inversion</span> = downward slope — near-term IV higher than back-month (elevated near-term fear: earnings, FOMC, macro event).
+      <div class="vd-trade-step"><div class="vd-step-num">1</div><div class="vd-step-txt"><strong>Normal curve + low IV Rank:</strong> Sell near-dated premium (straddles, iron condors). IV likely to mean-revert lower.</div></div>
+      <div class="vd-trade-step"><div class="vd-step-num">2</div><div class="vd-step-txt"><strong>Inverted curve:</strong> Front-month event risk is priced in. Consider calendar spreads — buy back-month, sell front-month to capture the IV crush post-event.</div></div>
+      <div class="vd-trade-step"><div class="vd-step-num">3</div><div class="vd-step-txt"><strong>IV − HV spread:</strong> If IV &gt;&gt; HV30 (purple line), options are expensive relative to realized vol — <span class="hl-red">sell premium</span>. If IV ≈ HV30 or IV &lt; HV30 — <span class="hl-green">buy premium</span>.</div></div>
+      <div class="vd-trade-step"><div class="vd-step-num">4</div><div class="vd-step-txt"><strong>25Δ Risk Reversal (RR):</strong> Positive RR = puts more expensive than calls (equity skew is normal). Large positive RR = strong fear of downside. Negative RR = call skew (bullish positioning / supply constraints).</div></div>`,
+    },
+    {
+      color: '#a78bfa', icon: '〜',
+      title: 'Volatility Smile & Skew — Put/Call IV Asymmetry',
+      body: `The Skew chart plots <strong>IV at each strike (x-axis = moneyness, y-axis = IV%)</strong> for the nearest 4 expirations. A pure random walk would show a flat line — all strikes equal IV. In practice, you see distinct shapes:
+      <br><br>
+      <strong>1. Put Skew (Equity Smirk):</strong> Left side of ATM shows significantly higher IV — OTM puts are expensive because buyers (investors hedging long portfolios) drive up their price. The steeper the left side, the more protective demand and fear in the market.
+      <br><br>
+      <strong>2. Symmetric Smile:</strong> Both tails elevated relative to ATM — the market prices crash risk <em>and</em> rally risk (common in currencies, commodities, crypto).
+      <br><br>
+      <strong>3. Call Skew:</strong> Right side elevated — rare in equities, signals supply constraints or gamma squeeze positioning (OTM calls bought in size).
+      <br><br>
+      <strong>How to trade skew:</strong> Large put skew → sells OTM put spreads (collect elevated put premium, limit risk with the bought put). Very flat skew → buy OTM puts as cheap protection. Comparing curves across expirations reveals where the market sees the biggest discrete risk event.`,
+    },
+    {
+      color: '#4ade80', icon: '🗺',
+      title: 'IV Surface Heatmap — Full Volatility Landscape',
+      body: `The IV Surface combines all three views into a single 2-D color map. X = expirations (DTE), Y = strike/moneyness, Color = IV. This gives you the complete volatility landscape at a glance.
+      <br><br>
+      <strong>What to look for:</strong><br>
+      • <span class="hl-red">Red column</span> at front-month = near-term event risk (earnings, FOMC).<br>
+      • <span class="hl-red">Red row</span> at deep OTM puts = strong protective demand / tail-risk buying.<br>
+      • <span class="hl-green">Green/blue surface except one red cell</span> = unusual positioning at that specific strike/expiry — likely institutional order flow.<br>
+      • Uniform gradient = healthy surface with no anomalies.<br><br>
+      <strong>Trading the surface:</strong> Find relative value — if one expiration is elevated vs surrounding months, sell that expiration's straddle and buy the adjacent month. If the 90% put row is much redder than the 95% put row, put spreads are cheaper than single puts.`,
+    },
+    {
+      color: '#f87171', icon: '⚡',
+      title: 'Key Volatility Metrics — IV Rank, HV, Spread, Skew',
+      body: `The stats strip above each chart shows the most important volatility metrics for the selected asset:
+      <table class="vd-ref-table" style="margin-top:.6rem;">
+        <thead><tr><th>Metric</th><th>Definition</th><th>Trading Signal</th></tr></thead>
+        <tbody>
+          <tr><td>ATM IV</td><td>Front-month implied volatility at-the-money</td><td>Absolute vol level; compare to HV30 and IV Rank</td></tr>
+          <tr><td>HV-30</td><td>30-day historical realized volatility (annualised)</td><td>Baseline: how much the stock actually moved recently</td></tr>
+          <tr><td>IV Rank</td><td>Front IV's percentile vs all expirations in current surface</td><td>&gt;80 = sell premium; &lt;20 = buy premium; 40–60 = neutral</td></tr>
+          <tr><td>IV − HV</td><td>Implied minus realized vol spread</td><td>Positive = options overpriced → sell. Negative = cheap → buy.</td></tr>
+          <tr><td>Put Skew</td><td>ATM put IV minus ATM call IV</td><td>&gt;3% = strong fear / downside hedging demand present</td></tr>
+        </tbody>
+      </table>`,
+    },
+    {
+      color: '#38bdf8', icon: '🔬',
+      title: 'Step-by-Step: Trading With the Volatility Dashboard',
+      body: `A complete workflow for using these four views together:
+      <div class="vd-trade-step"><div class="vd-step-num">1</div><div class="vd-step-txt"><strong>Check IV Rank first.</strong> &gt;70 → sell premium strategies (iron condors, credit spreads, covered calls). &lt;30 → buy premium (debit spreads, long straddle into event). 30–70 → directional spread.</div></div>
+      <div class="vd-trade-step"><div class="vd-step-num">2</div><div class="vd-step-txt"><strong>Check Term Structure shape.</strong> Normal → sell front-month. Inverted (near &gt; far) → calendar spread (sell front, buy back). Flat → straddle around the event expiry.</div></div>
+      <div class="vd-trade-step"><div class="vd-step-num">3</div><div class="vd-step-txt"><strong>Check Skew steepness.</strong> Steep put skew → sell OTM put spreads or risk reversals (sell put / buy call). Flat skew → buy OTM puts as cheap tail hedge. Call skew → sell OTM call spreads.</div></div>
+      <div class="vd-trade-step"><div class="vd-step-num">4</div><div class="vd-step-txt"><strong>Use Fixed Strike Matrix</strong> to find the exact expiration and strike with the best risk/reward. Sell the elevated IV strike, buy the cheap hedge strike. This is vertical spread construction via the vol surface.</div></div>
+      <div class="vd-trade-step"><div class="vd-step-num">5</div><div class="vd-step-txt"><strong>Combine with ML signals + GEX.</strong> IV Rank says "sell premium" + ML says "BUY" + Long Gamma → sell OTM put spread (credit, directional bias). IV Rank low + ML "SELL" + Short Gamma → buy ATM put (leveraged directional).</div></div>`,
+    },
+  ];
+
+  el.innerHTML = `<div class="vd-guide-title">📘 Volatility Dashboard — Complete Trading Guide</div>
+    <div class="vd-guide-grid">
+      ${cards.map(c => `
+        <div class="vd-guide-card" style="border-top-color:${c.color};">
+          <div class="vd-guide-icon">${c.icon}</div>
+          <div class="vd-guide-head" style="color:${c.color};">${c.title}</div>
+          <div class="vd-guide-body">${c.body}</div>
+        </div>`).join('')}
+    </div>`;
+}
 </script>
 </body>
 </html>

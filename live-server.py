@@ -3720,6 +3720,170 @@ def xgboost_charts_endpoint():
     return jsonify(result)
 
 
+# ── Volatility Surface ────────────────────────────────────────────────────────
+
+_VOL_SYMBOLS = ['SPY', 'QQQ', 'AAPL', 'MSFT', 'NVDA', 'META', 'TSLA', 'AMZN', 'GOOGL']
+_VOL_MONO_TARGETS = [0.80, 0.85, 0.90, 0.92, 0.95, 0.97, 1.00, 1.03, 1.05, 1.08, 1.10, 1.15, 1.20]
+
+
+def _vol_row(symbol: str) -> dict | None:
+    """Fetch option chains and compute IV surface data for one symbol."""
+    try:
+        from datetime import date as _date
+        tk = yf.Ticker(symbol)
+
+        hist = tk.history(period='35d', auto_adjust=True)
+        if hist.empty or len(hist) < 2:
+            return None
+        spot = float(hist['Close'].iloc[-1])
+
+        # 30-day historical volatility (annualised)
+        log_rets = np.log(hist['Close'] / hist['Close'].shift(1)).dropna()
+        hv30 = float(log_rets.std() * np.sqrt(252))
+
+        expirations = tk.options
+        if not expirations:
+            return None
+
+        today = _date.today()
+        term_structure = []
+        skew_by_exp    = {}
+        exp_labels     = []
+        dtes_list      = []
+        iv_grid        = {m: [] for m in _VOL_MONO_TARGETS}
+
+        for exp_str in expirations[:8]:
+            try:
+                exp_date = _date.fromisoformat(exp_str)
+                dte = max(1, (exp_date - today).days)
+
+                chain = tk.option_chain(exp_str)
+                calls = chain.calls[chain.calls['impliedVolatility'] > 0.01].copy()
+                puts  = chain.puts[chain.puts['impliedVolatility']  > 0.01].copy()
+                if calls.empty or puts.empty:
+                    continue
+
+                # ATM IV (average of 3 nearest strikes)
+                atm_c = calls.iloc[(calls['strike'] - spot).abs().argsort()[:3]]
+                atm_p = puts.iloc[(puts['strike']  - spot).abs().argsort()[:3]]
+                call_iv_atm = float(atm_c['impliedVolatility'].mean())
+                put_iv_atm  = float(atm_p['impliedVolatility'].mean())
+                atm_iv      = (call_iv_atm + put_iv_atm) / 2
+
+                # Skew = put_iv_ATM - call_iv_ATM (positive = put premium)
+                skew_val = round(put_iv_atm - call_iv_atm, 4)
+
+                # 25-delta risk reversal approx: 5% OTM put - 5% OTM call IV
+                otm_c = calls[calls['strike'] > spot * 1.04]
+                otm_p = puts[puts['strike']   < spot * 0.96]
+                rr25 = 0.0
+                if not otm_c.empty and not otm_p.empty:
+                    rr25 = round(
+                        float(otm_p['impliedVolatility'].mean()) -
+                        float(otm_c['impliedVolatility'].mean()), 4)
+
+                term_structure.append({
+                    'expiry':   exp_str,
+                    'dte':      dte,
+                    'atm_iv':   round(atm_iv, 4),
+                    'call_iv':  round(call_iv_atm, 4),
+                    'put_iv':   round(put_iv_atm, 4),
+                    'skew':     skew_val,
+                    'rr25':     rr25,
+                })
+
+                # Skew curve: IV at each available strike
+                skew_pts = []
+                for _, row in calls.iterrows():
+                    m = row['strike'] / spot
+                    if 0.75 <= m <= 1.28:
+                        skew_pts.append({'strike': round(float(row['strike']), 1),
+                                         'moneyness': round(m, 4),
+                                         'type': 'call',
+                                         'iv': round(float(row['impliedVolatility']), 4)})
+                for _, row in puts.iterrows():
+                    m = row['strike'] / spot
+                    if 0.75 <= m <= 1.28:
+                        skew_pts.append({'strike': round(float(row['strike']), 1),
+                                         'moneyness': round(m, 4),
+                                         'type': 'put',
+                                         'iv': round(float(row['impliedVolatility']), 4)})
+                skew_by_exp[exp_str] = sorted(skew_pts, key=lambda x: x['strike'])
+
+                # Fixed-strike matrix: IV at each moneyness bucket
+                all_opts = pd.concat([
+                    calls[['strike', 'impliedVolatility']].assign(side='call'),
+                    puts[['strike',  'impliedVolatility']].assign(side='put'),
+                ])
+                exp_labels.append(exp_str)
+                dtes_list.append(dte)
+                for mono in _VOL_MONO_TARGETS:
+                    target_k = spot * mono
+                    side_df  = all_opts[all_opts['side'] == ('put' if mono <= 1.0 else 'call')]
+                    if side_df.empty:
+                        side_df = all_opts
+                    closest = side_df.iloc[(side_df['strike'] - target_k).abs().argsort()[:2]]
+                    iv_grid[mono].append(round(float(closest['impliedVolatility'].mean()), 4))
+
+            except Exception:
+                continue
+
+        if not term_structure:
+            return None
+
+        # IV rank: front-month ATM IV position within surface range
+        ivs     = [t['atm_iv'] for t in term_structure]
+        iv_min  = min(ivs)
+        iv_max  = max(ivs)
+        iv_rank = round((ivs[0] - iv_min) / max(iv_max - iv_min, 0.001) * 100, 1)
+
+        return {
+            'symbol':       symbol,
+            'spot':         round(spot, 2),
+            'hv30':         round(hv30, 4),
+            'atm_iv':       term_structure[0]['atm_iv'],
+            'iv_rank':      iv_rank,
+            'iv_rv_spread': round((term_structure[0]['atm_iv'] if term_structure else 0) - hv30, 4),
+            'term_structure': term_structure,
+            'skew_by_exp':    skew_by_exp,
+            'matrix': {
+                'expirations': exp_labels,
+                'dtes':        dtes_list,
+                'moneyness':   _VOL_MONO_TARGETS,
+                'strikes':     [round(spot * m, 1) for m in _VOL_MONO_TARGETS],
+                'iv_grid':     {str(m): iv_grid[m] for m in _VOL_MONO_TARGETS},
+            },
+        }
+    except Exception as e:
+        print(f'[vol-surface] {symbol}: {e}')
+        return None
+
+
+@app.route('/api/volatility-surface')
+def volatility_surface_endpoint():
+    nocache = request.args.get('nocache', '0') == '1'
+    ck = cache_key('all', 'vol-surface')
+    if not nocache:
+        cached = cache_get(ck)
+        if cached:
+            return jsonify(cached)
+
+    rows = []
+    with ThreadPoolExecutor(max_workers=3) as pool:
+        futs = {pool.submit(_vol_row, sym): sym for sym in _VOL_SYMBOLS}
+        for fut in as_completed(futs):
+            r = fut.result()
+            if r:
+                rows.append(r)
+
+    rows.sort(key=lambda r: _VOL_SYMBOLS.index(r['symbol'])
+              if r['symbol'] in _VOL_SYMBOLS else 99)
+
+    result = {'assets': rows, 'count': len(rows), 'timestamp': datetime.now().isoformat()}
+    cache_set(ck, result)
+    return jsonify(result)
+
+
 # ── Startup ───────────────────────────────────────────────────────────────────
 if __name__ == '__main__':
     print("=" * 60)
