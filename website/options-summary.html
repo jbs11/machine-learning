@@ -1541,10 +1541,11 @@ function drawTermStructure(a) {
     handleScroll: true, handleScale: true,
   });
 
+  const LS_SOLID = 0, LS_DASHED = 2;
   const mkSeries = (color, dash, width, title) => {
     const s = chart.addLineSeries({
       color, lineWidth: width,
-      lineStyle: dash ? LW.LineStyle.Dashed : LW.LineStyle.Solid,
+      lineStyle: dash ? LS_DASHED : LS_SOLID,
       crosshairMarkerVisible: true,
       lastValueVisible: true,
       title,
@@ -1567,7 +1568,7 @@ function drawTermStructure(a) {
     atmS.createPriceLine({
       price: +(a.hv30 * 100).toFixed(2),
       color: '#a78bfa', lineWidth: 1,
-      lineStyle: LW.LineStyle.Dashed,
+      lineStyle: LS_DASHED,
       axisLabelVisible: true,
       title: `HV30 ${(a.hv30 * 100).toFixed(1)}%`,
     });
@@ -1937,10 +1938,12 @@ function drawForecastChart(a, daily) {
   const t1M = addBizDays(lastDay, 21);
 
   // Helper: add a forecast line series
-  const addLine = (data, color, dash, width, title) => {
+  // LineStyle: 0=Solid, 2=Dashed (LightweightCharts enum values)
+  const LS_SOLID = 0, LS_DASHED = 2;
+  const addLine = (data, color, dashed, width, title) => {
     const s = chart.addLineSeries({
       color, lineWidth: width,
-      lineStyle: dash ? LW.LineStyle.Dashed : LW.LineStyle.Solid,
+      lineStyle: dashed ? LS_DASHED : LS_SOLID,
       crosshairMarkerVisible: false,
       lastValueVisible: false,
       priceLineVisible: false,
@@ -1950,26 +1953,23 @@ function drawForecastChart(a, daily) {
     return s;
   };
 
-  // Center line (spot projection)
-  addLine([{time:t0,value:spot},{time:t1M,value:spot}], 'rgba(34,211,238,.45)', true, 1, 'Center');
+  // Anchor point — all forecast lines start from current spot at lastDay
+  const anchor = { time: t0, value: +spot.toFixed(4) };
 
-  // ±1σ bands
-  addLine([{time:t0,value:spot},{time:t1D,value:spot+move1D},{time:t1W,value:spot+move1W},{time:t1M,value:spot+move1M}],
+  // Center line (spot projection — flat dashed)
+  addLine([anchor, {time:t1M,value:+spot.toFixed(4)}], 'rgba(34,211,238,.45)', true, 1, 'Center');
+
+  // ±1σ bands (amber solid)
+  addLine([anchor,{time:t1D,value:+(spot+move1D).toFixed(4)},{time:t1W,value:+(spot+move1W).toFixed(4)},{time:t1M,value:+(spot+move1M).toFixed(4)}],
     '#fbbf24', false, 2, '+1σ');
-  addLine([{time:t0,value:spot},{time:t1D,value:spot-move1D},{time:t1W,value:spot-move1W},{time:t1M,value:spot-move1M}],
+  addLine([anchor,{time:t1D,value:+(spot-move1D).toFixed(4)},{time:t1W,value:+(spot-move1W).toFixed(4)},{time:t1M,value:+(spot-move1M).toFixed(4)}],
     '#fbbf24', false, 2, '-1σ');
 
-  // ±2σ bands
-  addLine([{time:t0,value:spot},{time:t1D,value:spot+move1D*2},{time:t1W,value:spot+move1W*2},{time:t1M,value:spot+move1M*2}],
-    'rgba(248,113,113,.6)', true, 1.5, '+2σ');
-  addLine([{time:t0,value:spot},{time:t1D,value:spot-move1D*2},{time:t1W,value:spot-move1W*2},{time:t1M,value:spot-move1M*2}],
-    'rgba(248,113,113,.6)', true, 1.5, '-2σ');
-
-  // Current spot price line
-  if (recent.length > 0) {
-    const candleSeries = chart.addLineSeries({ color: 'transparent', lastValueVisible: false, priceLineVisible: false });
-    candleSeries.setData([{time: lastDay, value: spot}]);
-  }
+  // ±2σ bands (red dashed)
+  addLine([anchor,{time:t1D,value:+(spot+move1D*2).toFixed(4)},{time:t1W,value:+(spot+move1W*2).toFixed(4)},{time:t1M,value:+(spot+move1M*2).toFixed(4)}],
+    'rgba(248,113,113,.7)', true, 1.5, '+2σ');
+  addLine([anchor,{time:t1D,value:+(spot-move1D*2).toFixed(4)},{time:t1W,value:+(spot-move1W*2).toFixed(4)},{time:t1M,value:+(spot-move1M*2).toFixed(4)}],
+    'rgba(248,113,113,.7)', true, 1.5, '-2σ');
 
   chart.timeScale().fitContent();
   _vfCharts[a.symbol] = chart;
