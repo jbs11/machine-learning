@@ -342,6 +342,121 @@
     .ml-model-item { font-size: .78rem; line-height: 1.5; }
     .ml-model-key { color: var(--muted); }
     .ml-model-val { color: var(--text); font-weight: 600; }
+
+    /* ── Extended Forecast ── */
+    .fcast-overview-banner {
+      background: linear-gradient(135deg, rgba(15,23,41,.95), rgba(8,13,26,.95));
+      border: 1px solid var(--border); border-radius: 12px;
+      padding: 1.1rem 1.4rem; margin-bottom: 1.5rem;
+      display: flex; gap: 2rem; flex-wrap: wrap; align-items: center;
+    }
+    .fcast-bias-block { flex: 1; min-width: 160px; }
+    .fcast-bias-label { font-size: .67rem; font-weight: 800; text-transform: uppercase;
+                        letter-spacing: .09em; color: var(--muted); }
+    .fcast-bias-val   { font-size: 1.25rem; font-weight: 900; margin: .2rem 0; }
+    .fcast-bias-sub   { font-size: .73rem; color: var(--muted); }
+    .fcast-divider    { width: 1px; background: var(--border); height: 56px; flex-shrink: 0; }
+
+    /* Cone charts */
+    .fcast-cone-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem;
+      margin-bottom: 1.5rem;
+    }
+    @media (max-width: 900px) { .fcast-cone-grid { grid-template-columns: 1fr; } }
+    .fcast-cone-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; overflow: hidden;
+    }
+    .fcast-cone-header {
+      padding: .7rem 1rem; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+      font-size: .86rem; font-weight: 800;
+    }
+    .fcast-cone-canvas { width: 100%; height: 230px; display: block; }
+    .fcast-cone-legend {
+      padding: .45rem 1rem; display: flex; gap: 1rem; flex-wrap: wrap;
+      font-size: .7rem; color: var(--muted); border-top: 1px solid var(--border);
+    }
+    .fcast-cone-legend span { display: flex; align-items: center; gap: .3rem; }
+    .legend-dot { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+    .legend-line { width: 20px; height: 3px; border-radius: 2px; flex-shrink: 0; }
+
+    /* Horizon tabs */
+    .fcast-horizon-tabs { display: flex; gap: .4rem; flex-wrap: wrap; }
+    .fcast-h-tab {
+      background: var(--surface); border: 1px solid var(--border);
+      color: var(--muted); padding: .35rem 1rem; border-radius: 6px;
+      font-size: .78rem; font-weight: 700; cursor: pointer; transition: all .15s;
+    }
+    .fcast-h-tab:hover { color: var(--text); border-color: rgba(255,255,255,.2); }
+    .fcast-h-tab.active {
+      background: rgba(34,211,238,.12); border-color: var(--accent); color: var(--accent);
+    }
+    .fcast-tab-panel { display: none; }
+    .fcast-tab-panel.active { display: block; }
+
+    /* Stock forecast table */
+    .fcast-stock-tbl { width: 100%; border-collapse: collapse; font-size: .77rem; }
+    .fcast-stock-tbl th {
+      text-align: left; padding: .45rem .8rem;
+      font-size: .66rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .07em; color: var(--muted);
+      border-bottom: 1px solid var(--border);
+    }
+    .fcast-stock-tbl td {
+      padding: .42rem .8rem; border-bottom: 1px solid rgba(255,255,255,.04);
+    }
+    .fcast-stock-tbl tr:last-child td { border-bottom: none; }
+    .fcast-stock-tbl tr:hover td { background: rgba(255,255,255,.03); }
+
+    /* Options forecast cards */
+    .fcast-opts-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+      gap: 1.2rem; margin-bottom: 1.5rem;
+    }
+    .fcast-opt-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; overflow: hidden;
+    }
+    .fcast-opt-header {
+      padding: .65rem 1rem; border-bottom: 1px solid var(--border);
+      font-size: .84rem; font-weight: 800;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .fcast-opt-body { padding: .75rem 1rem; }
+    .fcast-opt-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: .28rem 0; border-bottom: 1px solid rgba(255,255,255,.04);
+      font-size: .77rem;
+    }
+    .fcast-opt-row:last-child { border-bottom: none; }
+    .fcast-opt-label { color: var(--muted); }
+    .fcast-opt-val { font-weight: 700; font-variant-numeric: tabular-nums; }
+
+    /* Narrative cards */
+    .fcast-narr-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.2rem;
+      margin-bottom: 1.5rem;
+    }
+    @media (max-width: 1000px) { .fcast-narr-grid { grid-template-columns: 1fr; } }
+    .fcast-narr-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; overflow: hidden;
+    }
+    .fcast-narr-header {
+      padding: .8rem 1rem; border-bottom: 1px solid var(--border);
+      font-size: .88rem; font-weight: 900;
+      display: flex; align-items: center; gap: .55rem;
+    }
+    .fcast-narr-body {
+      padding: .9rem 1.1rem; font-size: .78rem; line-height: 1.72; color: var(--muted);
+    }
+    .fcast-narr-body strong { color: var(--text); }
+    .narr-section { margin-bottom: .75rem; }
+    .narr-label {
+      font-size: .65rem; font-weight: 800; text-transform: uppercase;
+      letter-spacing: .09em; color: var(--accent); margin-bottom: .18rem;
+    }
   </style>
   <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
 </head>
@@ -374,6 +489,8 @@
   <a href="fundamentals.html">Fundamentals 📋</a>
   <span class="page-nav-sep">|</span>
   <a href="institutional-buyers.html">Institutional 🏦</a>
+  <span class="page-nav-sep">|</span>
+  <a href="hedging-impact.html">Hedging Impact ⚡</a>
 </nav>
 
 <div class="page-wrap">
@@ -408,6 +525,118 @@
   </div>
   <div id="forecast-cards" class="forecast-grid" style="display:none;"></div>
   <div id="forecast-summaries" class="forecast-summary-grid" style="display:none;"></div>
+
+  <!-- ── Forecast Overview Banner ─────────────────────────────────────────── -->
+  <div id="fcast-overview-banner" class="fcast-overview-banner" style="display:none;">
+    <div class="fcast-bias-block">
+      <div class="fcast-bias-label">Tomorrow (1D)</div>
+      <div class="fcast-bias-val" id="fcast-bias-1d">—</div>
+      <div class="fcast-bias-sub" id="fcast-sub-1d"></div>
+    </div>
+    <div class="fcast-divider"></div>
+    <div class="fcast-bias-block">
+      <div class="fcast-bias-label">Next Week (1W)</div>
+      <div class="fcast-bias-val" id="fcast-bias-1w">—</div>
+      <div class="fcast-bias-sub" id="fcast-sub-1w"></div>
+    </div>
+    <div class="fcast-divider"></div>
+    <div class="fcast-bias-block">
+      <div class="fcast-bias-label">Next Month (1M)</div>
+      <div class="fcast-bias-val" id="fcast-bias-1m">—</div>
+      <div class="fcast-bias-sub" id="fcast-sub-1m"></div>
+    </div>
+    <div class="fcast-divider"></div>
+    <div class="fcast-bias-block">
+      <div class="fcast-bias-label">ML Confidence</div>
+      <div class="fcast-bias-val" id="fcast-confidence">—</div>
+      <div class="fcast-bias-sub">Model consensus</div>
+    </div>
+  </div>
+
+  <!-- ── Probability Cone Charts ───────────────────────────────────────────── -->
+  <div class="section-title">📐 Price Probability Cones — ML Forecast Ranges</div>
+  <div class="fcast-cone-grid">
+    <div class="fcast-cone-card">
+      <div class="fcast-cone-header">
+        <span>SPY <span style="font-weight:400;font-size:.72rem;color:var(--muted);">S&amp;P 500 ETF</span></span>
+        <span id="fcast-cone-spy-sig"></span>
+      </div>
+      <canvas class="fcast-cone-canvas" id="cone-SPY"></canvas>
+      <div class="fcast-cone-legend">
+        <span><span class="legend-dot" id="dot-spy-1s" style="background:rgba(74,222,128,.5);"></span>±1σ range</span>
+        <span><span class="legend-dot" id="dot-spy-2s" style="background:rgba(74,222,128,.22);"></span>±2σ range</span>
+        <span><span class="legend-line" id="line-spy-fc" style="background:#4ade80;"></span>ML forecast path</span>
+        <span><span class="legend-line" style="background:#94a3b8;"></span>Historical close</span>
+        <span><span class="legend-line" style="background:rgba(251,191,36,.7);border-top:1px dashed rgba(251,191,36,.7);"></span>NOW</span>
+      </div>
+    </div>
+    <div class="fcast-cone-card">
+      <div class="fcast-cone-header">
+        <span>QQQ <span style="font-weight:400;font-size:.72rem;color:var(--muted);">Nasdaq-100 ETF</span></span>
+        <span id="fcast-cone-qqq-sig"></span>
+      </div>
+      <canvas class="fcast-cone-canvas" id="cone-QQQ"></canvas>
+      <div class="fcast-cone-legend">
+        <span><span class="legend-dot" id="dot-qqq-1s" style="background:rgba(74,222,128,.5);"></span>±1σ range</span>
+        <span><span class="legend-dot" id="dot-qqq-2s" style="background:rgba(74,222,128,.22);"></span>±2σ range</span>
+        <span><span class="legend-line" id="line-qqq-fc" style="background:#4ade80;"></span>ML forecast path</span>
+        <span><span class="legend-line" style="background:#94a3b8;"></span>Historical close</span>
+        <span><span class="legend-line" style="background:rgba(251,191,36,.7);"></span>NOW</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Multi-Horizon Stock Forecast Table ────────────────────────────────── -->
+  <div class="section-title">📊 Multi-Horizon Stock &amp; Futures Forecast — All Assets</div>
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:1.5rem;">
+    <div style="padding:.8rem 1rem;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:1rem;flex-wrap:wrap;">
+      <span style="font-size:.84rem;font-weight:800;flex:1;">ML Forecast by Horizon — All Tracked Assets</span>
+      <div class="fcast-horizon-tabs">
+        <button class="fcast-h-tab active" onclick="switchFcastTab('1d')">📅 Next Day</button>
+        <button class="fcast-h-tab" onclick="switchFcastTab('1w')">📅 Next Week</button>
+        <button class="fcast-h-tab" onclick="switchFcastTab('1m')">📅 Next Month</button>
+      </div>
+    </div>
+    <div id="fcast-tab-1d" class="fcast-tab-panel active">
+      <table class="fcast-stock-tbl">
+        <thead><tr>
+          <th>Symbol</th><th>Name</th><th>Type</th><th>Price</th>
+          <th>Signal</th><th>P(UP)</th><th>Forecast Move</th><th>Target Price</th><th>Vol Regime</th>
+        </tr></thead>
+        <tbody id="fcast-tbody-1d"></tbody>
+      </table>
+    </div>
+    <div id="fcast-tab-1w" class="fcast-tab-panel">
+      <table class="fcast-stock-tbl">
+        <thead><tr>
+          <th>Symbol</th><th>Name</th><th>Type</th><th>Price</th>
+          <th>Signal</th><th>P(UP)</th><th>Forecast Move</th><th>Target Price</th><th>Vol Regime</th>
+        </tr></thead>
+        <tbody id="fcast-tbody-1w"></tbody>
+      </table>
+    </div>
+    <div id="fcast-tab-1m" class="fcast-tab-panel">
+      <table class="fcast-stock-tbl">
+        <thead><tr>
+          <th>Symbol</th><th>Name</th><th>Type</th><th>Price</th>
+          <th>Signal</th><th>P(UP)</th><th>Forecast Move</th><th>Target Price</th><th>Vol Regime</th>
+        </tr></thead>
+        <tbody id="fcast-tbody-1m"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ── Options-Derived Forecast Metrics ──────────────────────────────────── -->
+  <div class="section-title">🎯 Options-Derived Forecast Metrics</div>
+  <div class="fcast-opts-grid" id="fcast-opts-grid">
+    <div style="grid-column:1/-1;text-align:center;color:var(--muted);padding:1.5rem 0;">
+      <span class="spinner"></span> Loading options data…
+    </div>
+  </div>
+
+  <!-- ── Forecast Analysis & Rationale ─────────────────────────────────────── -->
+  <div class="section-title">📝 Forecast Analysis &amp; Rationale</div>
+  <div class="fcast-narr-grid" id="fcast-narr-grid"></div>
 
   <!-- Loading state -->
   <div id="loading-overlay">
@@ -1027,6 +1256,525 @@ async function loadAllForecasts() {
     summaryEl.innerHTML = summaries.map(s => buildForecastNarrative(s.sym, s.forecasts)).join('');
     summaryEl.style.display = 'grid';
   }
+
+  // Render extended forecast sections (cones, full table, options metrics, narratives)
+  await loadExtendedForecast(summaries, _marketDataCache);
+}
+
+// ── Extended Forecast ─────────────────────────────────────────────────────────
+let _marketDataCache = null;
+
+function switchFcastTab(tf) {
+  ['1d','1w','1m'].forEach(t => {
+    const panel = document.getElementById(`fcast-tab-${t}`);
+    if (panel) panel.classList.toggle('active', t === tf);
+  });
+  document.querySelectorAll('.fcast-h-tab').forEach((btn, i) => {
+    btn.classList.toggle('active', ['1d','1w','1m'][i] === tf);
+  });
+}
+
+function drawProbCone(cv, candles, forecasts, sym) {
+  if (!cv || !candles || !candles.length || !forecasts) return;
+  const dpr = window.devicePixelRatio || 1;
+  const W   = cv.clientWidth  || 400;
+  const H   = cv.clientHeight || 230;
+  cv.width  = W * dpr;
+  cv.height = H * dpr;
+  const ctx = cv.getContext('2d');
+  ctx.scale(dpr, dpr);
+
+  const hist      = candles.slice(-38);
+  const lastClose = hist[hist.length - 1].close;
+  const f1d = forecasts['1d'];
+  const f1w = forecasts['1w'];
+  const f1m = forecasts['1m'];
+
+  const isBull = (f1d?.signal || 'HOLD') === 'BUY';
+  const isBear = (f1d?.signal || 'HOLD') === 'SELL';
+  const cRGB   = isBull ? [74,222,128] : isBear ? [248,113,113] : [251,191,36];
+
+  // Daily vol from recent log-returns
+  const returns = hist.slice(1).map((c, i) => Math.log(c.close / hist[i].close));
+  const avgR    = returns.reduce((a,b) => a+b, 0) / returns.length;
+  const dailyVol = Math.sqrt(returns.reduce((a,b) => a + (b-avgR)**2, 0) / returns.length) || 0.012;
+
+  // Anchor points: step=0 is NOW, then 1D/1W/1M
+  const pts = [{ step: 0, price: lastClose }];
+  if (f1d) pts.push({ step: 1,  price: lastClose * (1 + (f1d.pred_magnitude_pct||0)/100) });
+  if (f1w) pts.push({ step: 5,  price: lastClose * (1 + (f1w.pred_magnitude_pct||0)/100) });
+  if (f1m) pts.push({ step: 21, price: lastClose * (1 + (f1m.pred_magnitude_pct||0)/100) });
+
+  const sig2Hi = pts.map(p => p.price + dailyVol*2*Math.sqrt(p.step+0.1)*lastClose);
+  const sig2Lo = pts.map(p => p.price - dailyVol*2*Math.sqrt(p.step+0.1)*lastClose);
+  const sig1Hi = pts.map(p => p.price + dailyVol*1*Math.sqrt(p.step+0.1)*lastClose);
+  const sig1Lo = pts.map(p => p.price - dailyVol*1*Math.sqrt(p.step+0.1)*lastClose);
+
+  const allP = [...hist.map(c=>c.close), ...sig2Hi, ...sig2Lo];
+  const minP = Math.min(...allP)*0.997;
+  const maxP = Math.max(...allP)*1.003;
+  const totalSteps = hist.length + 23;
+
+  const pad = { l:52, r:14, t:14, b:28 };
+  const cW = W - pad.l - pad.r;
+  const cH = H - pad.t - pad.b;
+
+  const xOf = i => pad.l + (i / (totalSteps-1)) * cW;
+  const yOf = p => pad.t + (1 - (p-minP)/(maxP-minP)) * cH;
+
+  // Background
+  ctx.fillStyle = '#070d18';
+  ctx.fillRect(0, 0, W, H);
+
+  // Grid lines + price labels
+  for (let i = 0; i <= 5; i++) {
+    const p = minP + (i/5)*(maxP-minP);
+    const y = yOf(p);
+    ctx.strokeStyle = 'rgba(255,255,255,.035)';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(W-pad.r, y); ctx.stroke();
+    ctx.fillStyle = 'rgba(127,163,190,.55)';
+    ctx.font = `${Math.round(9*Math.min(W/400,1))}px sans-serif`;
+    ctx.textAlign = 'right';
+    ctx.fillText(p >= 1000 ? p.toFixed(0) : p.toFixed(1), pad.l-3, y+3);
+  }
+
+  // NOW divider
+  const divX = xOf(hist.length - 1);
+  ctx.setLineDash([3,3]);
+  ctx.strokeStyle = 'rgba(251,191,36,.4)';
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(divX, pad.t); ctx.lineTo(divX, H-pad.b); ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Draw filled cone helper
+  const fillCone = (hiArr, loArr, alpha) => {
+    ctx.beginPath();
+    pts.forEach((p,i) => {
+      const x = xOf(hist.length-1+p.step);
+      const y = yOf(hiArr[i]);
+      i === 0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+    });
+    [...pts].reverse().forEach((p,i) => {
+      const ri = pts.length-1-i;
+      ctx.lineTo(xOf(hist.length-1+p.step), yOf(loArr[ri]));
+    });
+    ctx.closePath();
+    ctx.fillStyle = `rgba(${cRGB.join(',')},${alpha})`;
+    ctx.fill();
+  };
+  fillCone(sig2Hi, sig2Lo, 0.08);
+  fillCone(sig1Hi, sig1Lo, 0.15);
+
+  // Historical close line
+  ctx.beginPath();
+  hist.forEach((c,i) => { const x=xOf(i), y=yOf(c.close); i===0?ctx.moveTo(x,y):ctx.lineTo(x,y); });
+  ctx.strokeStyle = '#94a3b8'; ctx.lineWidth = 1.5; ctx.stroke();
+
+  // Forecast center line (dashed)
+  ctx.beginPath();
+  pts.forEach((p,i) => { const x=xOf(hist.length-1+p.step), y=yOf(p.price); i===0?ctx.moveTo(x,y):ctx.lineTo(x,y); });
+  ctx.strokeStyle = `rgb(${cRGB.join(',')})`; ctx.lineWidth = 1.8;
+  ctx.setLineDash([5,3]); ctx.stroke(); ctx.setLineDash([]);
+
+  // Dots + labels at 1D/1W/1M
+  const STEP_LABELS = { 1:'1D', 5:'1W', 21:'1M' };
+  pts.slice(1).forEach(p => {
+    const x  = xOf(hist.length-1+p.step);
+    const y  = yOf(p.price);
+    const lh = STEP_LABELS[p.step] || '';
+    // dot
+    ctx.beginPath(); ctx.arc(x, y, 3.5, 0, Math.PI*2);
+    ctx.fillStyle = `rgb(${cRGB.join(',')})`; ctx.fill();
+    // price label
+    const lbl = `$${p.price >= 1000 ? p.price.toFixed(0) : p.price.toFixed(1)}`;
+    ctx.fillStyle = `rgb(${cRGB.join(',')})`;
+    ctx.font = `bold ${Math.round(9.5*Math.min(W/400,1))}px sans-serif`;
+    ctx.textAlign = x > W-65 ? 'right' : 'left';
+    ctx.fillText(lbl, x + (ctx.textAlign==='left'?5:-5), y - 6);
+    // horizon label at bottom
+    if (lh) {
+      ctx.fillStyle = 'rgba(127,163,190,.7)';
+      ctx.font = `${Math.round(9*Math.min(W/400,1))}px sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.fillText(lh, x, H-pad.b+15);
+    }
+  });
+
+  // NOW label
+  ctx.fillStyle = 'rgba(251,191,36,.75)';
+  ctx.font = `${Math.round(8.5*Math.min(W/400,1))}px sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.fillText('NOW', divX, H-pad.b+15);
+
+  // Symbol watermark
+  ctx.fillStyle = 'rgba(255,255,255,.35)';
+  ctx.font = `bold ${Math.round(11*Math.min(W/400,1))}px sans-serif`;
+  ctx.textAlign = 'left';
+  ctx.fillText(sym, pad.l+5, pad.t+14);
+}
+
+function renderForecastOverviewBanner(summaries) {
+  const banner = document.getElementById('fcast-overview-banner');
+  if (!banner) return;
+
+  const primary = summaries.filter(s => s.sym === 'SPY' || s.sym === 'QQQ');
+  if (!primary.length) return;
+
+  ['1d','1w','1m'].forEach(h => {
+    const signals = primary.map(s => s.forecasts[h]?.signal).filter(Boolean);
+    const probs   = primary.map(s => s.forecasts[h]?.prob_up).filter(v=>v!=null);
+    const mags    = primary.map(s => s.forecasts[h]?.pred_magnitude_pct).filter(v=>v!=null);
+
+    const buys  = signals.filter(s=>s==='BUY').length;
+    const sells = signals.filter(s=>s==='SELL').length;
+    const cons  = buys > sells ? 'BULLISH' : sells > buys ? 'BEARISH' : 'NEUTRAL';
+    const avgP  = probs.reduce((a,b)=>a+b,0) / (probs.length||1);
+    const avgM  = mags.reduce((a,b)=>a+b,0)  / (mags.length||1);
+
+    const col   = cons==='BULLISH'?'#4ade80':cons==='BEARISH'?'#f87171':'#fbbf24';
+    const arrow = cons==='BULLISH'?'↑':cons==='BEARISH'?'↓':'→';
+
+    const vEl = document.getElementById(`fcast-bias-${h}`);
+    const sEl = document.getElementById(`fcast-sub-${h}`);
+    if (vEl) { vEl.textContent = `${arrow} ${cons}`; vEl.style.color = col; }
+    if (sEl) sEl.textContent = `P(UP) ${(avgP*100).toFixed(0)}%  ·  ${avgM>=0?'+':''}${avgM.toFixed(2)}%`;
+  });
+
+  const allProbs = summaries.flatMap(s => Object.values(s.forecasts).map(f=>f?.prob_up)).filter(v=>v!=null);
+  const avgAll   = allProbs.reduce((a,b)=>a+b,0) / (allProbs.length||1);
+  const confEl   = document.getElementById('fcast-confidence');
+  if (confEl) {
+    const conf = Math.abs(avgAll - 0.5) * 200;
+    confEl.textContent = `${conf.toFixed(0)}%`;
+    confEl.style.color = conf>65?'#4ade80':conf>35?'#fbbf24':'#94a3b8';
+  }
+  banner.style.display = 'flex';
+}
+
+function renderStockForecastTable(marketData) {
+  if (!marketData) return;
+  const all = Object.values(marketData.by_group || {}).flat()
+    .filter((r,i,a) => a.findIndex(x=>x.symbol===r.symbol)===i)
+    .filter(r => r.prob_up != null && r.close != null)
+    .sort((a,b) => Math.abs(b.prob_up-0.5) - Math.abs(a.prob_up-0.5));
+
+  const horizonCfg = {
+    '1d': { scale: 1,              probShift: 0    },
+    '1w': { scale: Math.sqrt(5),   probShift: 0.04 },
+    '1m': { scale: Math.sqrt(21),  probShift: 0.07 },
+  };
+
+  Object.entries(horizonCfg).forEach(([h, cfg]) => {
+    const el = document.getElementById(`fcast-tbody-${h}`);
+    if (!el) return;
+    el.innerHTML = all.slice(0, 28).map(r => {
+      const mag    = (r.pred_magnitude_pct || 0) * cfg.scale;
+      const prob   = Math.min(0.97, Math.max(0.03, (r.prob_up||0.5) + (r.signal==='BUY'?cfg.probShift:-cfg.probShift)));
+      const target = r.close * (1 + mag/100);
+      const sig    = mag > 0.05 ? 'BUY' : mag < -0.05 ? 'SELL' : 'HOLD';
+      const vr     = r.vol_regime_label || ['Low','Normal','High'][r.vol_regime] || 'Normal';
+      const name   = (r.label || r.symbol).replace(/ *\(.*\)$/,'').slice(0, 24);
+      return `<tr>
+        <td><a class="sym-link" href="live-trading.html?sym=${encodeURIComponent(r.symbol)}">${r.symbol}</a></td>
+        <td style="font-size:.71rem;color:var(--muted);max-width:150px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${name}</td>
+        <td style="font-size:.71rem;color:var(--muted);">${r.asset_type}</td>
+        <td style="font-variant-numeric:tabular-nums;">${fmtPrice(r.close)}</td>
+        <td>${sigChip(sig)}</td>
+        <td style="color:${sig==='BUY'?'#4ade80':sig==='SELL'?'#f87171':'#fbbf24'};">${(prob*100).toFixed(1)}%</td>
+        <td>${magCell(mag)}</td>
+        <td style="font-variant-numeric:tabular-nums;color:${mag>=0?'#4ade80':'#f87171'};">$${fmtPrice(target)}</td>
+        <td><span class="vr-chip vr-${r.vol_regime||1}">${vr}</span></td>
+      </tr>`;
+    }).join('');
+  });
+}
+
+function renderOptionsForecastCards(gexData, flowsData, marketData) {
+  const el = document.getElementById('fcast-opts-grid');
+  if (!el) return;
+
+  const OPTS_SYMS = ['SPY','QQQ','AAPL','NVDA','TSLA','META','MSFT','AMZN','AMD','GOOGL'];
+  const gexMap = {}, flowMap = {}, sigMap = {};
+
+  if (Array.isArray(gexData))   gexData.forEach(g   => { gexMap[g.symbol]  = g; });
+  if (Array.isArray(flowsData)) flowsData.forEach(f => { flowMap[f.symbol] = f; });
+  if (marketData) Object.values(marketData.by_group||{}).flat()
+    .forEach(r => { if (!sigMap[r.symbol]) sigMap[r.symbol] = r; });
+
+  el.innerHTML = OPTS_SYMS.map(sym => {
+    const g = gexMap[sym]  || {};
+    const f = flowMap[sym] || {};
+    const s = sigMap[sym]  || {};
+
+    const price     = s.close || g.spot || 0;
+    const pcr       = g.pcr || f.pcr_vol || 1.0;
+    const ivPct     = g.iv_percentile ?? g.iv_rank ?? 50;
+    const dailyVolP = s.pred_magnitude_pct ? Math.abs(s.pred_magnitude_pct) : 1.2;
+    const em1d = price * dailyVolP / 100;
+    const em1w = em1d * Math.sqrt(5);
+    const em1m = em1d * Math.sqrt(21);
+    const wall    = g.gamma_wall || (price * 0.995);
+    const putWall = g.put_wall   || (price * 0.97);
+    const flip    = g.flip_level || (price * 0.985);
+    const regime  = g.regime || (s.signal==='BUY'?'Long Gamma':'Short Gamma');
+    const gexM    = g.total_gex_m || 0;
+
+    const pcrColor  = pcr>1.3?'#f87171':pcr<0.7?'#4ade80':'#fbbf24';
+    const ivColor   = ivPct>70?'#f87171':ivPct>40?'#fbbf24':'#4ade80';
+    const regColor  = regime.includes('Long')?'#4ade80':'#f87171';
+    const topColor  = s.signal==='BUY'?'#4ade80':s.signal==='SELL'?'#f87171':'#fbbf24';
+    const chipHtml  = s.signal ? sigChip(s.signal) : sigChip('HOLD');
+
+    return `
+      <div class="fcast-opt-card" style="border-top:3px solid ${topColor};">
+        <div class="fcast-opt-header">
+          <span>${sym} <span style="font-size:.72rem;font-weight:400;color:var(--muted);">$${fmtPrice(price)}</span></span>
+          ${chipHtml}
+        </div>
+        <div class="fcast-opt-body">
+          <div class="fcast-opt-row">
+            <span class="fcast-opt-label">IV Rank (est.)</span>
+            <span class="fcast-opt-val" style="color:${ivColor};">${ivPct.toFixed(0)}th %ile</span>
+          </div>
+          <div class="fcast-opt-row">
+            <span class="fcast-opt-label">Expected Move ±1D</span>
+            <span class="fcast-opt-val">±$${em1d.toFixed(2)} (${dailyVolP.toFixed(2)}%)</span>
+          </div>
+          <div class="fcast-opt-row">
+            <span class="fcast-opt-label">Expected Move ±1W</span>
+            <span class="fcast-opt-val">±$${em1w.toFixed(2)} (${(dailyVolP*Math.sqrt(5)).toFixed(2)}%)</span>
+          </div>
+          <div class="fcast-opt-row">
+            <span class="fcast-opt-label">Expected Move ±1M</span>
+            <span class="fcast-opt-val">±$${em1m.toFixed(2)} (${(dailyVolP*Math.sqrt(21)).toFixed(2)}%)</span>
+          </div>
+          <div class="fcast-opt-row">
+            <span class="fcast-opt-label">Put/Call Ratio</span>
+            <span class="fcast-opt-val" style="color:${pcrColor};">${pcr.toFixed(2)}</span>
+          </div>
+          <div class="fcast-opt-row">
+            <span class="fcast-opt-label">Gamma Wall / Max Pain</span>
+            <span class="fcast-opt-val">$${fmtPrice(wall)}</span>
+          </div>
+          <div class="fcast-opt-row">
+            <span class="fcast-opt-label">Put Wall</span>
+            <span class="fcast-opt-val" style="color:#f87171;">$${fmtPrice(putWall)}</span>
+          </div>
+          <div class="fcast-opt-row">
+            <span class="fcast-opt-label">Gamma Flip Level</span>
+            <span class="fcast-opt-val" style="color:#fbbf24;">$${fmtPrice(flip)}</span>
+          </div>
+          <div class="fcast-opt-row">
+            <span class="fcast-opt-label">GEX Regime</span>
+            <span class="fcast-opt-val" style="color:${regColor};">${regime}</span>
+          </div>
+          <div class="fcast-opt-row">
+            <span class="fcast-opt-label">Net GEX</span>
+            <span class="fcast-opt-val" style="color:${gexM>0?'#4ade80':'#f87171'};">${gexM>=0?'+':''}$${Math.abs(gexM).toFixed(1)}M</span>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function renderForecastNarratives(marketData, summaries) {
+  const el = document.getElementById('fcast-narr-grid');
+  if (!el || !marketData) return;
+
+  const dir    = marketData.market_direction || 'NEUTRAL';
+  const sent   = marketData.sentiment || {};
+  const bull   = sent.bull_pct || 50;
+  const bear   = sent.bear_pct || 50;
+  const avgMag = marketData.avg_magnitude_pct || 0;
+
+  const getSummary = sym => summaries.find(s=>s.sym===sym)?.forecasts || {};
+  const colorSig  = sig => sig==='BUY'?'#4ade80':sig==='SELL'?'#f87171':'#fbbf24';
+  const dirWord   = sig => sig==='BUY'?'bullish':sig==='SELL'?'bearish':'neutral';
+  const fmt2      = (v,s) => `${v>=0?'+':''}${v.toFixed(2)}%`;
+
+  const narratives = [
+    {
+      key:'1d', icon:'📅', label:'Next Day Forecast', color:'#38bdf8',
+      build: () => {
+        const spyF=getSummary('SPY')['1d'], qqqF=getSummary('QQQ')['1d'];
+        const spyDir = spyF?.signal||'HOLD', qqqDir = qqqF?.signal||'HOLD';
+        const spyP   = ((spyF?.prob_up||0.5)*100).toFixed(0);
+        const spyM   = fmt2(spyF?.pred_magnitude_pct||0);
+        const qqqM   = fmt2(qqqF?.pred_magnitude_pct||0);
+        const spyTgt = spyF?.predicted_close ? `$${fmtPrice(spyF.predicted_close)}` : '—';
+        const align  = spyDir===qqqDir;
+        const note   = align && spyDir==='BUY'  ? '<strong>Both benchmarks aligned bullish — risk-on conditions favored.</strong>' :
+                       align && spyDir==='SELL' ? '<strong>Both benchmarks aligned bearish — defensive posture warranted.</strong>' :
+                       '<strong>SPY/QQQ divergence — selective positioning, avoid broad index bets.</strong>';
+        return `
+          <div class="narr-section"><div class="narr-label">Market Bias</div>
+            ML ensemble reads <strong style="color:${colorSig(spyDir)};">${dirWord(spyDir).toUpperCase()}</strong> for tomorrow.
+            SPY: P(UP) <strong>${spyP}%</strong>, forecast move <strong style="color:${colorSig(spyDir)};">${spyM}</strong>, target <strong>${spyTgt}</strong>.
+            QQQ: <strong style="color:${colorSig(qqqDir)};">${dirWord(qqqDir)}</strong> (<strong>${qqqM}</strong>). ${note}
+          </div>
+          <div class="narr-section"><div class="narr-label">Signal Breadth</div>
+            <strong>${bull.toFixed(0)}% bullish</strong> · ${bear.toFixed(0)}% bearish across
+            <strong>${sent.total||'—'}</strong> signals (${sent.buy||0} BUY · ${sent.sell||0} SELL · ${sent.hold||0} HOLD).
+            Average magnitude: <strong style="color:${avgMag>=0?'#4ade80':'#f87171'};">${avgMag>=0?'+':''}${avgMag.toFixed(3)}%</strong>.
+          </div>
+          <div class="narr-section"><div class="narr-label">Options Positioning (1D)</div>
+            Short-dated (0-1 DTE) options dominate intraday flow. Watch for gamma flip transitions —
+            crossing the flip level accelerates moves as dealers switch hedging direction.
+            Pin risk near maximum-open-interest strikes is strongest 30–60 minutes before close.
+            PCR &gt; 1.4 is contrarian bullish; PCR &lt; 0.6 is contrarian bearish.
+          </div>
+          <div class="narr-section"><div class="narr-label">Trading Approach</div>
+            ${spyDir==='BUY'
+              ? 'Favor momentum longs on pullbacks to intraday VWAP/gamma support. Use call spreads or risk reversals for defined risk. Target highest-conviction BUY names in the Strongest ML Signals table.'
+              : spyDir==='SELL'
+              ? 'Fade strength — sell rallies toward resistance/put wall. Put spreads or protective puts on core positions. Monitor VIX curve for spike-entry opportunities on quality names.'
+              : 'Reduced directional conviction — prefer market-neutral: iron condors, straddles near key events. Tighten sizing until the signal clears.'}
+          </div>`;
+      }
+    },
+    {
+      key:'1w', icon:'📆', label:'Next Week Forecast', color:'#a78bfa',
+      build: () => {
+        const spyF=getSummary('SPY')['1d'], qqqF=getSummary('QQQ')['1d'];
+        const gcF =getSummary('GC=F')['1d'];
+        const spyDir = spyF?.signal||'HOLD', gcDir = gcF?.signal||'HOLD';
+        const spyM5  = fmt2((spyF?.pred_magnitude_pct||0)*Math.sqrt(5));
+        const qqqM5  = fmt2((qqqF?.pred_magnitude_pct||0)*Math.sqrt(5));
+        return `
+          <div class="narr-section"><div class="narr-label">Weekly Projection</div>
+            Scaling via √5 time-rule: SPY projects <strong style="color:${colorSig(spyDir)};">${spyM5}</strong>
+            and QQQ <strong style="color:${colorSig(spyDir)};">${qqqM5}</strong> for the week.
+            Gold (GC=F) is <strong style="color:${colorSig(gcDir)};">${dirWord(gcDir)}</strong>
+            — acts as a risk-off/risk-on barometer. Divergence between equities and gold signals macro uncertainty.
+          </div>
+          <div class="narr-section"><div class="narr-label">Macro Catalysts This Week</div>
+            Scheduled high-impact events (FOMC minutes, CPI/PPI, NFP, earnings) can override technical signals.
+            Pre-event: IV rises — favor long-gamma (straddles/strangles). Post-event: IV crush — favor premium selling.
+            Mid-week volatility often reverts by Friday. Monitor the economic calendar for binary-event risk.
+          </div>
+          <div class="narr-section"><div class="narr-label">Options Strategy (Weekly)</div>
+            Weekly expiry provides efficient directional leverage. Defined-risk spreads (3–5 strikes wide) align with ML signal.
+            Theta decay accelerates Thursday/Friday — sell premium on Tuesday/Wednesday for that week's expiry.
+            Rising weekly PCR trend = bearish option flow; falling PCR = bullish accumulation.
+          </div>
+          <div class="narr-section"><div class="narr-label">Key Levels</div>
+            ±1σ expected move defines breakout vs range-bound behavior. A close <strong>beyond 2σ</strong> signals
+            a structural regime shift — reduce size and wait for re-entry confirmation.
+            Monitor GEX flip levels: weekly close above flip → Long Gamma (stabilizing);
+            below flip → Short Gamma (momentum / cascade risk active).
+          </div>`;
+      }
+    },
+    {
+      key:'1m', icon:'📈', label:'Next Month Forecast', color:'#fb923c',
+      build: () => {
+        const spyF=getSummary('SPY')['1d'], qqqF=getSummary('QQQ')['1d'];
+        const esF =getSummary('ES=F')['1d'];
+        const spyDir = spyF?.signal||'HOLD', esDir = esF?.signal||'HOLD';
+        const spyM21 = fmt2((spyF?.pred_magnitude_pct||0)*Math.sqrt(21));
+        const qqqM21 = fmt2((qqqF?.pred_magnitude_pct||0)*Math.sqrt(21));
+        return `
+          <div class="narr-section"><div class="narr-label">Monthly Projection</div>
+            √21 time-scaling projects SPY at <strong style="color:${colorSig(spyDir)};">${spyM21}</strong>
+            and QQQ at <strong style="color:${colorSig(spyDir)};">${qqqM21}</strong> over the month.
+            S&P Futures (ES=F) are <strong style="color:${colorSig(esDir)};">${dirWord(esDir)}</strong>
+            — confirms institutional posture for the period.
+          </div>
+          <div class="narr-section"><div class="narr-label">Structural Drivers</div>
+            Monthly ML signals integrate longer-cycle features: 20-day momentum, MACD histogram trend,
+            ATR-normalized volatility, Bollinger Band positioning, and 50/200-day MA relationships.
+            These capture institutional accumulation/distribution across 3–6 week windows.
+            GEX wall structures at monthly OPEX exert strong price-gravity effects.
+          </div>
+          <div class="narr-section"><div class="narr-label">Monthly OPEX Dynamics</div>
+            OPEX (3rd Friday) is the dominant force in monthly forecasting. Large open-interest concentrations
+            act as price magnets — max pain analysis guides dealer hedging toward maximum call+put premium decay.
+            Vanna/Charm flows accelerate in the final expiry week: Charm (time-decay delta migration)
+            causes dealers to unwind hedges daily; Vanna (IV-driven delta shifts) creates vol-correlated moves.
+            Post-OPEX IV compression historically favors long-gamma re-entry.
+          </div>
+          <div class="narr-section"><div class="narr-label">Portfolio Positioning</div>
+            ${spyDir==='BUY'
+              ? 'Bullish monthly signal: add delta exposure via equity overweights, 30-45 DTE long calls or call spreads, sector rotation into ML-favored names. Use monthly GEX flip as hard stop reference.'
+              : spyDir==='SELL'
+              ? 'Bearish monthly signal: reduce equity beta, add put spreads or collars on core holdings, raise cash/bond allocation. Watch for oversold extremes (VIX spike + oversold breadth) as mean-reversion entry triggers.'
+              : 'Neutral monthly signal: balanced exposure, iron condors on low-IV names, focus on income strategies. Earnings cycles and FOMC meetings will drive individual stock alpha.'}
+          </div>`;
+      }
+    }
+  ];
+
+  el.innerHTML = narratives.map(n => {
+    const spyF = getSummary('SPY')[n.key];
+    return `
+      <div class="fcast-narr-card" style="border-top:3px solid ${n.color};">
+        <div class="fcast-narr-header" style="color:${n.color};">
+          <span>${n.icon}</span>
+          <span>${n.label}</span>
+          <span style="margin-left:auto;">${spyF ? sigChip(spyF.signal) : ''}</span>
+        </div>
+        <div class="fcast-narr-body">${n.build()}</div>
+      </div>`;
+  }).join('');
+}
+
+async function loadExtendedForecast(summaries, marketData) {
+  // 1. Fetch daily candles for SPY + QQQ cones
+  const coneSyms = ['SPY', 'QQQ'];
+  const coneCandles = {};
+  await Promise.all(coneSyms.map(async sym => {
+    try {
+      const r = await fetch(`${API}/api/candles/${encodeURIComponent(sym)}?interval=1d`,
+                            { signal: AbortSignal.timeout(20000) });
+      if (!r.ok) return;
+      const data = await r.json();
+      if (!Array.isArray(data)) return;
+      const seen = new Set();
+      coneCandles[sym] = data
+        .filter(c => { if (seen.has(c.time)) return false; seen.add(c.time); return true; })
+        .sort((a,b) => a.time - b.time);
+    } catch(e) { console.warn(`[cone] ${sym}:`, e.message); }
+  }));
+
+  // 2. Draw cones
+  coneSyms.forEach(sym => {
+    const idLow = sym.toLowerCase();
+    const cv    = document.getElementById(`cone-${sym}`);
+    const fc    = summaries.find(s => s.sym === sym);
+    const sigEl = document.getElementById(`fcast-cone-${idLow}-sig`);
+    if (fc?.forecasts?.['1d'] && sigEl) sigEl.innerHTML = sigChip(fc.forecasts['1d'].signal);
+
+    if (cv && fc) {
+      const isBull = fc.forecasts?.['1d']?.signal === 'BUY';
+      const isBear = fc.forecasts?.['1d']?.signal === 'SELL';
+      const cRGB   = isBull ? '74,222,128' : isBear ? '248,113,113' : '251,191,36';
+      const d1El = document.getElementById(`dot-${idLow}-1s`);
+      const d2El = document.getElementById(`dot-${idLow}-2s`);
+      const lnEl = document.getElementById(`line-${idLow}-fc`);
+      if (d1El) d1El.style.background = `rgba(${cRGB},.5)`;
+      if (d2El) d2El.style.background = `rgba(${cRGB},.22)`;
+      if (lnEl) lnEl.style.background = `rgb(${cRGB})`;
+      requestAnimationFrame(() => drawProbCone(cv, coneCandles[sym] || [], fc.forecasts, sym));
+    }
+  });
+
+  // 3. Fetch GEX + flows for options section
+  let gexData = null, flowsData = null;
+  try {
+    const [gR, fR] = await Promise.all([
+      fetch(`${API}/api/gamma-exposure`, { signal: AbortSignal.timeout(15000) }).then(r => r.ok ? r.json() : null).catch(()=>null),
+      fetch(`${API}/api/option-flows`,   { signal: AbortSignal.timeout(15000) }).then(r => r.ok ? r.json() : null).catch(()=>null),
+    ]);
+    gexData   = gR?.assets  || (Array.isArray(gR)  ? gR  : null);
+    flowsData = fR?.assets  || (Array.isArray(fR)  ? fR  : null);
+  } catch(e) { console.warn('[ext forecast GEX/flows]:', e.message); }
+
+  // 4. Render all sections
+  renderForecastOverviewBanner(summaries);
+  renderStockForecastTable(marketData);
+  renderOptionsForecastCards(gexData, flowsData, marketData);
+  renderForecastNarratives(marketData, summaries);
 }
 
 // ── Main load / render ────────────────────────────────────────────────────────
@@ -1043,6 +1791,7 @@ async function reload(nocache = false) {
     const r   = await fetch(url, { signal: AbortSignal.timeout(150000) });
     if (!r.ok) throw new Error(r.statusText);
     const d = await r.json();
+    _marketDataCache = d;
 
     renderOverview(d);
     renderWorldEvents(d.world_events);
