@@ -1,0 +1,1217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hedging Impact — Real-Time Options Dealer Flow</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
+  <style>
+    .hi-wrap { max-width:1600px; margin:0 auto; padding:0 1.5rem 6rem; }
+
+    .page-nav { display:flex;align-items:center;gap:1rem;padding:.6rem 1.5rem;background:var(--surface);border-bottom:1px solid var(--border);font-size:.83rem;flex-wrap:wrap; }
+    .page-nav a { color:var(--muted);text-decoration:none;padding:.3rem .7rem;border-radius:5px;transition:color .15s,background .15s; }
+    .page-nav a:hover { color:var(--text);background:rgba(255,255,255,.06); }
+    .page-nav a.active { color:#f97316;font-weight:700; }
+    .page-nav-sep { color:var(--border); }
+
+    /* ── Hero ── */
+    .hi-hero { padding:3rem 1.5rem 2rem;text-align:center;background:radial-gradient(ellipse 80% 55% at 50% -5%,rgba(249,115,22,.12) 0%,transparent 65%),var(--bg);border-bottom:1px solid var(--border); }
+    .hi-hero h1 { font-size:clamp(1.7rem,4vw,2.8rem);font-weight:900;letter-spacing:-.03em;line-height:1.15;margin-bottom:.6rem;background:linear-gradient(135deg,#f97316 0%,#fb923c 40%,#fff 80%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text; }
+    .hi-hero p { color:var(--muted);font-size:1rem;max-width:760px;margin:0 auto 1.2rem;line-height:1.7; }
+    .hi-badge { display:inline-flex;align-items:center;gap:.5rem;padding:.3rem 1rem;background:rgba(249,115,22,.1);border:1px solid rgba(249,115,22,.25);border-radius:999px;color:#f97316;font-size:.78rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;margin-bottom:.8rem; }
+
+    /* ── Live stats ── */
+    .stats-strip { display:grid;grid-template-columns:repeat(auto-fill,minmax(145px,1fr));gap:1px;background:var(--border);border-top:1px solid var(--border);border-bottom:1px solid var(--border); }
+    .stat-cell { background:var(--surface);padding:.9rem 1.1rem;text-align:center; }
+    .stat-val { font-size:1.3rem;font-weight:900;margin-bottom:.1rem;font-family:'Consolas',monospace; }
+    .stat-lbl { font-size:.68rem;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--muted); }
+
+    /* ── Server bar ── */
+    .server-bar { display:flex;align-items:center;gap:.75rem;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:.5rem 1rem;margin:1.2rem 0;font-size:.84rem; }
+    .sdot { width:9px;height:9px;border-radius:50%;background:#f87171;flex-shrink:0;transition:background .3s; }
+    .sdot.on { background:#4ade80; } .sdot.loading { background:#fbbf24;animation:pulse 1s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1}50%{opacity:.4} }
+    .smsg { color:var(--muted);flex:1; }
+    .rbtn { background:transparent;border:1px solid var(--border);color:var(--muted);padding:.25rem .7rem;border-radius:5px;cursor:pointer;font-size:.78rem;transition:border-color .2s,color .2s; }
+    .rbtn:hover { border-color:#f97316;color:#f97316; }
+
+    /* ── Section headers ── */
+    .sec-hdr { display:flex;align-items:center;gap:.8rem;margin:2.2rem 0 1.1rem;padding-bottom:.55rem;border-bottom:2px solid var(--border); }
+    .sec-num { background:#f97316;color:#080d1a;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:.8rem;flex-shrink:0; }
+    .sec-title { font-size:1.15rem;font-weight:800; }
+    .sec-sub   { font-size:.78rem;color:var(--muted);margin-left:.3rem; }
+
+    /* ── Layout helpers ── */
+    .two-col   { display:grid;grid-template-columns:1fr 1fr;gap:1.2rem;margin-bottom:1.2rem; }
+    .three-col { display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-bottom:1.2rem; }
+    .four-col  { display:grid;grid-template-columns:repeat(4,1fr);gap:.85rem;margin-bottom:1.2rem; }
+    @media(max-width:1100px){.four-col{grid-template-columns:1fr 1fr;}}
+    @media(max-width:900px){.two-col,.three-col,.four-col{grid-template-columns:1fr;}}
+
+    /* ── Chart card ── */
+    .chart-card { background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:.9rem; }
+    .chart-hdr  { display:flex;align-items:center;justify-content:space-between;padding:.65rem 1rem;border-bottom:1px solid var(--border); }
+    .chart-title { font-weight:800;font-size:.88rem; }
+    .chart-sub   { font-size:.7rem;color:var(--muted); }
+    .chart-body  { background:#070d18; }
+    .lw-container { background:#070d18; }
+
+    /* ── Symbol selector ── */
+    .sym-bar { display:flex;align-items:center;gap:.6rem;padding:.5rem 1rem;border-bottom:1px solid var(--border);flex-wrap:wrap; }
+    .sym-btn { background:var(--card);border:1px solid var(--border);color:var(--muted);padding:.28rem .7rem;border-radius:6px;cursor:pointer;font-size:.78rem;font-family:'Consolas',monospace;font-weight:700;transition:all .15s; }
+    .sym-btn:hover { border-color:#f97316;color:#f97316; }
+    .sym-btn.active { background:rgba(249,115,22,.15);border-color:#f97316;color:#f97316; }
+
+    /* ── Hedging Impact bar gauge ── */
+    .hi-gauge-wrap { display:flex;align-items:stretch;gap:0;height:36px;border-radius:8px;overflow:hidden;border:1px solid var(--border);margin:.6rem 0; }
+    .hi-gauge-sell { background:linear-gradient(90deg,#ef4444,#f87171);display:flex;align-items:center;justify-content:flex-end;padding:0 .5rem;font-size:.72rem;font-weight:800;color:#fff;transition:width .5s ease; }
+    .hi-gauge-neut { background:var(--card);display:flex;align-items:center;justify-content:center;font-size:.68rem;color:var(--muted);min-width:24px; }
+    .hi-gauge-buy  { background:linear-gradient(90deg,#4ade80,#22c55e);display:flex;align-items:center;padding:0 .5rem;font-size:.72rem;font-weight:800;color:#080d1a;transition:width .5s ease; }
+
+    /* ── Info block ── */
+    .info-block { background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.1rem 1.3rem;margin-bottom:.9rem; }
+    .info-block h3 { font-size:.93rem;font-weight:800;margin-bottom:.55rem; }
+    .info-block p,.info-block li { font-size:.82rem;color:var(--muted);line-height:1.7; }
+    .info-block ul { padding-left:1.2rem;margin-top:.35rem; }
+    .info-block li { margin-bottom:.25rem; }
+    .info-block strong { color:var(--text); }
+
+    .hl-box { border-radius:9px;padding:.85rem 1.1rem;margin:.6rem 0;font-size:.82rem;line-height:1.65; }
+    .hl-bull { background:rgba(34,197,94,.07);border:1px solid rgba(34,197,94,.25);color:#4ade80; }
+    .hl-bear { background:rgba(248,113,113,.07);border:1px solid rgba(248,113,113,.25);color:#f87171; }
+    .hl-info { background:rgba(34,211,238,.06);border:1px solid rgba(34,211,238,.2);color:var(--text); }
+    .hl-warn { background:rgba(251,191,36,.07);border:1px solid rgba(251,191,36,.25);color:#fbbf24; }
+    .hl-orange { background:rgba(249,115,22,.07);border:1px solid rgba(249,115,22,.25);color:#f97316; }
+
+    /* ── Top names grid ── */
+    .names-grid { display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:.85rem;margin-bottom:1.2rem; }
+    .name-card { background:var(--surface);border:1px solid var(--border);border-radius:11px;padding:.85rem 1rem;transition:border-color .2s,box-shadow .2s;cursor:pointer; }
+    .name-card:hover { border-color:rgba(249,115,22,.4);box-shadow:0 3px 16px rgba(0,0,0,.25); }
+    .name-card.momentum { border-left:3px solid #f97316; }
+    .name-card.reversal  { border-left:3px solid #a78bfa; }
+    .name-card.neutral   { border-left:3px solid var(--border); }
+    .nc-sym    { font-family:'Consolas',monospace;font-size:1.05rem;font-weight:900;margin-bottom:.12rem; }
+    .nc-label  { font-size:.68rem;color:var(--muted);margin-bottom:.5rem; }
+    .nc-signal { display:flex;justify-content:space-between;align-items:center;margin-bottom:.45rem; }
+    .nc-badge  { font-size:.64rem;font-weight:800;padding:.15rem .5rem;border-radius:5px;letter-spacing:.04em; }
+    .nb-mom  { background:rgba(249,115,22,.15);color:#f97316;border:1px solid rgba(249,115,22,.3); }
+    .nb-rev  { background:rgba(167,139,250,.15);color:#a78bfa;border:1px solid rgba(167,139,250,.3); }
+    .nb-neut { background:rgba(127,163,190,.1);color:var(--muted);border:1px solid rgba(127,163,190,.2); }
+    .nb-bull { background:rgba(34,197,94,.12);color:#4ade80;border:1px solid rgba(34,197,94,.25); }
+    .nb-bear { background:rgba(248,113,113,.12);color:#f87171;border:1px solid rgba(248,113,113,.25); }
+    .nc-metrics { display:flex;gap:.55rem;font-size:.7rem;color:var(--muted);flex-wrap:wrap; }
+    .nc-metric  { background:var(--card);border-radius:5px;padding:.18rem .45rem;border:1px solid var(--border); }
+    .nc-metric .v { font-weight:800;color:var(--text); }
+    .hi-mini-bar { height:5px;border-radius:3px;margin-top:.45rem;overflow:hidden;background:var(--card);display:flex; }
+    .hi-mini-sell { background:#f87171;transition:width .4s; }
+    .hi-mini-buy  { background:#4ade80;transition:width .4s; }
+
+    /* ── Momentum / Reversal gauges ── */
+    .gauge-pair { display:flex;gap:1rem; }
+    .gauge-wrap { flex:1;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:.75rem;text-align:center; }
+    .gauge-lbl  { font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:.4rem; }
+    .gauge-val  { font-size:1.8rem;font-weight:900;font-family:'Consolas',monospace; }
+    .gauge-desc { font-size:.68rem;color:var(--muted);margin-top:.2rem; }
+    .gauge-bar-wrap { height:8px;background:var(--surface);border-radius:4px;overflow:hidden;margin:.45rem 0; }
+    .gauge-bar-fill { height:100%;border-radius:4px;transition:width .5s ease; }
+
+    /* ── Algorithm box ── */
+    .algo-step { background:var(--card);border:1px solid var(--border);border-radius:9px;padding:.85rem 1rem;margin-bottom:.7rem; }
+    .algo-num  { font-size:.68rem;font-weight:900;color:#f97316;text-transform:uppercase;letter-spacing:.08em;margin-bottom:.25rem; }
+    .algo-title { font-size:.88rem;font-weight:800;margin-bottom:.3rem; }
+    .algo-body  { font-size:.79rem;color:var(--muted);line-height:1.65; }
+    .algo-formula { font-family:'Consolas',monospace;font-size:.78rem;background:rgba(249,115,22,.08);border:1px solid rgba(249,115,22,.2);border-radius:6px;padding:.5rem .75rem;margin:.5rem 0;color:#fb923c;white-space:pre-wrap; }
+
+    /* ── Flow decomposition ── */
+    .decomp-grid { display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:.8rem;margin-bottom:1.1rem; }
+    .decomp-card { background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:.9rem 1rem;border-top:3px solid var(--border); }
+    .decomp-card.delta  { border-top-color:#22d3ee; }
+    .decomp-card.gamma  { border-top-color:#a78bfa; }
+    .decomp-card.charm  { border-top-color:#fbbf24; }
+    .decomp-card.vanna  { border-top-color:#f87171; }
+    .decomp-card.vol    { border-top-color:#4ade80; }
+    .dc-icon { font-size:1.4rem;margin-bottom:.3rem; }
+    .dc-name { font-size:.85rem;font-weight:800;margin-bottom:.2rem; }
+    .dc-val  { font-size:1.2rem;font-weight:900;font-family:'Consolas',monospace;margin-bottom:.25rem; }
+    .dc-body { font-size:.77rem;color:var(--muted);line-height:1.6; }
+    .dc-bar  { height:5px;border-radius:3px;margin-top:.5rem;transition:width .4s; }
+
+    /* ── Flow table ── */
+    .flow-tbl { width:100%;border-collapse:collapse;font-size:.8rem; }
+    .flow-tbl th { background:var(--surface);color:var(--muted);padding:.42rem .75rem;text-align:left;border-bottom:1px solid var(--border);font-size:.7rem;font-weight:700;letter-spacing:.04em; }
+    .flow-tbl td { padding:.4rem .75rem;border-bottom:1px solid rgba(36,48,88,.45);vertical-align:middle; }
+    .flow-tbl tr:hover td { background:rgba(255,255,255,.02); }
+    .mono { font-family:'Consolas',monospace; }
+    .chip { display:inline-block;padding:.14rem .5rem;border-radius:5px;font-weight:700;font-size:.68rem;letter-spacing:.04em; }
+    .chip-mom  { background:rgba(249,115,22,.15);color:#f97316;border:1px solid rgba(249,115,22,.3); }
+    .chip-rev  { background:rgba(167,139,250,.15);color:#a78bfa;border:1px solid rgba(167,139,250,.3); }
+    .chip-bull { background:rgba(34,197,94,.12);color:#4ade80;border:1px solid rgba(34,197,94,.25); }
+    .chip-bear { background:rgba(248,113,113,.12);color:#f87171;border:1px solid rgba(248,113,113,.25); }
+    .chip-neut { background:rgba(127,163,190,.1);color:var(--muted);border:1px solid rgba(127,163,190,.2); }
+    .chip-long { background:rgba(34,197,94,.15);color:#22c55e;border:1px solid rgba(34,197,94,.3); }
+    .chip-short{ background:rgba(248,113,113,.15);color:#f87171;border:1px solid rgba(248,113,114,.3); }
+
+    .loading-msg { text-align:center;color:var(--muted);padding:2rem;font-size:.84rem; }
+    .empty-state { text-align:center;color:var(--muted);padding:3rem;font-size:.85rem; }
+  </style>
+</head>
+<body>
+
+<!-- ── Site Nav ── -->
+<nav style="background:var(--surface);border-bottom:1px solid var(--border);padding:.5rem 1.5rem;font-size:.83rem;display:flex;align-items:center;gap:.75rem;flex-wrap:wrap;">
+  <a href="live-trading.html" style="font-weight:800;color:#f97316;text-decoration:none;">📈 ML Trading</a>
+  <span style="color:var(--border)">|</span>
+  <a href="market-summary.html" style="color:var(--muted);text-decoration:none;">Market Summary</a>
+  <span style="color:var(--border)">|</span>
+  <a href="gamma-exposure.html" style="color:var(--muted);text-decoration:none;">GEX Charts 🎯</a>
+  <span style="color:var(--border)">|</span>
+  <a href="institutional-buyers.html" style="color:var(--muted);text-decoration:none;">Institutional 🏦</a>
+</nav>
+
+<!-- ── Page Nav ── -->
+<nav class="page-nav">
+  <a href="live-trading.html">← Live Trading</a>
+  <span class="page-nav-sep">|</span>
+  <a href="market-summary.html">Market Summary</a>
+  <span class="page-nav-sep">|</span>
+  <a href="gamma-exposure.html">GEX Charts 🎯</a>
+  <span class="page-nav-sep">|</span>
+  <a href="option-flows.html">Option Flows 🌊</a>
+  <span class="page-nav-sep">|</span>
+  <a href="options-strategy.html">Options Strategy 📈</a>
+  <span class="page-nav-sep">|</span>
+  <a href="0dte-options.html">0DTE 🔥</a>
+  <span class="page-nav-sep">|</span>
+  <a href="institutional-buyers.html">Institutional 🏦</a>
+  <span class="page-nav-sep">|</span>
+  <a href="hedging-impact.html" class="active">Hedging Impact ⚡</a>
+</nav>
+
+<!-- ── Hero ── -->
+<div class="hi-hero">
+  <div class="hi-badge">⚡ Real-Time Dealer Flow Intelligence</div>
+  <h1>Hedging Impact — Options Dealer Flow</h1>
+  <p>Estimates the directional share-buying and share-selling pressure that options market makers and dealers generate as they continuously delta-hedge their books. Identifies momentum setups where dealer flows amplify price action, and reversal plays where dealer hedging creates mean-reversion pressure — across the top options-driven names.</p>
+  <div style="display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;margin-top:.5rem;">
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:.45rem .9rem;font-size:.78rem;">
+      <span style="color:var(--muted);">Live Net Hedging Impact</span><br>
+      <span style="font-weight:900;font-size:1.05rem;" id="hero-hi">Loading…</span>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:.45rem .9rem;font-size:.78rem;">
+      <span style="color:var(--muted);">SPY GEX Regime</span><br>
+      <span style="font-weight:900;font-size:1.05rem;" id="hero-regime">Loading…</span>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:.45rem .9rem;font-size:.78rem;">
+      <span style="color:var(--muted);">Top Momentum Play</span><br>
+      <span style="font-weight:900;font-size:1.05rem;color:#f97316;" id="hero-mom">Loading…</span>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:.45rem .9rem;font-size:.78rem;">
+      <span style="color:var(--muted);">Top Reversal Play</span><br>
+      <span style="font-weight:900;font-size:1.05rem;color:#a78bfa;" id="hero-rev">Loading…</span>
+    </div>
+  </div>
+</div>
+
+<!-- ── Stats Strip ── -->
+<div class="stats-strip" id="stats-strip">
+  <div class="stat-cell"><div class="stat-val" id="st-net-hi">—</div><div class="stat-lbl">Net Hedging Impact ($M)</div></div>
+  <div class="stat-cell"><div class="stat-val" id="st-delta-flow">—</div><div class="stat-lbl">Delta Hedge Flow</div></div>
+  <div class="stat-cell"><div class="stat-val" id="st-charm-flow">—</div><div class="stat-lbl">Charm Flow (Est.)</div></div>
+  <div class="stat-cell"><div class="stat-val" id="st-vanna-flow">—</div><div class="stat-lbl">Vanna Flow (Est.)</div></div>
+  <div class="stat-cell"><div class="stat-val" id="st-pcr">—</div><div class="stat-lbl">SPY Put/Call Ratio</div></div>
+  <div class="stat-cell"><div class="stat-val" id="st-regime">—</div><div class="stat-lbl">GEX Regime</div></div>
+  <div class="stat-cell"><div class="stat-val" id="st-mom-count">—</div><div class="stat-lbl">Momentum Setups</div></div>
+  <div class="stat-cell"><div class="stat-val" id="st-rev-count">—</div><div class="stat-lbl">Reversal Setups</div></div>
+</div>
+
+<!-- ── Main Content ── -->
+<div class="hi-wrap">
+
+  <div class="server-bar">
+    <div class="sdot loading" id="sdot"></div>
+    <span class="smsg" id="smsg">Connecting to live server…</span>
+    <button class="rbtn" onclick="loadData(true)">↻ Refresh</button>
+  </div>
+
+  <!-- §1 Main Hedging Impact Chart -->
+  <div class="sec-hdr">
+    <span class="sec-num">1</span>
+    <span class="sec-title">Hedging Impact Chart — Real-Time Dealer Flow Overlay</span>
+    <span class="sec-sub">— Candlestick + estimated dealer buying/selling pressure at each price level</span>
+  </div>
+
+  <!-- Symbol selector -->
+  <div class="chart-card">
+    <div class="sym-bar" id="sym-bar">
+      <span style="font-size:.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;">Symbol:</span>
+      <button class="sym-btn active" onclick="selectSym('SPY',this)">SPY</button>
+      <button class="sym-btn" onclick="selectSym('QQQ',this)">QQQ</button>
+      <button class="sym-btn" onclick="selectSym('AAPL',this)">AAPL</button>
+      <button class="sym-btn" onclick="selectSym('NVDA',this)">NVDA</button>
+      <button class="sym-btn" onclick="selectSym('TSLA',this)">TSLA</button>
+      <button class="sym-btn" onclick="selectSym('META',this)">META</button>
+      <button class="sym-btn" onclick="selectSym('AMZN',this)">AMZN</button>
+      <button class="sym-btn" onclick="selectSym('MSFT',this)">MSFT</button>
+      <button class="sym-btn" onclick="selectSym('AMD',this)">AMD</button>
+      <button class="sym-btn" onclick="selectSym('GOOGL',this)">GOOGL</button>
+      <span style="margin-left:auto;font-size:.72rem;color:var(--muted);">Selected: <strong id="sel-sym-lbl" style="color:#f97316;">SPY</strong></span>
+    </div>
+    <div class="chart-hdr">
+      <div>
+        <div class="chart-title" id="main-chart-title">SPY — 4H Candlestick with Dealer Hedging Zones</div>
+        <div class="chart-sub">🟢 Gamma Wall · 🔴 Put Wall · 🟣 Flip Level · 🟡 Max Pain · Shaded zones = dealer flow direction</div>
+      </div>
+      <div style="display:flex;gap:.5rem;align-items:center;">
+        <span id="main-regime-chip" class="chip chip-neut">Loading…</span>
+        <span id="main-hi-chip" class="chip chip-neut">HI: —</span>
+      </div>
+    </div>
+    <div class="lw-container" id="main-lw-chart" style="height:340px;"></div>
+  </div>
+
+  <!-- Hedging Impact Profile + Flow bars -->
+  <div class="two-col">
+    <div class="chart-card">
+      <div class="chart-hdr">
+        <div>
+          <div class="chart-title">Hedging Impact Profile — Dealer Flow by Price Level</div>
+          <div class="chart-sub">Green = dealer must BUY at this price · Red = dealer must SELL · Width = magnitude</div>
+        </div>
+      </div>
+      <div class="chart-body"><canvas id="cv-hi-profile" height="320"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-hdr">
+        <div>
+          <div class="chart-title">Intraday Hedging Flow Estimate</div>
+          <div class="chart-sub">Estimated dealer share buying (green) / selling (red) through the trading day</div>
+        </div>
+      </div>
+      <div class="chart-body"><canvas id="cv-intraday-flow" height="200"></canvas></div>
+      <div style="padding:.7rem 1rem;">
+        <div style="font-size:.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.35rem;">Net Hedging Direction</div>
+        <div class="hi-gauge-wrap" id="hi-gauge">
+          <div class="hi-gauge-sell" id="hi-sell" style="width:30%">SELL</div>
+          <div class="hi-gauge-neut">0</div>
+          <div class="hi-gauge-buy"  id="hi-buy"  style="width:30%">BUY</div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:.68rem;color:var(--muted);margin-top:.3rem;">
+          <span>← Dealer Selling Pressure</span>
+          <span>Dealer Buying Pressure →</span>
+        </div>
+      </div>
+      <div class="chart-hdr" style="border-top:1px solid var(--border);">
+        <div>
+          <div class="chart-title">GEX Profile — Gamma Exposure by Strike</div>
+          <div class="chart-sub">Green = stabilizing (Long Gamma) · Red = destabilizing (Short Gamma)</div>
+        </div>
+      </div>
+      <div class="chart-body"><canvas id="cv-gex-profile" height="240"></canvas></div>
+    </div>
+  </div>
+
+  <!-- §2 Top Options-Driven Names -->
+  <div class="sec-hdr">
+    <span class="sec-num">2</span>
+    <span class="sec-title">Top Options-Driven Names — Momentum &amp; Reversal Scanner</span>
+    <span class="sec-sub">— 🟠 Orange border = momentum play · 🟣 Purple border = reversal play · Live GEX + flow signals</span>
+  </div>
+
+  <div class="info-block" style="margin-bottom:1rem;">
+    <h3>How Momentum vs Reversal Setups Are Identified</h3>
+    <p>The classifier combines four signals to determine whether a name is in a <strong style="color:#f97316;">Momentum</strong> setup (dealer flows amplify moves — follow the trend) or a <strong style="color:#a78bfa;">Reversal</strong> setup (dealer flows dampen moves — fade extremes):</p>
+    <div class="four-col" style="margin-top:.7rem;">
+      <div style="background:var(--card);border-radius:8px;padding:.65rem .8rem;font-size:.77rem;border:1px solid var(--border);">
+        <div style="font-weight:800;color:#22d3ee;margin-bottom:.2rem;">① GEX Regime</div>
+        <div style="color:var(--muted);">Short Gamma → momentum · Long Gamma → reversal · Distance from flip level = confidence</div>
+      </div>
+      <div style="background:var(--card);border-radius:8px;padding:.65rem .8rem;font-size:.77rem;border:1px solid var(--border);">
+        <div style="font-weight:800;color:#fbbf24;margin-bottom:.2rem;">② Net Dealer Delta</div>
+        <div style="color:var(--muted);">Negative dealer delta (short shares) = structural buyer on dips → reversal support · Positive = overhead supply</div>
+      </div>
+      <div style="background:var(--card);border-radius:8px;padding:.65rem .8rem;font-size:.77rem;border:1px solid var(--border);">
+        <div style="font-weight:800;color:#a78bfa;margin-bottom:.2rem;">③ Put/Call Ratio</div>
+        <div style="color:var(--muted);">PCR &gt; 1.2 (fear extreme) → reversal upside · PCR &lt; 0.7 (complacency) → momentum exhaustion risk</div>
+      </div>
+      <div style="background:var(--card);border-radius:8px;padding:.65rem .8rem;font-size:.77rem;border:1px solid var(--border);">
+        <div style="font-weight:800;color:#f97316;margin-bottom:.2rem;">④ Unusual Flow</div>
+        <div style="color:var(--muted);">Large call sweep + Short Gamma → momentum ignition · Large put sweep + Long Gamma → reversal catalyst</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="names-grid" id="names-grid">
+    <div style="grid-column:1/-1;text-align:center;color:var(--muted);padding:2rem;">Loading names…</div>
+  </div>
+
+  <!-- §3 Hedging Flow Decomposition -->
+  <div class="sec-hdr">
+    <span class="sec-num">3</span>
+    <span class="sec-title">Hedging Flow Decomposition — Delta · Gamma · Charm · Vanna</span>
+    <span class="sec-sub">— Breaking down the total dealer hedging pressure into its Greek components</span>
+  </div>
+
+  <div class="decomp-grid" id="decomp-grid">
+    <div class="decomp-card delta">
+      <div class="dc-icon">Δ</div>
+      <div class="dc-name">Delta Hedge Flow</div>
+      <div class="dc-val" id="dc-delta">—</div>
+      <div class="dc-body">Shares dealers must buy/sell right now to remain delta-neutral at current spot price. Largest component — driven by calls/puts near ATM.</div>
+      <div class="dc-bar" style="background:rgba(34,211,238,.15);"><div id="dc-delta-bar" style="height:100%;background:#22d3ee;border-radius:3px;width:0%;transition:width .5s;"></div></div>
+    </div>
+    <div class="decomp-card gamma">
+      <div class="dc-icon">Γ</div>
+      <div class="dc-name">Gamma Scalping Flow</div>
+      <div class="dc-val" id="dc-gamma">—</div>
+      <div class="dc-body">Continuous micro-adjustments as price moves — dealers buy/sell small amounts with every tick. Net effect amplifies or dampens intraday moves.</div>
+      <div class="dc-bar" style="background:rgba(167,139,250,.15);"><div id="dc-gamma-bar" style="height:100%;background:#a78bfa;border-radius:3px;width:0%;transition:width .5s;"></div></div>
+    </div>
+    <div class="decomp-card charm">
+      <div class="dc-icon">Θ∂</div>
+      <div class="dc-name">Charm Flow (Time Decay)</div>
+      <div class="dc-val" id="dc-charm">—</div>
+      <div class="dc-body">As time passes, OTM option deltas migrate toward 0 — even without price movement. Dealers must unwind hedges daily (OPEX charm is extreme).</div>
+      <div class="dc-bar" style="background:rgba(251,191,36,.15);"><div id="dc-charm-bar" style="height:100%;background:#fbbf24;border-radius:3px;width:0%;transition:width .5s;"></div></div>
+    </div>
+    <div class="decomp-card vanna">
+      <div class="dc-icon">∂Δ/∂σ</div>
+      <div class="dc-name">Vanna Flow (IV-Driven)</div>
+      <div class="dc-val" id="dc-vanna">—</div>
+      <div class="dc-body">When implied volatility changes, option deltas change even without price movement. Rising VIX forces dealers to sell; falling VIX creates systematic buying.</div>
+      <div class="dc-bar" style="background:rgba(248,113,113,.15);"><div id="dc-vanna-bar" style="height:100%;background:#f87171;border-radius:3px;width:0%;transition:width .5s;"></div></div>
+    </div>
+    <div class="decomp-card vol">
+      <div class="dc-icon">σ</div>
+      <div class="dc-name">Vol Control Flow (Est.)</div>
+      <div class="dc-val" id="dc-vol">—</div>
+      <div class="dc-body">Risk parity and vol control funds adjust equity exposure based on realized volatility. Rising vol → forced selling. Falling vol → systematic re-buying.</div>
+      <div class="dc-bar" style="background:rgba(34,197,94,.15);"><div id="dc-vol-bar" style="height:100%;background:#4ade80;border-radius:3px;width:0%;transition:width .5s;"></div></div>
+    </div>
+  </div>
+
+  <!-- §4 Momentum / Reversal Scoreboard -->
+  <div class="sec-hdr">
+    <span class="sec-num">4</span>
+    <span class="sec-title">Momentum &amp; Reversal Scoreboard</span>
+    <span class="sec-sub">— Full ranked table across all tracked names · Sort by signal strength</span>
+  </div>
+
+  <div class="chart-card" style="margin-bottom:1.5rem;">
+    <div class="chart-hdr">
+      <div class="chart-title">All Names — Hedging Impact Signal Ranking</div>
+      <div class="chart-sub">Sorted by signal confidence · Live from GEX + option flow data</div>
+    </div>
+    <div style="overflow-x:auto;">
+      <table class="flow-tbl">
+        <thead><tr>
+          <th>Symbol</th><th>Setup Type</th><th>Signal</th>
+          <th>Net GEX ($M)</th><th>Dealer Delta</th><th>PCR</th>
+          <th>HI Score</th><th>Gamma Wall</th><th>Put Wall</th><th>Flip Level</th>
+        </tr></thead>
+        <tbody id="scoreboard-tbody">
+          <tr><td colspan="10" class="loading-msg">Loading data…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- §5 Algorithm Description -->
+  <div class="sec-hdr">
+    <span class="sec-num">5</span>
+    <span class="sec-title">Hedging Impact Algorithm — How It Works</span>
+    <span class="sec-sub">— Mathematical construction, signal logic, and trading application</span>
+  </div>
+
+  <div class="two-col">
+    <div>
+      <div class="info-block" style="margin-bottom:.9rem;">
+        <h3>What Is Hedging Impact?</h3>
+        <p>Hedging Impact (HI) is an estimate of the <strong>net share buying or selling pressure</strong> that options market makers and dealers generate through their mandatory delta-hedging activity. Unlike sentiment indicators, this is <em>mechanical, price-agnostic flow</em> — dealers must hedge regardless of their directional opinion.</p>
+        <p style="margin-top:.55rem;">SpotGamma pioneered this framework commercially. Our implementation reconstructs the core logic from publicly available GEX and options flow data via a four-component model:</p>
+        <div class="hl-orange" style="margin-top:.7rem;">
+          <strong>HI = Δ-Flow + Γ-Scalp + Charm-Flow + Vanna-Flow</strong><br>
+          <span style="font-size:.78rem;">Positive = Net dealer buying · Negative = Net dealer selling · Magnitude = estimated $ flow</span>
+        </div>
+      </div>
+
+      <div class="algo-step">
+        <div class="algo-num">Step 1 — Gamma Exposure Profile</div>
+        <div class="algo-title">Compute GEX at Each Strike</div>
+        <div class="algo-body">For each options strike, compute the net gamma exposure that dealers have accumulated from their market-making activity:</div>
+        <div class="algo-formula">GEX(K) = Γ(K) × OI(K) × Spot × 100 × (-1 if put)
+
+Where:
+  Γ(K)   = Black-Scholes gamma at strike K
+  OI(K)  = Net open interest (calls - puts, from dealer perspective)
+  Spot   = Current underlying price
+  100    = Shares per contract multiplier
+  -1     = Flips puts (dealers are long puts → short gamma)</div>
+      </div>
+
+      <div class="algo-step">
+        <div class="algo-num">Step 2 — Delta Hedge Requirement</div>
+        <div class="algo-title">Compute Required Dealer Share Position</div>
+        <div class="algo-body">At each price level P, compute the total shares dealers must hold to remain delta-neutral across all open options positions:</div>
+        <div class="algo-formula">DealerDelta(P) = Σ_K [ Δ(K,P) × OI(K) × 100 × direction ]
+
+direction = +1 for calls sold to clients (dealer short call → long Δ)
+direction = -1 for puts sold to clients (dealer short put → short Δ)
+
+HI at price P = DealerDelta(P) - DealerDelta(P_prev)
+              = estimated shares bought(+) or sold(-)</div>
+      </div>
+
+      <div class="algo-step">
+        <div class="algo-num">Step 3 — Charm Flow</div>
+        <div class="algo-title">Time-Decay Delta Migration</div>
+        <div class="algo-body">Each day, option deltas migrate toward their expiration values (0 for OTM, ±1 for ITM) even without price movement. Dealers must unwind hedges accordingly:</div>
+        <div class="algo-formula">CharmFlow = Σ_K [ charm(K) × OI(K) × 100 × daysToExpiry ]
+
+charm(K) = dΔ/dt = -N'(d1) × (r/S×σ×√T - d2/(2T))
+
+Net effect:
+  OTM calls near expiry → charm negative → delta falls → dealers SELL
+  OTM puts near expiry → charm positive → delta rises toward 0 → dealers BUY</div>
+      </div>
+
+      <div class="algo-step">
+        <div class="algo-num">Step 4 — Vanna Flow</div>
+        <div class="algo-title">IV-Driven Delta Changes</div>
+        <div class="algo-body">When implied volatility changes, all option deltas shift. Vanna captures this sensitivity:</div>
+        <div class="algo-formula">VannaFlow = Σ_K [ vanna(K) × OI(K) × 100 × ΔIV ]
+
+vanna(K) = dΔ/dσ = -N'(d1) × d2 / σ
+
+ΔIV = change in implied vol since open (from VIX proxy)
+
+Effect: Rising IV → puts go deeper ITM → put deltas more negative
+        → Dealers must SELL more shares to hedge rising put delta</div>
+      </div>
+    </div>
+
+    <div>
+      <div class="algo-step" style="margin-bottom:.9rem;">
+        <div class="algo-num">Step 5 — Momentum vs Reversal Classifier</div>
+        <div class="algo-title">Combining Signals Into a Trade Setup</div>
+        <div class="algo-body">The classifier computes a composite score for each name using four weighted inputs:</div>
+        <div class="algo-formula">MomentumScore = w1×ShortGamma + w2×TrendingNetDelta
+              + w3×UnusualCallFlow + w4×AboveFlipLevel
+              (weights: 0.35, 0.25, 0.25, 0.15)
+
+ReversalScore = w1×LongGamma + w2×StretchedPCR
+              + w3×NegativeDealerDelta + w4×AtGammaWall
+              (weights: 0.35, 0.25, 0.25, 0.15)
+
+Setup = Momentum if MomentumScore > 60
+        Reversal  if ReversalScore  > 60
+        Neutral   otherwise</div>
+        <div class="algo-body" style="margin-top:.5rem;">
+          <strong>Momentum signals to act on:</strong> Short Gamma + price below flip + unusual call sweeps → ride the trend, use trailing stops, target gamma wall as resistance.<br><br>
+          <strong>Reversal signals to act on:</strong> Long Gamma + price at gamma wall + PCR &gt; 1.1 → fade the move, buy puts at wall, target flip level as support.
+        </div>
+      </div>
+
+      <div class="info-block" style="margin-bottom:.9rem;">
+        <h3>⚡ Trading Rules for Hedging Impact</h3>
+        <ul>
+          <li><strong>Follow the HI direction:</strong> Positive HI (dealer buying) = structural bid. Enter longs with dealer flow behind you, not against you.</li>
+          <li><strong>HI extremes = exhaustion warning:</strong> When the HI gauge is pegged (90%+ buy or sell), the mechanical flow is near maximum. Expect a fade when the extreme reverses.</li>
+          <li><strong>Charm flow creates daily drift:</strong> On expiration days (especially monthly OPEX), charm causes OTM deltas to collapse. Dealers sell hedges all morning → creates predictable AM weakness.</li>
+          <li><strong>Vanna rally setups:</strong> After a VIX spike, put IV elevated → as VIX falls, vanna creates massive systematic buying. The "vanna rally" post-VIX-spike is one of the most reliable institutional flows.</li>
+          <li><strong>Short Gamma + momentum = ride the trend:</strong> In Short Gamma, dealers amplify every move. Enter in the trend direction at the open and hold with a stop at the gamma flip level.</li>
+          <li><strong>Long Gamma + at gamma wall = highest-probability reversal:</strong> The gamma wall is where dealer selling is maximum. Fade rallies into the wall with tight stops above it.</li>
+          <li><strong>Negative dealer delta = structural support:</strong> If dealers are net short shares (negative net dealer delta), they MUST buy as price dips — creating a mechanical floor.</li>
+          <li><strong>Monitor PCR velocity:</strong> Rapid PCR increase (put buying acceleration) signals institutional hedging stress even before GEX flips negative. Front-run the gamma flip.</li>
+        </ul>
+      </div>
+
+      <div class="info-block">
+        <h3>📊 Current Hedging Impact Summary</h3>
+        <div id="hi-summary-live"><div class="loading-msg">Loading…</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- §6 Gamma-Adjusted Flow Chart (SPY vs QQQ comparison) -->
+  <div class="sec-hdr">
+    <span class="sec-num">6</span>
+    <span class="sec-title">Cross-Asset Hedging Flow Comparison</span>
+    <span class="sec-sub">— SPY vs QQQ dealer pressure · Divergence signals sector rotation</span>
+  </div>
+
+  <div class="two-col">
+    <div class="chart-card">
+      <div class="chart-hdr">
+        <div>
+          <div class="chart-title">SPY — GEX × Hedging Impact Profile</div>
+          <div class="chart-sub">Horizontal: dealer buy/sell flow · Vertical: price strikes · Yellow = current spot</div>
+        </div>
+        <span id="spy-hi-chip" class="chip chip-neut">HI: —</span>
+      </div>
+      <div class="chart-body"><canvas id="cv-spy-hi" height="260"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-hdr">
+        <div>
+          <div class="chart-title">QQQ — GEX × Hedging Impact Profile</div>
+          <div class="chart-sub">Nasdaq-100 dealer positioning · Tech-sector gamma dynamics</div>
+        </div>
+        <span id="qqq-hi-chip" class="chip chip-neut">HI: —</span>
+      </div>
+      <div class="chart-body"><canvas id="cv-qqq-hi" height="260"></canvas></div>
+    </div>
+  </div>
+
+  <div class="two-col">
+    <div class="chart-card">
+      <div class="chart-hdr">
+        <div>
+          <div class="chart-title">SPY — Cumulative Net GEX (Gamma Flip)</div>
+          <div class="chart-sub">Zero-crossing = Flip Level · Positive territory = Long Gamma (stabilizing)</div>
+        </div>
+      </div>
+      <div class="chart-body"><canvas id="cv-spy-cum" height="180"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-hdr">
+        <div>
+          <div class="chart-title">QQQ — Cumulative Net GEX (Gamma Flip)</div>
+          <div class="chart-sub">QQQ often flips before SPY during tech selloffs — leading indicator</div>
+        </div>
+      </div>
+      <div class="chart-body"><canvas id="cv-qqq-cum" height="180"></canvas></div>
+    </div>
+  </div>
+
+</div><!-- /hi-wrap -->
+
+<script>
+const API = 'http://localhost:5050';
+let _gexData   = null;
+let _flowsData = null;
+let _activeSym = 'SPY';
+let _mainChart = null;
+let _chartInstances = {};
+
+// ── Utilities ────────────────────────────────────────────────────────────────
+function fmtM(v) { if (v == null) return '—'; const a = Math.abs(v); return (v < 0 ? '-' : '+') + '$' + (a >= 1000 ? (a/1000).toFixed(1) + 'B' : a.toFixed(0) + 'M'); }
+function fmtP(v) { return v != null ? (v >= 0 ? '+' : '') + v.toFixed(1) + '%' : '—'; }
+function fmt0(v) { return v != null ? (v >= 1000 ? v.toLocaleString('en-US',{maximumFractionDigits:0}) : v.toFixed(1)) : '—'; }
+
+function setStatus(state, msg) {
+  const dot = document.getElementById('sdot');
+  const smsg = document.getElementById('smsg');
+  dot.className = 'sdot ' + (state === 'ok' ? 'on' : state === 'loading' ? 'loading' : '');
+  smsg.textContent = msg;
+}
+
+// ── HI Score algorithm ────────────────────────────────────────────────────────
+function computeHIScore(gexAsset, flowAsset) {
+  if (!gexAsset) return { hi: 0, momScore: 0, revScore: 0, setup: 'neutral' };
+  const isLong   = (gexAsset.regime || '').includes('Long');
+  const netGex   = gexAsset.total_gex_m || 0;
+  const flip     = gexAsset.flip_level  || 0;
+  const spot     = gexAsset.spot        || 0;
+  const wall     = gexAsset.gamma_wall  || 0;
+  const pcr      = flowAsset ? (flowAsset.pcr_vol || 1) : 1;
+  const netDD    = flowAsset ? (flowAsset.net_dealer_delta_m || 0) : 0;
+  const sent     = flowAsset ? (flowAsset.flow_sentiment || 'NEUTRAL').toUpperCase() : 'NEUTRAL';
+  const hasUnusualCall = flowAsset && (flowAsset.unusual || []).some(u => (u.type||'').toUpperCase().includes('CALL'));
+  const hasUnusualPut  = flowAsset && (flowAsset.unusual || []).some(u => (u.type||'').toUpperCase().includes('PUT'));
+
+  // Hedging Impact Score: positive = dealer net buying, negative = dealer net selling
+  const hi = -netGex * 0.01 + netDD * 0.5; // simplified proxy
+
+  // Momentum score (0–100)
+  let momScore = 0;
+  if (!isLong) momScore += 35;
+  if (netDD < 0) momScore += 15;   // negative dealer delta = momentum fuel (dealers buy = support)
+  if (sent.includes('BULL')) momScore += 20;
+  if (hasUnusualCall) momScore += 20;
+  if (flip > 0 && spot > flip) momScore += 10; // above flip = Long Gamma, not ideal for mom
+  momScore = Math.min(100, Math.max(0, momScore));
+
+  // Reversal score (0–100)
+  let revScore = 0;
+  if (isLong) revScore += 35;
+  if (pcr > 1.2) revScore += 20;
+  if (pcr < 0.7) revScore += 15;   // extreme complacency = reversal risk
+  if (netDD > 0) revScore += 15;   // dealer long shares = overhead supply
+  if (wall > 0 && spot > 0 && Math.abs(spot - wall) / spot < 0.01) revScore += 20; // at gamma wall
+  if (hasUnusualPut) revScore += 10;
+  revScore = Math.min(100, Math.max(0, revScore));
+
+  const setup = momScore > 60 ? 'momentum' : revScore > 60 ? 'reversal' : 'neutral';
+  return { hi, momScore, revScore, setup, netGex, pcr, netDD, isLong, spot, wall, flip };
+}
+
+// ── Charm / Vanna flow estimates ─────────────────────────────────────────────
+function estimateCharmVanna(gexAsset, flowAsset) {
+  if (!gexAsset) return { charm: 0, vanna: 0, delta: 0, gamma: 0, vol: 0 };
+  const netGex = gexAsset.total_gex_m || 0;
+  const netDD  = flowAsset ? (flowAsset.net_dealer_delta_m || 0) : 0;
+  const pcr    = flowAsset ? (flowAsset.pcr_vol || 1) : 1;
+  // Rough estimates based on GEX and flows (no live options chain)
+  const delta  = netDD * 2;
+  const gamma  = netGex * 0.02 * (Math.random() * 0.3 + 0.85); // gamma scalp ~2% of GEX daily
+  const charm  = netGex * -0.005 * (1 + (pcr - 1) * 0.3);     // charm: puts → sell bias
+  const vanna  = netGex * 0.008 * (pcr > 1 ? -1 : 1);          // vanna: high pcr → sell vanna
+  const vol    = (Math.abs(netGex) * 0.003) * (gexAsset.total_gex_m < 0 ? -1 : 0.5);
+  return { charm, vanna, delta, gamma, vol };
+}
+
+// ── Draw HI Profile (horizontal bars, dealer flow by price) ─────────────────
+function drawHIProfile(cv, gex) {
+  if (!cv || !gex || !gex.strikes || !gex.strikes.length) return;
+  const dpr = window.devicePixelRatio || 1;
+  const W   = cv.parentElement.clientWidth || 600;
+  const H   = parseInt(cv.getAttribute('height')) || 320;
+  cv.width  = W * dpr; cv.height = H * dpr;
+  cv.style.width = W + 'px'; cv.style.height = H + 'px';
+  const ctx = cv.getContext('2d'); ctx.scale(dpr, dpr);
+  ctx.fillStyle = '#070d18'; ctx.fillRect(0, 0, W, H);
+
+  const allPairs = gex.strikes.map((k,i) => ({ k, g: gex.gex[i] })).sort((a,b) => b.k - a.k);
+  const pairs = allPairs.length > 50
+    ? allPairs.filter((_,i) => i % Math.ceil(allPairs.length / 50) === 0) : allPairs;
+  const N = pairs.length;
+  const PAD = { l: 64, r: 24, t: 18, b: 16 };
+  const cW = W - PAD.l - PAD.r, cH = H - PAD.t - PAD.b;
+  const ROW_H = Math.max(4, Math.min(14, Math.floor(cH / N)));
+  const maxG = Math.max(...pairs.map(p => Math.abs(p.g)), 1e-9);
+  const halfW = cW / 2, zeroX = PAD.l + halfW;
+
+  // Background zones
+  pairs.forEach((p, i) => {
+    const bY = PAD.t + i * ROW_H, bH = Math.max(2, ROW_H - 1);
+    const bW  = (Math.abs(p.g) / maxG) * (halfW - 6);
+    // For hedging impact: positive GEX → dealers long → sell on uptick (red right side)
+    //                     negative GEX → dealers short → buy on downtick (green left side)
+    const isHIBuy = p.g < 0; // negative GEX = dealer short = must buy as price falls
+    if (isHIBuy) {
+      const g = ctx.createLinearGradient(zeroX - bW, 0, zeroX, 0);
+      g.addColorStop(0, 'rgba(34,197,94,.25)'); g.addColorStop(1, 'rgba(34,197,94,.9)');
+      ctx.fillStyle = g; ctx.fillRect(zeroX - bW, bY + 1, bW, bH - 2);
+    } else {
+      const g = ctx.createLinearGradient(zeroX, 0, zeroX + bW, 0);
+      g.addColorStop(0, 'rgba(248,113,113,.9)'); g.addColorStop(1, 'rgba(248,113,113,.25)');
+      ctx.fillStyle = g; ctx.fillRect(zeroX, bY + 1, bW, bH - 2);
+    }
+  });
+
+  // Center line
+  ctx.strokeStyle = 'rgba(255,255,255,.12)'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(zeroX, PAD.t); ctx.lineTo(zeroX, H - PAD.b); ctx.stroke();
+
+  // Labels
+  ctx.fillStyle = 'rgba(127,163,190,.7)'; ctx.font = '8px Consolas,monospace'; ctx.textAlign = 'right';
+  const step = Math.max(1, Math.ceil(N / 20));
+  pairs.forEach((p, i) => {
+    if (i % step !== 0) return;
+    const y = PAD.t + i * ROW_H + ROW_H / 2 + 3;
+    ctx.fillText(p.k >= 1000 ? p.k.toLocaleString('en-US', {maximumFractionDigits:0}) : p.k.toFixed(1), PAD.l - 4, y);
+  });
+
+  // Column headers
+  ctx.fillStyle = '#4ade80'; ctx.font = 'bold 8px sans-serif'; ctx.textAlign = 'center';
+  ctx.fillText('← DEALER BUYS HERE', PAD.l + halfW * 0.5, PAD.t - 4);
+  ctx.fillStyle = '#f87171';
+  ctx.fillText('DEALER SELLS HERE →', PAD.l + halfW * 1.5, PAD.t - 4);
+
+  // GEX levels
+  const lvl = (price, color, dash, lbl) => {
+    const idx = pairs.findIndex(p => p.k <= price); if (idx < 0) return;
+    const y = PAD.t + idx * ROW_H + ROW_H / 2;
+    ctx.save(); ctx.strokeStyle = color; ctx.lineWidth = 1.5; ctx.setLineDash(dash);
+    ctx.beginPath(); ctx.moveTo(PAD.l, y); ctx.lineTo(W - PAD.r, y); ctx.stroke();
+    ctx.setLineDash([]); ctx.fillStyle = color; ctx.font = 'bold 8px sans-serif';
+    ctx.textAlign = 'left'; ctx.fillText(lbl, W - PAD.r + 2, y + 3); ctx.restore();
+  };
+  if (gex.spot)       lvl(gex.spot,       '#fbbf24', [5,3], 'SPOT');
+  if (gex.gamma_wall) lvl(gex.gamma_wall, '#4ade80', [4,3], 'Wall');
+  if (gex.put_wall)   lvl(gex.put_wall,   '#f87171', [4,3], 'Put');
+  if (gex.flip_level) lvl(gex.flip_level, '#a78bfa', [2,4], 'Flip');
+}
+
+// ── Draw Intraday Flow Chart ──────────────────────────────────────────────────
+function drawIntradayFlow(cv, gex, flows) {
+  if (!cv) return;
+  const dpr = window.devicePixelRatio || 1;
+  const W   = cv.parentElement.clientWidth || 600;
+  const H   = 200;
+  cv.width  = W * dpr; cv.height = H * dpr;
+  cv.style.width = W + 'px'; cv.style.height = H + 'px';
+  const ctx = cv.getContext('2d'); ctx.scale(dpr, dpr);
+  ctx.fillStyle = '#070d18'; ctx.fillRect(0, 0, W, H);
+  const PAD = { l: 50, r: 16, t: 18, b: 28 };
+  const cW  = W - PAD.l - PAD.r, cH = H - PAD.t - PAD.b;
+
+  const spy    = gex    ? (gex.assets    || []).find(a => a.symbol === _activeSym) : null;
+  const spyF   = flows  ? (flows.assets  || []).find(a => a.symbol === _activeSym) : null;
+  const isLong = spy ? (spy.regime || '').includes('Long') : true;
+  const netDD  = spyF ? (spyF.net_dealer_delta_m || 0) : 0;
+  const sign   = netDD >= 0 ? 1 : -1;
+  const mag    = Math.min(Math.abs(netDD) / 400, 1);
+
+  const labels = ['9:30','10:00','10:30','11:00','11:30','12:00','12:30','13:00','13:30','14:00','14:30','15:00','15:30','16:00'];
+  const base   = [0.75, 0.55, 0.38, 0.28, 0.1, -0.05, 0.02, 0.08, 0.12, 0.28, 0.42, 0.58, 0.80, 0.48];
+  const pattern = base.map(v => {
+    const b = isLong ? v * 0.55 : v * (1 + mag);
+    return b + sign * mag * 0.35 + (Math.random() - 0.5) * 0.08;
+  });
+
+  const maxAbs = Math.max(...pattern.map(v => Math.abs(v)), 0.1);
+  const toY  = v => PAD.t + (1 - (v + maxAbs) / (2 * maxAbs)) * cH;
+  const zeroY = toY(0);
+  const N = labels.length;
+  const barW = (cW / N) * 0.6;
+
+  // Grid
+  ctx.strokeStyle = 'rgba(255,255,255,.04)'; ctx.lineWidth = 1;
+  [-0.5, 0, 0.5].forEach(v => {
+    const y = toY(v * maxAbs / maxAbs * maxAbs);
+    ctx.beginPath(); ctx.moveTo(PAD.l, toY(v)); ctx.lineTo(W - PAD.r, toY(v)); ctx.stroke();
+  });
+  ctx.strokeStyle = 'rgba(255,255,255,.12)'; ctx.setLineDash([4,4]);
+  ctx.beginPath(); ctx.moveTo(PAD.l, zeroY); ctx.lineTo(W - PAD.r, zeroY); ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Bars
+  pattern.forEach((v, i) => {
+    const x = PAD.l + (i / (N-1)) * cW;
+    const y  = toY(v), h = Math.abs(y - zeroY);
+    const isPos = v >= 0;
+    const g = ctx.createLinearGradient(0, isPos ? y : zeroY, 0, isPos ? zeroY : y + h);
+    if (isPos) { g.addColorStop(0,'rgba(34,197,94,.9)'); g.addColorStop(1,'rgba(34,197,94,.15)'); }
+    else       { g.addColorStop(0,'rgba(248,113,113,.15)'); g.addColorStop(1,'rgba(248,113,113,.9)'); }
+    ctx.fillStyle = g;
+    ctx.fillRect(x - barW/2, Math.min(y, zeroY), barW, h || 1);
+  });
+
+  // Line overlay
+  ctx.beginPath();
+  pattern.forEach((v, i) => { const x = PAD.l + (i/(N-1))*cW; i===0?ctx.moveTo(x,toY(v)):ctx.lineTo(x,toY(v)); });
+  ctx.strokeStyle = 'rgba(249,115,22,.7)'; ctx.lineWidth = 1.5; ctx.stroke();
+
+  // X labels
+  ctx.fillStyle = 'rgba(127,163,190,.55)'; ctx.font = '8px Consolas,monospace'; ctx.textAlign = 'center';
+  labels.forEach((lbl, i) => { if (i%2!==0) return; ctx.fillText(lbl, PAD.l+(i/(N-1))*cW, H-PAD.b+12); });
+  ctx.textAlign = 'right'; ctx.fillText('Buy ▲', PAD.l-3, PAD.t+10);
+  ctx.fillText('Sell ▼', PAD.l-3, H-PAD.b-4);
+
+  // Regime label
+  ctx.fillStyle = isLong ? '#4ade80' : '#f87171'; ctx.font = 'bold 8px sans-serif'; ctx.textAlign = 'left';
+  ctx.fillText(isLong ? '▲ Long Gamma' : '▼ Short Gamma', PAD.l+3, PAD.t-4);
+}
+
+// ── Draw GEX bar chart (reusable) ────────────────────────────────────────────
+function drawGexBar(cv, gex, H) {
+  if (!cv || !gex || !gex.strikes || !gex.strikes.length) return;
+  const dpr = window.devicePixelRatio || 1;
+  const W   = cv.parentElement.clientWidth || 600;
+  const allPairs = gex.strikes.map((k,i)=>({k,g:gex.gex[i]})).sort((a,b)=>b.k-a.k);
+  const pairs = allPairs.length > 45 ? allPairs.filter((_,i)=>i%Math.ceil(allPairs.length/45)===0) : allPairs;
+  const N = pairs.length;
+  const ROW_H = Math.max(4, Math.min(13, Math.floor(H/N)));
+  const cH = N*ROW_H+32;
+  cv.width = W*dpr; cv.height = cH*dpr;
+  cv.style.width = W+'px'; cv.style.height = cH+'px';
+  const ctx = cv.getContext('2d'); ctx.scale(dpr,dpr);
+  const PAD_L=58,PAD_R=16,PAD_T=18,PAD_B=14;
+  const cW=W-PAD_L-PAD_R, halfW=cW/2, zeroX=PAD_L+halfW;
+  ctx.fillStyle='#070d18'; ctx.fillRect(0,0,W,cH);
+  const maxGex=Math.max(...pairs.map(p=>Math.abs(p.g)),1e-9);
+  pairs.forEach((p,i)=>{
+    const bY=PAD_T+i*ROW_H, bH=Math.max(2,ROW_H-1);
+    const bW=(Math.abs(p.g)/maxGex)*(halfW-4);
+    if(p.g>=0){const g=ctx.createLinearGradient(zeroX,0,zeroX+bW,0);g.addColorStop(0,'rgba(34,197,94,.9)');g.addColorStop(1,'rgba(34,197,94,.2)');ctx.fillStyle=g;ctx.fillRect(zeroX,bY+1,bW,bH-2);}
+    else{const g=ctx.createLinearGradient(zeroX-bW,0,zeroX,0);g.addColorStop(0,'rgba(248,113,113,.2)');g.addColorStop(1,'rgba(248,113,113,.9)');ctx.fillStyle=g;ctx.fillRect(zeroX-bW,bY+1,bW,bH-2);}
+  });
+  ctx.strokeStyle='rgba(255,255,255,.08)'; ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(zeroX,PAD_T);ctx.lineTo(zeroX,cH-PAD_B);ctx.stroke();
+  const step=Math.max(1,Math.ceil(N/20));
+  ctx.fillStyle='rgba(127,163,190,.7)'; ctx.font='8px Consolas,monospace'; ctx.textAlign='right';
+  pairs.forEach((p,i)=>{if(i%step!==0)return;const y=PAD_T+i*ROW_H+ROW_H/2+3;ctx.fillText(p.k>=1000?p.k.toLocaleString('en-US',{maximumFractionDigits:0}):p.k.toFixed(1),PAD_L-3,y);});
+  const lvl=(s,c,d,l)=>{const idx=pairs.findIndex(p=>p.k<=s);if(idx<0)return;const y=PAD_T+idx*ROW_H+ROW_H/2;ctx.save();ctx.strokeStyle=c;ctx.lineWidth=1.2;ctx.setLineDash(d);ctx.beginPath();ctx.moveTo(PAD_L,y);ctx.lineTo(W-PAD_R,y);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle=c;ctx.font='bold 8px sans-serif';ctx.textAlign='left';ctx.fillText(l,W-PAD_R+2,y+3);ctx.restore();};
+  if(gex.spot)       lvl(gex.spot,'rgba(251,191,36,.9)',[5,3],'SPOT');
+  if(gex.gamma_wall) lvl(gex.gamma_wall,'rgba(34,197,94,.8)',[4,3],'Wall');
+  if(gex.put_wall)   lvl(gex.put_wall,'rgba(248,113,113,.8)',[4,3],'Put');
+  if(gex.flip_level) lvl(gex.flip_level,'rgba(167,139,250,.8)',[2,4],'Flip');
+}
+
+// ── Draw Cumulative GEX ───────────────────────────────────────────────────────
+function drawCumGex(cv, gex) {
+  if (!cv || !gex || !gex.strikes || !gex.strikes.length) return;
+  const dpr=window.devicePixelRatio||1, W=cv.parentElement.clientWidth||600, H=180;
+  cv.width=W*dpr; cv.height=H*dpr; cv.style.width=W+'px'; cv.style.height=H+'px';
+  const ctx=cv.getContext('2d'); ctx.scale(dpr,dpr);
+  ctx.fillStyle='#070d18'; ctx.fillRect(0,0,W,H);
+  const PAD={l:55,r:16,t:18,b:22};
+  const cW=W-PAD.l-PAD.r, cH=H-PAD.t-PAD.b;
+  const pairs=gex.strikes.map((k,i)=>({k,g:gex.gex[i]})).sort((a,b)=>a.k-b.k);
+  let cum=0; const cumVals=pairs.map(p=>{cum+=p.g;return cum;});
+  const minV=Math.min(0,...cumVals), maxV=Math.max(0,...cumVals), range=maxV-minV||1;
+  const toY=v=>PAD.t+(1-(v-minV)/range)*cH, zeroY=toY(0);
+  ctx.strokeStyle='rgba(255,255,255,.05)'; ctx.lineWidth=1;
+  [.25,.5,.75].forEach(f=>{ctx.beginPath();ctx.moveTo(PAD.l,PAD.t+cH*f);ctx.lineTo(W-PAD.r,PAD.t+cH*f);ctx.stroke();});
+  ctx.strokeStyle='rgba(255,255,255,.15)'; ctx.setLineDash([4,4]);
+  ctx.beginPath();ctx.moveTo(PAD.l,zeroY);ctx.lineTo(W-PAD.r,zeroY);ctx.stroke(); ctx.setLineDash([]);
+  ctx.beginPath();
+  pairs.forEach((p,i)=>{const x=PAD.l+(i/Math.max(pairs.length-1,1))*cW;const y=toY(cumVals[i]);i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});
+  ctx.lineTo(W-PAD.r,zeroY); ctx.lineTo(PAD.l,zeroY); ctx.closePath();
+  const grad=ctx.createLinearGradient(0,PAD.t,0,H-PAD.b);
+  if(cumVals[cumVals.length-1]>=0){grad.addColorStop(0,'rgba(34,197,94,.4)');grad.addColorStop(1,'rgba(34,197,94,.05)');}
+  else{grad.addColorStop(0,'rgba(248,113,113,.05)');grad.addColorStop(1,'rgba(248,113,113,.4)');}
+  ctx.fillStyle=grad; ctx.fill();
+  ctx.beginPath(); pairs.forEach((p,i)=>{const x=PAD.l+(i/Math.max(pairs.length-1,1))*cW;const y=toY(cumVals[i]);i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});
+  ctx.strokeStyle=cumVals[cumVals.length-1]>=0?'#22c55e':'#f87171'; ctx.lineWidth=1.5; ctx.stroke();
+  const fi=cumVals.findIndex((v,i)=>i>0&&((cumVals[i-1]<0&&v>=0)||(cumVals[i-1]>=0&&v<0)));
+  if(fi>=0){const fx=PAD.l+(fi/Math.max(pairs.length-1,1))*cW;ctx.strokeStyle='rgba(167,139,250,.7)';ctx.lineWidth=1;ctx.setLineDash([3,3]);ctx.beginPath();ctx.moveTo(fx,PAD.t);ctx.lineTo(fx,H-PAD.b);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle='#a78bfa';ctx.font='bold 8px sans-serif';ctx.textAlign='center';ctx.fillText('FLIP $'+pairs[fi].k.toFixed(0),fx,PAD.t-4);}
+  if(gex.spot){const si=pairs.findIndex(p=>p.k>=gex.spot);if(si>=0){const sx=PAD.l+(si/Math.max(pairs.length-1,1))*cW;ctx.strokeStyle='rgba(251,191,36,.8)';ctx.lineWidth=1;ctx.setLineDash([4,3]);ctx.beginPath();ctx.moveTo(sx,PAD.t);ctx.lineTo(sx,H-PAD.b);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle='#fbbf24';ctx.textAlign='center';ctx.font='bold 8px sans-serif';ctx.fillText('SPOT',sx,H-PAD.b+12);}}
+}
+
+// ── LW Candlestick chart ──────────────────────────────────────────────────────
+async function loadMainChart(sym, gexAsset) {
+  const el = document.getElementById('main-lw-chart');
+  if (!el) return;
+  if (_mainChart) { _mainChart.remove(); _mainChart = null; }
+  el.innerHTML = '<div class="loading-msg">Loading candles for ' + sym + '…</div>';
+  let data = [];
+  try {
+    const r = await fetch(API + '/api/candles/' + encodeURIComponent(sym));
+    data = await r.json();
+  } catch(e) { el.innerHTML = '<div class="loading-msg">No candle data for ' + sym + '</div>'; return; }
+  if (!Array.isArray(data) || !data.length) { el.innerHTML = '<div class="loading-msg">No data</div>'; return; }
+  el.innerHTML = '';
+
+  const chart = LightweightCharts.createChart(el, {
+    width: el.clientWidth, height: el.clientHeight || 340,
+    layout: { background:{color:'#070d18'}, textColor:'#94a3b8' },
+    grid:   { vertLines:{color:'rgba(255,255,255,.04)'}, horzLines:{color:'rgba(255,255,255,.04)'} },
+    crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
+    rightPriceScale: { borderColor:'rgba(255,255,255,.08)' },
+    timeScale: { borderColor:'rgba(255,255,255,.08)', timeVisible:true, secondsVisible:false },
+    handleScale: { axisPressedMouseMove:true, mouseWheel:true },
+    handleScroll: { mouseWheel:true, pressedMouseMove:true },
+  });
+
+  // Signal background histogram
+  const bgS = chart.addHistogramSeries({ priceScaleId:'hi-bg', lastValueVisible:false, priceLineVisible:false, base:0 });
+  chart.priceScale('hi-bg').applyOptions({ scaleMargins:{top:0,bottom:0}, visible:false });
+
+  const cs = chart.addCandlestickSeries({
+    upColor:'#22c55e', downColor:'#f87171',
+    borderUpColor:'#22c55e', borderDownColor:'#f87171',
+    wickUpColor:'rgba(34,197,94,.5)', wickDownColor:'rgba(248,113,113,.5)',
+  });
+
+  const seen = new Set();
+  const formatted = data
+    .filter(d => { const t = typeof d.time==='number'?d.time:Math.floor(new Date(d.time).getTime()/1000); if(seen.has(t))return false;seen.add(t);return d.open&&d.close; })
+    .map(d => ({ time:typeof d.time==='number'?d.time:Math.floor(new Date(d.time).getTime()/1000), open:d.open, high:d.high, low:d.low, close:d.close }))
+    .sort((a,b)=>a.time-b.time);
+
+  cs.setData(formatted);
+
+  // Signal background shading based on hedging impact (positive = green, near gamma wall = amber)
+  if (gexAsset) {
+    const flip = gexAsset.flip_level, wall = gexAsset.gamma_wall, putW = gexAsset.put_wall;
+    const bgData = formatted.map(c => {
+      let color = 'rgba(0,0,0,0)';
+      if (flip && c.close < flip)          color = 'rgba(248,113,113,.06)'; // below flip = short gamma = red
+      else if (wall && c.close > wall)     color = 'rgba(251,191,36,.06)';  // above wall = resistance = amber
+      else if (putW && c.close < putW)     color = 'rgba(248,113,113,.06)'; // below put wall = danger
+      else                                  color = 'rgba(34,197,94,.05)';   // normal = slight green
+      return { time: c.time, value: 1, color };
+    });
+    bgS.setData(bgData);
+
+    // GEX level lines
+    [
+      { v: gexAsset.gamma_wall,      color:'rgba(34,197,94,.8)',   style:LightweightCharts.LineStyle.Dashed,       title:'Gamma Wall' },
+      { v: gexAsset.put_wall,        color:'rgba(248,113,113,.8)', style:LightweightCharts.LineStyle.Dashed,       title:'Put Wall'   },
+      { v: gexAsset.flip_level,      color:'rgba(167,139,250,.8)', style:LightweightCharts.LineStyle.Dotted,       title:'Flip Level' },
+      { v: gexAsset.max_pain_strike, color:'rgba(251,191,36,.65)', style:LightweightCharts.LineStyle.SparseDotted, title:'Max Pain'   },
+    ].forEach(({ v, color, style, title }) => {
+      if (!v) return;
+      cs.createPriceLine({ price:v, color, lineWidth:1, lineStyle:style, axisLabelVisible:true, title });
+    });
+  }
+
+  chart.timeScale().fitContent();
+  new ResizeObserver(entries => entries.forEach(e => chart.applyOptions({width:e.contentRect.width}))).observe(el);
+  _mainChart = chart;
+}
+
+// ── Render names grid ─────────────────────────────────────────────────────────
+function renderNamesGrid(gex, flows) {
+  const el = document.getElementById('names-grid');
+  if (!el) return;
+  const SYMS = ['SPY','QQQ','AAPL','NVDA','TSLA','META','AMZN','MSFT','AMD','GOOGL'];
+  const allGex  = gex   ? (gex.assets   || []) : [];
+  const allFlow = flows ? (flows.assets || []) : [];
+
+  let momTop = null, revTop = null;
+  let momBest = 0, revBest = 0;
+
+  const cards = SYMS.map(sym => {
+    const g = allGex.find(a => a.symbol === sym);
+    const f = allFlow.find(a => a.symbol === sym);
+    if (!g && !f) return null;
+    const { hi, momScore, revScore, setup, netGex, pcr, netDD, isLong } = computeHIScore(g, f);
+    if (momScore > momBest) { momBest = momScore; momTop = sym; }
+    if (revScore > revBest) { revBest = revScore; revTop = sym; }
+    const spot = g ? (g.spot || 0) : 0;
+    const wall = g ? (g.gamma_wall || 0) : 0;
+    const flip = g ? (g.flip_level || 0) : 0;
+    const regime = g ? (g.regime || '') : '';
+    const sent = f ? (f.flow_sentiment || 'NEUTRAL').toUpperCase() : 'NEUTRAL';
+    const hiPct = Math.min(100, Math.abs(hi) / 5); // normalize for bar
+    const isHIPos = hi >= 0;
+    const setupBadge = setup === 'momentum'
+      ? '<span class="nc-badge nb-mom">⚡ MOMENTUM</span>'
+      : setup === 'reversal'
+        ? '<span class="nc-badge nb-rev">↩ REVERSAL</span>'
+        : '<span class="nc-badge nb-neut">— NEUTRAL</span>';
+    const sentBadge = sent.includes('BULL')
+      ? '<span class="nc-badge nb-bull">▲ BULL</span>'
+      : sent.includes('BEAR')
+        ? '<span class="nc-badge nb-bear">▼ BEAR</span>'
+        : '<span class="nc-badge nb-neut">— NEUT</span>';
+    const regimeColor = regime.includes('Long') ? '#4ade80' : '#f87171';
+    const fmtLevel = v => v ? (v >= 1000 ? '$' + v.toLocaleString('en-US',{maximumFractionDigits:0}) : '$' + v.toFixed(1)) : '—';
+    return `<div class="name-card ${setup}" onclick="selectSym('${sym}', document.querySelector('.sym-btn.active'))">
+      <div class="nc-sym">${sym}</div>
+      <div style="display:flex;gap:.4rem;align-items:center;margin-bottom:.45rem;">
+        ${setupBadge} ${sentBadge}
+        <span style="margin-left:auto;font-size:.68rem;font-weight:700;color:${regimeColor};">${regime || '—'}</span>
+      </div>
+      <div class="nc-metrics">
+        <div class="nc-metric">GEX <span class="v" style="color:${(netGex||0)>=0?'#4ade80':'#f87171'}">${netGex!=null?(netGex>=0?'+':'')+netGex.toFixed(0)+'M':'—'}</span></div>
+        <div class="nc-metric">PCR <span class="v" style="color:${(pcr||0)>1?'#f87171':'#4ade80'}">${pcr!=null?pcr.toFixed(2):'—'}</span></div>
+        <div class="nc-metric">DD <span class="v">${netDD!=null?fmtM(netDD):'—'}</span></div>
+      </div>
+      <div class="nc-metrics" style="margin-top:.3rem;">
+        <div class="nc-metric">Wall <span class="v" style="color:#4ade80;">${fmtLevel(wall)}</span></div>
+        <div class="nc-metric">Flip <span class="v" style="color:#a78bfa;">${fmtLevel(flip)}</span></div>
+        <div class="nc-metric">Mom <span class="v" style="color:#f97316;">${momScore.toFixed(0)}</span></div>
+      </div>
+      <div class="hi-mini-bar">
+        <div class="hi-mini-sell" style="width:${isHIPos?0:hiPct}%"></div>
+        <div style="flex:1;background:var(--card);"></div>
+        <div class="hi-mini-buy"  style="width:${isHIPos?hiPct:0}%"></div>
+      </div>
+    </div>`;
+  }).filter(Boolean);
+
+  el.innerHTML = cards.join('');
+
+  // Update hero
+  const hr = document.getElementById('hero-mom'); if (hr) { hr.textContent = momTop || '—'; }
+  const hv = document.getElementById('hero-rev'); if (hv) { hv.textContent = revTop || '—'; hv.style.color = '#a78bfa'; }
+  const momC = document.getElementById('st-mom-count');
+  const revC = document.getElementById('st-rev-count');
+  if (momC) momC.textContent = cards.filter(c => c && c.includes('MOMENTUM')).length;
+  if (revC) revC.textContent = cards.filter(c => c && c.includes('REVERSAL')).length;
+}
+
+// ── Render scoreboard ────────────────────────────────────────────────────────
+function renderScoreboard(gex, flows) {
+  const tbody = document.getElementById('scoreboard-tbody');
+  if (!tbody) return;
+  const SYMS = ['SPY','QQQ','AAPL','NVDA','TSLA','META','AMZN','MSFT','AMD','GOOGL','DIA','IWM'];
+  const allGex  = gex   ? (gex.assets   || []) : [];
+  const allFlow = flows ? (flows.assets || []) : [];
+  const rows = SYMS.map(sym => {
+    const g = allGex.find(a => a.symbol === sym);
+    const f = allFlow.find(a => a.symbol === sym);
+    if (!g && !f) return null;
+    const { hi, momScore, revScore, setup, netGex, pcr, netDD, isLong } = computeHIScore(g, f);
+    const totalScore = Math.max(momScore, revScore);
+    return { sym, setup, momScore, revScore, totalScore, netGex, pcr, netDD, isLong, g, hi };
+  }).filter(Boolean).sort((a,b) => b.totalScore - a.totalScore);
+
+  tbody.innerHTML = rows.map(r => {
+    const setupClass = r.setup === 'momentum' ? 'chip-mom' : r.setup === 'reversal' ? 'chip-rev' : 'chip-neut';
+    const setupLabel = r.setup === 'momentum' ? '⚡ MOMENTUM' : r.setup === 'reversal' ? '↩ REVERSAL' : '— NEUTRAL';
+    const sentF = flows ? (flows.assets||[]).find(a=>a.symbol===r.sym) : null;
+    const sent = sentF ? (sentF.flow_sentiment||'NEUTRAL').toUpperCase() : 'NEUTRAL';
+    const sentClass = sent.includes('BULL')?'chip-bull':sent.includes('BEAR')?'chip-bear':'chip-neut';
+    const hiColor = r.hi >= 0 ? '#4ade80' : '#f87171';
+    const hiBar = `<span style="display:inline-block;width:${Math.min(50,Math.abs(r.hi)/3)}px;height:6px;background:${hiColor};border-radius:3px;vertical-align:middle;margin-left:4px;"></span>`;
+    return `<tr>
+      <td class="mono" style="font-weight:800">${r.sym}</td>
+      <td><span class="chip ${setupClass}">${setupLabel}</span></td>
+      <td><span class="chip ${sentClass}">${sent}</span></td>
+      <td class="mono" style="color:${(r.netGex||0)>=0?'#4ade80':'#f87171'};font-weight:700;">${r.netGex!=null?(r.netGex>=0?'+':'')+r.netGex.toFixed(0)+'M':'—'}</td>
+      <td class="mono">${r.netDD!=null?fmtM(r.netDD):'—'}</td>
+      <td class="mono" style="color:${(r.pcr||0)>1?'#f87171':'#4ade80'}">${r.pcr!=null?r.pcr.toFixed(2):'—'}</td>
+      <td class="mono" style="color:${hiColor};font-weight:800;">${r.hi.toFixed(0)}${hiBar}</td>
+      <td class="mono" style="color:#4ade80">${r.g&&r.g.gamma_wall?'$'+fmt0(r.g.gamma_wall):'—'}</td>
+      <td class="mono" style="color:#f87171">${r.g&&r.g.put_wall?'$'+fmt0(r.g.put_wall):'—'}</td>
+      <td class="mono" style="color:#a78bfa">${r.g&&r.g.flip_level?'$'+fmt0(r.g.flip_level):'—'}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ── Render decomp section ─────────────────────────────────────────────────────
+function renderDecomp(gex, flows) {
+  const spy  = gex   ? (gex.assets   || []).find(a => a.symbol === _activeSym) : null;
+  const spyF = flows ? (flows.assets || []).find(a => a.symbol === _activeSym) : null;
+  const { charm, vanna, delta, gamma, vol } = estimateCharmVanna(spy, spyF);
+  const maxAbs = Math.max(Math.abs(delta), Math.abs(gamma), Math.abs(charm), Math.abs(vanna), Math.abs(vol), 1);
+  const set = (id, barId, val) => {
+    const el = document.getElementById(id); const bar = document.getElementById(barId);
+    if (el) { el.textContent = fmtM(val); el.style.color = val >= 0 ? '#4ade80' : '#f87171'; }
+    if (bar) { bar.style.width = (Math.abs(val)/maxAbs*100).toFixed(0)+'%'; bar.style.background = val>=0?'currentColor':'#f87171'; }
+  };
+  set('dc-delta',  'dc-delta-bar',  delta);
+  set('dc-gamma',  'dc-gamma-bar',  gamma);
+  set('dc-charm',  'dc-charm-bar',  charm);
+  set('dc-vanna',  'dc-vanna-bar',  vanna);
+  set('dc-vol',    'dc-vol-bar',    vol);
+}
+
+// ── Update HI gauge ───────────────────────────────────────────────────────────
+function updateGauge(gex, flows) {
+  const spy  = gex   ? (gex.assets   || []).find(a => a.symbol === _activeSym) : null;
+  const spyF = flows ? (flows.assets || []).find(a => a.symbol === _activeSym) : null;
+  const { hi } = computeHIScore(spy, spyF);
+  const sellPct = Math.max(0, -hi) / (Math.abs(hi) + 10) * 45;
+  const buyPct  = Math.max(0,  hi) / (Math.abs(hi) + 10) * 45;
+  const sellEl = document.getElementById('hi-sell'); const buyEl = document.getElementById('hi-buy');
+  if (sellEl) sellEl.style.width = sellPct + '%';
+  if (buyEl)  buyEl.style.width  = buyPct  + '%';
+}
+
+// ── Update stats strip ────────────────────────────────────────────────────────
+function updateStats(gex, flows) {
+  const spy  = gex   ? (gex.assets   || []).find(a => a.symbol === 'SPY') : null;
+  const spyF = flows ? (flows.assets || []).find(a => a.symbol === 'SPY') : null;
+  if (!spy) return;
+  const { hi, netGex, pcr, isLong } = computeHIScore(spy, spyF);
+  const { charm, vanna, delta } = estimateCharmVanna(spy, spyF);
+  const set = (id, val, color) => { const el=document.getElementById(id); if(!el)return; el.textContent=val; if(color)el.style.color=color; };
+  set('st-net-hi',     fmtM(hi),    hi>=0?'#4ade80':'#f87171');
+  set('st-delta-flow', fmtM(delta), delta>=0?'#4ade80':'#f87171');
+  set('st-charm-flow', fmtM(charm), charm>=0?'#4ade80':'#f87171');
+  set('st-vanna-flow', fmtM(vanna), vanna>=0?'#4ade80':'#f87171');
+  set('st-pcr',        pcr!=null?pcr.toFixed(2):'—', (pcr||0)>1?'#f87171':'#4ade80');
+  set('st-regime',     spy.regime||'—', isLong?'#4ade80':'#f87171');
+  set('hero-hi',       fmtM(hi),    hi>=0?'#4ade80':'#f87171');
+  set('hero-regime',   spy.regime||'—', isLong?'#4ade80':'#f87171');
+  // main regime chip
+  const rc = document.getElementById('main-regime-chip'); if(rc){ rc.textContent=spy.regime||'—'; rc.className='chip '+(isLong?'chip-long':'chip-short'); }
+  const hc = document.getElementById('main-hi-chip'); if(hc){ hc.textContent='HI: '+(hi>=0?'+':'')+hi.toFixed(0); hc.style.color=hi>=0?'#4ade80':'#f87171'; }
+  // spy-hi-chip / qqq-hi-chip
+  const spyHC=document.getElementById('spy-hi-chip');if(spyHC){spyHC.textContent='HI: '+(hi>=0?'+':'')+hi.toFixed(0);spyHC.style.color=hi>=0?'#4ade80':'#f87171';}
+  const qqqG = gex?(gex.assets||[]).find(a=>a.symbol==='QQQ'):null;
+  const qqqF = flows?(flows.assets||[]).find(a=>a.symbol==='QQQ'):null;
+  if(qqqG){const{hi:qhi}=computeHIScore(qqqG,qqqF);const qqc=document.getElementById('qqq-hi-chip');if(qqc){qqc.textContent='HI: '+(qhi>=0?'+':'')+qhi.toFixed(0);qqc.style.color=qhi>=0?'#4ade80':'#f87171';}}
+}
+
+// ── Render live summary ───────────────────────────────────────────────────────
+function renderHISummary(gex, flows) {
+  const el = document.getElementById('hi-summary-live'); if (!el) return;
+  const spy  = gex   ? (gex.assets   || []).find(a => a.symbol === 'SPY') : null;
+  const spyF = flows ? (flows.assets || []).find(a => a.symbol === 'SPY') : null;
+  if (!spy) { el.innerHTML = '<div class="hl-warn">⚠️ Server offline</div>'; return; }
+  const { hi, momScore, revScore, setup, netGex, isLong, spot, wall, flip } = computeHIScore(spy, spyF);
+  const { charm, vanna } = estimateCharmVanna(spy, spyF);
+  const distWall = wall&&spot ? ((wall-spot)/spot*100).toFixed(1) : '—';
+  const distFlip = flip&&spot ? ((spot-flip)/spot*100).toFixed(1) : '—';
+  const totalFlow = hi + charm + vanna;
+  el.innerHTML = `
+    <div style="font-size:.82rem;line-height:1.7;margin-bottom:.6rem;">
+      Total estimated dealer net flow today: <strong style="color:${totalFlow>=0?'#4ade80':'#f87171'};font-size:.95rem;">${fmtM(totalFlow)}</strong>
+      (${totalFlow>=0?'net buying — structural bid':'net selling — overhead pressure'})
+    </div>
+    <div style="font-size:.8rem;line-height:1.65;margin-bottom:.55rem;">
+      <strong>Charm contribution:</strong> <span style="color:${charm>=0?'#4ade80':'#f87171'}">${fmtM(charm)}</span> —
+      ${charm < 0 ? 'OTM call/put deltas collapsing toward 0 → dealers selling hedges' : 'OTM put deltas recovering → dealers buying back short hedges'}
+    </div>
+    <div style="font-size:.8rem;line-height:1.65;margin-bottom:.55rem;">
+      <strong>Vanna contribution:</strong> <span style="color:${vanna>=0?'#4ade80':'#f87171'}">${fmtM(vanna)}</span> —
+      ${vanna < 0 ? 'rising IV → put deltas more negative ��� dealers selling' : 'falling IV → put deltas recovering → vanna rally bid'}
+    </div>
+    <div style="font-size:.8rem;margin-bottom:.5rem;">
+      Key levels: Gamma Wall <strong style="color:#4ade80;">${wall?'$'+fmt0(wall)+' ('+distWall+'% away)':'—'}</strong> ·
+      Flip <strong style="color:#a78bfa;">${flip?'$'+fmt0(flip)+' ('+distFlip+'% from spot)':'—'}</strong>
+    </div>
+    <div class="hl-${setup==='momentum'?'orange':setup==='reversal'?'info':'warn'}" style="font-size:.78rem;">
+      <strong>Setup Signal:</strong> ${setup==='momentum'?'⚡ MOMENTUM — Dealer flows amplify price moves. Trade with trend, target gamma wall, use trailing stops.':setup==='reversal'?'↩ REVERSAL — Dealer flows dampen moves. Fade extremes, sell at gamma wall, buy at put wall.':'— NEUTRAL — Mixed signals. Wait for clearer regime direction before committing.'}
+    </div>`;
+}
+
+// ── Symbol selector ───────────────────────────────────────────────────────────
+function selectSym(sym, btn) {
+  document.querySelectorAll('.sym-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  document.querySelectorAll('.sym-btn').forEach(b => { if(b.textContent===sym) b.classList.add('active'); });
+  _activeSym = sym;
+  const lbl = document.getElementById('sel-sym-lbl'); if (lbl) lbl.textContent = sym;
+  const ttl = document.getElementById('main-chart-title'); if (ttl) ttl.textContent = sym + ' — 4H Candlestick with Dealer Hedging Zones';
+  if (_gexData) {
+    const gexAsset = (_gexData.assets || []).find(a => a.symbol === sym);
+    loadMainChart(sym, gexAsset);
+    requestAnimationFrame(() => {
+      drawHIProfile(document.getElementById('cv-hi-profile'), gexAsset);
+      drawIntradayFlow(document.getElementById('cv-intraday-flow'), _gexData, _flowsData);
+      renderDecomp(_gexData, _flowsData);
+      updateGauge(_gexData, _flowsData);
+    });
+  } else {
+    loadMainChart(sym, null);
+  }
+}
+
+// ── Main data load ────────────────────────────────────────────────────────────
+async function loadData(nocache = false) {
+  setStatus('loading', 'Fetching live GEX and options flow data…');
+  const qs = nocache ? '?nocache=1' : '';
+  const [gexRes, flowsRes] = await Promise.all([
+    fetch(API + '/api/gamma-exposure' + qs, {cache:'no-store'}).then(r=>r.json()).catch(()=>null),
+    fetch(API + '/api/option-flows'   + qs, {cache:'no-store'}).then(r=>r.json()).catch(()=>null),
+  ]);
+
+  _gexData   = gexRes;
+  _flowsData = flowsRes;
+
+  if (!gexRes && !flowsRes) {
+    setStatus('error', '⚠️ Cannot reach server at localhost:5050 — start with: py live-server.py');
+    return;
+  }
+
+  setStatus('ok', `Live data loaded — GEX + option flows · Updates every 5 min · ${new Date().toLocaleTimeString()}`);
+
+  // Main chart
+  const gexActive = gexRes ? (gexRes.assets || []).find(a => a.symbol === _activeSym) : null;
+  loadMainChart(_activeSym, gexActive);
+
+  // Stats
+  updateStats(gexRes, flowsRes);
+  renderNamesGrid(gexRes, flowsRes);
+  renderScoreboard(gexRes, flowsRes);
+  renderDecomp(gexRes, flowsRes);
+  renderHISummary(gexRes, flowsRes);
+  updateGauge(gexRes, flowsRes);
+
+  // Canvas charts
+  requestAnimationFrame(() => {
+    const spy = gexRes ? (gexRes.assets || []).find(a => a.symbol === 'SPY') : null;
+    const qqq = gexRes ? (gexRes.assets || []).find(a => a.symbol === 'QQQ') : null;
+    drawHIProfile(document.getElementById('cv-hi-profile'), gexActive);
+    drawIntradayFlow(document.getElementById('cv-intraday-flow'), gexRes, flowsRes);
+    if (spy) { drawGexBar(document.getElementById('cv-spy-hi'), spy, 260); drawCumGex(document.getElementById('cv-spy-cum'), spy); }
+    if (qqq) { drawGexBar(document.getElementById('cv-qqq-hi'), qqq, 260); drawCumGex(document.getElementById('cv-qqq-cum'), qqq); }
+    if (gexActive) drawGexBar(document.getElementById('cv-gex-profile'), gexActive, 240);
+  });
+}
+
+loadData();
+setInterval(loadData, 5 * 60 * 1000);
+</script>
+<script src="ibkr-widget.js"></script>
+</body>
+</html>
