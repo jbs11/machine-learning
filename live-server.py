@@ -2188,6 +2188,21 @@ def _gex_row(symbol: str, group: str, nocache: bool = False) -> dict | None:
         cached = cache_get(ck)
         if cached:
             return cached
+
+    _is_futures = symbol in SYMBOLS.get('futures', [])
+
+    def _no_data_row(spot):
+        """Return a minimal row so the symbol shows in the UI."""
+        row = {'symbol': symbol, 'label': SYMBOL_LABELS.get(symbol, symbol),
+               'group': group, 'asset_type': _asset_type_for(symbol),
+               'spot': round(spot, 4) if spot else 0.0,
+               'strikes': [], 'gex': [], 'call_oi': [], 'put_oi': [],
+               'total_gex_m': 0.0, 'gamma_wall': None, 'put_wall': None,
+               'call_wall': None, 'flip_level': None, 'regime': None,
+               'pcr': None, 'expiries': [], 'no_options': True}
+        cache_set(ck, row)
+        return row
+
     try:
         ticker = yf.Ticker(symbol)
 
@@ -2195,16 +2210,23 @@ def _gex_row(symbol: str, group: str, nocache: bool = False) -> dict | None:
         try:
             spot = float(ticker.fast_info.last_price)
         except Exception:
-            h = ticker.history(period='2d')
-            spot = float(h['Close'].iloc[-1]) if not h.empty else 0.0
+            spot = 0.0
         if not spot or spot <= 0:
-            return None
+            try:
+                h = ticker.history(period='5d')
+                spot = float(h['Close'].iloc[-1]) if not h.empty else 0.0
+            except Exception:
+                spot = 0.0
+        if not spot or spot <= 0:
+            return _no_data_row(0.0)
 
-        # ── Options expiries ───────────────────────────────────────────────────
-        try:
-            expiries = ticker.options
-        except Exception:
-            expiries = []
+        # ── Options expiries — futures always go to proxy first ────────────────
+        expiries = []
+        if not _is_futures:
+            try:
+                expiries = ticker.options
+            except Exception:
+                expiries = []
 
         if not expiries:
             # ── Try ETF proxy for futures symbols ──────────────────────────────
@@ -2245,13 +2267,14 @@ def _gex_row(symbol: str, group: str, nocache: bool = False) -> dict | None:
                                     except Exception:
                                         continue
                                     calls, puts = chain.calls.copy(), chain.puts.copy()
+                                    IV_MAX = 10.0
                                     for _, crow in calls.iterrows():
                                         K = float(crow['strike']) * scale
                                         if not (lo <= K <= hi):
                                             continue
                                         OI = int(crow.get('openInterest') or 0)
                                         IV = float(crow.get('impliedVolatility') or 0)
-                                        if OI <= 0 or IV <= 0 or IV > 5:
+                                        if OI <= 0 or IV <= 0 or IV > IV_MAX:
                                             continue
                                         g = _bs_gamma(spot, K, T, R, IV)
                                         gex_by_k[K] = gex_by_k.get(K, 0.0) + g * OI * 100 * spot
@@ -2262,7 +2285,7 @@ def _gex_row(symbol: str, group: str, nocache: bool = False) -> dict | None:
                                             continue
                                         OI = int(prow.get('openInterest') or 0)
                                         IV = float(prow.get('impliedVolatility') or 0)
-                                        if OI <= 0 or IV <= 0 or IV > 5:
+                                        if OI <= 0 or IV <= 0 or IV > IV_MAX:
                                             continue
                                         g = _bs_gamma(spot, K, T, R, IV)
                                         gex_by_k[K] = gex_by_k.get(K, 0.0) - g * OI * 100 * spot
@@ -2314,12 +2337,8 @@ def _gex_row(symbol: str, group: str, nocache: bool = False) -> dict | None:
                                     return row_out
                 except Exception as e:
                     print(f'[gex proxy] {symbol} → {proxy_sym}: {e}')
-            # No proxy available — mark as no_options
-            row = {'symbol': symbol, 'label': SYMBOL_LABELS.get(symbol, symbol),
-                   'group': group, 'asset_type': _asset_type_for(symbol),
-                   'spot': round(spot, 4), 'no_options': True}
-            cache_set(ck, row)
-            return row
+            # Proxy failed or no proxy — return minimal no_options row
+            return _no_data_row(spot)
 
         # Pick front 3 expiries ≤ 60 DTE
         today  = datetime.now().date()
@@ -2337,7 +2356,7 @@ def _gex_row(symbol: str, group: str, nocache: bool = False) -> dict | None:
         if not target and expiries:
             target = [(expiries[0], 1)]
         if not target:
-            return None
+            return _no_data_row(spot)
 
         gex_by_k, coi_by_k, poi_by_k = {}, {}, {}
 
@@ -2354,11 +2373,13 @@ def _gex_row(symbol: str, group: str, nocache: bool = False) -> dict | None:
             calls = calls[(calls['strike'] >= lo) & (calls['strike'] <= hi)]
             puts  = puts [(puts['strike']  >= lo) & (puts['strike']  <= hi)]
 
+            # IV cap: 10 (1000%) to allow high-vol stocks; filter clearly broken values
+            IV_MAX = 10.0
             for _, row in calls.iterrows():
                 K  = float(row['strike'])
                 OI = int(row.get('openInterest') or 0)
                 IV = float(row.get('impliedVolatility') or 0)
-                if OI <= 0 or IV <= 0 or IV > 5:
+                if OI <= 0 or IV <= 0 or IV > IV_MAX:
                     continue
                 g = _bs_gamma(spot, K, T, R, IV)
                 gex_by_k[K] = gex_by_k.get(K, 0.0) + g * OI * 100 * spot   # positive
@@ -2368,14 +2389,14 @@ def _gex_row(symbol: str, group: str, nocache: bool = False) -> dict | None:
                 K  = float(row['strike'])
                 OI = int(row.get('openInterest') or 0)
                 IV = float(row.get('impliedVolatility') or 0)
-                if OI <= 0 or IV <= 0 or IV > 5:
+                if OI <= 0 or IV <= 0 or IV > IV_MAX:
                     continue
                 g = _bs_gamma(spot, K, T, R, IV)
                 gex_by_k[K] = gex_by_k.get(K, 0.0) - g * OI * 100 * spot   # negative
                 poi_by_k[K] = poi_by_k.get(K, 0) + OI
 
         if not gex_by_k:
-            return None
+            return _no_data_row(spot)
 
         strikes   = sorted(gex_by_k)
         gex_vals  = [gex_by_k[k] for k in strikes]
@@ -2432,7 +2453,7 @@ def _gex_row(symbol: str, group: str, nocache: bool = False) -> dict | None:
 
     except Exception as e:
         print(f'[gex] {symbol}: {e}')
-        return None
+        return None   # genuine unexpected error — don't cache
 
 
 _GEX_GROUPS = [

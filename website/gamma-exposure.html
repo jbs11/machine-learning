@@ -365,10 +365,10 @@ function filtered(assets) {
 
 // ── Stats ──────────────────────────────────────────────────────────────────
 function renderStats(assets) {
-  const withOpts = assets.filter(a => !a.no_options);
+  const withOpts = assets.filter(a => !a.no_options && a.strikes && a.strikes.length > 0);
   const long  = withOpts.filter(a => a.regime === 'Long Gamma').length;
   const short = withOpts.filter(a => a.regime === 'Short Gamma').length;
-  const noOpt = assets.filter(a => a.no_options).length;
+  const noOpt = assets.filter(a => a.no_options || !a.strikes || !a.strikes.length).length;
   const pcrs  = withOpts.map(a => a.pcr).filter(Boolean);
   const avgPCR = pcrs.length ? (pcrs.reduce((s,v)=>s+v,0)/pcrs.length).toFixed(2) : '—';
   document.getElementById('statTotal').textContent = assets.length;
@@ -407,7 +407,12 @@ function renderAll(assets) {
     html += `</div>`;
   });
   container.innerHTML = html;
-  requestAnimationFrame(() => { list.forEach(a => { if (!a.no_options) drawGexChart(a); }); });
+  requestAnimationFrame(() => {
+    list.forEach(a => {
+      // Only draw if we have actual strike data
+      if (!a.no_options && a.strikes && a.strikes.length > 0) drawGexChart(a);
+    });
+  });
 }
 
 // ── Build card HTML ────────────────────────────────────────────────────────
@@ -416,7 +421,11 @@ function buildCard(a) {
   const typeLbl   = a.asset_type === 'futures' ? 'FUTURES' : a.asset_type === 'options' ? 'OPTIONS' : 'STOCK';
   const spotStr   = a.spot >= 1000 ? a.spot.toLocaleString('en-US',{maximumFractionDigits:2}) : a.spot.toFixed(2);
 
-  if (a.no_options) {
+  if (a.no_options || !a.strikes || !a.strikes.length) {
+    const isFutures = a.asset_type === 'futures';
+    const msg = isFutures
+      ? '📋 Options chain unavailable for this futures contract via yfinance.<br><span style="font-size:.78rem;margin-top:.3rem;display:block;">Proxy computation returned no valid data — check server logs.</span>'
+      : '📋 No usable options data — all contracts filtered (zero OI or stale IV).<br><span style="font-size:.78rem;margin-top:.3rem;display:block;">Data may be unavailable outside market hours or for this symbol.</span>';
     return `<div class="gex-card" id="card-${a.symbol}">
       <div class="gc-head">
         <div><div class="gc-sym">${a.symbol}</div>
@@ -424,9 +433,7 @@ function buildCard(a) {
           <span class="type-chip ${typeClass}">${typeLbl}</span></div>
         <div class="gc-meta"><div class="gc-gex">Spot: <span>$${spotStr}</span></div></div>
       </div>
-      <div class="gc-noopts">📋 No options data available for this symbol.<br>
-        <span style="font-size:.78rem;margin-top:.3rem;display:block;">Futures options require a dedicated data provider.</span>
-      </div>
+      <div class="gc-noopts">${msg}</div>
     </div>`;
   }
 
