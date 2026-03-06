@@ -677,6 +677,98 @@ def add_no_cache_headers(response):
         response.headers['Expires'] = '0'
     return response
 
+
+# ── Broker credentials store (in-memory, set via /api/broker-connect/*) ──────
+_broker_creds = {}
+
+# ── Broker: Alpaca ────────────────────────────────────────────────────────────
+@app.route('/api/broker-connect/alpaca', methods=['POST'])
+def broker_connect_alpaca():
+    data   = request.get_json(force=True)
+    key    = data.get('key','').strip()
+    secret = data.get('secret','').strip()
+    paper  = data.get('paper', True)
+    if not key or not secret:
+        return jsonify({'ok': False, 'error': 'Missing API key or secret'})
+    try:
+        from alpaca.data.historical import StockHistoricalDataClient
+        client = StockHistoricalDataClient(key, secret)
+        # Quick test: fetch latest bar for SPY
+        from alpaca.data.requests import StockLatestBarRequest
+        req = StockLatestBarRequest(symbol_or_symbols='SPY')
+        bar = client.get_stock_latest_bar(req)
+        spot = float(bar['SPY'].close)
+        _broker_creds['alpaca'] = {'key': key, 'secret': secret, 'paper': paper}
+        return jsonify({'ok': True, 'message': f'Alpaca connected — SPY last close ${spot:.2f}'})
+    except Exception as e:
+        return jsonify({'ok': False, 'error': str(e)[:200]})
+
+@app.route('/api/broker-disconnect/alpaca', methods=['POST'])
+def broker_disconnect_alpaca():
+    _broker_creds.pop('alpaca', None)
+    return jsonify({'ok': True})
+
+# ── Broker: Tradier ───────────────────────────────────────────────────────────
+@app.route('/api/broker-connect/tradier', methods=['POST'])
+def broker_connect_tradier():
+    data    = request.get_json(force=True)
+    token   = data.get('token','').strip()
+    sandbox = data.get('sandbox', True)
+    if not token:
+        return jsonify({'ok': False, 'error': 'Missing access token'})
+    try:
+        import requests as req_lib
+        base = 'https://sandbox.tradier.com/v1' if sandbox else 'https://api.tradier.com/v1'
+        r = req_lib.get(f'{base}/markets/quotes', params={'symbols':'SPY'},
+                        headers={'Authorization': f'Bearer {token}', 'Accept': 'application/json'},
+                        timeout=10)
+        if r.status_code != 200:
+            return jsonify({'ok': False, 'error': f'HTTP {r.status_code}: {r.text[:100]}'})
+        quote = r.json().get('quotes',{}).get('quote',{})
+        spot  = quote.get('last', '—')
+        env   = 'sandbox' if sandbox else 'live'
+        _broker_creds['tradier'] = {'token': token, 'sandbox': sandbox}
+        return jsonify({'ok': True, 'message': f'Tradier {env} connected — SPY ${spot}'})
+    except Exception as e:
+        return jsonify({'ok': False, 'error': str(e)[:200]})
+
+@app.route('/api/broker-disconnect/tradier', methods=['POST'])
+def broker_disconnect_tradier():
+    _broker_creds.pop('tradier', None)
+    return jsonify({'ok': True})
+
+# ── Broker: Finnhub ───────────────────────────────────────────────────────────
+@app.route('/api/broker-connect/finnhub', methods=['POST'])
+def broker_connect_finnhub():
+    data = request.get_json(force=True)
+    key  = data.get('key','').strip()
+    if not key:
+        return jsonify({'ok': False, 'error': 'Missing API key'})
+    try:
+        import finnhub
+        client = finnhub.Client(api_key=key)
+        quote  = client.quote('SPY')
+        spot   = quote.get('c', '—')
+        _broker_creds['finnhub'] = {'key': key}
+        return jsonify({'ok': True, 'message': f'Finnhub connected — SPY ${spot}'})
+    except Exception as e:
+        return jsonify({'ok': False, 'error': str(e)[:200]})
+
+@app.route('/api/broker-disconnect/finnhub', methods=['POST'])
+def broker_disconnect_finnhub():
+    _broker_creds.pop('finnhub', None)
+    return jsonify({'ok': True})
+
+# ── Broker: IBKR (re-use existing ibkr-connect) ──────────────────────────────
+@app.route('/api/broker-connect/ibkr', methods=['POST'])
+def broker_connect_ibkr():
+    data = request.get_json(force=True)
+    return ibkr_connect()
+
+@app.route('/api/broker-disconnect/ibkr', methods=['POST'])
+def broker_disconnect_ibkr():
+    return ibkr_disconnect()
+
 # ── Static website serving ────────────────────────────────────────────────────
 _WEBSITE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'website')
 

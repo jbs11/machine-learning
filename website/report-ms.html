@@ -972,8 +972,9 @@ window.addEventListener('afterprint', ()=>{
 });
 
 window.addEventListener('load', async () => {
+  let data = {};
   try {
-    const data = await loadAll();
+    data = await loadAll();
     renderCover(data.market);
     renderMarketSummary(data.market);
     renderMLSignals(data.market);
@@ -982,15 +983,35 @@ window.addEventListener('load', async () => {
     render0DTE(data.dte);
     renderStrategy(data.strategy);
     renderFundamentals(data.fund);
-    requestAnimationFrame(() => {
-      // Draw GEX charts
-      if(data.gex){ _gexData = (data.gex.assets||[]).filter(a=>a.strikes?.length); _gexData.forEach(a=>{ const cv=document.getElementById('rpt-gex-'+a.symbol); if(cv) drawGexChartReport(a,cv,220); }); }
-      // Draw tornado charts
-      if(data.flows){ _flowData=(data.flows.assets||[]).filter(r=>['SPY','QQQ','DIA','IWM'].includes(r.symbol)); _flowData.forEach(r=>{ const cv=document.getElementById('rpt-tor-'+r.symbol); if(cv) drawTornadoReport(r,cv,200); }); }
-    });
-  } catch(e) { console.error('[report-ms] load error:', e); }
+  } catch(e) { console.error('[report-ms] render error:', e); }
+
+  // Show body FIRST so canvas containers have real dimensions
   document.getElementById('rpt-loading').style.display = 'none';
   document.getElementById('rpt-body').style.display    = 'block';
+
+  // Draw charts AFTER body is visible so clientWidth is correct
+  requestAnimationFrame(() => {
+    try {
+      if(data.gex){
+        _gexData = (data.gex.assets||[]).filter(a => a.strikes && a.strikes.length);
+        _gexData.forEach(a => {
+          const cv = document.getElementById('rpt-gex-' + a.symbol);
+          if(cv) drawGexChartReport(a, cv, 220);
+        });
+      }
+      if(data.flows){
+        const etfSyms = ['SPY','QQQ','DIA','IWM'];
+        _flowData = (data.flows.assets||[]).filter(r => etfSyms.includes(r.symbol));
+        // Also include all assets that have strikes data
+        const withStrikes = (data.flows.assets||[]).filter(r => !etfSyms.includes(r.symbol) && r.strikes && r.strikes.length);
+        _flowData = [..._flowData, ...withStrikes];
+        _flowData.forEach(r => {
+          const cv = document.getElementById('rpt-tor-' + r.symbol);
+          if(cv) drawTornadoReport(r, cv, 200);
+        });
+      }
+    } catch(e) { console.error('[report-ms] chart error:', e); }
+  });
 });
 </script>
 </body>
