@@ -1,0 +1,961 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Market Preparation -- Pre-Trade Intelligence Dashboard</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .mp-wrap { max-width:1600px; margin:0 auto; padding:0 1.5rem 6rem; }
+
+    .page-nav { display:flex;align-items:center;gap:1rem;padding:.6rem 1.5rem;background:var(--surface);border-bottom:1px solid var(--border);font-size:.83rem;flex-wrap:wrap; }
+    .page-nav a { color:var(--muted);text-decoration:none;padding:.3rem .7rem;border-radius:5px;transition:color .15s,background .15s; }
+    .page-nav a:hover { color:var(--text);background:rgba(255,255,255,.06); }
+    .page-nav a.active { color:#10b981;font-weight:700; }
+    .page-nav-sep { color:var(--border); }
+
+    .mp-hero { padding:3.5rem 1.5rem 2.5rem;text-align:center;background:radial-gradient(ellipse 80% 55% at 50% -5%,rgba(16,185,129,.13) 0%,transparent 65%),var(--bg);border-bottom:1px solid var(--border); }
+    .mp-hero h1 { font-size:clamp(1.8rem,4vw,3rem);font-weight:900;letter-spacing:-.03em;line-height:1.15;margin-bottom:.8rem;background:linear-gradient(135deg,#10b981 0%,#34d399 40%,#fff 80%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text; }
+    .mp-hero p { color:var(--muted);font-size:1.05rem;max-width:760px;margin:0 auto 1.5rem;line-height:1.7; }
+    .mp-badge { display:inline-flex;align-items:center;gap:.5rem;padding:.3rem 1rem;background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.28);border-radius:999px;color:#10b981;font-size:.78rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;margin-bottom:1rem; }
+
+    .stats-strip { display:grid;grid-template-columns:repeat(auto-fill,minmax(148px,1fr));gap:1px;background:var(--border);border-top:1px solid var(--border);border-bottom:1px solid var(--border); }
+    .stat-cell { background:var(--surface);padding:.9rem 1.1rem;text-align:center; }
+    .stat-val { font-size:1.35rem;font-weight:900;margin-bottom:.1rem;font-family:'Consolas',monospace; }
+    .stat-lbl { font-size:.68rem;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--muted); }
+
+    .server-bar { display:flex;align-items:center;gap:.75rem;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:.5rem 1rem;margin:1.2rem 0;font-size:.84rem; }
+    .sdot { width:9px;height:9px;border-radius:50%;background:#f87171;flex-shrink:0;transition:background .3s; }
+    .sdot.on { background:#4ade80; } .sdot.loading { background:#fbbf24;animation:pulse 1s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1}50%{opacity:.4} }
+    .smsg { color:var(--muted);flex:1; }
+    .rbtn { background:transparent;border:1px solid var(--border);color:var(--muted);padding:.25rem .7rem;border-radius:5px;cursor:pointer;font-size:.78rem;transition:border-color .2s,color .2s; }
+    .rbtn:hover { border-color:#10b981;color:#10b981; }
+
+    .sec-hdr { display:flex;align-items:center;gap:.8rem;margin:2.5rem 0 1.2rem;padding-bottom:.6rem;border-bottom:2px solid var(--border); }
+    .sec-num { background:#10b981;color:#080d1a;border-radius:50%;width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:.82rem;flex-shrink:0; }
+    .sec-title { font-size:1.2rem;font-weight:800; }
+    .sec-sub { font-size:.78rem;color:var(--muted);margin-left:.3rem; }
+
+    .two-col   { display:grid;grid-template-columns:1fr 1fr;gap:1.2rem;margin-bottom:1.2rem; }
+    .three-col { display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-bottom:1.2rem; }
+    .four-col  { display:grid;grid-template-columns:repeat(4,1fr);gap:.9rem;margin-bottom:1.2rem; }
+    @media(max-width:1100px){.four-col{grid-template-columns:1fr 1fr;}}
+    @media(max-width:900px){.two-col,.three-col,.four-col{grid-template-columns:1fr;}}
+
+    .info-card { background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.1rem 1.3rem; }
+    .info-card h3 { font-size:.95rem;font-weight:800;margin-bottom:.5rem; }
+    .info-card p, .info-card li { font-size:.82rem;color:var(--muted);line-height:1.7; }
+    .info-card ul { padding-left:1.2rem;margin-top:.3rem; }
+    .info-card li { margin-bottom:.25rem; }
+    .info-card strong { color:var(--text); }
+    .card-icon { font-size:1.8rem;margin-bottom:.5rem; }
+    .card-accent { font-size:.7rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:.4rem; }
+
+    .hl-box { border-radius:9px;padding:.85rem 1.1rem;margin:.6rem 0;font-size:.82rem;line-height:1.65; }
+    .hl-bull   { background:rgba(34,197,94,.07);border:1px solid rgba(34,197,94,.25);color:#4ade80; }
+    .hl-bear   { background:rgba(248,113,113,.07);border:1px solid rgba(248,113,113,.25);color:#f87171; }
+    .hl-info   { background:rgba(16,185,129,.06);border:1px solid rgba(16,185,129,.22);color:var(--text); }
+    .hl-warn   { background:rgba(251,191,36,.07);border:1px solid rgba(251,191,36,.25);color:#fbbf24; }
+    .hl-purple { background:rgba(167,139,250,.07);border:1px solid rgba(167,139,250,.25);color:#a78bfa; }
+    .hl-cyan   { background:rgba(34,211,238,.06);border:1px solid rgba(34,211,238,.2);color:#22d3ee; }
+
+    .force-diagram { display:flex;align-items:center;justify-content:center;gap:.5rem;flex-wrap:wrap;padding:1.2rem;background:var(--card);border-radius:10px;margin:.8rem 0; }
+    .fd-box { background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:.55rem .9rem;font-size:.78rem;font-weight:700;text-align:center;min-width:90px; }
+    .fd-arrow { font-size:1.4rem;color:#10b981; }
+    .fd-green  { border-color:rgba(34,197,94,.45);color:#4ade80; }
+    .fd-red    { border-color:rgba(248,113,113,.45);color:#f87171; }
+    .fd-purple { border-color:rgba(167,139,250,.45);color:#a78bfa; }
+    .fd-amber  { border-color:rgba(251,191,36,.45);color:#fbbf24; }
+    .fd-em     { border-color:rgba(16,185,129,.45);color:#10b981; }
+
+    .regime-grid  { display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin:.8rem 0; }
+    .regime-card  { border-radius:10px;padding:1rem 1.2rem; }
+    .regime-long  { background:rgba(34,197,94,.07);border:2px solid rgba(34,197,94,.28); }
+    .regime-short { background:rgba(248,113,113,.07);border:2px solid rgba(248,113,113,.28); }
+    .regime-title { font-size:1rem;font-weight:900;margin-bottom:.4rem; }
+    .regime-icon  { font-size:1.8rem;margin-bottom:.4rem; }
+    .regime-list  { font-size:.8rem;color:var(--muted);line-height:1.65;padding-left:1rem; }
+    .regime-list li { margin-bottom:.2rem; }
+
+    .inst-bar-wrap   { background:var(--card);border:1px solid var(--border);border-radius:10px;padding:1rem 1.2rem;margin:.7rem 0; }
+    .inst-bar-label  { display:flex;justify-content:space-between;font-size:.75rem;color:var(--muted);margin-bottom:.4rem;font-weight:600; }
+    .inst-bar-track  { height:24px;background:rgba(255,255,255,.04);border-radius:6px;overflow:hidden; }
+    .inst-bar-fill   { height:100%;border-radius:6px;display:flex;align-items:center;padding:0 .5rem;font-size:.7rem;font-weight:800;color:#080d1a; }
+    .ibf-buy  { background:linear-gradient(90deg,#10b981,#34d399); }
+    .ibf-sell { background:linear-gradient(90deg,#f87171,#ef4444);color:#fff; }
+    .ibf-neut { background:linear-gradient(90deg,#a78bfa,#7c3aed);color:#fff; }
+
+    .checklist { list-style:none;padding:0;margin:.5rem 0; }
+    .checklist li { display:flex;align-items:flex-start;gap:.65rem;padding:.45rem 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:.83rem; }
+    .checklist li:last-child { border-bottom:none; }
+    .chk-icon   { flex-shrink:0;margin-top:.05rem; }
+    .chk-green  { color:#4ade80; } .chk-red { color:#f87171; } .chk-amber { color:#fbbf24; }
+    .chk-label  { font-weight:700;color:var(--text); }
+    .chk-val    { color:var(--muted); }
+
+    .fc-tabs  { display:flex;gap:.5rem;margin-bottom:1.2rem;border-bottom:2px solid var(--border);padding-bottom:0; }
+    .fc-tab   { padding:.5rem 1.2rem;font-size:.85rem;font-weight:700;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;transition:color .15s,border-color .15s; }
+    .fc-tab.active { color:#10b981;border-bottom-color:#10b981; }
+    .fc-panel { display:none; }
+    .fc-panel.active { display:block; }
+
+    .kl-table { width:100%;border-collapse:collapse;font-size:.82rem; }
+    .kl-table th { background:var(--surface);color:var(--muted);padding:.4rem .8rem;text-align:left;border-bottom:1px solid var(--border);font-size:.72rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase; }
+    .kl-table td { padding:.4rem .8rem;border-bottom:1px solid rgba(36,48,88,.4);vertical-align:middle; }
+    .kl-table tr:hover td { background:rgba(255,255,255,.02); }
+
+    .chip { display:inline-block;font-size:.65rem;font-weight:800;padding:.15rem .55rem;border-radius:5px;letter-spacing:.04em; }
+    .chip-bull  { background:rgba(34,197,94,.15);color:#4ade80;border:1px solid rgba(34,197,94,.3); }
+    .chip-bear  { background:rgba(248,113,113,.15);color:#f87171;border:1px solid rgba(248,113,113,.3); }
+    .chip-neut  { background:rgba(167,139,250,.15);color:#a78bfa;border:1px solid rgba(167,139,250,.3); }
+    .chip-amber { background:rgba(251,191,36,.12);color:#fbbf24; }
+
+    .spread-vis { font-family:'Consolas',monospace;font-size:.82rem;background:var(--card);border-radius:8px;padding:.9rem 1.1rem; }
+    .spread-row { display:flex;align-items:center;gap:.5rem;margin:.3rem 0; }
+    .spread-bar { height:18px;border-radius:4px;display:flex;align-items:center;padding:0 .5rem;font-size:.7rem;font-weight:700; }
+    .sb-ask { background:rgba(248,113,113,.22);color:#f87171;border:1px solid rgba(248,113,113,.35); }
+    .sb-bid { background:rgba(34,197,94,.22);color:#4ade80;border:1px solid rgba(34,197,94,.35); }
+    .sb-mid { background:rgba(251,191,36,.15);color:#fbbf24;border:1px solid rgba(251,191,36,.3); }
+
+    .gloss-grid { display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:.8rem;margin-top:.8rem; }
+    .gloss-card { background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:.85rem 1rem; }
+    .gloss-term { font-weight:800;font-size:.88rem;color:#10b981;margin-bottom:.3rem; }
+    .gloss-def  { font-size:.79rem;color:var(--muted);line-height:1.65; }
+
+    .timeline { position:relative;padding-left:1.5rem;margin:.8rem 0; }
+    .timeline::before { content:'';position:absolute;left:.35rem;top:0;bottom:0;width:2px;background:linear-gradient(to bottom,#10b981,rgba(16,185,129,.1)); }
+    .tl-item { position:relative;margin-bottom:1rem; }
+    .tl-dot  { position:absolute;left:-1.15rem;top:.25rem;width:10px;height:10px;border-radius:50%;background:#10b981;border:2px solid var(--bg); }
+    .tl-head { font-weight:800;font-size:.88rem;margin-bottom:.2rem; }
+    .tl-body { font-size:.8rem;color:var(--muted);line-height:1.6; }
+
+    @media(max-width:800px){ .mp-hero h1{font-size:1.6rem;} .regime-grid{grid-template-columns:1fr;} }
+  </style>
+</head>
+<body>
+
+<!-- MAIN NAV -->
+<nav class="nav">
+  <a href="index.html" class="nav-logo">
+    <img src="images/steve.jpg" class="nav-logo-photo" alt="Stephen Borick">
+    <div class="nav-logo-text">
+      <span class="nav-company">Artificial Intelligence</span>
+      <span class="nav-name">Solutions, Inc.</span>
+    </div>
+  </a>
+  <ul class="nav-links">
+    <li><a href="index.html">Home</a></li>
+    <li><a href="neural-networks.html">Neural Networks</a></li>
+    <li><a href="machine-learning.html">Machine Learning</a></li>
+    <li><a href="ml-trading.html">ML in Trading</a></li>
+    <li><a href="ml-sp500-example.html">ML Example</a></li>
+    <li><a href="stock-trading.html">Stock Trading</a></li>
+    <li><a href="options-trading.html">Options</a></li>
+    <li><a href="futures-trading.html">Futures</a></li>
+    <li><a href="brokers.html">Brokers</a></li>
+    <li><a href="live-trading.html">Live Trading</a></li>
+    <li><a href="report-ms.html" target="_blank" style="background:#22d3ee;color:#080d1a;padding:.28rem .85rem;border-radius:5px;font-weight:700;letter-spacing:.02em;">&#128202; Market Report</a></li>
+    <li><a href="report-tg.html" target="_blank" style="background:#a78bfa;color:#080d1a;padding:.28rem .85rem;border-radius:5px;font-weight:700;letter-spacing:.02em;">&#128214; Trading Guide</a></li>
+  </ul>
+</nav>
+
+<!-- PAGE NAV -->
+<nav class="page-nav">
+  <a href="live-trading.html">&#8592; Live Trading</a>
+  <span class="page-nav-sep">|</span>
+  <a href="market-summary.html">Market Summary</a>
+  <span class="page-nav-sep">|</span>
+  <a href="market-preparation.html" class="active">Market Prep &#128204;</a>
+  <span class="page-nav-sep">|</span>
+  <a href="gamma-exposure.html">GEX Charts &#127919;</a>
+  <span class="page-nav-sep">|</span>
+  <a href="option-flows.html">Option Flows &#127754;</a>
+  <span class="page-nav-sep">|</span>
+  <a href="hedging-impact.html">Hedging Impact</a>
+  <span class="page-nav-sep">|</span>
+  <a href="institutional-buyers.html">Institutional &#127984;</a>
+  <span class="page-nav-sep">|</span>
+  <a href="options-strategy.html">Options Strategy &#128200;</a>
+  <span class="page-nav-sep">|</span>
+  <a href="0dte-options.html">0DTE &#128293;</a>
+  <span class="page-nav-sep">|</span>
+  <a href="terminology.html">Terminology &#128214;</a>
+</nav>
+
+<!-- HERO -->
+<section class="mp-hero">
+  <div class="mp-badge">&#128204; Market Preparation &middot; Pre-Trade Intelligence</div>
+  <h1>Market Preparation<br>Dashboard</h1>
+  <p>
+    Synthesize <strong style="color:var(--text);">institutional pressures</strong>,
+    <strong style="color:var(--text);">delta-hedging flows</strong>, and
+    <strong style="color:var(--text);">market-making mechanics</strong> into a unified
+    pre-trade intelligence view &mdash; forecasting market behavior for the next
+    day, week, and month across stocks, options, and futures.
+  </p>
+</section>
+
+<!-- STATS STRIP -->
+<div class="stats-strip">
+  <div class="stat-cell"><div class="stat-val" id="st-direction" style="color:#22d3ee;">--</div><div class="stat-lbl">Market Direction</div></div>
+  <div class="stat-cell"><div class="stat-val" id="st-sentiment" style="color:#10b981;">--</div><div class="stat-lbl">ML Sentiment</div></div>
+  <div class="stat-cell"><div class="stat-val" id="st-gexregime" style="color:#a78bfa;">--</div><div class="stat-lbl">GEX Regime (SPY)</div></div>
+  <div class="stat-cell"><div class="stat-val" id="st-flowsent"  style="color:#38bdf8;">--</div><div class="stat-lbl">Flow Sentiment</div></div>
+  <div class="stat-cell"><div class="stat-val" id="st-gammawall" style="color:#22c55e;">--</div><div class="stat-lbl">SPY Gamma Wall</div></div>
+  <div class="stat-cell"><div class="stat-val" id="st-putwall"   style="color:#f87171;">--</div><div class="stat-lbl">SPY Put Wall</div></div>
+  <div class="stat-cell"><div class="stat-val" id="st-flip"      style="color:#fbbf24;">--</div><div class="stat-lbl">Gamma Flip Level</div></div>
+  <div class="stat-cell"><div class="stat-val" id="st-ts"        style="color:#7fa3be;font-size:.85rem;">--</div><div class="stat-lbl">Last Updated</div></div>
+</div>
+
+<div class="mp-wrap">
+
+  <!-- Server bar -->
+  <div class="server-bar">
+    <div class="sdot loading" id="sdot"></div>
+    <span class="smsg" id="smsg">Loading market intelligence data...</span>
+    <button class="rbtn" onclick="loadAll(true)">&#8635; Refresh</button>
+    <a href="gamma-exposure.html" class="rbtn" style="text-decoration:none;">&#127919; GEX Charts</a>
+    <a href="option-flows.html"   class="rbtn" style="text-decoration:none;">&#127754; Option Flows</a>
+  </div>
+
+  <!-- == SECTION 1: MARKET FORCES == -->
+  <div class="sec-hdr">
+    <div class="sec-num">1</div>
+    <div class="sec-title">Market Forces at Work</div>
+    <div class="sec-sub">How stocks, options, futures, and market makers interact to set prices</div>
+  </div>
+
+  <div class="four-col">
+    <div class="info-card">
+      <div class="card-icon">&#128200;</div>
+      <div class="card-accent" style="color:#22d3ee;">Equity Markets</div>
+      <h3>Stock Trading</h3>
+      <p>Equities trade on exchanges via <strong>continuous double-auction</strong> matching. Price discovery is driven by order flow imbalances. Institutional block trades (&gt;10,000 shares) move through dark pools or algorithmic VWAP/TWAP execution to minimize market impact, then surface as visible price pressure in lit markets.</p>
+      <ul>
+        <li><strong>Order Flow Toxicity:</strong> Informed vs uninformed flow ratio</li>
+        <li><strong>VPIN:</strong> Volume-synchronized probability of informed trading</li>
+        <li><strong>Dark Pool Prints:</strong> Delayed reveals of institutional blocks</li>
+        <li><strong>MOC/LOC Orders:</strong> Market-on-close -- amplify late-day moves</li>
+      </ul>
+    </div>
+    <div class="info-card">
+      <div class="card-icon">&#127919;</div>
+      <div class="card-accent" style="color:#a78bfa;">Options Market</div>
+      <h3>Options &amp; Gamma</h3>
+      <p>Options create <strong>second-order price effects</strong> through dealer hedging. When institutions buy puts or calls, dealers who sell them must hedge delta exposure by buying or selling the underlying. This mechanical hedging creates predictable flows that either dampen or amplify market moves depending on the gamma regime.</p>
+      <ul>
+        <li><strong>Delta Hedge:</strong> Dealers buy/sell underlying to stay neutral</li>
+        <li><strong>Gamma Scalping:</strong> Rebalancing as underlying moves</li>
+        <li><strong>Vanna Flows:</strong> Delta changes from IV moves (vol crush/expansion)</li>
+        <li><strong>Charm Decay:</strong> Delta decay as expiry approaches (0DTE Friday effect)</li>
+      </ul>
+    </div>
+    <div class="info-card">
+      <div class="card-icon">&#9883;&#65039;</div>
+      <div class="card-accent" style="color:#fbbf24;">Futures Markets</div>
+      <h3>Futures &amp; Roll</h3>
+      <p>Equity index futures (<strong>ES, NQ, RTY</strong>) trade nearly 24/7 and lead cash markets during off-hours. Roll periods (quarterly) cause CTA/basis traders to shift exposure. Futures basis (fair value) and basis trade between futures and ETFs create arbitrage flows that enforce price coherence across instruments.</p>
+      <ul>
+        <li><strong>Fair Value:</strong> Cash + carry cost; futures premium/discount</li>
+        <li><strong>Roll Cost:</strong> Front-month to next-month spread (quarterly)</li>
+        <li><strong>Contango/Backwardation:</strong> Term structure signals</li>
+        <li><strong>Program Trading:</strong> Basket arbitrage keeps cash/futures aligned</li>
+      </ul>
+    </div>
+    <div class="info-card">
+      <div class="card-icon">&#9878;&#65039;</div>
+      <div class="card-accent" style="color:#10b981;">Market Makers</div>
+      <h3>Dealer Mechanics</h3>
+      <p>Market makers <strong>provide liquidity</strong> by continuously quoting bids and offers. They earn the spread but accumulate directional inventory risk they must hedge. In options, they face both delta and gamma risk. Their hedging -- buying dips, selling rallies when long gamma -- creates the invisible stabilizing hand around key option strikes.</p>
+      <ul>
+        <li><strong>Spread Income:</strong> Ask minus bid x volume = gross profit</li>
+        <li><strong>Inventory Risk:</strong> Position built from order flow imbalance</li>
+        <li><strong>Hedge Ratio:</strong> Delta hedge updated continuously (gamma-driven)</li>
+        <li><strong>Adverse Selection:</strong> Loss to informed traders erodes spread income</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="hl-info" style="margin-bottom:1rem;">
+    <strong>How They Interact:</strong> When large institutions buy equity puts (bearish hedges), dealers take the other side (short puts = long delta). Dealers then <em>sell</em> stock/futures to hedge that delta. As stock falls and put deltas rise, dealers must sell <em>more</em> -- this is short-gamma amplification. Simultaneously, CTAs sense momentum and add futures shorts. The combined mechanical pressure can turn a modest selloff into a cascade.
+  </div>
+
+  <!-- Force cascade diagram -->
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.2rem 1.4rem;margin-bottom:1.5rem;">
+    <div style="font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:.8rem;">Market Force Cascade Diagrams</div>
+    <div style="font-size:.72rem;color:#f87171;font-weight:700;margin-bottom:.4rem;">BEARISH CASCADE (Short Gamma Regime)</div>
+    <div class="force-diagram">
+      <div class="fd-box fd-purple">Institutions<br>Buy Puts</div>
+      <div class="fd-arrow">&#8594;</div>
+      <div class="fd-box fd-red">Dealers Short<br>Puts (Long Delta)</div>
+      <div class="fd-arrow">&#8594;</div>
+      <div class="fd-box fd-red">Dealers Sell<br>Stock/Futures</div>
+      <div class="fd-arrow">&#8594;</div>
+      <div class="fd-box fd-amber">Price Falls<br>Put Delta Rises</div>
+      <div class="fd-arrow">&#8594;</div>
+      <div class="fd-box fd-red">More Dealer<br>Selling</div>
+      <div class="fd-arrow">&#8594;</div>
+      <div class="fd-box fd-red">CTAs Add<br>Futures Shorts</div>
+    </div>
+    <div style="font-size:.72rem;color:#4ade80;font-weight:700;margin:.8rem 0 .4rem;">BULLISH CASCADE (Short Gamma Regime)</div>
+    <div class="force-diagram">
+      <div class="fd-box fd-purple">Institutions<br>Buy Calls</div>
+      <div class="fd-arrow">&#8594;</div>
+      <div class="fd-box fd-green">Dealers Short<br>Calls (Short Delta)</div>
+      <div class="fd-arrow">&#8594;</div>
+      <div class="fd-box fd-green">Dealers Buy<br>Stock/Futures</div>
+      <div class="fd-arrow">&#8594;</div>
+      <div class="fd-box fd-amber">Price Rises<br>Call Delta Rises</div>
+      <div class="fd-arrow">&#8594;</div>
+      <div class="fd-box fd-green">More Dealer<br>Buying</div>
+      <div class="fd-arrow">&#8594;</div>
+      <div class="fd-box fd-green">CTAs Add<br>Futures Longs</div>
+    </div>
+    <div style="font-size:.74rem;color:var(--muted);margin-top:.7rem;font-style:italic;">Both cascades are self-reinforcing until a key GEX level (Gamma Wall / Put Wall) creates a natural reversal point. In Long Gamma regimes, these cascades are dampened -- dealers counter-trade the move.</div>
+  </div>
+
+  <!-- == SECTION 2: INSTITUTIONAL PRESSURES == -->
+  <div class="sec-hdr">
+    <div class="sec-num">2</div>
+    <div class="sec-title">Institutional Pressure Map</div>
+    <div class="sec-sub">Who the major market participants are and how they move markets</div>
+  </div>
+
+  <div class="four-col">
+    <div class="info-card">
+      <div class="card-icon">&#127979;</div>
+      <div class="card-accent" style="color:#fbbf24;">~$30T AUM</div>
+      <h3>Pension &amp; Endowments</h3>
+      <p>Operate on <strong>quarterly rebalancing cycles</strong>. When equities rally significantly, pensions sell stocks to maintain 60/40 target -- creating predictable month-end and quarter-end selling pressure. A sharp equity drawdown triggers <strong>buy-the-dip rebalancing</strong> near quarter-end. These flows are massive and mechanical.</p>
+      <div class="inst-bar-wrap">
+        <div class="inst-bar-label"><span>Typical Activity</span><span>Long-only / Rebalancing</span></div>
+        <div class="inst-bar-track"><div class="inst-bar-fill ibf-buy" style="width:65%;">Equity Buyer</div></div>
+      </div>
+    </div>
+    <div class="info-card">
+      <div class="card-icon">&#128184;</div>
+      <div class="card-accent" style="color:#a78bfa;">~$4.5T AUM</div>
+      <h3>Hedge Funds</h3>
+      <p>Use leverage, derivatives, and both long/short positions. Key flows: <strong>risk parity funds</strong> rebalance volatility-weighted portfolios (sell when vol rises). <strong>L/S equity funds</strong> manage gross/net exposure dynamically. <strong>Event-driven funds</strong> cluster around earnings, M&amp;A, and macro events.</p>
+      <div class="inst-bar-wrap">
+        <div class="inst-bar-label"><span>Typical Activity</span><span>Dynamic / Both Sides</span></div>
+        <div class="inst-bar-track"><div class="inst-bar-fill ibf-neut" style="width:50%;">Neutral/Mixed</div></div>
+      </div>
+    </div>
+    <div class="info-card">
+      <div class="card-icon">&#129302;</div>
+      <div class="card-accent" style="color:#f97316;">~$350B AUM</div>
+      <h3>CTAs / Trend Followers</h3>
+      <p>Commodity Trading Advisors use <strong>systematic momentum models</strong> across futures. They buy what is going up, sell what is going down -- with no discretion. CTA positioning is estimated from COT data. When CTAs are max long equities, they provide a <strong>reflexive selling risk</strong> if trend reverses. CTA signals flip on 20/50/100-day MAs.</p>
+      <div class="inst-bar-wrap">
+        <div class="inst-bar-label"><span>Typical Activity</span><span>Momentum / Trend</span></div>
+        <div class="inst-bar-track"><div class="inst-bar-fill ibf-buy" id="ib-cta" style="width:70%;">Trend Long</div></div>
+      </div>
+    </div>
+    <div class="info-card">
+      <div class="card-icon">&#128240;</div>
+      <div class="card-accent" style="color:#22d3ee;">~$10T AUM</div>
+      <h3>ETF &amp; Index Funds</h3>
+      <p>Passive index funds create <strong>front-running opportunities</strong> around index rebalances (S&amp;P 500 quarterly reconstitution, Russell 2000 June rebalance). Daily ETF creation/redemption drives authorized participant (AP) arbitrage. Heavy ETF options (SPY, QQQ) dominate dealer GEX and create the largest systematic hedging flows in the market.</p>
+      <div class="inst-bar-wrap">
+        <div class="inst-bar-label"><span>Typical Activity</span><span>Passive / Creation-Redemption</span></div>
+        <div class="inst-bar-track"><div class="inst-bar-fill ibf-buy" style="width:80%;">Net Inflows</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="two-col">
+    <div class="info-card">
+      <h3>&#128203; How to Read Institutional Flow Signals</h3>
+      <ul>
+        <li><strong>Large Call Sweeps (OTM):</strong> Institutions anticipating upside catalyst -- often before earnings or Fed pivots</li>
+        <li><strong>Deep ITM Put Buying:</strong> Portfolio insurance / synthetic short -- bearish hedge from long-only manager</li>
+        <li><strong>Risk Reversal Purchase:</strong> Buy call + sell put -- bullish outlook with defined downside cap</li>
+        <li><strong>Collar:</strong> Long stock + buy put + sell call -- locking in gains, limiting upside (common pre-earnings)</li>
+        <li><strong>Block Prints &gt;$1M Premium:</strong> High-conviction institutional bet -- treat as signal, not noise</li>
+        <li><strong>Put/Call Ratio Spike &gt;1.5:</strong> Institutional fear hedging -- often marks short-term sentiment extreme</li>
+        <li><strong>VIX Call Buying:</strong> Tail risk hedging -- institutions buying vol insurance against black swans</li>
+      </ul>
+    </div>
+    <div class="info-card">
+      <h3>&#128336; Quarterly Calendar -- Predictable Pressure Points</h3>
+      <div class="timeline">
+        <div class="tl-item"><div class="tl-dot"></div><div class="tl-head">Month-End / Quarter-End (last 3 days)</div><div class="tl-body">Pension rebalancing -- sell equities after rally, buy after decline. Largest systematic flow of the month. Check equity performance MTD to gauge direction of rebalancing.</div></div>
+        <div class="tl-item"><div class="tl-dot"></div><div class="tl-head">OpEx Week (3rd Friday)</div><div class="tl-body">Monthly options expiration. Gamma decays to zero -- dealers unwind hedges. Expect vol crush day-of, potential price pinning to key strikes. Next-week vol often expands after OpEx.</div></div>
+        <div class="tl-item"><div class="tl-dot"></div><div class="tl-head">FOMC Meeting (8x per year)</div><div class="tl-body">Vol compression into announcement (dealers hedge with straddles). Vol spike at release. Vanna flows post-FOMC as IV normalizes over 2-3 sessions.</div></div>
+        <div class="tl-item"><div class="tl-dot"></div><div class="tl-head">Earnings Season (Q1-Q4)</div><div class="tl-body">Implied vol rises into earnings, collapses after (vol crush). Institutions pre-position via collars. Post-earnings gap creates charm/vanna flows for 2-5 days.</div></div>
+        <div class="tl-item"><div class="tl-dot"></div><div class="tl-head">Futures Roll (Mar/Jun/Sep/Dec)</div><div class="tl-body">CTA and basis traders roll front-month to next-month. Roll cost (contango) creates calendar spread activity. Net effect: modest selling pressure in roll week.</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- == SECTION 3: DELTA HEDGING == -->
+  <div class="sec-hdr">
+    <div class="sec-num">3</div>
+    <div class="sec-title">Delta Hedging Mechanics</div>
+    <div class="sec-sub">How market maker hedging behavior determines volatility regime and price behavior</div>
+  </div>
+
+  <div class="hl-info" style="margin-bottom:1rem;">
+    <strong>Core Concept:</strong> Every option sold by a dealer creates a delta exposure that must be hedged in the underlying. The <em>rate of change</em> of that hedge (gamma) determines whether dealer hedging activity <strong>stabilizes</strong> (Long Gamma) or <strong>amplifies</strong> (Short Gamma) market moves. This is the single most important mechanical force in modern equity markets.
+  </div>
+
+  <div class="regime-grid" style="margin-bottom:1.2rem;">
+    <div class="regime-card regime-long">
+      <div class="regime-icon">&#128994;</div>
+      <div class="regime-title" style="color:#4ade80;">Long Gamma Regime</div>
+      <ul class="regime-list">
+        <li>Dealers are net buyers of options (retail/institutions selling options)</li>
+        <li>Dealers <strong>sell rallies</strong> and <strong>buy dips</strong> to maintain delta neutrality</li>
+        <li>Dampens realized volatility -- market becomes range-bound</li>
+        <li>Gamma Wall = strong magnetic resistance/support depending on side</li>
+        <li>Typical during low-vol grind-up regimes (VIX &lt; 15)</li>
+        <li>Mean-reversion strategies work well -- fades and range trades profitable</li>
+        <li>Breakouts tend to fail as dealers provide counter-pressure at extremes</li>
+        <li>Indicator: SPY net GEX positive; spot price is ABOVE Gamma Flip level</li>
+      </ul>
+    </div>
+    <div class="regime-card regime-short">
+      <div class="regime-icon">&#128308;</div>
+      <div class="regime-title" style="color:#f87171;">Short Gamma Regime</div>
+      <ul class="regime-list">
+        <li>Dealers are net sellers of options (institutions buying puts/calls to hedge)</li>
+        <li>Dealers <strong>buy rallies</strong> and <strong>sell dips</strong> to maintain delta neutrality</li>
+        <li>Amplifies realized volatility -- trending, directional moves extend further</li>
+        <li>Price slices through strikes -- each level breached triggers more dealer flow</li>
+        <li>Typical during fear regimes: earnings seasons, macro events, VIX spikes</li>
+        <li>Momentum strategies work well -- trend following, breakout trades</li>
+        <li>Put Wall is critical support -- heavy dealer buying floor from put OI</li>
+        <li>Indicator: SPY net GEX negative; spot price is BELOW Gamma Flip level</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="two-col">
+    <div class="info-card">
+      <h3>&#127919; Key Delta Hedging Levels -- Live (SPY)</h3>
+      <p style="font-size:.8rem;color:var(--muted);margin-bottom:.8rem;">Mechanical price levels where dealer hedging creates predictable support, resistance, or regime change</p>
+      <table class="kl-table">
+        <thead><tr><th>Level</th><th>Price</th><th>Type</th><th>Expected Behavior</th></tr></thead>
+        <tbody id="dh-levels-body">
+          <tr><td colspan="4" style="color:var(--muted);text-align:center;padding:1rem;">Loading GEX data...</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="info-card">
+      <h3>&#128200; Greek Interactions -- Vanna &amp; Charm</h3>
+      <p style="font-size:.82rem;color:var(--muted);margin-bottom:.7rem;">Beyond delta-gamma, two second-order greeks drive systematic flows:</p>
+      <div class="hl-purple" style="margin-bottom:.7rem;">
+        <strong>Vanna</strong> (dDelta/dIV): When implied volatility falls (vol crush after earnings/events), dealers' delta positions change even without underlying movement. Forces rebalancing -- the "vanna flow" after OpEx often drives sustained moves as IV normalizes over 2-5 sessions.
+      </div>
+      <div class="hl-warn" style="margin-bottom:.7rem;">
+        <strong>Charm</strong> (dDelta/dTime): As expiry approaches, option deltas decay toward 0 or 1. This forces dealers to unwind hedges -- creating "charm decay" buying/selling that accelerates into Friday close on OpEx week and 0DTE expiration daily.
+      </div>
+      <div class="hl-info">
+        <strong>Combined Effect:</strong> The week after monthly OpEx often sees large directional moves driven by vanna + charm unwinds as options expire worthless and dealers reclassify their books. Direction follows the net delta change from expired options -- predictable for those who track it.
+      </div>
+    </div>
+  </div>
+
+  <!-- == SECTION 4: MARKET MAKING == -->
+  <div class="sec-hdr">
+    <div class="sec-num">4</div>
+    <div class="sec-title">Market Making Activities</div>
+    <div class="sec-sub">Bid-ask spread mechanics, inventory management, flow toxicity, and their trading implications</div>
+  </div>
+
+  <div class="three-col">
+    <div class="info-card">
+      <h3>&#128178; Bid-Ask Spread &amp; Inventory</h3>
+      <p>Market makers earn the spread but accumulate risky inventory. Their spread widens when:</p>
+      <ul>
+        <li><strong>Volatility rises:</strong> Wider spread to cover hedge cost</li>
+        <li><strong>Flow toxicity rises:</strong> Informed traders on both sides</li>
+        <li><strong>Inventory extreme:</strong> Too long/short forces wider ask/bid</li>
+        <li><strong>Pre-event:</strong> FOMC, earnings, CPI -- spreads widen 2-3x</li>
+      </ul>
+      <div class="spread-vis" style="margin-top:.8rem;">
+        <div style="font-size:.68rem;color:var(--muted);margin-bottom:.5rem;">SPY SPREAD COMPARISON</div>
+        <div class="spread-row"><span style="width:55px;color:var(--muted);font-size:.72rem;">Normal</span><div class="spread-bar sb-bid" style="width:55px;">Bid 499.95</div><div class="spread-bar sb-mid" style="width:35px;margin:0 2px;">Mid</div><div class="spread-bar sb-ask" style="width:55px;">Ask 500.05</div></div>
+        <div class="spread-row"><span style="width:55px;color:var(--muted);font-size:.72rem;">Pre-Event</span><div class="spread-bar sb-bid" style="width:45px;">Bid 499.70</div><div class="spread-bar sb-mid" style="width:35px;margin:0 2px;">Mid</div><div class="spread-bar sb-ask" style="width:65px;">Ask 500.30</div></div>
+        <div style="font-size:.68rem;color:var(--muted);margin-top:.4rem;">Pre-event spreads 3-6x wider -- reduce position size accordingly</div>
+      </div>
+    </div>
+    <div class="info-card">
+      <h3>&#127922; Order Flow Toxicity (VPIN)</h3>
+      <p>VPIN measures the fraction of volume driven by informed (directional) traders vs uninformed (noise) traders:</p>
+      <ul>
+        <li><strong>Low VPIN (&lt;0.3):</strong> Noise-dominated flow -- spreads tight, market stable</li>
+        <li><strong>Medium VPIN (0.3-0.5):</strong> Mixed flow -- normal market conditions</li>
+        <li><strong>High VPIN (&gt;0.5):</strong> Informed flow -- MMs widen spreads, liquidity drops</li>
+        <li><strong>VPIN Spike:</strong> Precedes liquidity crises (Flash Crash 2010: VPIN peaked 3 hours before)</li>
+      </ul>
+      <div class="hl-warn" style="margin-top:.7rem;">
+        <strong>Trading Impact:</strong> High VPIN = wider effective spreads, higher slippage, faster adverse moves. Reduce size, use limit orders, and avoid chasing fills when VPIN is elevated. Watch for widening option bid-ask as a real-time VPIN proxy.
+      </div>
+    </div>
+    <div class="info-card">
+      <h3>&#9889; HFT &amp; Dark Pool Mechanics</h3>
+      <p>HFT market makers operate at microsecond speeds. Their activities:</p>
+      <ul>
+        <li><strong>Statistical Arb:</strong> Exploit price discrepancies across venues (NYSE, NASDAQ, CBOE)</li>
+        <li><strong>Latency Arb:</strong> Front-run slower orders by reading futures first</li>
+        <li><strong>Rebate Capture:</strong> Earn maker rebates by providing passive liquidity</li>
+      </ul>
+      <div class="hl-info" style="margin-top:.7rem;margin-bottom:.7rem;">
+        <strong>Dark Pools (~38% of US volume):</strong> Large institutional prints executed off-exchange. A large dark pool print at session low = institutional accumulation; at session high = distribution. Iceberg orders show only small visible portion.
+      </div>
+      <p style="font-size:.82rem;color:var(--muted);"><strong>For Retail:</strong> Use limit orders to capture spread. Avoid market orders in illiquid names. Avoid trading in first 5 minutes -- HFT price discovery is most chaotic at open.</p>
+    </div>
+  </div>
+
+  <!-- == SECTION 5: FORECAST HUB == -->
+  <div class="sec-hdr">
+    <div class="sec-num">5</div>
+    <div class="sec-title">Forecast Hub</div>
+    <div class="sec-sub">Synthesized outlook for next day, week, and month based on live GEX, flow, and ML signals</div>
+  </div>
+
+  <div class="fc-tabs">
+    <div class="fc-tab active" onclick="switchFcTab('day',this)">&#128197; Tomorrow</div>
+    <div class="fc-tab" onclick="switchFcTab('week',this)">&#128198; Next Week</div>
+    <div class="fc-tab" onclick="switchFcTab('month',this)">&#128336; Next Month</div>
+  </div>
+
+  <!-- TOMORROW -->
+  <div class="fc-panel active" id="fc-day">
+    <div class="two-col">
+      <div>
+        <div class="info-card" style="margin-bottom:.9rem;">
+          <h3>&#127919; GEX Key Levels for Tomorrow</h3>
+          <p style="font-size:.8rem;color:var(--muted);margin-bottom:.8rem;">Mechanical price levels where dealer hedging creates predictable market behavior</p>
+          <table class="kl-table">
+            <thead><tr><th>Asset</th><th>Level</th><th>Type</th><th>Expected Behavior</th></tr></thead>
+            <tbody id="fc-day-gex">
+              <tr><td colspan="4" style="color:var(--muted);text-align:center;padding:.8rem;">Loading GEX data...</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="info-card">
+          <h3>&#127754; Option Flow Sentiment by Asset</h3>
+          <table class="kl-table">
+            <thead><tr><th>Symbol</th><th>Sentiment</th><th>Call Vol</th><th>Put Vol</th><th>Bias</th></tr></thead>
+            <tbody id="fc-day-flows">
+              <tr><td colspan="5" style="color:var(--muted);text-align:center;padding:.8rem;">Loading flow data...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div>
+        <div class="info-card" style="margin-bottom:.9rem;">
+          <h3>&#129504; ML Signal Rankings -- Tomorrow Bias</h3>
+          <table class="kl-table">
+            <thead><tr><th>Rank</th><th>Symbol</th><th>Direction</th><th>Magnitude</th><th>Confidence</th></tr></thead>
+            <tbody id="fc-day-ml">
+              <tr><td colspan="5" style="color:var(--muted);text-align:center;padding:.8rem;">Loading ML rankings...</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="info-card">
+          <h3>&#9989; Day-Ahead Trading Checklist</h3>
+          <ul class="checklist" id="fc-day-checklist">
+            <li><span class="chk-icon chk-amber">&#9670;</span><div><span class="chk-label">Loading checklist...</span></div></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- NEXT WEEK -->
+  <div class="fc-panel" id="fc-week">
+    <div class="two-col">
+      <div>
+        <div class="info-card" style="margin-bottom:.9rem;">
+          <h3>&#128198; Weekly Outlook -- Key Themes</h3>
+          <div class="hl-info" style="margin-bottom:.7rem;"><strong>GEX Regime:</strong> <span id="wk-gex-regime">Loading...</span></div>
+          <div class="hl-bull" style="margin-bottom:.7rem;"><strong>Bullish Drivers:</strong> <span id="wk-bull-text">Analyzing...</span></div>
+          <div class="hl-bear"><strong>Bearish Risks:</strong> <span id="wk-bear-text">Analyzing...</span></div>
+        </div>
+        <div class="info-card">
+          <h3>&#127937; Weekly Options Expiry Dynamics</h3>
+          <ul>
+            <li style="font-size:.82rem;color:var(--muted);margin-bottom:.5rem;"><strong style="color:var(--text);">Monday-Tuesday:</strong> Post-OpEx vanna/charm unwind. IV repricing. Watch for directional moves as last week's expired option hedges are lifted.</li>
+            <li style="font-size:.82rem;color:var(--muted);margin-bottom:.5rem;"><strong style="color:var(--text);">Wednesday:</strong> Midweek equilibrium. Flow tends to be bidirectional. New 5-day options open -- watch open interest build at key strikes.</li>
+            <li style="font-size:.82rem;color:var(--muted);margin-bottom:.5rem;"><strong style="color:var(--text);">Thursday:</strong> 1DTE options have max gamma per dollar. Dealers hedging Thursday-expiry options create morning volatility. Look for pin to large OI strikes.</li>
+            <li style="font-size:.82rem;color:var(--muted);"><strong style="color:var(--text);">Friday:</strong> 0DTE expiry. Charm decay forces dealer unwinds into close. MOC imbalances amplify last-hour moves. Price pins to gamma wall or flip level.</li>
+          </ul>
+        </div>
+      </div>
+      <div>
+        <div class="info-card" style="margin-bottom:.9rem;">
+          <h3>&#128270; Top ML Assets -- Weekly Ranking</h3>
+          <table class="kl-table">
+            <thead><tr><th>Rank</th><th>Symbol</th><th>Group</th><th>ML Score</th><th>Direction</th></tr></thead>
+            <tbody id="fc-week-ml">
+              <tr><td colspan="5" style="color:var(--muted);text-align:center;padding:.8rem;">Loading weekly rankings...</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="info-card">
+          <h3>&#128203; Weekly Preparation Checklist</h3>
+          <ul>
+            <li style="font-size:.82rem;margin-bottom:.5rem;"><strong style="color:#10b981;">&#10003;</strong> <strong>Check OpEx calendar:</strong> Is this monthly OpEx week? If yes, expect gamma decay acceleration Thu-Fri and strike pinning</li>
+            <li style="font-size:.82rem;margin-bottom:.5rem;"><strong style="color:#10b981;">&#10003;</strong> <strong>FOMC / Fed speakers:</strong> Any scheduled Fed events? Vol compression into event, expansion after</li>
+            <li style="font-size:.82rem;margin-bottom:.5rem;"><strong style="color:#10b981;">&#10003;</strong> <strong>CPI / PPI / Jobs:</strong> Major macro prints? Position before = higher risk; trade the reaction instead</li>
+            <li style="font-size:.82rem;margin-bottom:.5rem;"><strong style="color:#10b981;">&#10003;</strong> <strong>Earnings calendar:</strong> Mega-cap earnings? IV rises into announcement, collapses after -- premium selling opportunity</li>
+            <li style="font-size:.82rem;margin-bottom:.5rem;"><strong style="color:#10b981;">&#10003;</strong> <strong>CTA positioning:</strong> Near max long? Reversal risk elevated. Near max short? Squeeze potential</li>
+            <li style="font-size:.82rem;"><strong style="color:#10b981;">&#10003;</strong> <strong>Futures roll week?</strong> (Mar/Jun/Sep/Dec mid-month) Basis trading may suppress upside or create cross-asset divergence</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- NEXT MONTH -->
+  <div class="fc-panel" id="fc-month">
+    <div class="two-col">
+      <div>
+        <div class="info-card" style="margin-bottom:.9rem;">
+          <h3>&#128336; Monthly OPEX Cycle Dynamics</h3>
+          <p style="font-size:.82rem;color:var(--muted);margin-bottom:.7rem;">Monthly options expiration (3rd Friday) is the most important structural event of each month. The week before OpEx sees peak gamma -- the week after sees vol regime reset.</p>
+          <div class="timeline">
+            <div class="tl-item"><div class="tl-dot"></div><div class="tl-head">Week 1-2: New Month Positioning</div><div class="tl-body">Institutions open new hedges for the month. Put buying for portfolio insurance. Call selling (covered calls) to generate income. Dealers accumulate long gamma as they sell options. Vol suppressed as gamma builds.</div></div>
+            <div class="tl-item"><div class="tl-dot"></div><div class="tl-head">Week 2-3: Peak Gamma Environment</div><div class="tl-body">Most open interest concentrated in front-month options. Dealers at max long gamma -- market extremely range-bound. Breakouts fail repeatedly. VIX suppressed. The quiet before the storm.</div></div>
+            <div class="tl-item"><div class="tl-dot"></div><div class="tl-head">OpEx Week (3rd Friday): Gamma Collapse</div><div class="tl-body">Gamma decays to zero at expiration. Dealers unwind hedges. Large OI strikes act as magnets (pinning). Vol crush Thursday-Friday unless new catalyst. After close, all hedges vanish instantly.</div></div>
+            <div class="tl-item"><div class="tl-dot"></div><div class="tl-head">Post-OpEx: Vol Reset and Re-Positioning</div><div class="tl-body">Dealers go flat gamma. Vanna flows from expired options create directional bias. New monthly options open with fresh OI structure. First week post-OpEx = highest uncertainty, often large directional move as new gamma regime establishes.</div></div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="info-card" style="margin-bottom:.9rem;">
+          <h3>&#128200; Monthly ML Bias -- Top Assets</h3>
+          <table class="kl-table">
+            <thead><tr><th>Symbol</th><th>ML Direction</th><th>Magnitude</th><th>Group</th></tr></thead>
+            <tbody id="fc-month-ml">
+              <tr><td colspan="4" style="color:var(--muted);text-align:center;padding:.8rem;">Loading monthly data...</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="info-card">
+          <h3>&#127760; Macro Regime Factors</h3>
+          <ul>
+            <li style="font-size:.82rem;color:var(--muted);margin-bottom:.4rem;"><strong style="color:var(--text);">Fed Policy:</strong> Rate hike cycle = P/E compression, growth sells off. Rate cut cycle = multiple expansion, risk-on. Pause = vol compression, carry trades work.</li>
+            <li style="font-size:.82rem;color:var(--muted);margin-bottom:.4rem;"><strong style="color:var(--text);">Credit Spreads (HYG/LQD):</strong> Widening spreads precede equity risk-off by 2-3 weeks. Tight spreads = low systemic risk, equity supportive.</li>
+            <li style="font-size:.82rem;color:var(--muted);margin-bottom:.4rem;"><strong style="color:var(--text);">Dollar (DXY):</strong> Strong dollar pressures EM equities and large-cap US multinationals. Dollar weakness supports commodity stocks and EM.</li>
+            <li style="font-size:.82rem;color:var(--muted);margin-bottom:.4rem;"><strong style="color:var(--text);">Yield Curve (2s10s):</strong> Inversion historically precedes recessions by 12-18 months. Steepening from inversion = re-pricing of growth expectations.</li>
+            <li style="font-size:.82rem;color:var(--muted);"><strong style="color:var(--text);">VIX Term Structure:</strong> Contango (spot &lt; 3M) = complacency, potential for vol spike. Backwardation (spot &gt; 3M) = fear regime, elevated near-term risk.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- == SECTION 6: PRE-TRADE CHECKLIST == -->
+  <div class="sec-hdr">
+    <div class="sec-num">6</div>
+    <div class="sec-title">Pre-Trade Checklist</div>
+    <div class="sec-sub">Live market conditions evaluated against key readiness criteria -- updated from server data</div>
+  </div>
+
+  <div class="three-col">
+    <div class="info-card">
+      <h3 style="color:#10b981;">&#9989; Market Structure</h3>
+      <ul class="checklist" id="chk-structure">
+        <li><span class="chk-icon chk-amber">&#9670;</span><div><span class="chk-label">GEX Regime</span> <span class="chk-val">Loading...</span></div></li>
+        <li><span class="chk-icon chk-amber">&#9670;</span><div><span class="chk-label">Gamma Flip</span> <span class="chk-val">Loading...</span></div></li>
+        <li><span class="chk-icon chk-amber">&#9670;</span><div><span class="chk-label">Put/Call Ratio</span> <span class="chk-val">Loading...</span></div></li>
+        <li><span class="chk-icon chk-amber">&#9670;</span><div><span class="chk-label">Flow Sentiment</span> <span class="chk-val">Loading...</span></div></li>
+      </ul>
+    </div>
+    <div class="info-card">
+      <h3 style="color:#22d3ee;">&#129504; ML Signals</h3>
+      <ul class="checklist" id="chk-ml">
+        <li><span class="chk-icon chk-amber">&#9670;</span><div><span class="chk-label">Market Direction</span> <span class="chk-val">Loading...</span></div></li>
+        <li><span class="chk-icon chk-amber">&#9670;</span><div><span class="chk-label">Sentiment Score</span> <span class="chk-val">Loading...</span></div></li>
+        <li><span class="chk-icon chk-amber">&#9670;</span><div><span class="chk-label">Top Ranked Asset</span> <span class="chk-val">Loading...</span></div></li>
+        <li><span class="chk-icon chk-amber">&#9670;</span><div><span class="chk-label">Signal Consensus</span> <span class="chk-val">Loading...</span></div></li>
+      </ul>
+    </div>
+    <div class="info-card">
+      <h3 style="color:#fbbf24;">&#9888;&#65039; Risk Conditions</h3>
+      <ul class="checklist">
+        <li><span class="chk-icon chk-green">&#10003;</span><div><span class="chk-label">Use Limit Orders</span> <span class="chk-val">Always -- avoid chasing fills</span></div></li>
+        <li><span class="chk-icon chk-green">&#10003;</span><div><span class="chk-label">Size for Regime</span> <span class="chk-val">Short gamma = reduce size 20-30%</span></div></li>
+        <li><span class="chk-icon chk-green">&#10003;</span><div><span class="chk-label">Check Pre-Market</span> <span class="chk-val">Futures + overnight gaps before entry</span></div></li>
+        <li><span class="chk-icon chk-green">&#10003;</span><div><span class="chk-label">Avoid First 5 Min</span> <span class="chk-val">HFT price discovery chaos at open</span></div></li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- == SECTION 7: GLOSSARY == -->
+  <div class="sec-hdr">
+    <div class="sec-num">7</div>
+    <div class="sec-title">Key Terms Quick Reference</div>
+    <div class="sec-sub">Essential vocabulary for understanding market structure and institutional mechanics</div>
+  </div>
+
+  <div class="gloss-grid">
+    <div class="gloss-card"><div class="gloss-term">Gamma Exposure (GEX)</div><div class="gloss-def">Net dollar gamma held by options dealers across all strikes. Positive GEX = stabilizing (long gamma). Negative GEX = destabilizing (short gamma). Formula: (Call gamma x Call OI - Put gamma x Put OI) x 100 x Spot.</div></div>
+    <div class="gloss-card"><div class="gloss-term">Gamma Flip Level</div><div class="gloss-def">Strike price where cumulative dealer GEX transitions from positive to negative. Most important level in GEX analysis. Above = vol-suppressed regime (Long Gamma). Below = vol-expansion regime (Short Gamma).</div></div>
+    <div class="gloss-card"><div class="gloss-term">Gamma Wall / Call Wall</div><div class="gloss-def">Strike with highest positive net GEX. Acts as strong magnetic resistance above spot (dealers sell into it) or strong support below spot (dealers buy near it). Market gravitates toward and struggles to sustain moves beyond this level.</div></div>
+    <div class="gloss-card"><div class="gloss-term">Put Wall</div><div class="gloss-def">Strike with highest negative GEX -- typically where heavy put open interest concentrates. Dealers who sold puts must buy underlying as price approaches, creating a mechanical buying floor during selloffs and corrections.</div></div>
+    <div class="gloss-card"><div class="gloss-term">Vanna (dDelta/dIV)</div><div class="gloss-def">Rate of change of delta with respect to implied volatility. When IV falls (vol crush post-event), vanna flows force dealers to rebalance delta hedges even without underlying movement. Key driver of post-earnings and post-OpEx directional moves lasting 2-5 sessions.</div></div>
+    <div class="gloss-card"><div class="gloss-term">Charm (Delta Decay)</div><div class="gloss-def">Rate of change of delta with respect to time. As expiry approaches, option deltas decay toward binary values (0 or 1). Dealers unwind hedges mechanically -- creating Friday/OpEx predictable flows regardless of fundamental news.</div></div>
+    <div class="gloss-card"><div class="gloss-term">Delta Hedging</div><div class="gloss-def">Process of maintaining a delta-neutral position by trading the underlying. A dealer short a call (delta = -0.5) buys 50 shares per contract to remain neutral. As stock moves, delta changes and hedge must be rebalanced -- this rebalancing IS the market-making flow traders observe.</div></div>
+    <div class="gloss-card"><div class="gloss-term">CTA (Commodity Trading Advisor)</div><div class="gloss-def">Systematic trend-following hedge fund that trades futures across asset classes using momentum signals (20/50/100-day MA) with no discretion. CTA flows are mechanical and large (~$350B). When CTAs are max long, they represent a reflexive selling risk on any trend reversal.</div></div>
+    <div class="gloss-card"><div class="gloss-term">VPIN</div><div class="gloss-def">Volume-Synchronized Probability of Informed Trading. Measures what fraction of order flow comes from informed (directional) vs noise traders. High VPIN (&gt;0.5) = wider spreads, higher slippage, faster adverse moves. Low VPIN = liquid, tight-spread market.</div></div>
+    <div class="gloss-card"><div class="gloss-term">OpEx (Options Expiration)</div><div class="gloss-def">Date when options contracts expire. Monthly OpEx = 3rd Friday. Weekly OpEx = every Friday. 0DTE = same-day expiry. At expiration, gamma collapses to zero as dealers unwind all hedges -- creating vol crush and strike pinning on expiry day.</div></div>
+    <div class="gloss-card"><div class="gloss-term">Put/Call Ratio (PCR)</div><div class="gloss-def">Open interest in puts divided by calls. PCR &gt;1.2 = heavy bearish hedging (often contrarian buy signal -- fear is elevated). PCR &lt;0.7 = complacency (potential sell signal -- fear absent). Extreme PCR is a sentiment indicator, not a directional signal alone.</div></div>
+    <div class="gloss-card"><div class="gloss-term">Flow Sentiment</div><div class="gloss-def">Net direction of options premium flow (call premium vs put premium paid). Bullish flow = more call premium paid than put premium. Distinct from PCR because premium-weighted flow captures size and conviction of trades, not just count -- a single $1M call sweep outweighs thousands of small puts.</div></div>
+  </div>
+
+  <!-- Bottom nav -->
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-top:3rem;flex-wrap:wrap;gap:1rem;border-top:1px solid var(--border);padding-top:1.5rem;">
+    <a href="market-summary.html" style="color:var(--muted);text-decoration:none;font-size:.9rem;">&#8592; Market Summary</a>
+    <div style="display:flex;gap:.8rem;flex-wrap:wrap;">
+      <a href="gamma-exposure.html" class="rbtn" style="text-decoration:none;padding:.5rem 1.1rem;">&#127919; GEX Charts</a>
+      <a href="option-flows.html"   class="rbtn" style="text-decoration:none;padding:.5rem 1.1rem;">&#127754; Option Flows</a>
+      <a href="live-trading.html"   style="text-decoration:none;background:linear-gradient(135deg,#10b981,#059669);color:#fff;padding:.55rem 1.4rem;border-radius:8px;font-size:.88rem;font-weight:700;">Open Live Dashboard &#8594;</a>
+    </div>
+  </div>
+
+</div><!-- /mp-wrap -->
+
+<script>
+'use strict';
+var API = window.location.origin;
+var _gexData = null;
+var _mktData = null;
+var _flowData = null;
+
+function switchFcTab(id, el) {
+  document.querySelectorAll('.fc-tab').forEach(function(t){ t.classList.remove('active'); });
+  document.querySelectorAll('.fc-panel').forEach(function(p){ p.classList.remove('active'); });
+  el.classList.add('active');
+  document.getElementById('fc-' + id).classList.add('active');
+}
+
+function setStatus(s, msg) {
+  var d = document.getElementById('sdot');
+  d.className = 'sdot ' + (s==='ok' ? 'on' : s==='loading' ? 'loading' : '');
+  document.getElementById('smsg').textContent = msg;
+}
+
+function fmtP(v) {
+  if (v == null) return '--';
+  return v >= 1000 ? '$' + v.toLocaleString('en-US',{maximumFractionDigits:0}) : '$' + v.toFixed(2);
+}
+
+function chipDir(d) {
+  if (!d) return '<span class="chip chip-neut">--</span>';
+  var u = d.toString().toUpperCase();
+  if (u.indexOf('BULL')>=0 || u.indexOf('UP')>=0 || u.indexOf('LONG')>=0)
+    return '<span class="chip chip-bull">' + d + '</span>';
+  if (u.indexOf('BEAR')>=0 || u.indexOf('DOWN')>=0 || u.indexOf('SHORT')>=0)
+    return '<span class="chip chip-bear">' + d + '</span>';
+  return '<span class="chip chip-neut">' + d + '</span>';
+}
+
+function chipSent(s) {
+  if (!s) return '<span class="chip chip-neut">--</span>';
+  var u = s.toString().toUpperCase();
+  if (u === 'BULLISH') return '<span class="chip chip-bull">BULLISH</span>';
+  if (u === 'BEARISH') return '<span class="chip chip-bear">BEARISH</span>';
+  return '<span class="chip chip-neut">' + s + '</span>';
+}
+
+async function loadAll(nocache) {
+  setStatus('loading', 'Loading market intelligence from server...');
+  var qs = nocache ? '?nocache=1' : '';
+  try {
+    var results = await Promise.all([
+      fetch(API + '/api/market-summary' + qs, {cache:'no-store'}).then(function(r){ return r.json(); }),
+      fetch(API + '/api/gamma-exposure'  + qs, {cache:'no-store'}).then(function(r){ return r.json(); }),
+      fetch(API + '/api/option-flows'    + qs, {cache:'no-store'}).then(function(r){ return r.json(); }),
+    ]);
+    _mktData  = results[0];
+    _gexData  = results[1];
+    _flowData = results[2];
+    renderAll(_mktData, _gexData, _flowData);
+    setStatus('ok', 'Market intelligence loaded - refreshes every 8 min');
+  } catch(e) {
+    setStatus('error', 'Cannot reach server: ' + e.message + '. Start Flask: py live-server.py');
+  }
+}
+
+function renderAll(mkt, gex, flows) {
+  renderStats(mkt, gex, flows);
+  renderDHLevels(gex);
+  renderForecastDay(mkt, gex, flows);
+  renderForecastWeek(mkt, gex);
+  renderForecastMonth(mkt);
+  renderChecklist(mkt, gex, flows);
+}
+
+function renderStats(mkt, gex, flows) {
+  var dir  = (mkt && mkt.market_direction) || '--';
+  var sent = (mkt && mkt.sentiment) || '--';
+  var ts   = (gex && gex.timestamp) ? new Date(gex.timestamp).toLocaleTimeString() : '--';
+
+  var elDir = document.getElementById('st-direction');
+  elDir.textContent = dir;
+  elDir.style.color = dir.toUpperCase().indexOf('BULL') >= 0 ? '#4ade80' : dir.toUpperCase().indexOf('BEAR') >= 0 ? '#f87171' : '#22d3ee';
+
+  var elSent = document.getElementById('st-sentiment');
+  elSent.textContent = sent;
+  elSent.style.color = sent.toUpperCase().indexOf('BULL') >= 0 ? '#4ade80' : sent.toUpperCase().indexOf('BEAR') >= 0 ? '#f87171' : '#10b981';
+
+  var spy = (gex && gex.assets) ? gex.assets.find(function(a){ return a.symbol === 'SPY'; }) : null;
+  if (spy && !spy.no_options) {
+    var elReg = document.getElementById('st-gexregime');
+    elReg.textContent = spy.regime || '--';
+    elReg.style.color = spy.regime === 'Long Gamma' ? '#4ade80' : '#f87171';
+    document.getElementById('st-gammawall').textContent = spy.gamma_wall ? fmtP(spy.gamma_wall) : '--';
+    document.getElementById('st-putwall').textContent   = spy.put_wall   ? fmtP(spy.put_wall)   : '--';
+    document.getElementById('st-flip').textContent      = spy.flip_level ? fmtP(spy.flip_level) : '--';
+  }
+
+  var fspy = (flows && flows.assets) ? flows.assets.find(function(a){ return a.symbol === 'SPY'; }) : null;
+  if (fspy) {
+    var elFlow = document.getElementById('st-flowsent');
+    elFlow.textContent = fspy.flow_sentiment || '--';
+    var fu = (fspy.flow_sentiment || '').toUpperCase();
+    elFlow.style.color = fu === 'BULLISH' ? '#4ade80' : fu === 'BEARISH' ? '#f87171' : '#38bdf8';
+  }
+  document.getElementById('st-ts').textContent = ts;
+}
+
+function renderDHLevels(gex) {
+  var spy = (gex && gex.assets) ? gex.assets.find(function(a){ return a.symbol === 'SPY'; }) : null;
+  if (!spy || spy.no_options) return;
+  var rows = [
+    spy.gamma_wall ? {name:'Gamma Wall',  price:spy.gamma_wall, type:'Call Wall',     color:'#22c55e', action: spy.gamma_wall > spy.spot ? 'Resistance -- dealers sell rallies into this level' : 'Support -- dealers buy dips toward this level'} : null,
+    spy.put_wall   ? {name:'Put Wall',    price:spy.put_wall,   type:'Put Support',   color:'#f87171', action:'Mechanical buying floor -- dealers long deltas from put OI must hedge below this'} : null,
+    spy.flip_level ? {name:'Gamma Flip',  price:spy.flip_level, type:'Regime Change', color:'#a78bfa', action: spy.flip_level > spy.spot ? 'Below flip = Short Gamma (trending) -- reclaim to stabilize' : 'Above flip = Long Gamma (stabilizing) -- losing it amplifies vol'} : null,
+    {name:'Current Spot', price:spy.spot, type:'Live Price', color:'#fbbf24', action:'Current market price -- reference for all levels above and below'},
+  ].filter(Boolean).sort(function(a,b){ return b.price - a.price; });
+
+  document.getElementById('dh-levels-body').innerHTML = rows.map(function(r) {
+    return '<tr><td><strong style="color:' + r.color + ';">' + r.name + '</strong></td>' +
+           '<td><span style="font-family:\'Consolas\',monospace;color:' + r.color + ';font-weight:700;">' + fmtP(r.price) + '</span></td>' +
+           '<td><span class="chip" style="background:rgba(255,255,255,.05);color:' + r.color + ';border:1px solid ' + r.color + '40;">' + r.type + '</span></td>' +
+           '<td style="font-size:.78rem;color:var(--muted);">' + r.action + '</td></tr>';
+  }).join('');
+}
+
+function renderForecastDay(mkt, gex, flows) {
+  var etfs = (gex && gex.assets) ? gex.assets.filter(function(a){ return ['SPY','QQQ','IWM','DIA'].indexOf(a.symbol) >= 0 && !a.no_options; }) : [];
+  var gexRows = '';
+  etfs.forEach(function(a) {
+    if (a.gamma_wall) gexRows += '<tr><td><strong>' + a.symbol + '</strong></td><td style="color:#22c55e;font-family:\'Consolas\',monospace;">' + fmtP(a.gamma_wall) + '</td><td><span class="chip chip-bull">Gamma Wall</span></td><td style="font-size:.78rem;color:var(--muted);">' + (a.gamma_wall > a.spot ? 'Resistance -- dealer selling above' : 'Support -- dealer buying below') + '</td></tr>';
+    if (a.put_wall)   gexRows += '<tr><td><strong>' + a.symbol + '</strong></td><td style="color:#f87171;font-family:\'Consolas\',monospace;">' + fmtP(a.put_wall) + '</td><td><span class="chip chip-bear">Put Wall</span></td><td style="font-size:.78rem;color:var(--muted);">Mechanical buying support from put OI hedges</td></tr>';
+    if (a.flip_level) gexRows += '<tr><td><strong>' + a.symbol + '</strong></td><td style="color:#a78bfa;font-family:\'Consolas\',monospace;">' + fmtP(a.flip_level) + '</td><td><span class="chip chip-neut">Gamma Flip</span></td><td style="font-size:.78rem;color:var(--muted);">Regime change: ' + (a.flip_level > a.spot ? 'reclaim = stabilizing' : 'lose = destabilizing') + '</td></tr>';
+  });
+  document.getElementById('fc-day-gex').innerHTML = gexRows || '<tr><td colspan="4" style="color:var(--muted);text-align:center;padding:.8rem;">No ETF GEX data available</td></tr>';
+
+  var fa = (flows && flows.assets) ? flows.assets.slice(0,10) : [];
+  document.getElementById('fc-day-flows').innerHTML = fa.length ? fa.map(function(r) {
+    var cv = r.call_vol ? r.call_vol.reduce(function(a,b){return a+b;},0) : 0;
+    var pv = r.put_vol  ? r.put_vol.reduce(function(a,b){return a+b;},0)  : 0;
+    return '<tr><td><strong>' + r.symbol + '</strong></td><td>' + chipSent(r.flow_sentiment) + '</td>' +
+           '<td style="color:#4ade80;font-family:\'Consolas\',monospace;">' + (cv ? cv.toLocaleString() : '--') + '</td>' +
+           '<td style="color:#f87171;font-family:\'Consolas\',monospace;">' + (pv ? pv.toLocaleString() : '--') + '</td>' +
+           '<td>' + (cv && pv ? (cv > pv ? '<span class="chip chip-bull">CALL</span>' : '<span class="chip chip-bear">PUT</span>') : '--') + '</td></tr>';
+  }).join('') : '<tr><td colspan="5" style="color:var(--muted);text-align:center;padding:.8rem;">No flow data available</td></tr>';
+
+  var ranking = (mkt && mkt.ml_ranking) ? mkt.ml_ranking.slice(0,8) : [];
+  document.getElementById('fc-day-ml').innerHTML = ranking.length ? ranking.map(function(r, i) {
+    var mag = r.magnitude != null ? (r.magnitude * 100).toFixed(0) + '%' : '--';
+    var conf = Math.round((r.confidence || r.magnitude || 0.5) * 100);
+    return '<tr><td style="color:var(--muted);">' + (i+1) + '</td><td><strong>' + (r.symbol || r) + '</strong></td><td>' + chipDir(r.direction || r.signal || 'LONG') + '</td>' +
+           '<td><span style="color:' + ((r.magnitude || 0) > 0.5 ? '#4ade80' : '#fbbf24') + ';font-weight:700;">' + mag + '</span></td>' +
+           '<td><div style="height:6px;width:' + conf + '%;background:#10b981;border-radius:3px;min-width:8px;"></div></td></tr>';
+  }).join('') : '<tr><td colspan="5" style="color:var(--muted);text-align:center;padding:.8rem;">No ML ranking data available</td></tr>';
+
+  var spy = (gex && gex.assets) ? gex.assets.find(function(a){ return a.symbol === 'SPY'; }) : null;
+  var isLong = spy && spy.regime === 'Long Gamma';
+  var dir = ((mkt && mkt.market_direction) || '').toUpperCase();
+  var fspy = (flows && flows.assets) ? flows.assets.find(function(a){ return a.symbol === 'SPY'; }) : null;
+  var flowBull = fspy && ((fspy.flow_sentiment || '').toUpperCase() === 'BULLISH');
+  var items = [
+    {icon: isLong ? 'chk-green' : 'chk-red', label:'GEX Regime', val: spy ? (spy.regime + ' -- ' + (isLong ? 'mean-reversion setups, fades work' : 'momentum strategies, trend following')) : 'Unknown'},
+    {icon: dir.indexOf('BULL')>=0 ? 'chk-green' : dir.indexOf('BEAR')>=0 ? 'chk-red' : 'chk-amber', label:'ML Direction', val:(mkt && mkt.market_direction) || 'No signal'},
+    {icon: flowBull ? 'chk-green' : 'chk-red', label:'SPY Flow', val:(fspy && fspy.flow_sentiment) || 'Loading...'},
+    {icon:'chk-amber', label:'Strategy', val: isLong ? 'Fade gamma wall resistance; buy put wall support' : 'Follow momentum; reclaiming flip = regime shift buy signal'},
+    {icon:'chk-green', label:'Sizing Rule', val: isLong ? 'Normal size OK -- vol is suppressed in long gamma' : 'Reduce size 20-30% -- short gamma amplifies adverse moves'},
+    {icon:'chk-green', label:'Order Type', val:'Limit orders only -- avoid market orders especially near key GEX levels'},
+  ];
+  document.getElementById('fc-day-checklist').innerHTML = items.map(function(it) {
+    return '<li><span class="chk-icon ' + it.icon + '">&#9670;</span><div><span class="chk-label">' + it.label + ':</span> <span class="chk-val">' + it.val + '</span></div></li>';
+  }).join('');
+}
+
+function renderForecastWeek(mkt, gex) {
+  var spy = (gex && gex.assets) ? gex.assets.find(function(a){ return a.symbol === 'SPY'; }) : null;
+  var isLong = spy && spy.regime === 'Long Gamma';
+  var dir = ((mkt && mkt.market_direction) || '').toUpperCase();
+  document.getElementById('wk-gex-regime').textContent = spy ? (spy.regime + ' -- dealer positioning is ' + (isLong ? 'stabilizing (range-bound bias this week)' : 'amplifying (trending bias this week)')) : 'Loading...';
+  document.getElementById('wk-bull-text').textContent = isLong
+    ? 'Gamma wall provides ceiling resistance. Mean-reversion setups preferred. Put wall offers strong mechanical support for dip-buying near that level.'
+    : (dir.indexOf('BULL')>=0 ? 'Short gamma + bullish ML signal = momentum continuation likely. Breakouts above resistance may extend further than expected.' : 'Monitor for failed rallies -- short gamma amplifies both directions. Reactive trading safer than anticipatory.');
+  document.getElementById('wk-bear-text').textContent = isLong
+    ? 'Complacency risk -- long gamma suppresses vol until it does not. A break below Gamma Flip would rapidly shift to short gamma and spike vol sharply.'
+    : 'Short gamma = vol amplification. Any catalyst (macro event, earnings surprise) could produce outsized moves in either direction. Manage risk tightly.';
+
+  var ranking = (mkt && mkt.ml_ranking) ? mkt.ml_ranking.slice(0,10) : [];
+  document.getElementById('fc-week-ml').innerHTML = ranking.length ? ranking.map(function(r, i) {
+    return '<tr><td style="color:var(--muted);">' + (i+1) + '</td><td><strong>' + (r.symbol || r) + '</strong></td><td style="font-size:.75rem;color:var(--muted);">' + (r.group || '--') + '</td>' +
+           '<td><span style="color:#10b981;font-weight:700;font-family:\'Consolas\',monospace;">' + (r.magnitude != null ? (r.magnitude*100).toFixed(0)+'%' : '--') + '</span></td>' +
+           '<td>' + chipDir(r.direction || 'LONG') + '</td></tr>';
+  }).join('') : '<tr><td colspan="5" style="color:var(--muted);text-align:center;padding:.8rem;">No weekly ML data</td></tr>';
+}
+
+function renderForecastMonth(mkt) {
+  var ranking = (mkt && mkt.ml_ranking) ? mkt.ml_ranking.slice(0,12) : [];
+  document.getElementById('fc-month-ml').innerHTML = ranking.length ? ranking.map(function(r) {
+    return '<tr><td><strong>' + (r.symbol || r) + '</strong></td><td>' + chipDir(r.direction || 'LONG') + '</td>' +
+           '<td><span style="color:#10b981;font-weight:700;">' + (r.magnitude != null ? (r.magnitude*100).toFixed(0)+'%' : '--') + '</span></td>' +
+           '<td style="font-size:.75rem;color:var(--muted);">' + (r.group || '--') + '</td></tr>';
+  }).join('') : '<tr><td colspan="4" style="color:var(--muted);text-align:center;padding:.8rem;">No monthly ML data</td></tr>';
+}
+
+function renderChecklist(mkt, gex, flows) {
+  var spy = (gex && gex.assets) ? gex.assets.find(function(a){ return a.symbol === 'SPY'; }) : null;
+  var isLong = spy && spy.regime === 'Long Gamma';
+  var dir = ((mkt && mkt.market_direction) || '').toUpperCase();
+  var sent = ((mkt && mkt.sentiment) || '').toUpperCase();
+  var fspy = (flows && flows.assets) ? flows.assets.find(function(a){ return a.symbol === 'SPY'; }) : null;
+  var ranking = (mkt && mkt.ml_ranking) ? mkt.ml_ranking : [];
+  var topSym = ranking.length ? (ranking[0].symbol || ranking[0]) : '--';
+  var bullVotes = ranking.slice(0,5).filter(function(r){ return ((r.direction||'').toUpperCase().indexOf('BULL')>=0); }).length;
+  var consensus = ranking.length >= 3 ? (bullVotes >= 3 ? 'BULLISH consensus (' + bullVotes + '/5 signals)' : 'MIXED or BEARISH (' + bullVotes + '/5 bullish)') : 'Insufficient data';
+
+  document.getElementById('chk-structure').innerHTML = [
+    {ok:spy!=null, label:'GEX Regime',    val: spy ? spy.regime : 'No data'},
+    {ok:spy&&spy.flip_level!=null, label:'Gamma Flip', val: spy&&spy.flip_level ? fmtP(spy.flip_level) + (spy.spot > spy.flip_level ? ' (spot ABOVE flip -- stabilizing)' : ' (spot BELOW flip -- trending)') : 'No data'},
+    {ok:spy&&spy.pcr!=null, label:'Put/Call Ratio', val: spy&&spy.pcr!=null ? spy.pcr.toFixed(2) + (spy.pcr > 1.2 ? ' (bearish hedging dominant)' : spy.pcr < 0.7 ? ' (bullish sentiment)' : ' (balanced)') : 'No data'},
+    {ok:fspy!=null, label:'Flow Sentiment', val: fspy ? (fspy.flow_sentiment || '--') : 'No data'},
+  ].map(function(it){
+    return '<li><span class="chk-icon ' + (it.ok ? 'chk-green' : 'chk-amber') + '">' + (it.ok ? '&#10003;' : '&#9670;') + '</span><div><span class="chk-label">' + it.label + ':</span> <span class="chk-val">' + it.val + '</span></div></li>';
+  }).join('');
+
+  var bullish = dir.indexOf('BULL') >= 0 && sent.indexOf('BULL') >= 0;
+  var bearish = dir.indexOf('BEAR') >= 0 && sent.indexOf('BEAR') >= 0;
+  document.getElementById('chk-ml').innerHTML = [
+    {icon: bullish ? 'chk-green' : bearish ? 'chk-red' : 'chk-amber', label:'Market Direction', val:(mkt&&mkt.market_direction)||'--'},
+    {icon: sent.indexOf('BULL')>=0 ? 'chk-green' : sent.indexOf('BEAR')>=0 ? 'chk-red' : 'chk-amber', label:'Sentiment Score', val:(mkt&&mkt.sentiment)||'--'},
+    {icon:'chk-green', label:'Top Ranked Asset', val:topSym},
+    {icon: bullish||bearish ? 'chk-green' : 'chk-amber', label:'Signal Consensus', val:consensus},
+  ].map(function(it){
+    return '<li><span class="chk-icon ' + it.icon + '">&#9670;</span><div><span class="chk-label">' + it.label + ':</span> <span class="chk-val">' + it.val + '</span></div></li>';
+  }).join('');
+}
+
+window.addEventListener('load', function(){ loadAll(); });
+setInterval(function(){ loadAll(); }, 8 * 60 * 1000);
+</script>
+<script src="ibkr-widget.js"></script>
+<script src="search.js"></script>
+</body>
+</html>
