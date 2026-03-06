@@ -6,7 +6,7 @@
 (function () {
   'use strict';
 
-  const API    = 'http://localhost:5050';
+  const API    = window.location.origin;
   const LS_PFX = 'ibkr_';
 
   /* ── Styles ────────────────────────────────────────────────────────────── */

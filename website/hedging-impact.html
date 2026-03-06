@@ -160,7 +160,7 @@
 
 <!-- ── Site Nav ── -->
 <nav style="background:var(--surface);border-bottom:1px solid var(--border);padding:.5rem 1.5rem;font-size:.83rem;display:flex;align-items:center;gap:.75rem;flex-wrap:wrap;">
-  <a href="live-trading.html" style="font-weight:800;color:#f97316;text-decoration:none;">📈 ML Trading</a>
+  <a href="live-trading.html" style="font-weight:800;color:#f97316;text-decoration:none;">📈 ML Trading</a> | <a href="report-ms.html" target="_blank" style="background:#22d3ee;color:#080d1a;padding:.22rem .75rem;border-radius:5px;font-weight:700;text-decoration:none;font-size:.82rem;">&#128202; Report</a> | <a href="report-tg.html" target="_blank" style="background:#a78bfa;color:#080d1a;padding:.22rem .75rem;border-radius:5px;font-weight:700;text-decoration:none;font-size:.82rem;">&#128214; Guide</a>
   <span style="color:var(--border)">|</span>
   <a href="market-summary.html" style="color:var(--muted);text-decoration:none;">Market Summary</a>
   <span style="color:var(--border)">|</span>
@@ -587,7 +587,7 @@ Setup = Momentum if MomentumScore > 60
 </div><!-- /hi-wrap -->
 
 <script>
-const API = 'http://localhost:5050';
+const API = window.location.origin;
 let _gexData   = null;
 let _flowsData = null;
 let _activeSym = 'SPY';
@@ -1179,7 +1179,7 @@ async function loadData(nocache = false) {
   _flowsData = flowsRes;
 
   if (!gexRes && !flowsRes) {
-    setStatus('error', '⚠️ Cannot reach server at localhost:5050 — start with: py live-server.py');
+    setStatus('error', '⚠️ Cannot reach server at localhost:3000 — start with: py live-server.py');
     return;
   }
 

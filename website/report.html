@@ -35,15 +35,25 @@
 
     /* ── Body (hidden until loaded) ───────────────────────────────── */
     #rpt-body { display: none; padding: 2rem 2.5rem; max-width: 1100px; margin: 0 auto; }
+    #tg-body  { display: none; padding: 2rem 2.5rem; max-width: 1100px; margin: 0 auto; }
+    #rpt-tabs { display: none; align-items: center; gap: .5rem; padding: .5rem 2.5rem; background: var(--surf); border-bottom: 1px solid var(--border); }
 
-    /* ── Floating print button ─────────────────────────────────────── */
-    #rpt-print-btn {
+    /* ── Floating print buttons ────────────────────────────────────── */
+    #rpt-print-btn, #tg-print-btn {
       position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 9999;
       padding: .65rem 1.2rem; border-radius: 8px; border: none; cursor: pointer;
-      background: var(--accent); color: #080d1a; font-weight: 700; font-size: .92rem;
-      box-shadow: 0 4px 20px rgba(34,211,238,.4); transition: opacity .15s;
+      font-weight: 700; font-size: .92rem; transition: opacity .15s;
     }
-    #rpt-print-btn:hover { opacity: .85; }
+    #rpt-print-btn {
+      background: var(--accent); color: #080d1a;
+      box-shadow: 0 4px 20px rgba(34,211,238,.4);
+    }
+    #tg-print-btn {
+      display: none;
+      background: var(--purple); color: #fff;
+      box-shadow: 0 4px 20px rgba(167,139,250,.4);
+    }
+    #rpt-print-btn:hover, #tg-print-btn:hover { opacity: .85; }
 
     /* ── Cover ─────────────────────────────────────────────────────── */
     .rpt-cover {
@@ -166,8 +176,10 @@
         --text:#111; --muted:#556; --accent:#0e7eb0;
         --green:#15803d; --red:#b91c1c; --amber:#92400e; --purple:#6d28d9;
       }
-      #rpt-loading, #rpt-print-btn { display: none !important; }
-      #rpt-body { display: block !important; padding: 0; max-width: 100%; }
+      #rpt-loading, #rpt-print-btn, #tg-print-btn, #rpt-tabs { display: none !important; }
+      /* Only print the active tab */
+      body[data-tab="market"] #rpt-body { display: block !important; padding: 0; max-width: 100%; }
+      body[data-tab="guide"]  #tg-body  { display: block !important; padding: 0; max-width: 100%; }
       .rpt-cover { border-color: #d0d8ec; }
       .rpt-page  { page-break-before: always; padding-top: 0; }
       .rpt-cover { page-break-before: auto; }
@@ -198,6 +210,14 @@
 </div>
 
 <!-- ── Report Body ───────────────────────────────────────────────────────── -->
+<!-- ── Tab Navigation ───────────────────────────────────────────────────── -->
+<div id="rpt-tabs">
+  <button class="rpt-tab active" onclick="switchTab('market')">&#128202; Market Report</button>
+  <button class="rpt-tab" onclick="switchTab('guide')">&#128214; Trading Guide</button>
+  <span style="flex:1"></span>
+  <span style="font-size:.75rem;color:var(--muted);" id="rpt-tabs-ts"></span>
+</div>
+
 <div id="rpt-body">
 
   <!-- ── Cover ── -->
@@ -281,13 +301,247 @@
 
 </div><!-- /rpt-body -->
 
-<!-- Floating print button (screen only) -->
-<button id="rpt-print-btn" onclick="window.print()">🖨️ Print / Save PDF</button>
+<!-- ── Trading Guide Body ───────────────────────────────────────────────── -->
+<div id="tg-body">
+
+  <!-- Cover -->
+  <div class="tg-cover">
+    <div class="tg-cover-badge">Artificial Intelligence Solutions, Inc.</div>
+    <div class="tg-cover-title">Steve Borick&#8217;s<br>Trading Guide</div>
+    <div class="tg-cover-subtitle">Institutional-Grade Market Analysis &amp; Strategy</div>
+    <div class="tg-cover-divider"></div>
+    <div class="tg-cover-desc">A comprehensive, data-driven guide combining live ML signals, gamma exposure analysis, options flow intelligence, and fundamental research into a single actionable reference for professional traders.</div>
+    <div style="margin-top:2rem;display:flex;gap:1.5rem;flex-wrap:wrap;">
+      <div class="rpt-cover-stat"><label>Market Direction</label><span id="tg-cov-dir">&#8212;</span></div>
+      <div class="rpt-cover-stat"><label>Sentiment</label><span id="tg-cov-sent">&#8212;</span></div>
+      <div class="rpt-cover-stat"><label>Assets Tracked</label><span id="tg-cov-total">&#8212;</span></div>
+      <div class="rpt-cover-stat"><label>Generated</label><span id="tg-cover-date">&#8212;</span></div>
+    </div>
+  </div>
+
+  <!-- Table of Contents -->
+  <div class="tg-toc" id="tg-toc">
+    <div class="tg-toc-title">Table of Contents</div>
+    <div class="tg-toc-part">Part I &#8212; Market Overview</div>
+    <a href="#tg-s1" class="tg-toc-item"><span class="tg-toc-num">1.1</span> Direction &amp; Sentiment <span class="tg-toc-dots"></span></a>
+    <a href="#tg-s2" class="tg-toc-item"><span class="tg-toc-num">1.2</span> Events &amp; Commentary <span class="tg-toc-dots"></span></a>
+    <a href="#tg-s3" class="tg-toc-item"><span class="tg-toc-num">1.3</span> ML Signal Rankings <span class="tg-toc-dots"></span></a>
+    <div class="tg-toc-part">Part II &#8212; Gamma Exposure Analysis</div>
+    <a href="#tg-s4" class="tg-toc-item"><span class="tg-toc-num">2.1</span> Understanding GEX <span class="tg-toc-dots"></span></a>
+    <a href="#tg-s5" class="tg-toc-item"><span class="tg-toc-num">2.2</span> ETF &amp; Equity GEX Data <span class="tg-toc-dots"></span></a>
+    <a href="#tg-s6" class="tg-toc-item"><span class="tg-toc-num">2.3</span> Futures GEX Data <span class="tg-toc-dots"></span></a>
+    <div class="tg-toc-part">Part III &#8212; Options Intelligence</div>
+    <a href="#tg-s7" class="tg-toc-item"><span class="tg-toc-num">3.1</span> Options Flow Methodology <span class="tg-toc-dots"></span></a>
+    <a href="#tg-s8" class="tg-toc-item"><span class="tg-toc-num">3.2</span> Live Options Flows <span class="tg-toc-dots"></span></a>
+    <a href="#tg-s9" class="tg-toc-item"><span class="tg-toc-num">3.3</span> Unusual Flow Alerts <span class="tg-toc-dots"></span></a>
+    <a href="#tg-s10" class="tg-toc-item"><span class="tg-toc-num">3.4</span> Strategy Recommendations <span class="tg-toc-dots"></span></a>
+    <a href="#tg-s11" class="tg-toc-item"><span class="tg-toc-num">3.5</span> 0DTE Opportunities <span class="tg-toc-dots"></span></a>
+    <div class="tg-toc-part">Part IV &#8212; Fundamentals</div>
+    <a href="#tg-s12" class="tg-toc-item"><span class="tg-toc-num">4.1</span> Fundamental Ratings <span class="tg-toc-dots"></span></a>
+    <a href="#tg-s13" class="tg-toc-item"><span class="tg-toc-num">4.2</span> Valuation Metrics <span class="tg-toc-dots"></span></a>
+    <div class="tg-toc-part">Part V &#8212; Strategy Reference</div>
+    <a href="#tg-s14" class="tg-toc-item"><span class="tg-toc-num">5.1</span> Options Strategy Cheat Sheet <span class="tg-toc-dots"></span></a>
+    <a href="#tg-s15" class="tg-toc-item"><span class="tg-toc-num">5.2</span> Risk Management Rules <span class="tg-toc-dots"></span></a>
+    <a href="#tg-s16" class="tg-toc-item"><span class="tg-toc-num">5.3</span> ML Signal Interpretation Guide <span class="tg-toc-dots"></span></a>
+    <a href="#tg-s17" class="tg-toc-item"><span class="tg-toc-num">5.4</span> Trading Glossary <span class="tg-toc-dots"></span></a>
+  </div>
+
+  <!-- PART I -->
+  <div class="tg-part-hdr">
+    <div class="tg-part-num">Part I</div>
+    <div class="tg-part-name">Market Overview</div>
+  </div>
+  <div class="tg-section" id="tg-s1">
+    <div class="tg-section-hdr"><span class="tg-sec-num">1.1</span><h3>Direction &amp; Sentiment</h3></div>
+    <div id="tg-s1-body"><div class="rpt-offline">Loading&#8230;</div></div>
+  </div>
+  <div class="tg-section" id="tg-s2">
+    <div class="tg-section-hdr"><span class="tg-sec-num">1.2</span><h3>Events &amp; Commentary</h3></div>
+    <div id="tg-s2-body"><div class="rpt-offline">Loading&#8230;</div></div>
+  </div>
+  <div class="tg-section" id="tg-s3">
+    <div class="tg-section-hdr"><span class="tg-sec-num">1.3</span><h3>ML Signal Rankings</h3></div>
+    <div id="tg-s3-body"><div class="rpt-offline">Loading&#8230;</div></div>
+  </div>
+
+  <!-- PART II -->
+  <div class="tg-part-hdr">
+    <div class="tg-part-num">Part II</div>
+    <div class="tg-part-name">Gamma Exposure Analysis</div>
+  </div>
+  <div class="tg-section" id="tg-s4">
+    <div class="tg-section-hdr"><span class="tg-sec-num">2.1</span><h3>Understanding Gamma Exposure (GEX)</h3></div>
+    <div class="tg-info-box accent">
+      <h4>What is Gamma Exposure?</h4>
+      Gamma Exposure (GEX) measures the total rate of change of options dealers&#8217; delta hedging activity. When dealers are net short gamma (negative GEX), they amplify moves &#8212; buying into strength, selling into weakness. Positive GEX acts as a gravitational magnet, pulling price toward the highest-gamma strike.
+    </div>
+    <div class="tg-concept-grid">
+      <div class="tg-concept-card"><h4>&#129001; Gamma Wall</h4><p>Strike with highest net positive gamma. Acts as resistance &#8212; dealers sell into strength here, limiting upside.</p></div>
+      <div class="tg-concept-card"><h4>&#128308; Put Wall</h4><p>Strike with concentrated put OI. Acts as support &#8212; dealers buy the underlying here to hedge short puts.</p></div>
+      <div class="tg-concept-card"><h4>&#9889; Flip Level</h4><p>Price where net GEX crosses zero. Below this, dealers amplify moves (negative gamma regime).</p></div>
+      <div class="tg-concept-card"><h4>&#128202; PCR (Put/Call Ratio)</h4><p>Put OI divided by call OI. Above 1.0 = bearish hedging. Below 0.7 = bullish sentiment, potential complacency.</p></div>
+      <div class="tg-concept-card"><h4>&#128176; Total GEX $M</h4><p>Sum of all strike-level gamma x OI x 100 x spot2. Positive = dealer long gamma (dampening). Negative = amplifying.</p></div>
+      <div class="tg-concept-card"><h4>&#127919; Regime</h4><p>Positive: price above flip, dealers absorb volatility. Negative: price below flip, dealers chase &#8212; expect larger moves.</p></div>
+    </div>
+  </div>
+  <div class="tg-section" id="tg-s5">
+    <div class="tg-section-hdr"><span class="tg-sec-num">2.2</span><h3>ETF &amp; Equity GEX Data</h3></div>
+    <div id="tg-s5-body"><div class="rpt-offline">Loading&#8230;</div></div>
+  </div>
+  <div class="tg-section" id="tg-s6">
+    <div class="tg-section-hdr"><span class="tg-sec-num">2.3</span><h3>Futures GEX Data</h3></div>
+    <div id="tg-s6-body"><div class="rpt-offline">Loading&#8230;</div></div>
+  </div>
+
+  <!-- PART III -->
+  <div class="tg-part-hdr">
+    <div class="tg-part-num">Part III</div>
+    <div class="tg-part-name">Options Intelligence</div>
+  </div>
+  <div class="tg-section" id="tg-s7">
+    <div class="tg-section-hdr"><span class="tg-sec-num">3.1</span><h3>Options Flow Methodology</h3></div>
+    <div class="tg-info-box green">
+      <h4>How We Read Options Flow</h4>
+      Options flow analysis tracks the real-money activity of institutional traders. Large premium transactions, especially in short-dated expirations, often precede significant price moves. We analyze net premium, dealer delta, and unusual flow patterns to identify directional bias.
+    </div>
+    <div class="tg-concept-grid">
+      <div class="tg-concept-card"><h4>&#128176; Net Premium</h4><p>Call premium minus put premium. Positive = net bullish money flow. Negative = bears paying for downside protection.</p></div>
+      <div class="tg-concept-card"><h4>&#127968; Dealer Delta</h4><p>Net delta of market makers. Positive dealer delta means they must sell stock to hedge &#8212; creating selling pressure.</p></div>
+      <div class="tg-concept-card"><h4>&#128680; Unusual Flow</h4><p>Transactions with volume well above average OI, or premium above $1M. Signals informed positioning ahead of catalysts.</p></div>
+      <div class="tg-concept-card"><h4>&#128204; Max Pain</h4><p>Strike where maximum options expire worthless. Market makers have natural incentive to push price here near expiration.</p></div>
+    </div>
+  </div>
+  <div class="tg-section" id="tg-s8">
+    <div class="tg-section-hdr"><span class="tg-sec-num">3.2</span><h3>Live Options Flows</h3></div>
+    <div id="tg-s8-body"><div class="rpt-offline">Loading&#8230;</div></div>
+  </div>
+  <div class="tg-section" id="tg-s9">
+    <div class="tg-section-hdr"><span class="tg-sec-num">3.3</span><h3>Unusual Flow Alerts</h3></div>
+    <div id="tg-s9-body"><div class="rpt-offline">Loading&#8230;</div></div>
+  </div>
+  <div class="tg-section" id="tg-s10">
+    <div class="tg-section-hdr"><span class="tg-sec-num">3.4</span><h3>Strategy Recommendations</h3></div>
+    <div id="tg-s10-body"><div class="rpt-offline">Loading&#8230;</div></div>
+  </div>
+  <div class="tg-section" id="tg-s11">
+    <div class="tg-section-hdr"><span class="tg-sec-num">3.5</span><h3>0DTE Opportunities</h3></div>
+    <div id="tg-s11-body"><div class="rpt-offline">Loading&#8230;</div></div>
+  </div>
+
+  <!-- PART IV -->
+  <div class="tg-part-hdr">
+    <div class="tg-part-num">Part IV</div>
+    <div class="tg-part-name">Fundamentals</div>
+  </div>
+  <div class="tg-section" id="tg-s12">
+    <div class="tg-section-hdr"><span class="tg-sec-num">4.1</span><h3>Fundamental Ratings</h3></div>
+    <div id="tg-s12-body"><div class="rpt-offline">Loading&#8230;</div></div>
+  </div>
+  <div class="tg-section" id="tg-s13">
+    <div class="tg-section-hdr"><span class="tg-sec-num">4.2</span><h3>Valuation Metrics</h3></div>
+    <div id="tg-s13-body"><div class="rpt-offline">Loading&#8230;</div></div>
+  </div>
+
+  <!-- PART V -->
+  <div class="tg-part-hdr">
+    <div class="tg-part-num">Part V</div>
+    <div class="tg-part-name">Strategy Reference</div>
+  </div>
+  <div class="tg-section" id="tg-s14">
+    <div class="tg-section-hdr"><span class="tg-sec-num">5.1</span><h3>Options Strategy Cheat Sheet</h3></div>
+    <table class="tg-risk-table">
+      <thead><tr><th>Strategy</th><th>Market Outlook</th><th>Max Gain</th><th>Max Loss</th><th>Best When</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Long Call</strong></td><td>Strong bullish</td><td>Unlimited</td><td>Premium paid</td><td>High conviction breakout, low IV</td></tr>
+        <tr><td><strong>Long Put</strong></td><td>Strong bearish</td><td>Strike &#8722; Premium</td><td>Premium paid</td><td>Downside hedge or breakdown play</td></tr>
+        <tr><td><strong>Bull Call Spread</strong></td><td>Moderately bullish</td><td>Spread &#8722; Debit</td><td>Debit paid</td><td>Defined risk, reduced cost vs long call</td></tr>
+        <tr><td><strong>Bear Put Spread</strong></td><td>Moderately bearish</td><td>Spread &#8722; Debit</td><td>Debit paid</td><td>Defined risk, reduced cost vs long put</td></tr>
+        <tr><td><strong>Iron Condor</strong></td><td>Neutral / range-bound</td><td>Net credit</td><td>Spread &#8722; Credit</td><td>Post-event low IV, price between wings</td></tr>
+        <tr><td><strong>Covered Call</strong></td><td>Neutral to mildly bullish</td><td>Strike &#8722; Stock + Premium</td><td>Stock &#8722; Premium</td><td>Income generation on long stock</td></tr>
+        <tr><td><strong>Cash-Secured Put</strong></td><td>Neutral to bullish</td><td>Premium received</td><td>Strike &#8722; Premium</td><td>Acquire stock at discount or earn premium</td></tr>
+        <tr><td><strong>Straddle (Long)</strong></td><td>High volatility expected</td><td>Unlimited</td><td>Both premiums</td><td>Pre-earnings, binary events, low IV</td></tr>
+        <tr><td><strong>Strangle (Long)</strong></td><td>High volatility expected</td><td>Unlimited</td><td>Both premiums</td><td>Cheaper than straddle, needs bigger move</td></tr>
+        <tr><td><strong>Butterfly</strong></td><td>Pinned to target strike</td><td>Spread &#8722; Debit</td><td>Debit paid</td><td>High conviction price target, low IV</td></tr>
+        <tr><td><strong>Calendar Spread</strong></td><td>Neutral, rising IV</td><td>Limited</td><td>Debit paid</td><td>Buy time, sell near-term, IV expansion play</td></tr>
+        <tr><td><strong>LEAPS Call</strong></td><td>Long-term bullish</td><td>Unlimited</td><td>Premium paid</td><td>Stock replacement, low theta decay</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="tg-section" id="tg-s15">
+    <div class="tg-section-hdr"><span class="tg-sec-num">5.2</span><h3>Risk Management Rules</h3></div>
+    <div class="tg-info-box red"><h4>&#9888; Core Risk Principles</h4>Never risk more than you can afford to lose. Options can go to zero. Position sizing and stop-loss discipline are the foundation of long-term profitability.</div>
+    <table class="tg-risk-table">
+      <thead><tr><th>Rule</th><th>Guideline</th><th>Rationale</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Position Size</strong></td><td>Max 2&#8211;5% of portfolio per trade</td><td>Prevents single-trade catastrophe</td></tr>
+        <tr><td><strong>Stop Loss &#8212; Options</strong></td><td>Exit if position loses 50% of premium</td><td>Options decay accelerates; cut losers fast</td></tr>
+        <tr><td><strong>Stop Loss &#8212; Spreads</strong></td><td>Exit if spread loses 75% of max value</td><td>Defined-risk trades can still erode significantly</td></tr>
+        <tr><td><strong>Profit Target</strong></td><td>Take 50&#8211;80% of max profit on spreads</td><td>Last 20% of gain has unfavorable risk/reward</td></tr>
+        <tr><td><strong>DTE Management</strong></td><td>Close or roll at 21 DTE for short options</td><td>Gamma risk increases sharply inside 21 days</td></tr>
+        <tr><td><strong>IV Rank</strong></td><td>Sell premium when IVR &gt; 50, buy when &lt; 30</td><td>Mean reversion of implied volatility</td></tr>
+        <tr><td><strong>Correlation Risk</strong></td><td>Don&#8217;t hold multiple correlated positions</td><td>SPY/QQQ/IWM all drop together in a selloff</td></tr>
+        <tr><td><strong>Earnings Rule</strong></td><td>Close before earnings unless playing the event</td><td>IV crush destroys long premium after events</td></tr>
+        <tr><td><strong>Negative Gamma</strong></td><td>Reduce size when in negative GEX regime</td><td>Moves are larger and faster &#8212; risk of whipsaw</td></tr>
+        <tr><td><strong>ML Conviction</strong></td><td>Only trade when prob_up &gt; 60% or &lt; 40%</td><td>Middle range signals lack edge</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="tg-section" id="tg-s16">
+    <div class="tg-section-hdr"><span class="tg-sec-num">5.3</span><h3>ML Signal Interpretation Guide</h3></div>
+    <div class="tg-concept-grid">
+      <div class="tg-concept-card"><h4>&#128309; prob_up &gt; 0.65</h4><p>Strong bullish signal. High confidence in upward move. Consider long calls, bull spreads, or long stock.</p></div>
+      <div class="tg-concept-card"><h4>&#128308; prob_up &lt; 0.35</h4><p>Strong bearish signal. Consider long puts, bear spreads, or short stock with defined risk.</p></div>
+      <div class="tg-concept-card"><h4>&#128993; 0.35 &#8211; 0.65</h4><p>Neutral zone. No directional edge. Consider iron condors, butterflies, or staying on the sidelines.</p></div>
+      <div class="tg-concept-card"><h4>&#128200; Direction: UP</h4><p>LSTM sequence model predicts upward price movement for next session. Combine with GEX regime for confluence.</p></div>
+      <div class="tg-concept-card"><h4>&#128201; Direction: DOWN</h4><p>Model predicts downward move. Higher conviction when GEX regime is also negative (amplifies drops).</p></div>
+      <div class="tg-concept-card"><h4>&#9889; Magnitude</h4><p>Predicted % move. Large magnitude + high prob = high conviction trade. Small magnitude = scalp or skip.</p></div>
+      <div class="tg-concept-card"><h4>&#128300; Features Used</h4><p>RSI, MACD, ATR, Bollinger Bands, 5/20-day momentum, volume trend, and historical return windows.</p></div>
+      <div class="tg-concept-card"><h4>&#9888; Model Limitations</h4><p>Macro events, earnings surprises, and geopolitical shocks override technical signals. Past performance is not a guarantee.</p></div>
+    </div>
+  </div>
+
+  <div class="tg-section" id="tg-s17">
+    <div class="tg-section-hdr"><span class="tg-sec-num">5.4</span><h3>Trading Glossary</h3></div>
+    <table class="tg-risk-table">
+      <thead><tr><th>Term</th><th>Definition</th></tr></thead>
+      <tbody>
+        <tr><td><strong>ATM</strong></td><td>At-The-Money &#8212; option strike equal to or near current price</td></tr>
+        <tr><td><strong>ATR</strong></td><td>Average True Range &#8212; measure of daily volatility over N periods</td></tr>
+        <tr><td><strong>Delta</strong></td><td>Rate of change of option price per $1 move in underlying (0 to &#177;1)</td></tr>
+        <tr><td><strong>DTE</strong></td><td>Days To Expiration &#8212; time remaining until option expires</td></tr>
+        <tr><td><strong>Gamma</strong></td><td>Rate of change of delta per $1 move &#8212; highest near ATM and near expiry</td></tr>
+        <tr><td><strong>GEX</strong></td><td>Gamma Exposure &#8212; aggregate dealer gamma position across all strikes</td></tr>
+        <tr><td><strong>IV</strong></td><td>Implied Volatility &#8212; market&#8217;s expectation of future price movement</td></tr>
+        <tr><td><strong>IVR</strong></td><td>IV Rank &#8212; current IV relative to 52-week range (0&#8211;100%)</td></tr>
+        <tr><td><strong>LEAPS</strong></td><td>Long-term Equity AnticiPation Securities &#8212; options with 1+ year expiry</td></tr>
+        <tr><td><strong>LSTM</strong></td><td>Long Short-Term Memory &#8212; recurrent neural network for sequence prediction</td></tr>
+        <tr><td><strong>OI</strong></td><td>Open Interest &#8212; total outstanding option contracts at a strike</td></tr>
+        <tr><td><strong>PCR</strong></td><td>Put/Call Ratio &#8212; put OI divided by call OI (above 1 = bearish bias)</td></tr>
+        <tr><td><strong>Theta</strong></td><td>Time decay &#8212; amount option loses per day as expiration approaches</td></tr>
+        <tr><td><strong>Vega</strong></td><td>Sensitivity to IV change &#8212; long options gain when IV rises</td></tr>
+        <tr><td><strong>0DTE</strong></td><td>Zero Days To Expiration &#8212; options expiring same day; extreme gamma risk</td></tr>
+        <tr><td><strong>Prob of Profit</strong></td><td>Statistical likelihood position expires in-the-money based on IV</td></tr>
+        <tr><td><strong>Sharpe Ratio</strong></td><td>Risk-adjusted return = (Return &#8722; Risk-free rate) / Std deviation of returns</td></tr>
+        <tr><td><strong>Max Drawdown</strong></td><td>Largest peak-to-trough decline in portfolio value &#8212; key risk metric</td></tr>
+        <tr><td><strong>Walk-Forward</strong></td><td>Backtest that re-trains model on rolling windows to prevent lookahead bias</td></tr>
+        <tr><td><strong>IV Crush</strong></td><td>Sharp drop in implied volatility after a catalyst event &#8212; destroys long premium value</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+</div><!-- /tg-body -->
+
+
+<!-- Floating print buttons (screen only) -->
+<button id="rpt-print-btn" onclick="window.print()">🖨️ Print Market Report</button>
+<button id="tg-print-btn" onclick="window.print()">📖 Print Trading Guide</button>
 
 <script src="search.js"></script>
 <script>
 'use strict';
-const API = 'http://localhost:5050';
+const API = window.location.origin;
 const ENDPOINTS = [
   { key:'market',   url:'/api/market-summary',   label:'Market Summary'    },
   { key:'gex',      url:'/api/gamma-exposure',   label:'GEX Charts'        },
@@ -366,12 +620,10 @@ function setEpStatus(key, state, label){
 
 /* ── Fetch all endpoints ──────────────────────────────────────────────── */
 async function loadAll(){
-  const TIMEOUT_MS = 90000; // 90 seconds — market-summary runs ML inference
+  const TIMEOUT_MS = 60000;
   const step = 100 / ENDPOINTS.length;
   const results = {};
-
   ENDPOINTS.forEach(ep => setEpStatus(ep.key, 'loading', ep.label));
-
   await Promise.all(ENDPOINTS.map(async ep => {
     const ctrl = new AbortController();
     const tid  = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
@@ -384,12 +636,24 @@ async function loadAll(){
     } catch(e) {
       clearTimeout(tid);
       results[ep.key] = null;
-      setEpStatus(ep.key, 'err', ep.label + (e.name==='AbortError' ? ' (timeout)' : ' (error)'));
-      console.warn('[report] ' + ep.url + ':', e.message);
+      setEpStatus(ep.key, 'err', ep.label + (e.name==='AbortError'
+        ? ' (timeout — first load may take 30-60s)'
+        : ' (error — check server is running on port 3000)'));
+      console.warn('[report]', ep.url, e.message);
     }
     addProgress(step, ep.label);
   }));
   return results;
+}
+
+function renderReportSection(key, results){
+  const d = results[key];
+  if(key==='market')   { renderCover(d); renderMarketSummary(d); renderMLSignals(d); renderTG_S1(d); renderTG_S2(d); renderTG_S3(d); }
+  if(key==='gex')      { renderGEXSection(d); renderTG_S5(d); renderTG_S6(d); requestAnimationFrame(()=>{ if(d){ _gexData=(d.assets||[]); _gexData.forEach(a=>{ const cv=document.getElementById('rpt-gex-'+a.symbol); if(cv) drawGexChartReport(a,cv,220); }); } }); }
+  if(key==='flows')    { renderFlowsSection(d); renderTG_S8(d); renderTG_S9(d); requestAnimationFrame(()=>{ if(d&&d.assets){ _flowData=(d.assets||[]).filter(r=>['SPY','QQQ','DIA','IWM'].includes(r.symbol)); _flowData.forEach(r=>{ const cv=document.getElementById('rpt-tor-'+r.symbol); if(cv) drawTornadoReport(r,cv,200); }); } }); }
+  if(key==='strategy') { renderStrategy(d); renderTG_S10(d); }
+  if(key==='dte')      { render0DTE(d); renderTG_S11(d); }
+  if(key==='fund')     { renderFundamentals(d); renderTG_S12(d); renderTG_S13(d); }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
@@ -1028,27 +1292,337 @@ window.addEventListener('afterprint', ()=>{
   });
 });
 
+
+/* =====================================================================
+   TAB SWITCHING
+   ===================================================================== */
+function switchTab(tab){
+  const isMarket = tab === 'market';
+  document.body.setAttribute('data-tab', tab);
+  document.getElementById('rpt-body').style.display      = isMarket ? 'block' : 'none';
+  document.getElementById('tg-body').style.display       = isMarket ? 'none'  : 'block';
+  document.getElementById('rpt-print-btn').style.display = isMarket ? ''      : 'none';
+  document.getElementById('tg-print-btn').style.display  = isMarket ? 'none'  : '';
+  document.querySelectorAll('.rpt-tab').forEach(function(b,i){
+    b.classList.toggle('active', (i===0) === isMarket);
+  });
+  window.scrollTo(0,0);
+}
+
+/* =====================================================================
+   TRADING GUIDE RENDERERS
+   ===================================================================== */
+
+function renderTG_S1(market){
+  const el = document.getElementById('tg-s1-body');
+  if(!market){ el.innerHTML='<div class="rpt-offline">Market data unavailable.</div>'; return; }
+  const dir = (market.market_direction||'unknown').toUpperCase();
+  const s = market.sentiment||{};
+  const dirClass = dir==='UP'?'dir-up':dir==='DOWN'?'dir-down':'dir-flat';
+  const bull = parseFloat((s.bull_pct||0).toFixed(1));
+  const bear = parseFloat((s.bear_pct||0).toFixed(1));
+  const hold = Math.max(0, parseFloat((100-bull-bear).toFixed(1)));
+  let html = '<div class="rpt-stat-grid" style="margin-bottom:1.2rem;">';
+  html += '<div class="rpt-stat-card"><label>Market Direction</label><span class="' + dirClass + '">' + dir + '</span></div>';
+  html += '<div class="rpt-stat-card"><label>Bullish</label><span style="color:var(--green)">' + bull + '%</span></div>';
+  html += '<div class="rpt-stat-card"><label>Neutral</label><span style="color:var(--amber)">' + hold.toFixed(1) + '%</span></div>';
+  html += '<div class="rpt-stat-card"><label>Bearish</label><span style="color:var(--red)">' + bear + '%</span></div>';
+  html += '<div class="rpt-stat-card"><label>VIX</label><span>' + (market.vix!=null?market.vix.toFixed(2):'—') + '</span></div>';
+  html += '<div class="rpt-stat-card"><label>Assets Tracked</label><span>' + (market.total_assets||'—') + '</span></div>';
+  html += '</div>';
+  html += '<div style="background:var(--card);border-radius:6px;overflow:hidden;height:10px;margin-bottom:1rem;display:flex;">';
+  html += '<div style="width:' + bull + '%;background:var(--green);"></div>';
+  html += '<div style="width:' + hold + '%;background:var(--amber);"></div>';
+  html += '<div style="width:' + bear + '%;background:var(--red);"></div>';
+  html += '</div>';
+  if(market.strong_signals && market.strong_signals.length){
+    html += '<h4 style="font-size:.82rem;color:var(--muted);margin-bottom:.5rem;">TOP ML SIGNALS</h4>';
+    html += '<table class="rpt-tbl"><thead><tr><th>Symbol</th><th>Signal</th><th>Direction</th><th>Prob Up</th></tr></thead><tbody>';
+    market.strong_signals.slice(0,10).forEach(function(a){
+      html += '<tr><td><strong>' + a.symbol + '</strong></td>';
+      html += '<td><span class="chip chip-' + (a.signal||'hold').toLowerCase() + '">' + (a.signal||'—') + '</span></td>';
+      html += '<td>' + (a.direction||'—') + '</td>';
+      const pu = a.prob_up||0.5;
+      html += '<td style="color:' + (pu>=0.5?'var(--green)':'var(--red)') + '">' + (a.prob_up!=null?(a.prob_up*100).toFixed(1)+'%':'—') + '</td></tr>';
+    });
+    html += '</tbody></table>';
+  }
+  el.innerHTML = html;
+}
+
+function renderTG_S2(market){
+  const el = document.getElementById('tg-s2-body');
+  if(!market){ el.innerHTML='<div class="rpt-offline">Market data unavailable.</div>'; return; }
+  const events = market.world_events||[];
+  const commentary = market.market_commentary||'';
+  let html = '';
+  if(commentary) html += '<div class="tg-info-box accent"><h4>Market Commentary</h4>' + commentary + '</div>';
+  if(events.length){
+    html += '<h4 style="font-size:.82rem;color:var(--muted);margin:.8rem 0 .4rem;">MARKET EVENTS</h4>';
+    html += '<table class="rpt-tbl"><thead><tr><th>Date</th><th>Event</th><th>Impact</th></tr></thead><tbody>';
+    events.forEach(function(e){
+      html += '<tr><td>' + (e.date||'—') + '</td>';
+      html += '<td>' + (e.event||e.title||e.name||'—') + '</td>';
+      html += '<td><span class="chip chip-' + (e.impact||'hold').toLowerCase() + '">' + (e.impact||'—') + '</span></td></tr>';
+    });
+    html += '</tbody></table>';
+  } else {
+    html += '<div class="rpt-offline" style="padding:1rem;">No market events data available.</div>';
+  }
+  el.innerHTML = html;
+}
+
+function renderTG_S3(market){
+  const el = document.getElementById('tg-s3-body');
+  if(!market){ el.innerHTML='<div class="rpt-offline">Market data unavailable.</div>'; return; }
+  const groups = market.by_group||{};
+  const allAssets = Object.values(groups).reduce(function(a,b){return a.concat(b);},[]);
+  if(!allAssets.length){ el.innerHTML='<div class="rpt-offline">No ML signal data.</div>'; return; }
+  const sorted = allAssets.slice().sort(function(a,b){return (b.prob_up||0.5)-(a.prob_up||0.5);});
+  let html = '<table class="rpt-tbl"><thead><tr><th>Rank</th><th>Symbol</th><th>Group</th><th>Signal</th><th>Direction</th><th>Prob Up</th><th>Magnitude</th></tr></thead><tbody>';
+  sorted.forEach(function(a,i){
+    const pu = a.prob_up||0.5;
+    html += '<tr>';
+    html += '<td style="color:var(--muted)">' + (i+1) + '</td>';
+    html += '<td><strong>' + a.symbol + '</strong></td>';
+    html += '<td style="font-size:.75rem;color:var(--muted)">' + (a.group||'—') + '</td>';
+    html += '<td><span class="chip chip-' + (a.signal||'hold').toLowerCase() + '">' + (a.signal||'—') + '</span></td>';
+    html += '<td>' + (a.direction||'—') + '</td>';
+    html += '<td style="color:' + (pu>=0.5?'var(--green)':'var(--red)') + ';font-weight:700">' + (a.prob_up!=null?(a.prob_up*100).toFixed(1)+'%':'—') + '</td>';
+    html += '<td style="color:var(--muted)">' + (a.magnitude!=null?((a.magnitude||0)*100).toFixed(2)+'%':'—') + '</td>';
+    html += '</tr>';
+  });
+  html += '</tbody></table>';
+  el.innerHTML = html;
+}
+
+function _gexTable(assets){
+  let html = '<table class="rpt-tbl"><thead><tr><th>Symbol</th><th>Group</th><th>Spot</th><th>Regime</th><th>Total GEX $M</th><th>Gamma Wall</th><th>Put Wall</th><th>Flip Level</th><th>PCR</th></tr></thead><tbody>';
+  assets.forEach(function(a){
+    const reg = (a.regime||'').toLowerCase();
+    const chipClass = reg.includes('pos')?'chip-buy':reg.includes('neg')?'chip-sell':'chip-hold';
+    html += '<tr>';
+    html += '<td><strong>' + a.symbol + '</strong></td>';
+    html += '<td style="font-size:.75rem;color:var(--muted)">' + (a.group||'—') + '</td>';
+    html += '<td>$' + (a.spot||0).toFixed(2) + '</td>';
+    html += '<td><span class="chip ' + chipClass + '">' + (a.regime||'—') + '</span></td>';
+    const gex = a.total_gex_m||0;
+    html += '<td style="color:' + (gex>=0?'var(--green)':'var(--red)') + '">' + (a.total_gex_m!=null?(gex>=0?'+':'')+a.total_gex_m.toFixed(1):'—') + '</td>';
+    html += '<td>' + (a.gamma_wall!=null?'$'+a.gamma_wall.toFixed(2):'—') + '</td>';
+    html += '<td>' + (a.put_wall!=null?'$'+a.put_wall.toFixed(2):'—') + '</td>';
+    html += '<td>' + (a.flip_level!=null?'$'+a.flip_level.toFixed(2):'—') + '</td>';
+    html += '<td style="color:var(--muted)">' + (a.pcr!=null?a.pcr.toFixed(2):'—') + '</td>';
+    html += '</tr>';
+  });
+  html += '</tbody></table>';
+  return html;
+}
+
+function renderTG_S5(gex){
+  const el = document.getElementById('tg-s5-body');
+  if(!gex){ el.innerHTML='<div class="rpt-offline">GEX data unavailable.</div>'; return; }
+  const assets = (gex.assets||gex||[]).filter(function(a){return a.asset_type!=='futures';});
+  if(!assets.length){ el.innerHTML='<div class="rpt-offline">No ETF/equity GEX data.</div>'; return; }
+  el.innerHTML = _gexTable(assets);
+}
+
+function renderTG_S6(gex){
+  const el = document.getElementById('tg-s6-body');
+  if(!gex){ el.innerHTML='<div class="rpt-offline">GEX data unavailable.</div>'; return; }
+  const assets = (gex.assets||gex||[]).filter(function(a){return a.asset_type==='futures';});
+  if(!assets.length){ el.innerHTML='<div class="rpt-offline">No futures GEX data.</div>'; return; }
+  el.innerHTML = '<div class="tg-info-box amber"><h4>&#8505; Futures GEX Note</h4>Futures GEX uses ETF proxies (ES=F&#8594;SPY, NQ=F&#8594;QQQ, CL=F&#8594;USO, GC=F&#8594;GLD) as yfinance does not provide futures options chains directly.</div>' + _gexTable(assets);
+}
+
+function renderTG_S8(flows){
+  const el = document.getElementById('tg-s8-body');
+  if(!flows){ el.innerHTML='<div class="rpt-offline">Flows data unavailable.</div>'; return; }
+  const assets = flows.assets||flows||[];
+  if(!assets.length){ el.innerHTML='<div class="rpt-offline">No flow data.</div>'; return; }
+  let html = '<table class="rpt-tbl"><thead><tr><th>Symbol</th><th>Sentiment</th><th>Call Prem $M</th><th>Put Prem $M</th><th>Net Prem $M</th><th>Dealer &#916; $M</th><th>Max Pain</th></tr></thead><tbody>';
+  assets.forEach(function(r){
+    const net = (r.total_call_prem_m||0)-(r.total_put_prem_m||0);
+    html += '<tr>';
+    html += '<td><strong>' + r.symbol + '</strong></td>';
+    html += '<td><span class="chip chip-' + (r.flow_sentiment||'neutral').toLowerCase() + '">' + (r.flow_sentiment||'—') + '</span></td>';
+    html += '<td style="color:var(--green)">' + (r.total_call_prem_m!=null?r.total_call_prem_m.toFixed(1):'—') + '</td>';
+    html += '<td style="color:var(--red)">' + (r.total_put_prem_m!=null?r.total_put_prem_m.toFixed(1):'—') + '</td>';
+    html += '<td style="color:' + (net>=0?'var(--green)':'var(--red)') + ';font-weight:700">' + (r.total_call_prem_m!=null&&r.total_put_prem_m!=null?net.toFixed(1):'—') + '</td>';
+    html += '<td style="color:var(--muted)">' + (r.net_dealer_delta_m!=null?r.net_dealer_delta_m.toFixed(1):'—') + '</td>';
+    html += '<td>' + (r.max_pain_strike!=null?'$'+r.max_pain_strike.toFixed(2):'—') + '</td>';
+    html += '</tr>';
+  });
+  html += '</tbody></table>';
+  el.innerHTML = html;
+}
+
+function renderTG_S9(flows){
+  const el = document.getElementById('tg-s9-body');
+  if(!flows){ el.innerHTML='<div class="rpt-offline">Flows data unavailable.</div>'; return; }
+  const assets = flows.assets||flows||[];
+  const unusual = [];
+  assets.forEach(function(r){ (r.unusual||[]).forEach(function(u){ unusual.push(Object.assign({symbol:r.symbol},u)); }); });
+  if(!unusual.length){ el.innerHTML='<div class="rpt-offline">No unusual flows detected.</div>'; return; }
+  let html = '<table class="rpt-tbl"><thead><tr><th>Symbol</th><th>Type</th><th>Strike</th><th>Expiry</th><th>Volume</th><th>OI</th><th>Premium $M</th><th>IV</th></tr></thead><tbody>';
+  unusual.slice(0,30).forEach(function(u){
+    html += '<tr>';
+    html += '<td><strong>' + u.symbol + '</strong></td>';
+    html += '<td><span class="chip ' + (u.type==='CALL'?'chip-buy':'chip-sell') + '">' + (u.type||'—') + '</span></td>';
+    html += '<td>' + (u.strike!=null?'$'+u.strike.toFixed(0):'—') + '</td>';
+    html += '<td style="font-size:.75rem;color:var(--muted)">' + (u.expiry||'—') + '</td>';
+    html += '<td>' + (u.volume!=null?u.volume.toLocaleString():'—') + '</td>';
+    html += '<td style="color:var(--muted)">' + (u.oi!=null?u.oi.toLocaleString():'—') + '</td>';
+    html += '<td style="color:var(--amber)">' + (u.premium_m!=null?u.premium_m.toFixed(2):'—') + '</td>';
+    html += '<td style="color:var(--muted)">' + (u.iv!=null?(u.iv*100).toFixed(1)+'%':'—') + '</td>';
+    html += '</tr>';
+  });
+  html += '</tbody></table>';
+  el.innerHTML = html;
+}
+
+function renderTG_S10(strategy){
+  const el = document.getElementById('tg-s10-body');
+  if(!strategy){ el.innerHTML='<div class="rpt-offline">Strategy data unavailable.</div>'; return; }
+  const assets = strategy.assets||strategy||[];
+  if(!assets.length){ el.innerHTML='<div class="rpt-offline">No strategy data.</div>'; return; }
+  let html = '<table class="rpt-tbl"><thead><tr><th>Symbol</th><th>Strategy</th><th>Direction</th><th>Conviction</th><th>Prob Profit</th><th>Legs</th></tr></thead><tbody>';
+  assets.forEach(function(a){
+    const conv = a.conviction||'';
+    html += '<tr>';
+    html += '<td><strong>' + a.symbol + '</strong></td>';
+    html += '<td style="font-weight:600">' + (a.strategy||'—') + '</td>';
+    html += '<td><span class="chip chip-' + (a.direction||'hold').toLowerCase() + '">' + (a.direction||'—') + '</span></td>';
+    html += '<td style="color:' + (conv==='HIGH'?'var(--green)':conv==='LOW'?'var(--red)':'var(--amber)') + '">' + (conv||'—') + '</td>';
+    html += '<td>' + (a.prob_profit!=null?(a.prob_profit*100).toFixed(0)+'%':'—') + '</td>';
+    const legs = (a.legs||[]).map(function(l){return (l.action||'')+' '+(l.type||'')+' $'+(l.strike||'');}).join(' / ');
+    html += '<td style="font-size:.72rem;color:var(--muted)">' + (legs||'—') + '</td>';
+    html += '</tr>';
+  });
+  html += '</tbody></table>';
+  el.innerHTML = html;
+}
+
+function renderTG_S11(dte){
+  const el = document.getElementById('tg-s11-body');
+  if(!dte){ el.innerHTML='<div class="rpt-offline">0DTE data unavailable.</div>'; return; }
+  const assets = dte.assets||dte||[];
+  if(!assets.length){ el.innerHTML='<div class="rpt-offline">No 0DTE data.</div>'; return; }
+  const sorted = assets.slice().sort(function(a,b){return (b.activity_score||0)-(a.activity_score||0);});
+  let html = '<table class="rpt-tbl"><thead><tr><th>Symbol</th><th>Bias</th><th>Call Vol</th><th>Put Vol</th><th>PCR Vol</th><th>Activity Score</th></tr></thead><tbody>';
+  sorted.forEach(function(a){
+    html += '<tr>';
+    html += '<td><strong>' + a.symbol + '</strong></td>';
+    html += '<td><span class="chip chip-' + (a.bias||'hold').toLowerCase() + '">' + (a.bias||'—') + '</span></td>';
+    html += '<td style="color:var(--green)">' + (a.call_vol!=null?a.call_vol.toLocaleString():'—') + '</td>';
+    html += '<td style="color:var(--red)">' + (a.put_vol!=null?a.put_vol.toLocaleString():'—') + '</td>';
+    html += '<td style="color:var(--muted)">' + (a.pcr_vol!=null?a.pcr_vol.toFixed(2):'—') + '</td>';
+    const sc = Math.min(100, a.activity_score||0);
+    html += '<td><div class="bar-cell"><div class="bar-bg"><div class="bar-fill" style="width:' + sc + '%;background:var(--accent)"></div></div>' + sc.toFixed(0) + '</div></td>';
+    html += '</tr>';
+  });
+  html += '</tbody></table>';
+  el.innerHTML = html;
+}
+
+function renderTG_S12(fund){
+  const el = document.getElementById('tg-s12-body');
+  if(!fund){ el.innerHTML='<div class="rpt-offline">Fundamentals data unavailable.</div>'; return; }
+  const assets = fund.assets||fund||[];
+  const byRating = {};
+  assets.forEach(function(a){ const r=a.rating||'HOLD'; if(!byRating[r]) byRating[r]=[]; byRating[r].push(a); });
+  let html = '';
+  ['BUY','HOLD','SELL'].forEach(function(r){
+    if(!byRating[r]) return;
+    html += '<h4 style="font-size:.8rem;color:var(--muted);margin:.8rem 0 .3rem;">' + r + ' (' + byRating[r].length + ')</h4>';
+    html += '<div style="display:flex;flex-wrap:wrap;gap:.4rem;margin-bottom:.5rem;">';
+    byRating[r].forEach(function(a){ html += '<span class="chip chip-' + r.toLowerCase() + '" style="font-size:.78rem">' + a.symbol + '</span>'; });
+    html += '</div>';
+  });
+  el.innerHTML = html;
+}
+
+function renderTG_S13(fund){
+  const el = document.getElementById('tg-s13-body');
+  if(!fund){ el.innerHTML='<div class="rpt-offline">Fundamentals data unavailable.</div>'; return; }
+  const assets = fund.assets||fund||[];
+  if(!assets.length){ el.innerHTML='<div class="rpt-offline">No valuation data.</div>'; return; }
+  let html = '<table class="rpt-tbl"><thead><tr><th>Symbol</th><th>Rating</th><th>Score</th><th>Fwd P/E</th><th>Rev Growth</th><th>Upside</th><th>Mkt Cap</th><th>Net Margin</th><th>ROE</th></tr></thead><tbody>';
+  assets.forEach(function(a){
+    const mktCap = a.market_cap||0;
+    const capStr = mktCap>=1e12?'$'+(mktCap/1e12).toFixed(1)+'T':mktCap>=1e9?'$'+(mktCap/1e9).toFixed(1)+'B':mktCap>=1e6?'$'+(mktCap/1e6).toFixed(0)+'M':'—';
+    html += '<tr>';
+    html += '<td><strong>' + a.symbol + '</strong></td>';
+    html += '<td>' + ratingChip(a.rating) + '</td>';
+    html += '<td>' + (a.fund_score!=null?a.fund_score.toFixed(0):'—') + '</td>';
+    html += '<td>' + (a.forward_pe!=null?a.forward_pe.toFixed(1)+'x':'—') + '</td>';
+    html += '<td style="color:' + ((a.revenue_growth||0)>0?'var(--green)':'var(--red)') + '">' + (a.revenue_growth!=null?(a.revenue_growth*100).toFixed(1)+'%':'—') + '</td>';
+    const up = a.upside_pct||0;
+    html += '<td style="color:' + (up>0?'var(--green)':'var(--red)') + '">' + (a.upside_pct!=null?(up>0?'+':'')+a.upside_pct.toFixed(1)+'%':'—') + '</td>';
+    html += '<td style="font-size:.75rem">' + capStr + '</td>';
+    html += '<td>' + (a.net_margin!=null?(a.net_margin*100).toFixed(1)+'%':'—') + '</td>';
+    html += '<td>' + (a.roe!=null?(a.roe*100).toFixed(1)+'%':'—') + '</td>';
+    html += '</tr>';
+  });
+  html += '</tbody></table>';
+  el.innerHTML = html;
+}
+
+function renderAllTG(data){
+  renderTG_S1(data.market);
+  renderTG_S2(data.market);
+  renderTG_S3(data.market);
+  renderTG_S5(data.gex);
+  renderTG_S6(data.gex);
+  renderTG_S8(data.flows);
+  renderTG_S9(data.flows);
+  renderTG_S10(data.strategy);
+  renderTG_S11(data.dte);
+  renderTG_S12(data.fund);
+  renderTG_S13(data.fund);
+
+  // Populate cover live data
+  const market = data.market;
+  if(market){
+    const dir = (market.market_direction||'—').toUpperCase();
+    const s = market.sentiment||{};
+    const dirEl = document.getElementById('tg-cov-dir');
+    dirEl.textContent = dir;
+    const dirClass = dir==='UP'?'dir-up':dir==='DOWN'?'dir-down':'dir-flat';
+    dirEl.className = dirClass;
+    dirEl.style.display='inline-block';
+    dirEl.style.padding='.2rem .7rem';
+    dirEl.style.borderRadius='5px';
+    dirEl.style.fontWeight='800';
+    document.getElementById('tg-cov-sent').textContent = (s.bull_pct||0).toFixed(1)+'% Bull / '+(s.bear_pct||0).toFixed(1)+'% Bear';
+    document.getElementById('tg-cov-total').textContent = market.total_assets||'—';
+  }
+  document.getElementById('tg-cover-date').textContent = new Date().toLocaleString();
+  document.getElementById('rpt-tabs-ts').textContent = 'Generated: ' + new Date().toLocaleTimeString();
+}
+
 /* ═══════════════════════════════════════════════════════════════════════
    ENTRY POINT
    ═══════════════════════════════════════════════════════════════════════ */
-window.addEventListener('load', async ()=>{
-  const data = await loadAll();
-
-  renderCover(data.market);
-  renderMarketSummary(data.market);
-  renderMLSignals(data.market);
-  renderGEXSection(data.gex);
-  renderFlowsSection(data.flows);
-  render0DTE(data.dte);
-  renderStrategy(data.strategy);
-  renderFundamentals(data.fund);
-
-  // Defer chart drawing 1 frame so DOM is fully laid out
-  requestAnimationFrame(()=>{
-    drawAllCharts(data);
-    document.getElementById('rpt-loading').style.display = 'none';
-    document.getElementById('rpt-body').style.display    = 'block';
-  });
+window.addEventListener('load', async () => {
+  try {
+    const data = await loadAll();
+    renderCover(data.market);
+    renderMarketSummary(data.market);
+    renderMLSignals(data.market);
+    renderGEXSection(data.gex);
+    renderFlowsSection(data.flows);
+    render0DTE(data.dte);
+    renderStrategy(data.strategy);
+    renderFundamentals(data.fund);
+    requestAnimationFrame(() => {
+      if(data.gex){   _gexData=(data.gex.assets||[]).filter(a=>a.strikes?.length); _gexData.forEach(a=>{const cv=document.getElementById('rpt-gex-'+a.symbol);if(cv) drawGexChartReport(a,cv,220);}); }
+      if(data.flows){ _flowData=(data.flows.assets||[]).filter(r=>['SPY','QQQ','DIA','IWM'].includes(r.symbol)); _flowData.forEach(r=>{const cv=document.getElementById('rpt-tor-'+r.symbol);if(cv) drawTornadoReport(r,cv,200);}); }
+      renderAllTG(data);
+    });
+  } catch(e) { console.error('[report] load error:', e); }
+  document.getElementById('rpt-loading').style.display = 'none';
+  document.getElementById('rpt-tabs').style.display    = 'flex';
+  if(window.location.hash === '#guide'){ switchTab('guide'); } else { switchTab('market'); }
 });
 </script>
 </body>

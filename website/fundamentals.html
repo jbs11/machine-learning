@@ -189,7 +189,7 @@
 
 <!-- ── Page Nav ── -->
 <nav class="page-nav">
-  <a href="live-trading.html">&#8592; Live Trading</a>
+  <a href="live-trading.html">&#8592; Live Trading</a> | <a href="report-ms.html" target="_blank" style="background:#22d3ee;color:#080d1a;padding:.22rem .75rem;border-radius:5px;font-weight:700;text-decoration:none;font-size:.82rem;">&#128202; Report</a> | <a href="report-tg.html" target="_blank" style="background:#a78bfa;color:#080d1a;padding:.22rem .75rem;border-radius:5px;font-weight:700;text-decoration:none;font-size:.82rem;">&#128214; Guide</a>
   <span class="page-nav-sep">|</span>
   <a href="market-summary.html">Market Summary</a>
   <span class="page-nav-sep">|</span>
@@ -706,7 +706,7 @@ async function loadData(nocache = false) {
   document.getElementById('stime').textContent = '';
 
   try {
-    const url = 'http://localhost:5050/api/fundamentals' + (nocache ? '?nocache=1' : '');
+    const url = 'http://localhost:3000/api/fundamentals' + (nocache ? '?nocache=1' : '');
     const res = await fetch(url);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();

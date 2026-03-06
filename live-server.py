@@ -666,6 +666,17 @@ def cache_set(key, val):
     _cache[key] = (datetime.now(), val)
 
 
+
+@app.after_request
+def add_no_cache_headers(response):
+    """Prevent browsers from caching HTML and JS so fixes take effect immediately."""
+    ct = response.content_type or ''
+    if 'html' in ct or 'javascript' in ct:
+        response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+        response.headers['Pragma'] = 'no-cache'
+        response.headers['Expires'] = '0'
+    return response
+
 # ── Static website serving ────────────────────────────────────────────────────
 _WEBSITE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'website')
 
@@ -3908,7 +3919,7 @@ def volatility_surface_endpoint():
 # ── Startup ───────────────────────────────────────────────────────────────────
 if __name__ == '__main__':
     print("=" * 60)
-    print("  Live ML Trading Server  —  http://localhost:5050")
+    print("  Live ML Trading Server  —  http://localhost:3000")
     print("=" * 60)
     print(f"  IBKR (ib_async) : {'available' if IB_AVAILABLE else 'not installed'} — probing in background…")
     print( "  Data fallback   : yfinance (15-20 min delayed)")
@@ -3933,4 +3944,4 @@ if __name__ == '__main__':
             print(f"[IBKR] Probe complete: {status}")
         threading.Thread(target=_bg_ibkr_probe, daemon=True).start()
 
-    app.run(host='0.0.0.0', port=5050, debug=False, threaded=True)
+    app.run(host='0.0.0.0', port=3000, debug=False, threaded=True)

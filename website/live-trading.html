@@ -344,6 +344,8 @@
     <li><a href="options-trading.html">Options</a></li>
     <li><a href="futures-trading.html">Futures</a></li>
     <li><a href="live-trading.html" class="active">Live Trading</a></li>
+        <li><a href="report-ms.html" target="_blank" style="background:#22d3ee;color:#080d1a;padding:.28rem .85rem;border-radius:5px;font-weight:700;letter-spacing:.02em;">&#128202; Market Report</a></li>
+    <li><a href="report-tg.html" target="_blank" style="background:#a78bfa;color:#080d1a;padding:.28rem .85rem;border-radius:5px;font-weight:700;letter-spacing:.02em;">&#128214; Trading Guide</a></li>
   </ul>
 </nav>
 
@@ -421,8 +423,6 @@
     <span id="ibkr-status-badge" style="font-size:.73rem; font-weight:700; color:var(--muted); margin-right:.25rem;"></span>
     <span id="last-update" style="font-size:.75rem; color:var(--muted);"></span>
     <button class="refresh-btn" onclick="ibkrWidget.open()" title="Interactive Brokers connection settings" style="border-color:rgba(16,185,129,.5);color:#10b981;">🔌 IBKR</button>
-    <a href="market-summary.html" class="refresh-btn" style="text-decoration:none; display:inline-flex; align-items:center; gap:.3rem;" title="View aggregated ML signals, market events, and top movers">📊 Market Summary</a>
-    <a href="report.html" class="refresh-btn" target="_blank" style="text-decoration:none; display:inline-flex; align-items:center; gap:.3rem;" title="Generate printable PDF report of all dashboard sections">📄 Report</a>
     <button class="refresh-btn" onclick="refreshAll()">↻ Refresh</button>
   </div>
 
@@ -771,7 +771,7 @@ df_4h = raw.resample(<span style="color:#86efac;">'4h'</span>).agg({
           <li style="margin-top:.7rem;"><strong>Serve the website</strong> (from the website folder):<br>
             <code style="background:var(--surface); padding:.2rem .5rem; border-radius:4px; font-size:.85rem;">npx serve -l 8080 website/</code>
           </li>
-          <li style="margin-top:.7rem;"><strong>Open</strong> <a href="http://localhost:8080/live-trading.html" style="color:var(--accent);">http://localhost:8080/live-trading.html</a> — the dashboard auto-connects to <code>localhost:5050</code>.</li>
+          <li style="margin-top:.7rem;"><strong>Open</strong> <a href="http://localhost:8080/live-trading.html" style="color:var(--accent);">http://localhost:8080/live-trading.html</a> — the dashboard auto-connects to <code>localhost:3000</code>.</li>
           <li style="margin-top:.7rem;"><strong>Upgrade to live data:</strong> Replace yfinance with <code>ib_async</code> and connect Interactive Brokers TWS on port 7497.</li>
         </ol>
 
@@ -862,7 +862,7 @@ df_4h = raw.resample(<span style="color:#86efac;">'4h'</span>).agg({
 
 <!-- ── Dashboard JavaScript ── -->
 <script>
-const API = 'http://localhost:5050';
+const API = window.location.origin;
 let chartInstance = null;
 let candleSeries   = null;
 let volumeSeries   = null;

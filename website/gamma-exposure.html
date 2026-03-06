@@ -168,6 +168,8 @@
     <li><a href="options-trading.html">Options</a></li>
     <li><a href="futures-trading.html">Futures</a></li>
     <li><a href="live-trading.html">Live Trading</a></li>
+    <li><a href="report-ms.html" target="_blank" style="background:#22d3ee;color:#080d1a;padding:.28rem .85rem;border-radius:5px;font-weight:700;letter-spacing:.02em;">&#128202; Market Report</a></li>
+    <li><a href="report-tg.html" target="_blank" style="background:#a78bfa;color:#080d1a;padding:.28rem .85rem;border-radius:5px;font-weight:700;letter-spacing:.02em;">&#128214; Trading Guide</a></li>
   </ul>
 </nav>
 
@@ -314,7 +316,7 @@
 </div><!-- /gex-wrap -->
 
 <script>
-const API = 'http://localhost:5050';
+const API = window.location.origin;
 let _allData = null;
 let _activeFilter = 'all';
 
@@ -653,7 +655,7 @@ function renderError() {
   document.getElementById('chartsContainer').innerHTML = `
     <div class="empty-state">
       <div style="font-size:2rem;margin-bottom:.5rem;">⚠️</div>
-      <div style="margin-bottom:.5rem;">Cannot reach ML server at <code style="color:#a78bfa;">localhost:5050</code></div>
+      <div style="margin-bottom:.5rem;">Cannot reach ML server at <code style="color:#a78bfa;">localhost:3000</code></div>
       <div style="font-size:.82rem;margin-bottom:1rem;">Start with: <code style="color:#a78bfa;">py live-server.py</code></div>
       <button onclick="loadData()" class="hero-cta" style="background:linear-gradient(135deg,#a78bfa,#7c3aed);color:#fff;font-size:.85rem;padding:.55rem 1.4rem;">Retry</button>
     </div>`;
