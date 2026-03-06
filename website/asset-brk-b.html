@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BRK-B — Berkshire Hathaway B | Asset Details</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
+  <style>
+    .ap-wrap { max-width:1500px;margin:0 auto;padding:0 1.5rem 6rem; }
+    .page-nav { display:flex;align-items:center;gap:1rem;padding:.6rem 1.5rem;background:var(--surface);border-bottom:1px solid var(--border);font-size:.83rem;flex-wrap:wrap; }
+    .page-nav a { color:var(--muted);text-decoration:none;padding:.3rem .7rem;border-radius:5px;transition:color .15s,background .15s; }
+    .page-nav a:hover { color:var(--text);background:rgba(255,255,255,.06); }
+    .page-nav-sep { color:var(--border); }
+
+    .ap-hero { padding:2.5rem 1.5rem 2rem;text-align:center;background:radial-gradient(ellipse 80% 50% at 50% -5%,#fbbf2418 0%,transparent 60%),var(--bg);border-bottom:1px solid var(--border); }
+    .ap-sym { font-size:clamp(2.5rem,6vw,4.5rem);font-weight:900;font-family:'Consolas',monospace;color:#fbbf24;letter-spacing:-.02em;line-height:1; }
+    .ap-name { font-size:clamp(1rem,2.5vw,1.4rem);font-weight:700;color:var(--text);margin:.4rem 0 .2rem; }
+    .ap-sector { font-size:.85rem;color:var(--muted);margin-bottom:1rem; }
+    .ap-grp-badge { display:inline-flex;align-items:center;gap:.5rem;padding:.28rem .9rem;background:#fbbf2418;border:1px solid #fbbf2440;border-radius:999px;color:#fbbf24;font-size:.75rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;margin-bottom:.8rem; }
+
+    .stats-strip { display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:1px;background:var(--border);border-top:1px solid var(--border);border-bottom:1px solid var(--border); }
+    .stat-cell { background:var(--surface);padding:.85rem 1rem;text-align:center; }
+    .stat-val { font-size:1.25rem;font-weight:900;margin-bottom:.1rem;font-family:'Consolas',monospace; }
+    .stat-lbl { font-size:.65rem;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--muted); }
+
+    .server-bar { display:flex;align-items:center;gap:.75rem;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:.5rem 1rem;margin:1.1rem 0;font-size:.84rem; }
+    .sdot { width:9px;height:9px;border-radius:50%;background:#f87171;flex-shrink:0;transition:background .3s; }
+    .sdot.on { background:#4ade80; } .sdot.loading { background:#fbbf24;animation:pulse 1s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1}50%{opacity:.4} }
+    .smsg { color:var(--muted);flex:1; }
+    .rbtn { background:transparent;border:1px solid var(--border);color:var(--muted);padding:.25rem .7rem;border-radius:5px;cursor:pointer;font-size:.78rem;transition:border-color .2s,color .2s;text-decoration:none; }
+    .rbtn:hover { border-color:#fbbf24;color:#fbbf24;text-decoration:none; }
+
+    .sec-hdr { display:flex;align-items:center;gap:.8rem;margin:2.2rem 0 1rem;padding-bottom:.5rem;border-bottom:2px solid var(--border); }
+    .sec-num { background:#fbbf24;color:#080d1a;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:.8rem;flex-shrink:0; }
+    .sec-title { font-size:1.1rem;font-weight:800; }
+    .sec-sub { font-size:.76rem;color:var(--muted);margin-left:.3rem; }
+
+    .two-col { display:grid;grid-template-columns:1fr 1fr;gap:1.1rem;margin-bottom:1.1rem; }
+    .three-col { display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-bottom:1rem; }
+    @media(max-width:900px){.two-col,.three-col{grid-template-columns:1fr;}}
+
+    .info-card { background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1rem 1.2rem; }
+    .info-card h3 { font-size:.92rem;font-weight:800;margin-bottom:.45rem; }
+    .info-card p, .info-card li { font-size:.82rem;color:var(--muted);line-height:1.7; }
+    .info-card ul { padding-left:1.2rem;margin-top:.3rem; }
+    .info-card li { margin-bottom:.25rem; }
+    .info-card strong { color:var(--text); }
+
+    .chart-card { background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:1rem; }
+    .chart-hdr { display:flex;align-items:center;justify-content:space-between;padding:.6rem 1rem;border-bottom:1px solid var(--border); }
+    .chart-title { font-weight:800;font-size:.88rem; }
+    .chart-sub { font-size:.7rem;color:var(--muted); }
+    #chart-container { background:#070d18;height:420px; }
+
+    .af-facts { display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:.6rem;margin:.8rem 0; }
+    .af-fact { background:var(--card);border:1px solid var(--border);border-radius:8px;padding:.55rem .8rem; }
+    .af-fact-lbl { font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:.15rem; }
+    .af-fact-val { font-size:.9rem;font-weight:800;color:#fbbf24; }
+
+    .af-chars { list-style:none;padding:0;margin:.6rem 0; }
+    .af-chars li { font-size:.82rem;color:var(--muted);line-height:1.65;padding:.3rem 0;border-bottom:1px solid rgba(255,255,255,.04);display:flex;gap:.5rem; }
+    .af-chars li::before { content:"&#9670;";color:#fbbf24;flex-shrink:0; }
+    .af-chars li:last-child { border-bottom:none; }
+
+    .hl-box { border-radius:9px;padding:.85rem 1.1rem;margin:.6rem 0;font-size:.82rem;line-height:1.65; }
+    .hl-bull { background:rgba(34,197,94,.07);border:1px solid rgba(34,197,94,.25);color:#4ade80; }
+    .hl-bear { background:rgba(248,113,113,.07);border:1px solid rgba(248,113,113,.25);color:#f87171; }
+    .hl-info { background:#fbbf240d;border:1px solid #fbbf2430;color:var(--text); }
+    .hl-warn { background:rgba(251,191,36,.07);border:1px solid rgba(251,191,36,.25);color:#fbbf24; }
+
+    .chip { display:inline-block;font-size:.66rem;font-weight:800;padding:.15rem .55rem;border-radius:5px;letter-spacing:.04em; }
+    .chip-bull { background:rgba(34,197,94,.15);color:#4ade80;border:1px solid rgba(34,197,94,.3); }
+    .chip-bear { background:rgba(248,113,113,.15);color:#f87171;border:1px solid rgba(248,113,113,.3); }
+    .chip-neut { background:rgba(167,139,250,.15);color:#a78bfa;border:1px solid rgba(167,139,250,.3); }
+
+    .kl-table { width:100%;border-collapse:collapse;font-size:.82rem; }
+    .kl-table th { background:var(--surface);color:var(--muted);padding:.4rem .8rem;text-align:left;border-bottom:1px solid var(--border);font-size:.7rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase; }
+    .kl-table td { padding:.4rem .8rem;border-bottom:1px solid rgba(36,48,88,.4);vertical-align:middle; }
+    .kl-table tr:hover td { background:rgba(255,255,255,.02); }
+
+    .ml-bar-wrap { background:var(--card);border-radius:8px;padding:.8rem 1rem;margin:.5rem 0; }
+    .ml-bar-label { display:flex;justify-content:space-between;font-size:.75rem;color:var(--muted);margin-bottom:.35rem; }
+    .ml-bar-track { height:10px;background:rgba(255,255,255,.06);border-radius:5px;overflow:hidden; }
+    .ml-bar-fill  { height:100%;border-radius:5px;transition:width .6s ease; }
+    @media(max-width:800px){ .ap-sym{font-size:2.5rem;} }
+  </style>
+</head>
+<body>
+<nav class="nav">
+  <a href="index.html" class="nav-logo">
+    <img src="images/steve.jpg" class="nav-logo-photo" alt="Stephen Borick">
+    <div class="nav-logo-text">
+      <span class="nav-company">Artificial Intelligence</span>
+      <span class="nav-name">Solutions, Inc.</span>
+    </div>
+  </a>
+  <ul class="nav-links">
+    <li><a href="index.html">Home</a></li>
+    <li><a href="machine-learning.html">Machine Learning</a></li>
+    <li><a href="ml-trading.html">ML in Trading</a></li>
+    <li><a href="stock-trading.html">Stock Trading</a></li>
+    <li><a href="options-trading.html">Options</a></li>
+    <li><a href="futures-trading.html">Futures</a></li>
+    <li><a href="brokers.html">Brokers</a></li>
+    <li><a href="live-trading.html">Live Trading</a></li>
+    <li><a href="asset-details.html" style="color:#10b981;font-weight:700;">Asset Details</a></li>
+    <li><a href="report-ms.html" target="_blank" style="background:#22d3ee;color:#080d1a;padding:.28rem .85rem;border-radius:5px;font-weight:700;">&#128202; Market Report</a></li>
+    <li><a href="report-tg.html" target="_blank" style="background:#a78bfa;color:#080d1a;padding:.28rem .85rem;border-radius:5px;font-weight:700;">&#128214; Trading Guide</a></li>
+  </ul>
+</nav>
+
+<!-- Page Nav -->
+<nav class="page-nav">
+  <a href="asset-details.html">&#8592; All Assets</a>
+  <span class="page-nav-sep">|</span>
+  <a href="live-trading.html">Live Trading</a>
+  <span class="page-nav-sep">|</span>
+  <a href="gamma-exposure.html">GEX Charts &#127919;</a>
+  <span class="page-nav-sep">|</span>
+  <a href="option-flows.html">Option Flows &#127754;</a>
+  <span class="page-nav-sep">|</span>
+  <a href="options-strategy.html">Options Strategy</a>
+  <span class="page-nav-sep">|</span>
+  <a href="market-preparation.html">Market Prep &#128204;</a>
+  <span class="page-nav-sep">|</span>
+  <a href="fundamentals.html">Fundamentals &#128203;</a>
+</nav>
+
+<!-- Hero -->
+<section class="ap-hero">
+  <div class="ap-grp-badge">Blue Chip &middot; NYSE</div>
+  <div class="ap-sym">BRK-B</div>
+  <div class="ap-name">Berkshire Hathaway Inc. Class B</div>
+  <div class="ap-sector">Diversified Conglomerate / Insurance &mdash; USA</div>
+</section>
+
+<!-- Stats Strip -->
+<div class="stats-strip">
+  <div class="stat-cell"><div class="stat-val" id="st-price"  style="color:#fbbf24;">--</div><div class="stat-lbl">Price</div></div>
+  <div class="stat-cell"><div class="stat-val" id="st-change" style="color:#22d3ee;">--</div><div class="stat-lbl">Change % (1D)</div></div>
+  <div class="stat-cell"><div class="stat-val" id="st-dir"    style="color:#10b981;">--</div><div class="stat-lbl">ML Direction</div></div>
+  <div class="stat-cell"><div class="stat-val" id="st-mag"    style="color:#a78bfa;">--</div><div class="stat-lbl">ML Magnitude</div></div>
+  <div class="stat-cell"><div class="stat-val" id="st-gex"    style="color:#22c55e;">--</div><div class="stat-lbl">GEX Regime</div></div>
+  <div class="stat-cell"><div class="stat-val" id="st-flow"   style="color:#38bdf8;">--</div><div class="stat-lbl">Flow Sentiment</div></div>
+  <div class="stat-cell"><div class="stat-val" id="st-gwall"  style="color:#22c55e;">--</div><div class="stat-lbl">Gamma Wall</div></div>
+  <div class="stat-cell"><div class="stat-val" id="st-flip"   style="color:#fbbf24;">--</div><div class="stat-lbl">Gamma Flip</div></div>
+</div>
+
+<div class="ap-wrap">
+
+  <!-- Server bar -->
+  <div class="server-bar">
+    <div class="sdot loading" id="sdot"></div>
+    <span class="smsg" id="smsg">Loading live data for BRK-B...</span>
+    <button class="rbtn" onclick="loadAll(true)">&#8635; Refresh</button>
+    <a href="live-trading.html?sym=BRK-B" class="rbtn">&#128201; Live Chart</a>
+    <a href="asset-details.html" class="rbtn">&#8592; All Assets</a>
+  </div>
+
+  <!-- § 1 Live Candlestick Chart -->
+  <div class="sec-hdr">
+    <div class="sec-num">1</div>
+    <div class="sec-title">Live Price Chart</div>
+    <div class="sec-sub">4-hour OHLCV candlestick chart &mdash; real-time via IBKR or 15-min delayed via yfinance</div>
+  </div>
+
+  <div class="chart-card">
+    <div class="chart-hdr">
+      <div><div class="chart-title">BRK-B &mdash; 4H Candlestick</div><div class="chart-sub" id="chart-ts">Loading candle data...</div></div>
+      <div style="display:flex;gap:.5rem;">
+        <span id="ohlc-open"  style="font-size:.78rem;color:var(--muted);">O --</span>
+        <span id="ohlc-high"  style="font-size:.78rem;color:#4ade80;">H --</span>
+        <span id="ohlc-low"   style="font-size:.78rem;color:#f87171;">L --</span>
+        <span id="ohlc-close" style="font-size:.78rem;color:#fbbf24;font-weight:700;">C --</span>
+      </div>
+    </div>
+    <div id="chart-container"></div>
+  </div>
+
+  <!-- § 2 ML Signal Analysis -->
+  <div class="sec-hdr">
+    <div class="sec-num">2</div>
+    <div class="sec-title">ML Signal Analysis</div>
+    <div class="sec-sub">XGBoost ensemble model direction, magnitude, and confidence metrics</div>
+  </div>
+  <div class="two-col">
+    <div class="info-card">
+      <h3>Current ML Signal for BRK-B</h3>
+      <div id="ml-signal-content">
+        <div style="color:var(--muted);font-size:.85rem;padding:1rem 0;">Loading ML signal from server...</div>
+      </div>
+    </div>
+    <div class="info-card">
+      <h3>Signal Confidence Bars</h3>
+      <div class="ml-bar-wrap">
+        <div class="ml-bar-label"><span>Direction Confidence</span><span id="dir-conf-lbl">--</span></div>
+        <div class="ml-bar-track"><div class="ml-bar-fill" id="dir-conf-bar" style="width:0%;background:#fbbf24;"></div></div>
+      </div>
+      <div class="ml-bar-wrap">
+        <div class="ml-bar-label"><span>Magnitude Score</span><span id="mag-conf-lbl">--</span></div>
+        <div class="ml-bar-track"><div class="ml-bar-fill" id="mag-conf-bar" style="width:0%;background:#10b981;"></div></div>
+      </div>
+      <div class="ml-bar-wrap">
+        <div class="ml-bar-label"><span>Signal Strength</span><span id="str-conf-lbl">--</span></div>
+        <div class="ml-bar-track"><div class="ml-bar-fill" id="str-conf-bar" style="width:0%;background:#a78bfa;"></div></div>
+      </div>
+      <div class="hl-info" style="margin-top:.7rem;font-size:.8rem;">
+        <strong>Model:</strong> XGBoost ensemble trained on 4H OHLCV + 15 technical features.
+        Direction = predicted next 4-bar move. Magnitude = expected % move. Retrains every session.
+      </div>
+    </div>
+  </div>
+
+  <!-- § 3 Asset Overview -->
+  <div class="sec-hdr">
+    <div class="sec-num">3</div>
+    <div class="sec-title">Asset Overview</div>
+    <div class="sec-sub">Comprehensive profile, key metrics, and business description</div>
+  </div>
+
+  <div class="info-card" style="margin-bottom:.9rem;">
+    <p style="font-size:.88rem;line-height:1.75;">Berkshire Hathaway is Warren Buffett's legendary diversified holding company — widely considered the greatest investment vehicle of all time. The company wholly owns over 40 operating businesses including GEICO (auto insurance), BNSF Railway, Berkshire Hathaway Energy, Berkshire Hathaway Reinsurance, Clayton Homes, and See's Candies. Additionally, Berkshire holds a ~$320B+ equity portfolio of publicly traded stocks, historically dominated by Apple, Bank of America, American Express, and Coca-Cola. Class B shares (BRK-B, 1/1,500th of a Class A share) provide accessible exposure to Buffett's investment philosophy. Greg Abel is the designated CEO successor.</p>
+  </div>
+
+  <div class="af-facts"><div class="af-fact"><div class="af-fact-lbl">Market Cap</div><div class="af-fact-val">~$1T</div></div><div class="af-fact"><div class="af-fact-lbl">Operating Earnings</div><div class="af-fact-val">~$40B/yr</div></div><div class="af-fact"><div class="af-fact-lbl">Insurance Float</div><div class="af-fact-val">~$170B+</div></div><div class="af-fact"><div class="af-fact-lbl">Cash & T-Bills</div><div class="af-fact-val">$300B+ (2024-2025)</div></div><div class="af-fact"><div class="af-fact-lbl">Equity Portfolio</div><div class="af-fact-val">$320B+</div></div><div class="af-fact"><div class="af-fact-lbl">BNSF Revenue</div><div class="af-fact-val">~$23B/yr</div></div><div class="af-fact"><div class="af-fact-lbl">GEICO Policies</div><div class="af-fact-val">~20M vehicles</div></div><div class="af-fact"><div class="af-fact-lbl">Employees</div><div class="af-fact-val">~395,000</div></div><div class="af-fact"><div class="af-fact-lbl">P/B Ratio</div><div class="af-fact-val">~1.4-1.6x</div></div><div class="af-fact"><div class="af-fact-lbl">A Share Price</div><div class="af-fact-val">~$750,000+</div></div></div>
+
+  <!-- § 4 GEX Analysis -->
+  <div class="sec-hdr">
+    <div class="sec-num">4</div>
+    <div class="sec-title">Gamma Exposure Analysis</div>
+    <div class="sec-sub">Net dealer gamma exposure, key levels, and GEX regime for BRK-B</div>
+  </div>
+
+  <div class="two-col">
+    <div class="info-card">
+      <h3>&#127919; GEX Key Levels</h3>
+      <table class="kl-table">
+        <thead><tr><th>Level</th><th>Price</th><th>Type</th><th>Significance</th></tr></thead>
+        <tbody id="gex-levels-body"><tr><td colspan="4" style="color:var(--muted);text-align:center;padding:.8rem;">Loading GEX data...</td></tr></tbody>
+      </table>
+    </div>
+    <div class="info-card">
+      <h3>&#9745; GEX Regime Interpretation</h3>
+      <div id="gex-regime-explain" style="font-size:.82rem;color:var(--muted);line-height:1.7;">Loading GEX regime...</div>
+    </div>
+  </div>
+
+  <!-- § 5 Option Flow -->
+  <div class="sec-hdr">
+    <div class="sec-num">5</div>
+    <div class="sec-title">Option Flow Intelligence</div>
+    <div class="sec-sub">Real-time call vs put volume, premium flow, and institutional sentiment</div>
+  </div>
+
+  <div class="two-col">
+    <div class="info-card">
+      <h3>&#127754; Flow Metrics</h3>
+      <div id="flow-content" style="font-size:.82rem;color:var(--muted);line-height:1.7;">Loading option flow data...</div>
+    </div>
+    <div class="info-card">
+      <h3>&#128200; Strike-Level Volume</h3>
+      <table class="kl-table">
+        <thead><tr><th>Strike</th><th>Call Vol</th><th>Put Vol</th><th>C/P Ratio</th></tr></thead>
+        <tbody id="flow-strikes-body"><tr><td colspan="4" style="color:var(--muted);text-align:center;padding:.8rem;">Loading strike data...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- § 6 Fundamentals -->
+  <div class="sec-hdr">
+    <div class="sec-num">6</div>
+    <div class="sec-title">Fundamentals &amp; Valuation</div>
+    <div class="sec-sub">Live fundamental data from server plus valuation context</div>
+  </div>
+
+  <div class="two-col">
+    <div class="info-card">
+      <h3>&#128203; Live Fundamental Snapshot</h3>
+      <div id="fund-content">
+        <div style="color:var(--muted);font-size:.82rem;padding:.5rem 0;">Loading fundamental data...</div>
+      </div>
+    </div>
+    <div class="info-card">
+      <h3>&#128196; Sector &amp; Peer Context</h3>
+      <p style="font-size:.82rem;line-height:1.7;">Berkshire's wholly-owned businesses compete with State Farm, Progressive (GEICO), Union Pacific/CSX (BNSF), NextEra Energy/Duke Energy (Berkshire Hathaway Energy), and hundreds of sector-specific competitors for each subsidiary. The unique advantage is Berkshire's permanent capital structure — subsidiaries are never sold, enabling long-term investment and avoiding short-term pressures.</p>
+    </div>
+  </div>
+
+  <!-- § 7 Trading Characteristics -->
+  <div class="sec-hdr">
+    <div class="sec-num">7</div>
+    <div class="sec-title">Trading Characteristics</div>
+    <div class="sec-sub">Liquidity profile, options notes, and key behavioral patterns for BRK-B</div>
+  </div>
+
+  <div class="two-col">
+    <div class="info-card">
+      <h3>&#127919; Key Trading Facts</h3>
+      <ul class="af-chars"><li>Warren Buffett's 60-year track record: ~20% CAGR vs S&P 500's ~10% CAGR — greatest investor of all time</li><li>$300B+ cash hoard (2025) is Buffett's implicit view that market valuations are stretched — largest cash position ever</li><li>GEICO insurance float (~$170B) is borrowed essentially for free — invested in bonds and equities</li><li>BNSF Railway provides regulated, inflation-hedged infrastructure revenue tied to US economic activity</li><li>Berkshire Energy transitioning to renewables while maintaining utility/pipeline cash flows</li><li>Apple position was ~40% of portfolio (now trimmed) — Buffett's largest ever equity bet</li><li>No dividend policy — Buffett believes internal compounding beats dividend distribution</li><li>Greg Abel succession plan announced — gradual transition of operational responsibilities</li></ul>
+    </div>
+    <div class="info-card">
+      <h3>&#128200; Options &amp; Derivatives Notes</h3>
+      <p style="font-size:.82rem;line-height:1.7;margin-bottom:.7rem;">BRK-B options are moderately liquid. Implied vol is low (~15-22%) given the diversified, stable business mix. Earnings implied moves average 2-4%. Options volume is much lower than Mag 7 stocks.</p>
+      <h3 style="margin-top:.8rem;">&#129504; ML Strategy Notes</h3>
+      <p style="font-size:.82rem;line-height:1.7;">BRK-B is a quality compounder for long-term investors. Buy when market P/E is high (Buffett's large cash position signals caution — often a good time to accumulate BRK-B if its own P/B is below 1.5x). Watch quarterly operating earnings reports for insurance and railroad performance. BRK-B acts as a defensive growth stock — lower vol than S&P 500 with strong long-term compounding.</p>
+    </div>
+  </div>
+
+  <!-- Bottom nav -->
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-top:2.5rem;flex-wrap:wrap;gap:1rem;border-top:1px solid var(--border);padding-top:1.5rem;">
+    <a href="asset-details.html" style="color:var(--muted);text-decoration:none;font-size:.9rem;">&#8592; All Asset Details</a>
+    <div style="display:flex;gap:.8rem;flex-wrap:wrap;">
+      <a href="gamma-exposure.html" class="rbtn" style="padding:.5rem 1rem;">&#127919; GEX Charts</a>
+      <a href="option-flows.html"   class="rbtn" style="padding:.5rem 1rem;">&#127754; Flows</a>
+      <a href="live-trading.html?sym=BRK-B" style="text-decoration:none;background:linear-gradient(135deg,#fbbf24,#fbbf24cc);color:#080d1a;padding:.55rem 1.4rem;border-radius:8px;font-size:.88rem;font-weight:700;">Live Chart &#8594;</a>
+    </div>
+  </div>
+
+</div><!-- /ap-wrap -->
+
+<script>
+'use strict';
+var SYM = 'BRK-B';
+var API = window.location.origin;
+
+function setStatus(s, msg) {
+  var d = document.getElementById('sdot');
+  d.className = 'sdot ' + (s==='ok' ? 'on' : s==='loading' ? 'loading' : '');
+  document.getElementById('smsg').textContent = msg;
+}
+
+function fmtP(v) {
+  if (v == null) return '--';
+  return v >= 1000 ? '$' + v.toLocaleString('en-US',{maximumFractionDigits:0}) : '$' + v.toFixed(2);
+}
+
+function chipDir(d) {
+  if (!d) return '<span class="chip chip-neut">--</span>';
+  var u = d.toString().toUpperCase();
+  if (u.indexOf('BULL')>=0||u.indexOf('UP')>=0||u.indexOf('LONG')>=0) return '<span class="chip chip-bull">'+u+'</span>';
+  if (u.indexOf('BEAR')>=0||u.indexOf('DOWN')>=0||u.indexOf('SHORT')>=0) return '<span class="chip chip-bear">'+u+'</span>';
+  return '<span class="chip chip-neut">'+d+'</span>';
+}
+
+/* ── Candlestick Chart ── */
+async function loadChart() {
+  try {
+    var res = await fetch(API + '/api/candles/' + SYM + '?interval=1h', {cache:'no-store'});
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    var data = await res.json();
+    var candles = data.candles || data;
+    if (!candles || !candles.length) throw new Error('No candle data');
+
+    var container = document.getElementById('chart-container');
+    var chart = LightweightCharts.createChart(container, {
+      width: container.clientWidth, height: 420,
+      layout: { background: { color: '#070d18' }, textColor: '#7fa3be' },
+      grid: { vertLines: { color: 'rgba(36,48,88,.4)' }, horzLines: { color: 'rgba(36,48,88,.4)' } },
+      crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
+      rightPriceScale: { borderColor: '#243058' },
+      timeScale: { borderColor: '#243058', timeVisible: true, secondsVisible: false },
+    });
+
+    var cs = chart.addCandlestickSeries({
+      upColor: '#22c55e', downColor: '#f87171',
+      borderUpColor: '#22c55e', borderDownColor: '#f87171',
+      wickUpColor: '#22c55e', wickDownColor: '#f87171',
+    });
+
+    var mapped = candles.map(function(c) {
+      return { time: c.time || c.timestamp, open: c.open, high: c.high, low: c.low, close: c.close };
+    }).filter(function(c) { return c.time && c.open && c.close; });
+
+    cs.setData(mapped);
+    chart.timeScale().fitContent();
+
+    if (mapped.length) {
+      var last = mapped[mapped.length-1];
+      document.getElementById('ohlc-open').textContent  = 'O ' + last.open.toFixed(2);
+      document.getElementById('ohlc-high').textContent  = 'H ' + last.high.toFixed(2);
+      document.getElementById('ohlc-low').textContent   = 'L ' + last.low.toFixed(2);
+      document.getElementById('ohlc-close').textContent = 'C ' + last.close.toFixed(2);
+      document.getElementById('chart-ts').textContent = mapped.length + ' candles · 4H OHLCV · updated ' + new Date().toLocaleTimeString();
+
+      document.getElementById('st-price').textContent = '$' + last.close.toLocaleString('en-US',{minimumFractionDigits:2, maximumFractionDigits:2});
+      if (mapped.length >= 2) {
+        var prev = mapped[mapped.length-2];
+        var pct = ((last.close - prev.close) / prev.close * 100).toFixed(2);
+        var el = document.getElementById('st-change');
+        el.textContent = (pct >= 0 ? '+' : '') + pct + '%';
+        el.style.color = pct >= 0 ? '#4ade80' : '#f87171';
+      }
+    }
+
+    chart.subscribeCrosshairMove(function(p) {
+      if (!p.seriesData || !p.seriesData.size) return;
+      var d = p.seriesData.values().next().value;
+      if (!d) return;
+      document.getElementById('ohlc-open').textContent  = 'O ' + d.open.toFixed(2);
+      document.getElementById('ohlc-high').textContent  = 'H ' + d.high.toFixed(2);
+      document.getElementById('ohlc-low').textContent   = 'L ' + d.low.toFixed(2);
+      document.getElementById('ohlc-close').textContent = 'C ' + d.close.toFixed(2);
+    });
+
+    window.addEventListener('resize', function() { chart.applyOptions({width: container.clientWidth}); });
+  } catch(e) {
+    document.getElementById('chart-container').innerHTML = '<div style="color:var(--muted);text-align:center;padding:3rem;font-size:.85rem;">Chart unavailable: ' + e.message + '</div>';
+  }
+}
+
+/* ── ML Signal ── */
+async function loadSignal() {
+  try {
+    var res = await fetch(API + '/api/signal/' + SYM, {cache:'no-store'});
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    var d = await res.json();
+    var dir = (d.direction || 'NEUTRAL').toUpperCase();
+    var mag = d.magnitude != null ? d.magnitude : 0.5;
+    var conf = d.confidence != null ? d.confidence : mag;
+
+    document.getElementById('st-dir').textContent = dir;
+    document.getElementById('st-dir').style.color = dir.indexOf('BULL')>=0 ? '#4ade80' : dir.indexOf('BEAR')>=0 ? '#f87171' : '#a78bfa';
+    document.getElementById('st-mag').textContent = (mag*100).toFixed(0) + '%';
+
+    document.getElementById('ml-signal-content').innerHTML =
+      '<div style="margin-bottom:.8rem;">' + chipDir(dir) + '</div>' +
+      '<table class="kl-table"><tbody>' +
+      '<tr><td><strong>Direction</strong></td><td>' + chipDir(dir) + '</td></tr>' +
+      '<tr><td><strong>Magnitude</strong></td><td style="color:#10b981;font-weight:700;">' + (mag*100).toFixed(1) + '%</td></tr>' +
+      '<tr><td><strong>Confidence</strong></td><td style="color:#a78bfa;font-weight:700;">' + (conf*100).toFixed(1) + '%</td></tr>' +
+      (d.price ? '<tr><td><strong>Model Price</strong></td><td style="color:#fbbf24;">$' + parseFloat(d.price).toFixed(2) + '</td></tr>' : '') +
+      '</tbody></table>';
+
+    document.getElementById('dir-conf-bar').style.width = Math.round(conf*100) + '%';
+    document.getElementById('dir-conf-lbl').textContent = (conf*100).toFixed(0) + '%';
+    document.getElementById('mag-conf-bar').style.width = Math.round(mag*100) + '%';
+    document.getElementById('mag-conf-lbl').textContent = (mag*100).toFixed(0) + '%';
+    var str = Math.round((conf + mag) / 2 * 100);
+    document.getElementById('str-conf-bar').style.width = str + '%';
+    document.getElementById('str-conf-lbl').textContent = str + '%';
+  } catch(e) {
+    document.getElementById('ml-signal-content').innerHTML = '<div style="color:var(--muted);font-size:.82rem;">Signal unavailable: ' + e.message + '</div>';
+  }
+}
+
+/* ── GEX ── */
+async function loadGex() {
+  try {
+    var res = await fetch(API + '/api/gamma-exposure', {cache:'no-store'});
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    var data = await res.json();
+    var a = (data.assets||[]).find(function(x){ return x.symbol === SYM; });
+    if (!a) { document.getElementById('gex-levels-body').innerHTML = '<tr><td colspan="4" style="color:var(--muted);text-align:center;padding:.8rem;">No GEX data for ' + SYM + '</td></tr>'; return; }
+
+    document.getElementById('st-gex').textContent = a.regime || '--';
+    document.getElementById('st-gex').style.color = a.regime === 'Long Gamma' ? '#4ade80' : '#f87171';
+    if (a.gamma_wall) document.getElementById('st-gwall').textContent = fmtP(a.gamma_wall);
+    if (a.flip_level) document.getElementById('st-flip').textContent  = fmtP(a.flip_level);
+
+    var rows = [
+      a.gamma_wall && {name:'Gamma Wall', price:a.gamma_wall, type:'Call Wall',    color:'#22c55e', note: a.gamma_wall > a.spot ? 'Resistance -- dealers sell into this level' : 'Support -- dealers buy near this level'},
+      a.put_wall   && {name:'Put Wall',   price:a.put_wall,   type:'Put Support',  color:'#f87171', note:'Mechanical buying floor from dealer put hedges'},
+      a.flip_level && {name:'Gamma Flip', price:a.flip_level, type:'Regime Change',color:'#a78bfa', note: a.flip_level > a.spot ? 'Spot below flip = short gamma (trending)' : 'Spot above flip = long gamma (stabilizing)'},
+      a.spot       && {name:'Spot Price', price:a.spot,       type:'Current',      color:'#fbbf24', note:'Current market price reference'},
+    ].filter(Boolean).sort(function(x,y){ return y.price - x.price; });
+
+    document.getElementById('gex-levels-body').innerHTML = rows.map(function(r){
+      return '<tr><td><strong style="color:'+r.color+';">'+r.name+'</strong></td><td style="font-family:'Consolas',monospace;color:'+r.color+';font-weight:700;">'+fmtP(r.price)+'</td><td><span class="chip" style="color:'+r.color+';border:1px solid '+r.color+'40;background:rgba(255,255,255,.03);">'+r.type+'</span></td><td style="font-size:.78rem;color:var(--muted);">'+r.note+'</td></tr>';
+    }).join('');
+
+    var isLong = a.regime === 'Long Gamma';
+    var gexAbs = Math.abs(a.total_gex_m || 0);
+    document.getElementById('gex-regime-explain').innerHTML =
+      '<div class="hl-'+(isLong?'bull':'bear')+'" style="margin-bottom:.6rem;"><strong>'+(isLong?'Long Gamma (Stabilizing)':'Short Gamma (Trending)')+'</strong> &mdash; ' +
+      (isLong ? 'Dealers are net long gamma on '+SYM+'. They sell rallies and buy dips -- dampening realized vol and creating range-bound behavior. Mean-reversion strategies are favored.' :
+                'Dealers are net short gamma on '+SYM+'. They buy rallies and sell dips -- amplifying moves in both directions. Momentum and breakout strategies are favored.') +
+      '</div>' +
+      (a.pcr != null ? '<p style="font-size:.82rem;color:var(--muted);"><strong style="color:var(--text);">Put/Call Ratio:</strong> ' + a.pcr.toFixed(2) + (a.pcr > 1.2 ? ' (bearish hedging dominant)' : a.pcr < 0.7 ? ' (bullish sentiment)' : ' (balanced)') + '</p>' : '') +
+      '<p style="font-size:.82rem;color:var(--muted);margin-top:.4rem;"><strong style="color:var(--text);">Net GEX:</strong> $' + (gexAbs >= 1000 ? (gexAbs/1000).toFixed(2)+'B' : gexAbs.toFixed(1)+'M') + ' ' + (isLong ? '(positive)' : '(negative)') + '</p>';
+  } catch(e) {
+    document.getElementById('gex-levels-body').innerHTML = '<tr><td colspan="4" style="color:var(--muted);text-align:center;padding:.8rem;">GEX unavailable: ' + e.message + '</td></tr>';
+  }
+}
+
+/* ── Option Flow ── */
+async function loadFlows() {
+  try {
+    var res = await fetch(API + '/api/option-flows', {cache:'no-store'});
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    var data = await res.json();
+    var a = (data.assets||[]).find(function(x){ return x.symbol === SYM; });
+    if (!a) { document.getElementById('flow-content').innerHTML = 'No option flow data for ' + SYM; return; }
+
+    document.getElementById('st-flow').textContent = a.flow_sentiment || '--';
+    document.getElementById('st-flow').style.color = (a.flow_sentiment||'').toUpperCase()==='BULLISH' ? '#4ade80' : (a.flow_sentiment||'').toUpperCase()==='BEARISH' ? '#f87171' : '#38bdf8';
+
+    var cv = (a.call_vol||[]).reduce(function(s,v){return s+v;},0);
+    var pv = (a.put_vol||[]).reduce(function(s,v){return s+v;},0);
+    var cp = (a.call_prem_k||[]).reduce(function(s,v){return s+v;},0);
+    var pp = (a.put_prem_k||[]).reduce(function(s,v){return s+v;},0);
+    var ratio = pv > 0 ? (cv/pv).toFixed(2) : '--';
+
+    document.getElementById('flow-content').innerHTML =
+      '<table class="kl-table"><tbody>' +
+      '<tr><td><strong>Flow Sentiment</strong></td><td>' + chipDir(a.flow_sentiment) + '</td></tr>' +
+      '<tr><td><strong>Total Call Volume</strong></td><td style="color:#4ade80;">' + cv.toLocaleString() + '</td></tr>' +
+      '<tr><td><strong>Total Put Volume</strong></td><td style="color:#f87171;">' + pv.toLocaleString() + '</td></tr>' +
+      '<tr><td><strong>Call/Put Vol Ratio</strong></td><td style="color:#fbbf24;font-weight:700;">' + ratio + '</td></tr>' +
+      '<tr><td><strong>Call Premium ($K)</strong></td><td style="color:#4ade80;">$' + cp.toLocaleString() + 'K</td></tr>' +
+      '<tr><td><strong>Put Premium ($K)</strong></td><td style="color:#f87171;">$' + pp.toLocaleString() + 'K</td></tr>' +
+      '<tr><td><strong>Spot Price</strong></td><td style="color:#fbbf24;">$' + (a.spot||0).toFixed(2) + '</td></tr>' +
+      '</tbody></table>';
+
+    if (a.strikes && a.strikes.length) {
+      var strikeRows = a.strikes.slice(0,10).map(function(s,i){
+        var cv2 = a.call_vol[i] || 0;
+        var pv2 = a.put_vol[i]  || 0;
+        var ratio2 = pv2 > 0 ? (cv2/pv2).toFixed(1) : 'N/A';
+        return '<tr><td style="font-family:'Consolas',monospace;">' + fmtP(s) + '</td>' +
+               '<td style="color:#4ade80;">' + cv2.toLocaleString() + '</td>' +
+               '<td style="color:#f87171;">' + pv2.toLocaleString() + '</td>' +
+               '<td style="color:#fbbf24;font-weight:700;">' + ratio2 + '</td></tr>';
+      }).join('');
+      document.getElementById('flow-strikes-body').innerHTML = strikeRows;
+    }
+  } catch(e) {
+    document.getElementById('flow-content').innerHTML = 'Flow data unavailable: ' + e.message;
+  }
+}
+
+/* ── Fundamentals ── */
+async function loadFund() {
+  try {
+    var res = await fetch(API + '/api/fundamentals', {cache:'no-store'});
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    var data = await res.json();
+    var assets = data.assets || data || [];
+    var a = assets.find(function(x){ return x.symbol === SYM; });
+    if (!a) { document.getElementById('fund-content').innerHTML = '<div style="color:var(--muted);font-size:.82rem;">No fundamental data for ' + SYM + '</div>'; return; }
+
+    document.getElementById('fund-content').innerHTML =
+      '<table class="kl-table"><tbody>' +
+      (a.pe_ratio  != null ? '<tr><td><strong>P/E Ratio</strong></td><td style="color:#fbbf24;font-weight:700;">' + a.pe_ratio.toFixed(1)     + 'x</td></tr>' : '') +
+      (a.eps_growth!= null ? '<tr><td><strong>EPS Growth</strong></td><td style="color:#4ade80;">'                   + (a.eps_growth*100).toFixed(1) + '%</td></tr>' : '') +
+      (a.dividend  != null ? '<tr><td><strong>Dividend Yield</strong></td><td style="color:#fbbf24;">'               + (a.dividend*100).toFixed(2)   + '%</td></tr>' : '') +
+      (a.beta      != null ? '<tr><td><strong>Beta</strong></td><td style="color:var(--text);">'                     + a.beta.toFixed(2)             + '</td></tr>' : '') +
+      (a.rsi       != null ? '<tr><td><strong>RSI</strong></td><td style="color:'+(a.rsi>70?'#f87171':a.rsi<30?'#4ade80':'var(--muted)')+';font-weight:700;">' + a.rsi.toFixed(1) + (a.rsi>70?' (overbought)':a.rsi<30?' (oversold)':' (neutral)') + '</td></tr>' : '') +
+      (a.market_cap!= null ? '<tr><td><strong>Market Cap</strong></td><td style="color:var(--text);">$' + (a.market_cap/1e9).toFixed(0) + 'B</td></tr>' : '') +
+      (a.rating    != null ? '<tr><td><strong>ML Rating</strong></td><td>' + chipDir(a.rating) + '</td></tr>' : '') +
+      '</tbody></table>';
+  } catch(e) {
+    document.getElementById('fund-content').innerHTML = '<div style="color:var(--muted);font-size:.82rem;">Fundamentals unavailable: ' + e.message + '</div>';
+  }
+}
+
+/* ── Init ── */
+async function loadAll(nocache) {
+  setStatus('loading', 'Loading live data for ' + SYM + '...');
+  await Promise.all([loadChart(), loadSignal(), loadGex(), loadFlows(), loadFund()]);
+  setStatus('ok', SYM + ' data loaded · refreshes every 8 min');
+}
+
+window.addEventListener('load', function(){ loadAll(); });
+setInterval(function(){ loadAll(); }, 8*60*1000);
+</script>
+<script src="ibkr-widget.js"></script>
+<script src="search.js"></script>
+</body>
+</html>
