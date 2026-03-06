@@ -84,75 +84,6 @@ h1{font-size:1.7rem;font-weight:800;color:var(--accent);margin-bottom:.3rem;}
 
   <div class="broker-grid">
 
-    <!-- Alpaca -->
-    <div class="broker-card" id="card-alpaca">
-      <div class="status-dot" id="dot-alpaca"></div>
-      <div class="broker-hdr">
-        <div class="broker-logo" style="background:rgba(255,209,0,.15);color:#ffd100;">&#945;</div>
-        <div>
-          <div class="broker-name">Alpaca Markets</div>
-          <div class="broker-tagline">Free paper account &mdash; no funding required</div>
-        </div>
-      </div>
-      <div class="features">
-        <span class="feat green">Free</span>
-        <span class="feat">OHLCV Candles</span>
-        <span class="feat">Real-time Quotes</span>
-        <span class="feat">7yr History</span>
-        <span class="feat">10K calls/min</span>
-      </div>
-      <div class="input-row">
-        <label>API KEY ID</label>
-        <input type="text" id="alpaca-key" placeholder="PKXXXXXXXXXXXXXXXX">
-      </div>
-      <div class="input-row">
-        <label>SECRET KEY</label>
-        <input type="password" id="alpaca-secret" placeholder="xxxxxxxxxxxxxxxxxxxxxxxxxxxx">
-      </div>
-      <div class="input-row" style="flex-direction:row;align-items:center;gap:.5rem;">
-        <input type="checkbox" id="alpaca-paper" checked style="width:auto;">
-        <label for="alpaca-paper" style="font-size:.8rem;color:var(--text);">Paper trading account</label>
-      </div>
-      <div class="btn-row">
-        <button class="btn btn-connect" onclick="connectBroker('alpaca')">Connect</button>
-        <button class="btn btn-signup" onclick="window.open('https://app.alpaca.markets/signup','_blank')">&#43; Sign Up Free</button>
-        <button class="btn btn-disconnect" style="display:none" id="disc-alpaca" onclick="disconnectBroker('alpaca')">Disconnect</button>
-      </div>
-      <div class="status-msg" id="msg-alpaca">Enter your API keys from app.alpaca.markets &rarr; Paper Trading &rarr; API Keys</div>
-    </div>
-
-    <!-- Tradier -->
-    <div class="broker-card" id="card-tradier">
-      <div class="status-dot" id="dot-tradier"></div>
-      <div class="broker-hdr">
-        <div class="broker-logo" style="background:rgba(34,197,94,.15);color:var(--green);">T</div>
-        <div>
-          <div class="broker-name">Tradier</div>
-          <div class="broker-tagline">Free sandbox &mdash; real-time quotes &amp; options</div>
-        </div>
-      </div>
-      <div class="features">
-        <span class="feat green">Free Sandbox</span>
-        <span class="feat">Real-time Quotes</span>
-        <span class="feat">Options Chains</span>
-        <span class="feat amber">Brokerage for Live</span>
-      </div>
-      <div class="input-row">
-        <label>ACCESS TOKEN</label>
-        <input type="password" id="tradier-token" placeholder="Bearer token from developer.tradier.com">
-      </div>
-      <div class="input-row" style="flex-direction:row;align-items:center;gap:.5rem;">
-        <input type="checkbox" id="tradier-sandbox" checked style="width:auto;">
-        <label for="tradier-sandbox" style="font-size:.8rem;color:var(--text);">Use sandbox (free)</label>
-      </div>
-      <div class="btn-row">
-        <button class="btn btn-connect" onclick="connectBroker('tradier')">Connect</button>
-        <button class="btn btn-signup" onclick="window.open('https://developer.tradier.com/user/sign_up','_blank')">&#43; Sign Up Free</button>
-        <button class="btn btn-disconnect" style="display:none" id="disc-tradier" onclick="disconnectBroker('tradier')">Disconnect</button>
-      </div>
-      <div class="status-msg" id="msg-tradier">Get a free token at developer.tradier.com &rarr; Applications &rarr; Generate Token</div>
-    </div>
-
     <!-- Finnhub -->
     <div class="broker-card" id="card-finnhub">
       <div class="status-dot" id="dot-finnhub"></div>
@@ -225,24 +156,6 @@ h1{font-size:1.7rem;font-weight:800;color:var(--accent);margin-bottom:.3rem;}
       </thead>
       <tbody>
         <tr>
-          <td><strong>Alpaca</strong></td>
-          <td><span class="check">Free</span></td>
-          <td><span class="check">&#10003; 7yr history</span></td>
-          <td><span class="check">&#10003; IEX feed</span></td>
-          <td><span class="warn">&#8722; Limited</span></td>
-          <td><span class="check">&#10003; Options bars</span></td>
-          <td>10,000/min</td>
-        </tr>
-        <tr>
-          <td><strong>Tradier</strong></td>
-          <td><span class="check">Free sandbox</span></td>
-          <td><span class="check">&#10003; OHLCV</span></td>
-          <td><span class="check">&#10003; Real-time</span></td>
-          <td><span class="warn">&#8722; Basic</span></td>
-          <td><span class="check">&#10003; Full chains</span></td>
-          <td>Unlimited (sandbox)</td>
-        </tr>
-        <tr>
           <td><strong>Finnhub</strong></td>
           <td><span class="check">Free API key</span></td>
           <td><span class="check">&#10003; Candles</span></td>
@@ -277,41 +190,6 @@ h1{font-size:1.7rem;font-weight:800;color:var(--accent);margin-bottom:.3rem;}
   <div class="info-section" style="margin-top:2rem;">
     <h2>How to Get Your Free API Keys</h2>
     <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1rem;margin-top:.8rem;">
-
-      <div style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:1rem;">
-        <div style="font-weight:700;color:#ffd100;margin-bottom:.6rem;">&#945; Alpaca (Recommended)</div>
-        <ol style="font-size:.8rem;color:var(--muted);line-height:1.7;padding-left:1.1rem;">
-          <li>Go to <a href="https://app.alpaca.markets/signup" target="_blank" style="color:var(--accent)">app.alpaca.markets/signup</a></li>
-          <li>Sign up with email (no funding required)</li>
-          <li>Switch to <strong style="color:var(--text)">Paper Trading</strong> account</li>
-          <li>Click <strong style="color:var(--text)">View &rarr; API Keys</strong></li>
-          <li>Generate &amp; copy Key ID + Secret Key</li>
-        </ol>
-      </div>
-
-      <div style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:1rem;">
-        <div style="font-weight:700;color:var(--green);margin-bottom:.6rem;">T Tradier</div>
-        <ol style="font-size:.8rem;color:var(--muted);line-height:1.7;padding-left:1.1rem;">
-          <li>Go to <a href="https://developer.tradier.com/user/sign_up" target="_blank" style="color:var(--accent)">developer.tradier.com</a></li>
-          <li>Sign up for a developer account</li>
-          <li>Go to <strong style="color:var(--text)">Applications &rarr; New Application</strong></li>
-          <li>Generate your Access Token</li>
-          <li>Use sandbox checkbox for free access</li>
-        </ol>
-      </div>
-
-      <div style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:1rem;">
-        <div style="font-weight:700;color:var(--purple);margin-bottom:.6rem;">F Finnhub</div>
-        <ol style="font-size:.8rem;color:var(--muted);line-height:1.7;padding-left:1.1rem;">
-          <li>Go to <a href="https://finnhub.io/register" target="_blank" style="color:var(--accent)">finnhub.io/register</a></li>
-          <li>Sign up with email only</li>
-          <li>No credit card required</li>
-          <li>API key shown immediately on dashboard</li>
-          <li>60 calls/min free forever</li>
-        </ol>
-      </div>
-
-    </div>
   </div>
 </div>
 
@@ -319,13 +197,11 @@ h1{font-size:1.7rem;font-weight:800;color:var(--accent);margin-bottom:.3rem;}
 'use strict';
 const API = window.location.origin;
 
-// Load saved credentials from localStorage on startup
 window.addEventListener('load', () => {
-  ['alpaca','tradier','finnhub','ibkr'].forEach(b => {
+  ['finnhub','ibkr'].forEach(b => {
     const saved = loadCreds(b);
     if(saved) restoreFields(b, saved);
   });
-  // Auto-check IBKR status
   checkIBKR();
 });
 
@@ -340,14 +216,7 @@ function clearCreds(broker){
 }
 
 function restoreFields(broker, creds){
-  if(broker==='alpaca'){
-    document.getElementById('alpaca-key').value    = creds.key    || '';
-    document.getElementById('alpaca-secret').value = creds.secret || '';
-    document.getElementById('alpaca-paper').checked = creds.paper !== false;
-  } else if(broker==='tradier'){
-    document.getElementById('tradier-token').value   = creds.token   || '';
-    document.getElementById('tradier-sandbox').checked = creds.sandbox !== false;
-  } else if(broker==='finnhub'){
+  if(broker==='finnhub'){
     document.getElementById('finnhub-key').value = creds.key || '';
   } else if(broker==='ibkr'){
     document.getElementById('ibkr-host').value = creds.host || '127.0.0.1';
@@ -356,13 +225,13 @@ function restoreFields(broker, creds){
 }
 
 function setStatus(broker, state, msg){
-  const dot  = document.getElementById('dot-'+broker);
-  const card = document.getElementById('card-'+broker);
-  const msgEl= document.getElementById('msg-'+broker);
-  const disc = document.getElementById('disc-'+broker);
-  dot.className  = 'status-dot' + (state==='ok'?' ok':state==='err'?' err':state==='loading'?' loading':'');
-  card.className = 'broker-card' + (state==='ok'?' connected':state==='err'?' error':'');
-  msgEl.className= 'status-msg'  + (state==='ok'?' ok':state==='err'?' err':'');
+  const dot   = document.getElementById('dot-'+broker);
+  const card  = document.getElementById('card-'+broker);
+  const msgEl = document.getElementById('msg-'+broker);
+  const disc  = document.getElementById('disc-'+broker);
+  dot.className   = 'status-dot'  + (state==='ok'?' ok':state==='err'?' err':state==='loading'?' loading':'');
+  card.className  = 'broker-card' + (state==='ok'?' connected':state==='err'?' error':'');
+  msgEl.className = 'status-msg'  + (state==='ok'?' ok':state==='err'?' err':'');
   msgEl.textContent = msg;
   if(disc) disc.style.display = state==='ok' ? '' : 'none';
 }
@@ -371,27 +240,11 @@ async function connectBroker(broker){
   setStatus(broker, 'loading', 'Connecting...');
   let body = {};
 
-  if(broker==='alpaca'){
-    const key    = document.getElementById('alpaca-key').value.trim();
-    const secret = document.getElementById('alpaca-secret').value.trim();
-    const paper  = document.getElementById('alpaca-paper').checked;
-    if(!key || !secret){ setStatus(broker,'err','Enter API Key ID and Secret Key'); return; }
-    body = {key, secret, paper};
-    saveCreds(broker, body);
-
-  } else if(broker==='tradier'){
-    const token   = document.getElementById('tradier-token').value.trim();
-    const sandbox = document.getElementById('tradier-sandbox').checked;
-    if(!token){ setStatus(broker,'err','Enter your Tradier access token'); return; }
-    body = {token, sandbox};
-    saveCreds(broker, body);
-
-  } else if(broker==='finnhub'){
+  if(broker==='finnhub'){
     const key = document.getElementById('finnhub-key').value.trim();
     if(!key){ setStatus(broker,'err','Enter your Finnhub API key'); return; }
     body = {key};
     saveCreds(broker, body);
-
   } else if(broker==='ibkr'){
     const host = document.getElementById('ibkr-host').value.trim() || '127.0.0.1';
     const port = parseInt(document.getElementById('ibkr-port').value) || 7497;
@@ -417,9 +270,7 @@ async function connectBroker(broker){
 }
 
 async function disconnectBroker(broker){
-  try {
-    await fetch(API + '/api/broker-disconnect/' + broker, {method:'POST'});
-  } catch(e){}
+  try { await fetch(API + '/api/broker-disconnect/' + broker, {method:'POST'}); } catch(e){}
   clearCreds(broker);
   setStatus(broker, '', 'Disconnected');
 }
@@ -428,9 +279,7 @@ async function checkIBKR(){
   try {
     const r = await fetch(API + '/api/ibkr-status');
     const d = await r.json();
-    if(d.connected){
-      setStatus('ibkr', 'ok', 'Connected to TWS — real-time data active');
-    }
+    if(d.connected) setStatus('ibkr', 'ok', 'Connected to TWS — real-time data active');
   } catch(e){}
 }
 </script>
