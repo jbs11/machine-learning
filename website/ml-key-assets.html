@@ -14,7 +14,7 @@
 /* ── Hero ── */
     .ka-hero {
       padding: 3.5rem 1.5rem 2.5rem; text-align: center;
-      background: radial-gradient(ellipse 80% 55% at 50% -5%, rgba(8,145,178,.08) 0%, transparent 65%), var(--bg);
+      background: radial-gradient(ellipse 80% 55% at 50% -5%, var(--accent-subtle) 0%, transparent 65%), var(--bg);
       border-bottom: 1px solid var(--border);
     }
     .ka-hero h1 {
@@ -63,7 +63,7 @@
     .sym-name { font-size: .72rem; color: var(--muted); margin-top: .1rem; max-width: 170px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .sym-type { display:inline-block;font-size:.65rem;font-weight:700;letter-spacing:.06em;
       padding:.1rem .45rem;border-radius:4px;margin-top:.2rem; }
-    .t-stock { background:rgba(8,145,178,.08);color:#0891b2; }
+    .t-stock { background:var(--accent-subtle);color:#0891b2; }
     .t-options { background:rgba(129,140,248,.12);color:#818cf8; }
     .t-futures { background:rgba(251,191,36,.12);color:#d97706; }
 
@@ -118,7 +118,7 @@
     .filter-bar { display:flex;flex-wrap:wrap;align-items:center;gap:.6rem;margin:1.2rem 0; }
     .filter-pill { padding:.3rem .85rem;border-radius:99px;border:1px solid var(--border);
       background:transparent;color:var(--muted);font-size:.78rem;font-weight:700;cursor:pointer;transition:all .15s; }
-    .filter-pill.active { background:rgba(8,145,178,.08);border-color:var(--accent);color:var(--accent); }
+    .filter-pill.active { background:var(--accent-subtle);border-color:var(--accent);color:var(--accent); }
     .filter-pill:hover:not(.active) { border-color:var(--muted);color:var(--text); }
 
     /* ── Column sort indicators ── */
@@ -159,8 +159,8 @@
     <li><a href="market-preparation.html">&#128204; Market Prep</a></li>
     <li><a href="forecast.html" style="color:#f59e0b;font-weight:700;">&#128200; Forecast</a></li>
     <li><a href="asset-details.html">&#128202; Asset Review</a></li>
-    <li><a href="report-ms.html" target="_blank" style="background:#0891b2;color:#f1f5f9;padding:.28rem .85rem;border-radius:5px;font-weight:700;letter-spacing:.02em;">&#128202; Market Report</a></li>
-    <li><a href="report-tg.html" target="_blank" style="background:#a78bfa;color:#f1f5f9;padding:.28rem .85rem;border-radius:5px;font-weight:700;letter-spacing:.02em;">&#128214; Trading Guide</a></li>
+    <li><a href="report-ms.html" target="_blank" style="background:#0891b2;color:var(--bg);padding:.28rem .85rem;border-radius:5px;font-weight:700;letter-spacing:.02em;">&#128202; Market Report</a></li>
+    <li><a href="report-tg.html" target="_blank" style="background:#a78bfa;color:var(--bg);padding:.28rem .85rem;border-radius:5px;font-weight:700;letter-spacing:.02em;">&#128214; Trading Guide</a></li>
   </ul>
 </nav>
 
@@ -204,7 +204,7 @@
 
 <!-- ── Hero ── -->
 <section class="ka-hero">
-  <div style="display:inline-block;padding:.28rem .85rem;background:rgba(8,145,178,.08);border:1px solid rgba(8,145,178,.25);border-radius:999px;color:var(--primary);font-size:.78rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;margin-bottom:1rem;">
+  <div style="display:inline-block;padding:.28rem .85rem;background:var(--accent-subtle);border:1px solid var(--accent-border);border-radius:999px;color:var(--primary);font-size:.78rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;margin-bottom:1rem;">
     Live ML Feature Heatmap
   </div>
   <h1>Machine Learning<br>for Key Assets</h1>
@@ -225,7 +225,7 @@
   <div class="stat-cell"><div class="stat-val" id="statNeut" style="color:#d97706;">—</div><div class="stat-lbl">Neutral Assets</div></div>
   <div class="stat-cell"><div class="stat-val" id="statTotal" style="color:#0891b2;">—</div><div class="stat-lbl">Total Tracked</div></div>
   <div class="stat-cell"><div class="stat-val" id="statBullPct" style="color:#059669;">—</div><div class="stat-lbl">Bull %</div></div>
-  <div class="stat-cell"><div class="stat-val" id="statTs" style="color:#64748b;font-size:.85rem;">—</div><div class="stat-lbl">Last Updated</div></div>
+  <div class="stat-cell"><div class="stat-val" id="statTs" style="color:var(--muted);font-size:.85rem;">—</div><div class="stat-lbl">Last Updated</div></div>
 </div>
 
 <div class="ka-wrap" style="padding-top:1.2rem;">
@@ -319,7 +319,7 @@
   <div style="background:rgba(8,145,178,.05);border:1px solid rgba(34,211,238,.18);border-left:3px solid var(--primary);border-radius:8px;padding:.9rem 1.2rem;margin-bottom:1.2rem;font-size:.88rem;line-height:1.7;">
     Each cell is <span style="background:rgba(52,211,153,.25);color:#059669;padding:.1rem .4rem;border-radius:3px;font-weight:700;">green</span> when the feature is bullish for that asset,
     <span style="background:rgba(248,113,113,.25);color:#f87171;padding:.1rem .4rem;border-radius:3px;font-weight:700;">red</span> when bearish,
-    and <span style="background:rgba(0,0,0,.04);color:var(--muted);padding:.1rem .4rem;border-radius:3px;">neutral</span> otherwise.
+    and <span style="background:var(--hover-overlay);color:var(--muted);padding:.1rem .4rem;border-radius:3px;">neutral</span> otherwise.
     The <strong style="color:var(--text);">Trend</strong> column is the overall ML verdict —
     a weighted combination of all 11 features plus the ensemble classifier's P(UP) probability.
     Click any column header to sort. Use the filter buttons to focus on specific groups or signals.

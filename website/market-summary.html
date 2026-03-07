@@ -66,7 +66,7 @@
     .dir-SLIGHTLY-BEARISH { color: #fca5a5; }
 
     /* Breadth bar */
-    .breadth-bar { height: 10px; background: rgba(0,0,0,.05); border-radius: 5px;
+    .breadth-bar { height: 10px; background: var(--hover-overlay); border-radius: 5px;
                    overflow: hidden; margin-top: .6rem; position: relative; }
     .breadth-buy  { height: 100%; background: #4ade80; float: left; border-radius: 5px 0 0 5px; }
     .breadth-sell { height: 100%; background: #f87171; float: right; border-radius: 0 5px 5px 0; }
@@ -275,7 +275,7 @@
     }
     .affected-chip {
       font-size: .65rem; padding: .1rem .4rem; border-radius: 3px;
-      background: rgba(0,0,0,.04); color: var(--muted);
+      background: var(--hover-overlay); color: var(--muted);
     }
 
     /* ── ML Ranking ── */
@@ -369,7 +369,7 @@
     }
     .fcast-h-tab:hover { color: var(--text); border-color: rgba(255,255,255,.2); }
     .fcast-h-tab.active {
-      background: rgba(8,145,178,.08); border-color: var(--accent); color: var(--accent);
+      background: var(--accent-subtle); border-color: var(--accent); color: var(--accent);
     }
     .fcast-tab-panel { display: none; }
     .fcast-tab-panel.active { display: block; }
@@ -471,7 +471,7 @@
     .gex-lv.call-wall  { background:rgba(74,222,128,.1); color:#4ade80; border:1px solid rgba(74,222,128,.35); }
     .gex-lv.put-wall   { background:rgba(248,113,113,.1);color:#f87171; border:1px solid rgba(248,113,113,.35); }
     .gex-lv.flip-lvl   { background:rgba(251,191,36,.1); color:#d97706; border:1px solid rgba(251,191,36,.35); }
-    .gex-lv.spot-lvl   { background:rgba(8,145,178,.08); color:#0891b2; border:1px solid rgba(34,211,238,.35); }
+    .gex-lv.spot-lvl   { background:var(--accent-subtle); color:#0891b2; border:1px solid rgba(34,211,238,.35); }
     .gex-lv.pcr-lvl    { background:rgba(167,139,250,.1);color:#a78bfa; border:1px solid rgba(167,139,250,.35); }
 
     /* ── Per-card chart guide ── */
@@ -543,7 +543,7 @@
 
 <!-- ── Top Navigation ────────────────────────────────────────────────────── -->
 <nav class="page-nav">
-  <a href="live-trading.html">← Live Trading</a> | <a href="brokers.html">Brokers</a> | <a href="report-ms.html" target="_blank" style="background:#0891b2;color:#f1f5f9;padding:.22rem .75rem;border-radius:5px;font-weight:700;text-decoration:none;font-size:.82rem;">&#128202; Report</a> | <a href="report-tg.html" target="_blank" style="background:#a78bfa;color:#f1f5f9;padding:.22rem .75rem;border-radius:5px;font-weight:700;text-decoration:none;font-size:.82rem;">&#128214; Guide</a>
+  <a href="live-trading.html">← Live Trading</a> | <a href="brokers.html">Brokers</a> | <a href="report-ms.html" target="_blank" style="background:#0891b2;color:var(--bg);padding:.22rem .75rem;border-radius:5px;font-weight:700;text-decoration:none;font-size:.82rem;">&#128202; Report</a> | <a href="report-tg.html" target="_blank" style="background:#a78bfa;color:var(--bg);padding:.22rem .75rem;border-radius:5px;font-weight:700;text-decoration:none;font-size:.82rem;">&#128214; Guide</a>
   <span class="page-nav-sep">|</span>
   <a href="market-summary.html" class="active">Market Summary</a>
   <span class="page-nav-sep">|</span>
@@ -1704,7 +1704,7 @@ function drawProbCone(cv, candles, forecasts, sym, vp, hoverX, hoverY, gexLevels
   const FS    = Math.round(9 * Math.min(W/420, 1));
 
   // Background
-  ctx.fillStyle = '#f8fafc';
+  ctx.fillStyle = window.getThemeChartColors ? window.getThemeChartColors().bg : '#f8fafc';
   ctx.fillRect(0, 0, W, H);
 
   // Axis border
@@ -1876,7 +1876,7 @@ function drawProbCone(cv, candles, forecasts, sym, vp, hoverX, hoverY, gexLevels
     const pyLblW = ctx.measureText(pLbl).width + 8;
     ctx.fillStyle = 'rgba(34,211,238,.9)';
     ctx.fillRect(pad.l - pyLblW - 2, hoverY-9, pyLblW, 18);
-    ctx.fillStyle = '#f8fafc';
+    ctx.fillStyle = window.getThemeChartColors ? window.getThemeChartColors().bg : '#f8fafc';
     ctx.font = `bold ${FS}px sans-serif`;
     ctx.textAlign = 'right';
     ctx.fillText(pLbl, pad.l-4, hoverY+4);

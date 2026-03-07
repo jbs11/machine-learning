@@ -16,7 +16,7 @@
     .inst-hero p  { font-size:1rem;color:var(--muted);max-width:700px;margin:0 auto 1.5rem;line-height:1.7; }
 
     .sec-hdr { display:flex;align-items:center;gap:.8rem;margin:2.5rem 0 1.2rem;padding-bottom:.6rem;border-bottom:2px solid var(--border); }
-    .sec-num { background:var(--accent);color:#f1f5f9;border-radius:50%;width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:.82rem;flex-shrink:0; }
+    .sec-num { background:var(--accent);color:var(--bg);border-radius:50%;width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:.82rem;flex-shrink:0; }
     .sec-title { font-size:1.25rem;font-weight:800; }
     .sec-sub   { font-size:.8rem;color:var(--muted);margin-left:.3rem; }
 
@@ -31,7 +31,7 @@
     .tag-buy  { background:rgba(34,197,94,.12);color:#4ade80;border:1px solid rgba(34,197,94,.25); }
     .tag-sell { background:rgba(248,113,113,.12);color:#f87171;border:1px solid rgba(248,113,113,.25); }
     .tag-hedg { background:rgba(167,139,250,.12);color:#a78bfa;border:1px solid rgba(167,139,250,.25); }
-    .tag-mm   { background:rgba(8,145,178,.08);color:#0891b2;border:1px solid rgba(8,145,178,.25); }
+    .tag-mm   { background:var(--accent-subtle);color:#0891b2;border:1px solid var(--accent-border); }
     .tag-arb  { background:rgba(251,191,36,.12);color:#d97706;border:1px solid rgba(251,191,36,.25); }
 
     .two-col   { display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-bottom:1.5rem; }
@@ -50,7 +50,7 @@
     .hl-box { border-radius:10px;padding:1rem 1.2rem;margin-bottom:.8rem;font-size:.82rem;line-height:1.65; }
     .hl-bull { background:rgba(34,197,94,.07);border:1px solid rgba(34,197,94,.25);color:#4ade80; }
     .hl-bear { background:rgba(248,113,113,.07);border:1px solid rgba(248,113,113,.25);color:#f87171; }
-    .hl-info { background:rgba(8,145,178,.05);border:1px solid rgba(8,145,178,.2);color:var(--text); }
+    .hl-info { background:rgba(8,145,178,.05);border:1px solid var(--accent-border);color:var(--text); }
     .hl-warn { background:rgba(251,191,36,.07);border:1px solid rgba(251,191,36,.25);color:#d97706; }
 
     .dh-diagram { background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.4rem;overflow-x:auto; }
@@ -166,7 +166,7 @@
     .macro-impact { display:flex; gap:.35rem; flex-wrap:wrap; margin-top:.6rem; }
     .impact-badge { font-size:.64rem; font-weight:700; padding:.12rem .42rem; border-radius:4px; letter-spacing:.03em; }
     .ib-iv   { background:rgba(167,139,250,.12); color:#a78bfa; border:1px solid rgba(167,139,250,.25); }
-    .ib-gex  { background:rgba(8,145,178,.08);  color:#0891b2; border:1px solid rgba(8,145,178,.25); }
+    .ib-gex  { background:var(--accent-subtle);  color:#0891b2; border:1px solid var(--accent-border); }
     .ib-flow { background:rgba(251,191,36,.12);  color:#d97706; border:1px solid rgba(251,191,36,.25); }
     .ib-dh   { background:rgba(34,197,94,.12);   color:#4ade80; border:1px solid rgba(34,197,94,.25);  }
     .ib-crsh { background:rgba(248,113,113,.12); color:#f87171; border:1px solid rgba(248,113,113,.25); }
@@ -195,7 +195,7 @@
 
 <!-- ── Site Nav ── -->
 <nav style="background:var(--surface);border-bottom:1px solid var(--border);padding:.5rem 1.5rem;font-size:.83rem;display:flex;align-items:center;gap:.75rem;flex-wrap:wrap;">
-  <a href="live-trading.html" style="font-weight:800;color:var(--accent);text-decoration:none;">📈 ML Trading</a> | <a href="report-ms.html" target="_blank" style="background:#0891b2;color:#f1f5f9;padding:.22rem .75rem;border-radius:5px;font-weight:700;text-decoration:none;font-size:.82rem;">&#128202; Report</a> | <a href="report-tg.html" target="_blank" style="background:#a78bfa;color:#f1f5f9;padding:.22rem .75rem;border-radius:5px;font-weight:700;text-decoration:none;font-size:.82rem;">&#128214; Guide</a>
+  <a href="live-trading.html" style="font-weight:800;color:var(--accent);text-decoration:none;">📈 ML Trading</a> | <a href="report-ms.html" target="_blank" style="background:#0891b2;color:var(--bg);padding:.22rem .75rem;border-radius:5px;font-weight:700;text-decoration:none;font-size:.82rem;">&#128202; Report</a> | <a href="report-tg.html" target="_blank" style="background:#a78bfa;color:var(--bg);padding:.22rem .75rem;border-radius:5px;font-weight:700;text-decoration:none;font-size:.82rem;">&#128214; Guide</a>
   <span style="color:var(--border)">|</span>
   <a href="market-summary.html" style="color:var(--muted);text-decoration:none;">Market Summary</a>
 </nav>
@@ -1372,7 +1372,7 @@
 
   <!-- Historical Case Studies -->
   <div class="sec-hdr" style="margin-top:1rem;">
-    <span class="sec-num" style="background:#f59e0b;color:#f1f5f9;">12b</span>
+    <span class="sec-num" style="background:#f59e0b;color:var(--bg);">12b</span>
     <span class="sec-title">Historical Case Studies — Institutional Mechanics in Action</span>
     <span class="sec-sub">— How global events translated into dealer flows, GEX regimes, and cascading market moves</span>
   </div>

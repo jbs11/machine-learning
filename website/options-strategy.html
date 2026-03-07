@@ -144,7 +144,7 @@
     .pc-title { font-size:.88rem;font-weight:800; }
     .pc-sym-sel { display:flex;align-items:center;gap:.5rem;flex-wrap:wrap; }
     .pc-sym-btn { padding:.25rem .65rem;border-radius:6px;font-size:.75rem;font-weight:700;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--muted);transition:all .15s; }
-    .pc-sym-btn:hover,.pc-sym-btn.active { border-color:var(--accent);color:var(--accent);background:rgba(8,145,178,.06); }
+    .pc-sym-btn:hover,.pc-sym-btn.active { border-color:var(--accent);color:var(--accent);background:var(--accent-subtle); }
     .pc-interval { border:1px solid var(--border);border-radius:5px;background:var(--card);color:var(--text);font-size:.75rem;padding:.2rem .4rem;cursor:pointer; }
     .pc-ohlcv { display:flex;gap:1rem;font-size:.73rem;font-family:'Consolas',monospace;color:var(--muted);padding:.3rem 1rem;background:var(--card);border-bottom:1px solid var(--border);flex-wrap:wrap; }
     .pc-ohlcv span b { color:var(--text); }
@@ -170,8 +170,8 @@
       <li><a href="market-preparation.html">&#128204; Market Prep</a></li>
     <li><a href="forecast.html" style="color:#f59e0b;font-weight:700;">&#128200; Forecast</a></li>
     <li><a href="asset-details.html">&#128202; Asset Review</a></li>
-    <li><a href="report-ms.html" target="_blank" style="background:#0891b2;color:#f1f5f9;padding:.28rem .85rem;border-radius:5px;font-weight:700;letter-spacing:.02em;">&#128202; Market Report</a></li>
-    <li><a href="report-tg.html" target="_blank" style="background:#a78bfa;color:#f1f5f9;padding:.28rem .85rem;border-radius:5px;font-weight:700;letter-spacing:.02em;">&#128214; Trading Guide</a></li>
+    <li><a href="report-ms.html" target="_blank" style="background:#0891b2;color:var(--bg);padding:.28rem .85rem;border-radius:5px;font-weight:700;letter-spacing:.02em;">&#128202; Market Report</a></li>
+    <li><a href="report-tg.html" target="_blank" style="background:#a78bfa;color:var(--bg);padding:.28rem .85rem;border-radius:5px;font-weight:700;letter-spacing:.02em;">&#128214; Trading Guide</a></li>
   </ul>
 </nav>
 
@@ -809,7 +809,7 @@ document.addEventListener('visibilitychange', function() { if (!document.hidden)
       const volEl   = document.getElementById('pc-vol');
       if (!chartEl || !volEl) return;
 
-      const opts = { layout:{background:{color:'#f8fafc'},textColor:'rgba(71,85,105,.9)'},grid:{vertLines:{color:'rgba(0,0,0,.06)'},horzLines:{color:'rgba(0,0,0,.06)'}},crosshair:{mode:1},timeScale:{borderColor:'rgba(0,0,0,.08)',timeVisible:true,secondsVisible:false},rightPriceScale:{borderColor:'rgba(0,0,0,.08)'},handleScroll:true,handleScale:true };
+      const opts = { layout:{background:{color:window.getThemeChartColors?window.getThemeChartColors().bg:'#f8fafc'},textColor:window.getThemeChartColors?window.getThemeChartColors().label:'rgba(71,85,105,.9)'},grid:{vertLines:{color:'rgba(0,0,0,.06)'},horzLines:{color:'rgba(0,0,0,.06)'}},crosshair:{mode:1},timeScale:{borderColor:'rgba(0,0,0,.08)',timeVisible:true,secondsVisible:false},rightPriceScale:{borderColor:'rgba(0,0,0,.08)'},handleScroll:true,handleScale:true };
 
       _pcChart = LightweightCharts.createChart(chartEl, {...opts, height:260});
       _pcCandleSeries = _pcChart.addCandlestickSeries({ upColor:'#4ade80', downColor:'#f87171', borderUpColor:'#4ade80', borderDownColor:'#f87171', wickUpColor:'#4ade80', wickDownColor:'#f87171' });

@@ -162,7 +162,7 @@
     /* Probability gauge */
     .gauge-wrap { margin: .5rem 0 .9rem; }
     .gauge-label { display: flex; justify-content: space-between; font-size: .75rem; color: var(--muted); margin-bottom: .3rem; }
-    .gauge-bar { height: 10px; background: rgba(0,0,0,.05); border-radius: 5px; overflow: hidden; }
+    .gauge-bar { height: 10px; background: var(--hover-overlay); border-radius: 5px; overflow: hidden; }
     .gauge-fill {
       height: 100%;
       border-radius: 5px;
@@ -248,7 +248,7 @@
     .cover-tag.no   { background: rgba(248,113,113,.12); color: #f87171; }
     .broker-lib { font-size: .78rem; color: var(--muted); }
     .broker-lib code {
-      background: rgba(0,0,0,.05);
+      background: var(--hover-overlay);
       padding: .1rem .4rem;
       border-radius: 3px;
       font-size: .75rem;
@@ -339,8 +339,8 @@
         <li><a href="market-preparation.html">&#128204; Market Prep</a></li>
         <li><a href="forecast.html" style="color:#f59e0b;font-weight:700;">&#128200; Forecast</a></li>
     <li><a href="asset-details.html">&#128202; Asset Review</a></li>
-    <li><a href="report-ms.html" target="_blank" style="background:#0891b2;color:#f1f5f9;padding:.28rem .85rem;border-radius:5px;font-weight:700;letter-spacing:.02em;">&#128202; Market Report</a></li>
-    <li><a href="report-tg.html" target="_blank" style="background:#a78bfa;color:#f1f5f9;padding:.28rem .85rem;border-radius:5px;font-weight:700;letter-spacing:.02em;">&#128214; Trading Guide</a></li>
+    <li><a href="report-ms.html" target="_blank" style="background:#0891b2;color:var(--bg);padding:.28rem .85rem;border-radius:5px;font-weight:700;letter-spacing:.02em;">&#128202; Market Report</a></li>
+    <li><a href="report-tg.html" target="_blank" style="background:#a78bfa;color:var(--bg);padding:.28rem .85rem;border-radius:5px;font-weight:700;letter-spacing:.02em;">&#128214; Trading Guide</a></li>
   </ul>
 </nav>
 
@@ -545,14 +545,14 @@
           <div><div style="font-size:.72rem; color:var(--muted); margin-bottom:.2rem;">Target</div><div id="setup-target" style="font-weight:700; color:#4ade80; font-variant-numeric:tabular-nums;">—</div></div>
           <div><div style="font-size:.72rem; color:var(--muted); margin-bottom:.2rem;">R:R Ratio</div><div id="setup-rr" style="font-weight:700; font-variant-numeric:tabular-nums;">—</div></div>
         </div>
-        <div id="setup-futures-row" style="display:none; padding-top:.5rem; border-top:1px solid rgba(0,0,0,.04); margin-top:.3rem;">
+        <div id="setup-futures-row" style="display:none; padding-top:.5rem; border-top:1px solid var(--hover-overlay); margin-top:.3rem;">
           <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:.75rem;">
             <div><div style="font-size:.72rem; color:var(--muted); margin-bottom:.2rem;">Risk ($/contract)</div><div id="setup-risk-dollars" style="font-weight:700; color:#f87171;">—</div></div>
             <div><div style="font-size:.72rem; color:var(--muted); margin-bottom:.2rem;">Reward ($/contract)</div><div id="setup-reward-dollars" style="font-weight:700; color:#4ade80;">—</div></div>
             <div><div style="font-size:.72rem; color:var(--muted); margin-bottom:.2rem;">Multiplier</div><div id="setup-multiplier" style="font-weight:700;">—</div></div>
           </div>
         </div>
-        <div id="setup-options-row" style="display:none; padding-top:.5rem; border-top:1px solid rgba(0,0,0,.04); margin-top:.3rem; font-size:.82rem; color:var(--muted);">
+        <div id="setup-options-row" style="display:none; padding-top:.5rem; border-top:1px solid var(--hover-overlay); margin-top:.3rem; font-size:.82rem; color:var(--muted);">
           <strong>Options Strategy:</strong> <span id="setup-options-strategy" style="color:var(--text); font-weight:700;">—</span>
           &nbsp;·&nbsp; IV Rank check: use options-chain IV before entry.
           Strike selection: break-even must be inside predicted magnitude.
@@ -715,23 +715,23 @@
         <h3 style="margin-top:1.5rem;">Connecting Interactive Brokers — Python Example</h3>
         <pre style="background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:1.1rem 1.2rem; font-size:.8rem; overflow-x:auto; line-height:1.6;"><code><span style="color:#a78bfa;">from</span> <span style="color:#38bdf8;">ib_async</span> <span style="color:#a78bfa;">import</span> IB, Stock, Future, util
 
-<span style="color:#64748b;"># 1. Connect (TWS must be running on port 7497)</span>
+<span style="color:var(--muted);"># 1. Connect (TWS must be running on port 7497)</span>
 ib = IB()
 ib.connect(<span style="color:#86efac;">'127.0.0.1'</span>, 7497, clientId=1)
 
-<span style="color:#64748b;"># 2. Fetch AAPL 1H bars (last 30 days)</span>
+<span style="color:var(--muted);"># 2. Fetch AAPL 1H bars (last 30 days)</span>
 contract = Stock(<span style="color:#86efac;">'AAPL'</span>, <span style="color:#86efac;">'SMART'</span>, <span style="color:#86efac;">'USD'</span>)
 bars = ib.reqHistoricalData(
     contract, endDateTime=<span style="color:#86efac;">''</span>, durationStr=<span style="color:#86efac;">'30 D'</span>,
     barSizeSetting=<span style="color:#86efac;">'1 hour'</span>, whatToShow=<span style="color:#86efac;">'MIDPOINT'</span>, useRTH=<span style="color:#f59e0b;">True</span>
 )
-df_1h = util.df(bars)   <span style="color:#64748b;"># → resample to 4H in live-server.py</span>
+df_1h = util.df(bars)   <span style="color:var(--muted);"># → resample to 4H in live-server.py</span>
 
-<span style="color:#64748b;"># 3. ES Futures</span>
+<span style="color:var(--muted);"># 3. ES Futures</span>
 es_contract = Future(<span style="color:#86efac;">'ES'</span>, <span style="color:#86efac;">'202503'</span>, <span style="color:#86efac;">'CME'</span>)
 bars_es = ib.reqHistoricalData(es_contract, ...)
 
-<span style="color:#64748b;"># 4. Subscribe to real-time ticks</span>
+<span style="color:var(--muted);"># 4. Subscribe to real-time ticks</span>
 ib.reqMktData(contract, <span style="color:#86efac;">''</span>, <span style="color:#f59e0b;">False</span>, <span style="color:#f59e0b;">False</span>)</code></pre>
       </div>
 
@@ -756,10 +756,10 @@ ib.reqMktData(contract, <span style="color:#86efac;">''</span>, <span style="col
         <h3>4-Hour Bar Construction</h3>
         <pre style="background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:1rem 1.2rem; font-size:.8rem; overflow-x:auto; line-height:1.6;"><code><span style="color:#a78bfa;">import</span> yfinance <span style="color:#a78bfa;">as</span> yf
 
-<span style="color:#64748b;"># Download 1H bars (90-day window)</span>
+<span style="color:var(--muted);"># Download 1H bars (90-day window)</span>
 raw = yf.download(<span style="color:#86efac;">'AAPL'</span>, period=<span style="color:#86efac;">'90d'</span>, interval=<span style="color:#86efac;">'1h'</span>)
 
-<span style="color:#64748b;"># Resample to 4H candles</span>
+<span style="color:var(--muted);"># Resample to 4H candles</span>
 df_4h = raw.resample(<span style="color:#86efac;">'4h'</span>).agg({
     <span style="color:#86efac;">'Open'</span>:   <span style="color:#86efac;">'first'</span>,
     <span style="color:#86efac;">'High'</span>:   <span style="color:#86efac;">'max'</span>,
@@ -767,7 +767,7 @@ df_4h = raw.resample(<span style="color:#86efac;">'4h'</span>).agg({
     <span style="color:#86efac;">'Close'</span>:  <span style="color:#86efac;">'last'</span>,
     <span style="color:#86efac;">'Volume'</span>: <span style="color:#86efac;">'sum'</span>
 }).dropna()
-<span style="color:#64748b;"># Each bar = 4 hours of price action — ~6 bars per trading day</span></code></pre>
+<span style="color:var(--muted);"># Each bar = 4 hours of price action — ~6 bars per trading day</span></code></pre>
       </div>
 
       <!-- How to run -->

@@ -64,7 +64,7 @@
     .dte-chips{ display:flex;flex-wrap:wrap;gap:.35rem;align-items:center;margin-top:.25rem; }
     .chip { font-size:.65rem;font-weight:700;letter-spacing:.05em;padding:.18rem .55rem;border-radius:5px; }
     .chip-grp    { background:rgba(56,189,248,.1);color:#7dd3fc;border:1px solid rgba(56,189,248,.2); }
-    .chip-stock  { background:rgba(8,145,178,.08);color:#0891b2;border:1px solid rgba(8,145,178,.2); }
+    .chip-stock  { background:var(--accent-subtle);color:#0891b2;border:1px solid var(--accent-border); }
     .chip-futures{ background:rgba(251,191,36,.1);color:#d97706;border:1px solid rgba(251,191,36,.2); }
     .chip-etf    { background:rgba(167,139,250,.1);color:#c084fc;border:1px solid rgba(167,139,250,.2); }
     .chip-0dte   { background:rgba(239,68,68,.15);color:#ef4444;border:1px solid rgba(239,68,68,.3); }
@@ -159,7 +159,7 @@
     .pc-title { font-size:.88rem;font-weight:800; }
     .pc-sym-sel { display:flex;align-items:center;gap:.5rem;flex-wrap:wrap; }
     .pc-sym-btn { padding:.25rem .65rem;border-radius:6px;font-size:.75rem;font-weight:700;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--muted);transition:all .15s; }
-    .pc-sym-btn:hover,.pc-sym-btn.active { border-color:var(--accent);color:var(--accent);background:rgba(8,145,178,.06); }
+    .pc-sym-btn:hover,.pc-sym-btn.active { border-color:var(--accent);color:var(--accent);background:var(--accent-subtle); }
     .pc-interval { border:1px solid var(--border);border-radius:5px;background:var(--card);color:var(--text);font-size:.75rem;padding:.2rem .4rem;cursor:pointer; }
     .pc-ohlcv { display:flex;gap:1rem;font-size:.73rem;font-family:'Consolas',monospace;color:var(--muted);padding:.3rem 1rem;background:var(--card);border-bottom:1px solid var(--border);flex-wrap:wrap; }
     .pc-ohlcv span b { color:var(--text); }
@@ -193,8 +193,8 @@
     <li><a href="market-preparation.html">&#128204; Market Prep</a></li>
     <li><a href="forecast.html" style="color:#f59e0b;font-weight:700;">&#128200; Forecast</a></li>
     <li><a href="asset-details.html">&#128202; Asset Review</a></li>
-    <li><a href="report-ms.html" target="_blank" style="background:#0891b2;color:#f1f5f9;padding:.28rem .85rem;border-radius:5px;font-weight:700;letter-spacing:.02em;">&#128202; Market Report</a></li>
-    <li><a href="report-tg.html" target="_blank" style="background:#a78bfa;color:#f1f5f9;padding:.28rem .85rem;border-radius:5px;font-weight:700;letter-spacing:.02em;">&#128214; Trading Guide</a></li>
+    <li><a href="report-ms.html" target="_blank" style="background:#0891b2;color:var(--bg);padding:.28rem .85rem;border-radius:5px;font-weight:700;letter-spacing:.02em;">&#128202; Market Report</a></li>
+    <li><a href="report-tg.html" target="_blank" style="background:#a78bfa;color:var(--bg);padding:.28rem .85rem;border-radius:5px;font-weight:700;letter-spacing:.02em;">&#128214; Trading Guide</a></li>
   </ul>
 </nav>
 
@@ -249,7 +249,7 @@
   <div class="stat-cell"><div class="stat-val" id="statBull"    style="color:#22c55e;">—</div><div class="stat-lbl">Bullish</div></div>
   <div class="stat-cell"><div class="stat-val" id="statBear"    style="color:#f87171;">—</div><div class="stat-lbl">Bearish</div></div>
   <div class="stat-cell"><div class="stat-val" id="statNeut"    style="color:#d97706;">—</div><div class="stat-lbl">Neutral</div></div>
-  <div class="stat-cell"><div class="stat-val" id="statTs"      style="color:#64748b;font-size:.85rem;">—</div><div class="stat-lbl">Last Updated</div></div>
+  <div class="stat-cell"><div class="stat-val" id="statTs"      style="color:var(--muted);font-size:.85rem;">—</div><div class="stat-lbl">Last Updated</div></div>
 </div>
 
 <div class="dte-wrap" style="padding-top:1.2rem;">
