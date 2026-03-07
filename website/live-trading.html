@@ -121,7 +121,7 @@
     }
     .tf-btn:hover { color: var(--text); border-color: var(--border); }
     .tf-btn.active {
-      background: rgba(34,211,238,.15); border-color: var(--accent);
+      background: rgba(8,145,178,.15); border-color: var(--accent);
       color: var(--accent);
     }
     .tf-sep { color: var(--border); margin: 0 .2rem; user-select: none; }
@@ -157,17 +157,17 @@
     }
     .signal-badge.BUY  { background: rgba(74,222,128,.15); color: #4ade80; border: 1px solid #4ade80; }
     .signal-badge.SELL { background: rgba(248,113,113,.15); color: #f87171; border: 1px solid #f87171; }
-    .signal-badge.HOLD { background: rgba(251,191,36,.12);  color: #fbbf24; border: 1px solid #fbbf24; }
+    .signal-badge.HOLD { background: rgba(251,191,36,.12);  color: #d97706; border: 1px solid #d97706; }
 
     /* Probability gauge */
     .gauge-wrap { margin: .5rem 0 .9rem; }
     .gauge-label { display: flex; justify-content: space-between; font-size: .75rem; color: var(--muted); margin-bottom: .3rem; }
-    .gauge-bar { height: 10px; background: rgba(255,255,255,.08); border-radius: 5px; overflow: hidden; }
+    .gauge-bar { height: 10px; background: rgba(0,0,0,.05); border-radius: 5px; overflow: hidden; }
     .gauge-fill {
       height: 100%;
       border-radius: 5px;
       transition: width .5s ease;
-      background: linear-gradient(90deg, #f87171, #fbbf24 50%, #4ade80);
+      background: linear-gradient(90deg, #f87171, #d97706 50%, #4ade80);
     }
 
     .stat-row {
@@ -183,7 +183,7 @@
     .stat-row .val { font-weight: 700; font-variant-numeric: tabular-nums; }
     .val.up   { color: #4ade80; }
     .val.down { color: #f87171; }
-    .val.neutral { color: #fbbf24; }
+    .val.neutral { color: #d97706; }
 
     /* Checklist */
     .checklist { list-style: none; padding: 0; margin: 0; }
@@ -198,7 +198,7 @@
     .check-icon { font-size: .9rem; width: 1.1rem; text-align: center; flex-shrink: 0; }
     .check-icon.pass { color: #4ade80; }
     .check-icon.fail { color: #f87171; }
-    .check-icon.wait { color: #fbbf24; }
+    .check-icon.wait { color: #d97706; }
 
     /* Feature importance mini-bars */
     .feat-row {
@@ -248,7 +248,7 @@
     .cover-tag.no   { background: rgba(248,113,113,.12); color: #f87171; }
     .broker-lib { font-size: .78rem; color: var(--muted); }
     .broker-lib code {
-      background: rgba(255,255,255,.08);
+      background: rgba(0,0,0,.05);
       padding: .1rem .4rem;
       border-radius: 3px;
       font-size: .75rem;
@@ -339,8 +339,8 @@
         <li><a href="market-preparation.html">&#128204; Market Prep</a></li>
         <li><a href="forecast.html" style="color:#f59e0b;font-weight:700;">&#128200; Forecast</a></li>
     <li><a href="asset-details.html">&#128202; Asset Review</a></li>
-    <li><a href="report-ms.html" target="_blank" style="background:#22d3ee;color:#080d1a;padding:.28rem .85rem;border-radius:5px;font-weight:700;letter-spacing:.02em;">&#128202; Market Report</a></li>
-    <li><a href="report-tg.html" target="_blank" style="background:#a78bfa;color:#080d1a;padding:.28rem .85rem;border-radius:5px;font-weight:700;letter-spacing:.02em;">&#128214; Trading Guide</a></li>
+    <li><a href="report-ms.html" target="_blank" style="background:#0891b2;color:#f1f5f9;padding:.28rem .85rem;border-radius:5px;font-weight:700;letter-spacing:.02em;">&#128202; Market Report</a></li>
+    <li><a href="report-tg.html" target="_blank" style="background:#a78bfa;color:#f1f5f9;padding:.28rem .85rem;border-radius:5px;font-weight:700;letter-spacing:.02em;">&#128214; Trading Guide</a></li>
   </ul>
 </nav>
 
@@ -545,14 +545,14 @@
           <div><div style="font-size:.72rem; color:var(--muted); margin-bottom:.2rem;">Target</div><div id="setup-target" style="font-weight:700; color:#4ade80; font-variant-numeric:tabular-nums;">—</div></div>
           <div><div style="font-size:.72rem; color:var(--muted); margin-bottom:.2rem;">R:R Ratio</div><div id="setup-rr" style="font-weight:700; font-variant-numeric:tabular-nums;">—</div></div>
         </div>
-        <div id="setup-futures-row" style="display:none; padding-top:.5rem; border-top:1px solid rgba(255,255,255,.06); margin-top:.3rem;">
+        <div id="setup-futures-row" style="display:none; padding-top:.5rem; border-top:1px solid rgba(0,0,0,.04); margin-top:.3rem;">
           <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:.75rem;">
             <div><div style="font-size:.72rem; color:var(--muted); margin-bottom:.2rem;">Risk ($/contract)</div><div id="setup-risk-dollars" style="font-weight:700; color:#f87171;">—</div></div>
             <div><div style="font-size:.72rem; color:var(--muted); margin-bottom:.2rem;">Reward ($/contract)</div><div id="setup-reward-dollars" style="font-weight:700; color:#4ade80;">—</div></div>
             <div><div style="font-size:.72rem; color:var(--muted); margin-bottom:.2rem;">Multiplier</div><div id="setup-multiplier" style="font-weight:700;">—</div></div>
           </div>
         </div>
-        <div id="setup-options-row" style="display:none; padding-top:.5rem; border-top:1px solid rgba(255,255,255,.06); margin-top:.3rem; font-size:.82rem; color:var(--muted);">
+        <div id="setup-options-row" style="display:none; padding-top:.5rem; border-top:1px solid rgba(0,0,0,.04); margin-top:.3rem; font-size:.82rem; color:var(--muted);">
           <strong>Options Strategy:</strong> <span id="setup-options-strategy" style="color:var(--text); font-weight:700;">—</span>
           &nbsp;·&nbsp; IV Rank check: use options-chain IV before entry.
           Strike selection: break-even must be inside predicted magnitude.

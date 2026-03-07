@@ -17,7 +17,7 @@
     .fund-hero h1 {
       font-size: clamp(1.8rem, 4vw, 3rem); font-weight: 900;
       letter-spacing: -.03em; line-height: 1.15; margin-bottom: .8rem;
-      background: linear-gradient(135deg, #10b981 0%, #34d399 45%, #6ee7b7 80%);
+      background: linear-gradient(135deg, #10b981 0%, #059669 45%, #6ee7b7 80%);
       -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
     }
     .fund-hero p { color: var(--muted); font-size: 1.05rem; max-width: 760px; margin: 0 auto 1.5rem; line-height: 1.7; }
@@ -48,10 +48,10 @@
     /* ── Asset card ── */
     .fund-card { background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
       overflow:hidden;margin-bottom:1.6rem;transition:border-color .2s,box-shadow .2s; }
-    .fund-card:hover { border-color:rgba(16,185,129,.3);box-shadow:0 4px 28px rgba(0,0,0,.3); }
+    .fund-card:hover { border-color:rgba(16,185,129,.3);box-shadow:0 4px 28px rgba(0,0,0,.06); }
     .fund-card.sbuy-card { border-left:3px solid #059669; }
     .fund-card.buy-card  { border-left:3px solid #10b981; }
-    .fund-card.hold-card { border-left:3px solid #fbbf24; }
+    .fund-card.hold-card { border-left:3px solid #d97706; }
     .fund-card.sell-card { border-left:3px solid #f87171; }
     .fund-card.na-card   { border-left:3px solid var(--border); }
 
@@ -64,12 +64,12 @@
     .chip-grp    { background:rgba(56,189,248,.1);color:#7dd3fc;border:1px solid rgba(56,189,248,.2); }
     .chip-sector { background:rgba(168,85,247,.1);color:#c084fc;border:1px solid rgba(168,85,247,.2); }
     .chip-etf    { background:rgba(167,139,250,.1);color:#c084fc;border:1px solid rgba(167,139,250,.2); }
-    .chip-stock  { background:rgba(34,211,238,.1);color:#22d3ee;border:1px solid rgba(34,211,238,.2); }
+    .chip-stock  { background:rgba(8,145,178,.08);color:#0891b2;border:1px solid rgba(8,145,178,.2); }
     .fund-right { margin-left:auto;text-align:right;flex-shrink:0; }
     .rating-chip { font-size:.78rem;font-weight:800;padding:.28rem .9rem;border-radius:8px;display:inline-block;letter-spacing:.04em; }
-    .rc-sbuy  { background:rgba(5,150,105,.2);color:#34d399;border:1px solid rgba(5,150,105,.4); }
+    .rc-sbuy  { background:rgba(5,150,105,.2);color:#059669;border:1px solid rgba(5,150,105,.4); }
     .rc-buy   { background:rgba(16,185,129,.15);color:#10b981;border:1px solid rgba(16,185,129,.3); }
-    .rc-hold  { background:rgba(251,191,36,.15);color:#fbbf24;border:1px solid rgba(251,191,36,.3); }
+    .rc-hold  { background:rgba(251,191,36,.15);color:#d97706;border:1px solid rgba(251,191,36,.3); }
     .rc-sell  { background:rgba(248,113,113,.15);color:#f87171;border:1px solid rgba(248,113,113,.3); }
     .rc-ssell { background:rgba(239,68,68,.2);color:#ef4444;border:1px solid rgba(239,68,68,.4); }
     .rc-na    { background:rgba(156,163,175,.1);color:#6b7280;border:1px solid rgba(156,163,175,.2); }
@@ -89,7 +89,7 @@
     .fc-val   { font-size:.72rem;font-weight:700;font-family:'Consolas',monospace;text-align:right; }
     .cv-green  { color:#10b981; }
     .cv-red    { color:#f87171; }
-    .cv-yellow { color:#fbbf24; }
+    .cv-yellow { color:#d97706; }
     .cv-blue   { color:#38bdf8; }
     .cv-muted  { color:var(--muted); }
 
@@ -116,11 +116,11 @@
     .upg-table { width:100%;border-collapse:collapse;margin-top:.4rem; }
     .upg-table th { font-size:.6rem;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);
       padding:.2rem .45rem;text-align:left;border-bottom:1px solid var(--border); }
-    .upg-table td { font-size:.68rem;padding:.22rem .45rem;border-bottom:1px solid rgba(255,255,255,.04); }
+    .upg-table td { font-size:.68rem;padding:.22rem .45rem;border-bottom:1px solid rgba(0,0,0,.03); }
     .upg-table tr:last-child td { border-bottom:none; }
     .ug-firm  { color:var(--text);font-weight:600; }
     .ug-buy   { color:#10b981;font-weight:700; }
-    .ug-hold  { color:#fbbf24;font-weight:700; }
+    .ug-hold  { color:#d97706;font-weight:700; }
     .ug-sell  { color:#f87171;font-weight:700; }
     .ug-date  { color:var(--muted);font-family:'Consolas',monospace;font-size:.63rem; }
 
@@ -157,14 +157,14 @@
     .empty-state { text-align:center;padding:4rem 2rem;color:var(--muted); }
     .empty-state h3 { font-size:1.1rem;font-weight:700;margin-bottom:.5rem;color:var(--text); }
     .empty-state p  { font-size:.85rem; }
-    .empty-state code { background:rgba(255,255,255,.06);padding:.1rem .4rem;border-radius:4px;font-family:'Consolas',monospace; }
+    .empty-state code { background:rgba(0,0,0,.04);padding:.1rem .4rem;border-radius:4px;font-family:'Consolas',monospace; }
   </style>
 </head>
 <body>
 
 <!-- ── Page Nav ── -->
 <nav class="page-nav">
-  <a href="live-trading.html">&#8592; Live Trading</a> | <a href="brokers.html">Brokers</a> | <a href="report-ms.html" target="_blank" style="background:#22d3ee;color:#080d1a;padding:.22rem .75rem;border-radius:5px;font-weight:700;text-decoration:none;font-size:.82rem;">&#128202; Report</a> | <a href="report-tg.html" target="_blank" style="background:#a78bfa;color:#080d1a;padding:.22rem .75rem;border-radius:5px;font-weight:700;text-decoration:none;font-size:.82rem;">&#128214; Guide</a>
+  <a href="live-trading.html">&#8592; Live Trading</a> | <a href="brokers.html">Brokers</a> | <a href="report-ms.html" target="_blank" style="background:#0891b2;color:#f1f5f9;padding:.22rem .75rem;border-radius:5px;font-weight:700;text-decoration:none;font-size:.82rem;">&#128202; Report</a> | <a href="report-tg.html" target="_blank" style="background:#a78bfa;color:#f1f5f9;padding:.22rem .75rem;border-radius:5px;font-weight:700;text-decoration:none;font-size:.82rem;">&#128214; Guide</a>
   <span class="page-nav-sep">|</span>
   <a href="market-summary.html">Market Summary</a>
   <span class="page-nav-sep">|</span>

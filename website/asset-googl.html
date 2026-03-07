@@ -23,7 +23,7 @@
 
 50%{opacity:.4} }
 .sec-hdr { display:flex;align-items:center;gap:.8rem;margin:2.2rem 0 1rem;padding-bottom:.5rem;border-bottom:2px solid var(--border); }
-    .sec-num { background:#a78bfa;color:#080d1a;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:.8rem;flex-shrink:0; }
+    .sec-num { background:#a78bfa;color:#f1f5f9;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:.8rem;flex-shrink:0; }
     .sec-title { font-size:1.1rem;font-weight:800; }
     .sec-sub { font-size:.76rem;color:var(--muted);margin-left:.3rem; }
 
@@ -50,7 +50,7 @@
     .af-fact-val { font-size:.9rem;font-weight:800;color:#a78bfa; }
 
     .af-chars { list-style:none;padding:0;margin:.6rem 0; }
-    .af-chars li { font-size:.82rem;color:var(--muted);line-height:1.65;padding:.3rem 0;border-bottom:1px solid rgba(255,255,255,.04);display:flex;gap:.5rem; }
+    .af-chars li { font-size:.82rem;color:var(--muted);line-height:1.65;padding:.3rem 0;border-bottom:1px solid rgba(0,0,0,.03);display:flex;gap:.5rem; }
     .af-chars li::before { content:"&#9670;";color:#a78bfa;flex-shrink:0; }
     .af-chars li:last-child { border-bottom:none; }
 
@@ -58,7 +58,7 @@
     .hl-bull { background:rgba(34,197,94,.07);border:1px solid rgba(34,197,94,.25);color:#4ade80; }
     .hl-bear { background:rgba(248,113,113,.07);border:1px solid rgba(248,113,113,.25);color:#f87171; }
     .hl-info { background:#a78bfa0d;border:1px solid #a78bfa30;color:var(--text); }
-    .hl-warn { background:rgba(251,191,36,.07);border:1px solid rgba(251,191,36,.25);color:#fbbf24; }
+    .hl-warn { background:rgba(251,191,36,.07);border:1px solid rgba(251,191,36,.25);color:#d97706; }
 
     .chip { display:inline-block;font-size:.66rem;font-weight:800;padding:.15rem .55rem;border-radius:5px;letter-spacing:.04em; }
     .chip-bull { background:rgba(34,197,94,.15);color:#4ade80;border:1px solid rgba(34,197,94,.3); }
@@ -67,12 +67,12 @@
 
     .kl-table { width:100%;border-collapse:collapse;font-size:.82rem; }
     .kl-table th { background:var(--surface);color:var(--muted);padding:.4rem .8rem;text-align:left;border-bottom:1px solid var(--border);font-size:.7rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase; }
-    .kl-table td { padding:.4rem .8rem;border-bottom:1px solid rgba(36,48,88,.4);vertical-align:middle; }
+    .kl-table td { padding:.4rem .8rem;border-bottom:1px solid rgba(226,232,240,.4);vertical-align:middle; }
     .kl-table tr:hover td { background:rgba(255,255,255,.02); }
 
     .ml-bar-wrap { background:var(--card);border-radius:8px;padding:.8rem 1rem;margin:.5rem 0; }
     .ml-bar-label { display:flex;justify-content:space-between;font-size:.75rem;color:var(--muted);margin-bottom:.35rem; }
-    .ml-bar-track { height:10px;background:rgba(255,255,255,.06);border-radius:5px;overflow:hidden; }
+    .ml-bar-track { height:10px;background:rgba(0,0,0,.04);border-radius:5px;overflow:hidden; }
     .ml-bar-fill  { height:100%;border-radius:5px;transition:width .6s ease; }
     @media(max-width:800px){ .ap-sym{font-size:2.5rem;} }
   </style>
@@ -99,8 +99,8 @@
     <li><a href="market-preparation.html">&#128204; Market Prep</a></li>
     <li><a href="forecast.html" style="color:#f59e0b;font-weight:700;">&#128200; Forecast</a></li>
     <li><a href="asset-details.html">&#128202; Asset Review</a></li>
-    <li><a href="report-ms.html" target="_blank" style="background:#22d3ee;color:#080d1a;padding:.28rem .85rem;border-radius:5px;font-weight:700;">&#128202; Market Report</a></li>
-    <li><a href="report-tg.html" target="_blank" style="background:#a78bfa;color:#080d1a;padding:.28rem .85rem;border-radius:5px;font-weight:700;">&#128214; Trading Guide</a></li>
+    <li><a href="report-ms.html" target="_blank" style="background:#0891b2;color:#f1f5f9;padding:.28rem .85rem;border-radius:5px;font-weight:700;">&#128202; Market Report</a></li>
+    <li><a href="report-tg.html" target="_blank" style="background:#a78bfa;color:#f1f5f9;padding:.28rem .85rem;border-radius:5px;font-weight:700;">&#128214; Trading Guide</a></li>
   </ul>
 </nav>
 
@@ -134,13 +134,13 @@
 <!-- Stats Strip -->
 <div class="stats-strip">
   <div class="stat-cell"><div class="stat-val" id="st-price"  style="color:#a78bfa;">--</div><div class="stat-lbl">Price</div></div>
-  <div class="stat-cell"><div class="stat-val" id="st-change" style="color:#22d3ee;">--</div><div class="stat-lbl">Change % (1D)</div></div>
+  <div class="stat-cell"><div class="stat-val" id="st-change" style="color:#0891b2;">--</div><div class="stat-lbl">Change % (1D)</div></div>
   <div class="stat-cell"><div class="stat-val" id="st-dir"    style="color:#10b981;">--</div><div class="stat-lbl">ML Direction</div></div>
   <div class="stat-cell"><div class="stat-val" id="st-mag"    style="color:#a78bfa;">--</div><div class="stat-lbl">ML Magnitude</div></div>
   <div class="stat-cell"><div class="stat-val" id="st-gex"    style="color:#22c55e;">--</div><div class="stat-lbl">GEX Regime</div></div>
   <div class="stat-cell"><div class="stat-val" id="st-flow"   style="color:#38bdf8;">--</div><div class="stat-lbl">Flow Sentiment</div></div>
   <div class="stat-cell"><div class="stat-val" id="st-gwall"  style="color:#22c55e;">--</div><div class="stat-lbl">Gamma Wall</div></div>
-  <div class="stat-cell"><div class="stat-val" id="st-flip"   style="color:#fbbf24;">--</div><div class="stat-lbl">Gamma Flip</div></div>
+  <div class="stat-cell"><div class="stat-val" id="st-flip"   style="color:#d97706;">--</div><div class="stat-lbl">Gamma Flip</div></div>
 </div>
 
 <div class="ap-wrap">
@@ -310,7 +310,7 @@
     <div style="display:flex;gap:.8rem;flex-wrap:wrap;">
       <a href="gamma-exposure.html" class="rbtn" style="padding:.5rem 1rem;">&#127919; GEX Charts</a>
       <a href="option-flows.html"   class="rbtn" style="padding:.5rem 1rem;">&#127754; Flows</a>
-      <a href="live-trading.html?sym=GOOGL" style="text-decoration:none;background:linear-gradient(135deg,#a78bfa,#a78bfacc);color:#080d1a;padding:.55rem 1.4rem;border-radius:8px;font-size:.88rem;font-weight:700;">Live Chart &#8594;</a>
+      <a href="live-trading.html?sym=GOOGL" style="text-decoration:none;background:linear-gradient(135deg,#a78bfa,#a78bfacc);color:#f1f5f9;padding:.55rem 1.4rem;border-radius:8px;font-size:.88rem;font-weight:700;">Live Chart &#8594;</a>
     </div>
   </div>
 
@@ -352,7 +352,7 @@ async function loadChart() {
     var w = container.clientWidth || container.offsetWidth || 800;
     var chart = LightweightCharts.createChart(container, {
       width: w, height: 420,
-      layout: { background: { color: '#070d18' }, textColor: '#7fa3be' },
+      layout: { background: { color: '#f8fafc' }, textColor: '#7fa3be' },
       grid: { vertLines: { color: 'rgba(36,48,88,.4)' }, horzLines: { color: 'rgba(36,48,88,.4)' } },
       crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
       rightPriceScale: { borderColor: '#243058' },
@@ -459,7 +459,7 @@ async function loadGex() {
     ].filter(Boolean).sort(function(x,y){ return y.price - x.price; });
 
     document.getElementById('gex-levels-body').innerHTML = rows.map(function(r){
-      return '<tr><td><strong style="color:'+r.color+';">'+r.name+'</strong></td><td style="font-family:Consolas,monospace;color:'+r.color+';font-weight:700;">'+fmtP(r.price)+'</td><td><span class="chip" style="color:'+r.color+';border:1px solid '+r.color+'40;background:rgba(255,255,255,.03);">'+r.type+'</span></td><td style="font-size:.78rem;color:var(--muted);">'+r.note+'</td></tr>';
+      return '<tr><td><strong style="color:'+r.color+';">'+r.name+'</strong></td><td style="font-family:Consolas,monospace;color:'+r.color+';font-weight:700;">'+fmtP(r.price)+'</td><td><span class="chip" style="color:'+r.color+';border:1px solid '+r.color+'40;background:rgba(0,0,0,.06);">'+r.type+'</span></td><td style="font-size:.78rem;color:var(--muted);">'+r.note+'</td></tr>';
     }).join('');
 
     var isLong = a.regime === 'Long Gamma';

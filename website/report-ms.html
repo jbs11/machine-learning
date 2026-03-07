@@ -7,9 +7,9 @@
   <style>
     /* ── Design Tokens ─────────────────────────────────────────────── */
     :root {
-      --bg:#080d1a; --surf:#0f1729; --card:#1a2540; --border:#243058;
-      --text:#e8f4fc; --muted:#7fa3be; --accent:#22d3ee;
-      --green:#4ade80; --red:#f87171; --amber:#fbbf24; --purple:#a78bfa;
+      --bg:#f1f5f9; --surf:#ffffff; --card:#ffffff; --border:#e2e8f0;
+      --text:#0f172a; --muted:#64748b; --accent:#0891b2;
+      --green:#4ade80; --red:#f87171; --amber:#d97706; --purple:#a78bfa;
     }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body { background: var(--bg); color: var(--text); font-family: system-ui, -apple-system, sans-serif;
@@ -30,8 +30,8 @@
     .rpt-tbl th { background: var(--card); color: var(--muted); text-align: left;
                   padding: .45rem .6rem; border-bottom: 1px solid var(--border);
                   font-size: .72rem; text-transform: uppercase; letter-spacing: .05em; }
-    .rpt-tbl td { padding: .4rem .6rem; border-bottom: 1px solid rgba(36,48,88,.5); vertical-align: middle; }
-    .rpt-tbl tr:hover td { background: rgba(26,37,64,.5); }
+    .rpt-tbl td { padding: .4rem .6rem; border-bottom: 1px solid rgba(226,232,240,.5); vertical-align: middle; }
+    .rpt-tbl tr:hover td { background: rgba(255,255,255,.5); }
     /* ── Chips ─────────────────────────────────────────────────────── */
     .chip { display: inline-block; padding: .15rem .5rem; border-radius: 4px; font-size: .72rem; font-weight: 700; letter-spacing: .04em; }
     .chip-buy    { background: rgba(74,222,128,.2);  color: var(--green); }
@@ -60,8 +60,8 @@
     #print-btn {
       position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 9999;
       padding: .65rem 1.4rem; border-radius: 8px; border: none; cursor: pointer;
-      background: var(--accent); color: #080d1a; font-weight: 700; font-size: .92rem;
-      box-shadow: 0 4px 20px rgba(34,211,238,.4); transition: opacity .15s;
+      background: var(--accent); color: #f1f5f9; font-weight: 700; font-size: .92rem;
+      box-shadow: 0 4px 20px rgba(8,145,178,.3); transition: opacity .15s;
     }
     #print-btn:hover { opacity: .85; }
     /* ── Cover ─────────────────────────────────────────────────────── */
@@ -338,9 +338,9 @@ function drawGexChartReport(a, cv, chartH=220, opts={}){
   const dpr = window.devicePixelRatio || 1;
   const W = cv.parentElement.clientWidth || 520;
 
-  const bg         = opts.bg         || '#070d18';
-  const gridColor  = opts.gridColor  || 'rgba(255,255,255,.04)';
-  const labelColor = opts.labelColor || 'rgba(127,163,190,.75)';
+  const bg         = opts.bg         || '#f8fafc';
+  const gridColor  = opts.gridColor  || 'rgba(0,0,0,.07)';
+  const labelColor = opts.labelColor || 'rgba(71,85,105,.8)';
 
   const allPairs = a.strikes.map((k,i)=>({k, g:a.gex[i]})).sort((a,b)=>b.k-a.k);
   const pairs = allPairs.length>50
@@ -436,7 +436,7 @@ function drawTornadoReport(r, cv, H=200, opts={}){
   const dpr = window.devicePixelRatio || 1;
   const W = cv.offsetWidth || cv.parentElement.clientWidth || 520;
 
-  const bg        = opts.bg        || '#070d18';
+  const bg        = opts.bg        || '#f8fafc';
   const gridColor = opts.gridColor || 'rgba(255,255,255,0.04)';
 
   cv.width=W*dpr; cv.height=H*dpr;

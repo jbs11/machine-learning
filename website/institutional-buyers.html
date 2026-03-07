@@ -16,7 +16,7 @@
     .inst-hero p  { font-size:1rem;color:var(--muted);max-width:700px;margin:0 auto 1.5rem;line-height:1.7; }
 
     .sec-hdr { display:flex;align-items:center;gap:.8rem;margin:2.5rem 0 1.2rem;padding-bottom:.6rem;border-bottom:2px solid var(--border); }
-    .sec-num { background:var(--accent);color:#080d1a;border-radius:50%;width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:.82rem;flex-shrink:0; }
+    .sec-num { background:var(--accent);color:#f1f5f9;border-radius:50%;width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:.82rem;flex-shrink:0; }
     .sec-title { font-size:1.25rem;font-weight:800; }
     .sec-sub   { font-size:.8rem;color:var(--muted);margin-left:.3rem; }
 
@@ -31,8 +31,8 @@
     .tag-buy  { background:rgba(34,197,94,.12);color:#4ade80;border:1px solid rgba(34,197,94,.25); }
     .tag-sell { background:rgba(248,113,113,.12);color:#f87171;border:1px solid rgba(248,113,113,.25); }
     .tag-hedg { background:rgba(167,139,250,.12);color:#a78bfa;border:1px solid rgba(167,139,250,.25); }
-    .tag-mm   { background:rgba(34,211,238,.12);color:#22d3ee;border:1px solid rgba(34,211,238,.25); }
-    .tag-arb  { background:rgba(251,191,36,.12);color:#fbbf24;border:1px solid rgba(251,191,36,.25); }
+    .tag-mm   { background:rgba(8,145,178,.08);color:#0891b2;border:1px solid rgba(8,145,178,.25); }
+    .tag-arb  { background:rgba(251,191,36,.12);color:#d97706;border:1px solid rgba(251,191,36,.25); }
 
     .two-col   { display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-bottom:1.5rem; }
     .three-col { display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-bottom:1.5rem; }
@@ -50,8 +50,8 @@
     .hl-box { border-radius:10px;padding:1rem 1.2rem;margin-bottom:.8rem;font-size:.82rem;line-height:1.65; }
     .hl-bull { background:rgba(34,197,94,.07);border:1px solid rgba(34,197,94,.25);color:#4ade80; }
     .hl-bear { background:rgba(248,113,113,.07);border:1px solid rgba(248,113,113,.25);color:#f87171; }
-    .hl-info { background:rgba(34,211,238,.06);border:1px solid rgba(34,211,238,.2);color:var(--text); }
-    .hl-warn { background:rgba(251,191,36,.07);border:1px solid rgba(251,191,36,.25);color:#fbbf24; }
+    .hl-info { background:rgba(8,145,178,.05);border:1px solid rgba(8,145,178,.2);color:var(--text); }
+    .hl-warn { background:rgba(251,191,36,.07);border:1px solid rgba(251,191,36,.25);color:#d97706; }
 
     .dh-diagram { background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.4rem;overflow-x:auto; }
     .dh-flow { display:flex;align-items:center;justify-content:center;gap:.5rem;flex-wrap:wrap;margin:1rem 0; }
@@ -60,14 +60,14 @@
     .dh-green  { border-color:rgba(34,197,94,.5);color:#4ade80; }
     .dh-red    { border-color:rgba(248,113,113,.5);color:#f87171; }
     .dh-purple { border-color:rgba(167,139,250,.5);color:#a78bfa; }
-    .dh-cyan   { border-color:rgba(34,211,238,.5);color:#22d3ee; }
+    .dh-cyan   { border-color:rgba(8,145,178,.4);color:#0891b2; }
 
     .spread-vis { background:var(--card);border-radius:10px;padding:1rem 1.4rem;font-family:'Consolas',monospace;font-size:.82rem; }
     .spread-row { display:flex;align-items:center;gap:.5rem;margin:.3rem 0; }
     .spread-bar { height:18px;border-radius:4px;display:flex;align-items:center;padding:0 .5rem;font-size:.7rem;font-weight:700; }
     .spread-ask { background:rgba(248,113,113,.25);color:#f87171;border:1px solid rgba(248,113,113,.35); }
     .spread-bid { background:rgba(34,197,94,.25);color:#4ade80;border:1px solid rgba(34,197,94,.35); }
-    .spread-mid { background:rgba(251,191,36,.15);color:#fbbf24;border:1px solid rgba(251,191,36,.3); }
+    .spread-mid { background:rgba(251,191,36,.15);color:#d97706;border:1px solid rgba(251,191,36,.3); }
 
     .regime-vis { display:grid;grid-template-columns:1fr 1fr;gap:1rem; }
     .regime-card { border-radius:10px;padding:1rem 1.2rem;text-align:center; }
@@ -92,7 +92,7 @@
 
     .flows-tbl { width:100%;border-collapse:collapse;font-size:.8rem; }
     .flows-tbl th { background:var(--surface);color:var(--muted);padding:.45rem .75rem;text-align:left;border-bottom:1px solid var(--border);font-size:.72rem;font-weight:700;letter-spacing:.04em; }
-    .flows-tbl td { padding:.4rem .75rem;border-bottom:1px solid rgba(36,48,88,.5);vertical-align:middle; }
+    .flows-tbl td { padding:.4rem .75rem;border-bottom:1px solid rgba(226,232,240,.5);vertical-align:middle; }
     .flows-tbl tr:hover td { background:rgba(255,255,255,.02); }
     .mono { font-family:'Consolas',monospace; }
 
@@ -105,9 +105,9 @@
     .tl-desc  { font-size:.8rem;color:var(--muted);line-height:1.6; }
     .tl-dot.red    { border-color:#f87171; }
     .tl-dot.green  { border-color:#4ade80; }
-    .tl-dot.amber  { border-color:#fbbf24; }
+    .tl-dot.amber  { border-color:#d97706; }
     .tl-dot.purple { border-color:#a78bfa; }
-    .tl-dot.cyan   { border-color:#22d3ee; }
+    .tl-dot.cyan   { border-color:#0891b2; }
 
     .chip { display:inline-block;padding:.15rem .55rem;border-radius:5px;font-weight:700;font-size:.7rem;letter-spacing:.04em; }
     .chip-bull  { background:rgba(34,197,94,.12);color:#4ade80;border:1px solid rgba(34,197,94,.25); }
@@ -146,7 +146,7 @@
     /* ── GEX Stress Test Table ── */
     .stress-tbl { width:100%; border-collapse:collapse; font-size:.79rem; }
     .stress-tbl th { background:var(--surface); color:var(--muted); padding:.4rem .7rem; text-align:left; border-bottom:1px solid var(--border); font-size:.7rem; font-weight:700; letter-spacing:.04em; }
-    .stress-tbl td { padding:.38rem .7rem; border-bottom:1px solid rgba(36,48,88,.4); font-family:'Consolas',monospace; }
+    .stress-tbl td { padding:.38rem .7rem; border-bottom:1px solid rgba(226,232,240,.4); font-family:'Consolas',monospace; }
     .stress-tbl tr:hover td { background:rgba(255,255,255,.02); }
     .stress-up   { color:#4ade80; font-weight:800; }
     .stress-down { color:#f87171; font-weight:800; }
@@ -157,8 +157,8 @@
     .macro-card.fed   { border-left-color:#a78bfa; }
     .macro-card.cpi   { border-left-color:#f87171; }
     .macro-card.nfp   { border-left-color:#4ade80; }
-    .macro-card.geo   { border-left-color:#fbbf24; }
-    .macro-card.earn  { border-left-color:#22d3ee; }
+    .macro-card.geo   { border-left-color:#d97706; }
+    .macro-card.earn  { border-left-color:#0891b2; }
     .macro-card.global{ border-left-color:#f59e0b; }
     .macro-icon  { font-size:1.5rem; margin-bottom:.4rem; }
     .macro-title { font-size:.92rem; font-weight:800; margin-bottom:.3rem; }
@@ -166,14 +166,14 @@
     .macro-impact { display:flex; gap:.35rem; flex-wrap:wrap; margin-top:.6rem; }
     .impact-badge { font-size:.64rem; font-weight:700; padding:.12rem .42rem; border-radius:4px; letter-spacing:.03em; }
     .ib-iv   { background:rgba(167,139,250,.12); color:#a78bfa; border:1px solid rgba(167,139,250,.25); }
-    .ib-gex  { background:rgba(34,211,238,.12);  color:#22d3ee; border:1px solid rgba(34,211,238,.25); }
-    .ib-flow { background:rgba(251,191,36,.12);  color:#fbbf24; border:1px solid rgba(251,191,36,.25); }
+    .ib-gex  { background:rgba(8,145,178,.08);  color:#0891b2; border:1px solid rgba(8,145,178,.25); }
+    .ib-flow { background:rgba(251,191,36,.12);  color:#d97706; border:1px solid rgba(251,191,36,.25); }
     .ib-dh   { background:rgba(34,197,94,.12);   color:#4ade80; border:1px solid rgba(34,197,94,.25);  }
     .ib-crsh { background:rgba(248,113,113,.12); color:#f87171; border:1px solid rgba(248,113,113,.25); }
 
     /* ── Case Studies ── */
     .case-study { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:1.1rem 1.3rem; margin-bottom:.85rem; }
-    .cs-date   { font-size:.72rem; font-weight:700; color:#fbbf24; letter-spacing:.06em; text-transform:uppercase; margin-bottom:.25rem; }
+    .cs-date   { font-size:.72rem; font-weight:700; color:#d97706; letter-spacing:.06em; text-transform:uppercase; margin-bottom:.25rem; }
     .cs-event  { font-size:.92rem; font-weight:800; margin-bottom:.4rem; }
     .cs-body   { font-size:.8rem; color:var(--muted); line-height:1.65; }
     .cs-metrics { display:flex; gap:.55rem; flex-wrap:wrap; margin-top:.6rem; }
@@ -183,11 +183,11 @@
     /* ── Macro Calendar Table ── */
     .macro-cal-tbl { width:100%; border-collapse:collapse; font-size:.79rem; }
     .macro-cal-tbl th { background:var(--surface); color:var(--muted); padding:.42rem .8rem; text-align:left; border-bottom:1px solid var(--border); font-size:.7rem; font-weight:700; letter-spacing:.04em; }
-    .macro-cal-tbl td { padding:.4rem .8rem; border-bottom:1px solid rgba(36,48,88,.4); vertical-align:middle; }
+    .macro-cal-tbl td { padding:.4rem .8rem; border-bottom:1px solid rgba(226,232,240,.4); vertical-align:middle; }
     .macro-cal-tbl tr:hover td { background:rgba(255,255,255,.02); }
     .impact-dot { display:inline-block; width:9px; height:9px; border-radius:50%; margin-right:.3rem; vertical-align:middle; }
     .imp-high   { background:#f87171; }
-    .imp-med    { background:#fbbf24; }
+    .imp-med    { background:#d97706; }
     .imp-low    { background:#4ade80; }
   </style>
 </head>
@@ -195,7 +195,7 @@
 
 <!-- ── Site Nav ── -->
 <nav style="background:var(--surface);border-bottom:1px solid var(--border);padding:.5rem 1.5rem;font-size:.83rem;display:flex;align-items:center;gap:.75rem;flex-wrap:wrap;">
-  <a href="live-trading.html" style="font-weight:800;color:var(--accent);text-decoration:none;">📈 ML Trading</a> | <a href="report-ms.html" target="_blank" style="background:#22d3ee;color:#080d1a;padding:.22rem .75rem;border-radius:5px;font-weight:700;text-decoration:none;font-size:.82rem;">&#128202; Report</a> | <a href="report-tg.html" target="_blank" style="background:#a78bfa;color:#080d1a;padding:.22rem .75rem;border-radius:5px;font-weight:700;text-decoration:none;font-size:.82rem;">&#128214; Guide</a>
+  <a href="live-trading.html" style="font-weight:800;color:var(--accent);text-decoration:none;">📈 ML Trading</a> | <a href="report-ms.html" target="_blank" style="background:#0891b2;color:#f1f5f9;padding:.22rem .75rem;border-radius:5px;font-weight:700;text-decoration:none;font-size:.82rem;">&#128202; Report</a> | <a href="report-tg.html" target="_blank" style="background:#a78bfa;color:#f1f5f9;padding:.22rem .75rem;border-radius:5px;font-weight:700;text-decoration:none;font-size:.82rem;">&#128214; Guide</a>
   <span style="color:var(--border)">|</span>
   <a href="market-summary.html" style="color:var(--muted);text-decoration:none;">Market Summary</a>
 </nav>
@@ -255,7 +255,7 @@
     </div>
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:.5rem 1rem;font-size:.78rem;">
       <span style="color:var(--muted);">Live SPY Net GEX</span><br>
-      <span style="font-weight:900;font-size:1.1rem;color:#fbbf24;" id="hero-gex">Loading…</span>
+      <span style="font-weight:900;font-size:1.1rem;color:#d97706;" id="hero-gex">Loading…</span>
     </div>
   </div>
 </div>
@@ -275,7 +275,7 @@
     <p>Institutional participants are not a monolithic group. They operate with different time horizons, mandates, risk tolerances, and trading strategies. Understanding <em>who</em> is acting and <em>why</em> is the foundation of reading market structure. Six categories dominate equity markets:</p>
     <div class="four-col" style="margin-top:.8rem;">
       <div style="background:var(--card);border-radius:8px;padding:.7rem;font-size:.78rem;border:1px solid var(--border);">
-        <div style="font-weight:800;color:#22d3ee;margin-bottom:.3rem;">Market Makers (Dealers)</div>
+        <div style="font-weight:800;color:#0891b2;margin-bottom:.3rem;">Market Makers (Dealers)</div>
         <div style="color:var(--muted);">Provide liquidity · Mechanically delta-hedge · Drive GEX · Dominate 0DTE</div>
       </div>
       <div style="background:var(--card);border-radius:8px;padding:.7rem;font-size:.78rem;border:1px solid var(--border);">
@@ -287,7 +287,7 @@
         <div style="color:var(--muted);">Predictable rebalancing · ETF MOC flows · Quarter-end pressure</div>
       </div>
       <div style="background:var(--card);border-radius:8px;padding:.7rem;font-size:.78rem;border:1px solid var(--border);">
-        <div style="font-weight:800;color:#fbbf24;margin-bottom:.3rem;">Investment Banks</div>
+        <div style="font-weight:800;color:#d97706;margin-bottom:.3rem;">Investment Banks</div>
         <div style="color:var(--muted);">Structured products · Earnings positioning · Collar/risk-reversal flows</div>
       </div>
     </div>
@@ -526,7 +526,7 @@
     </div>
 
     <div class="greek-card">
-      <div class="greek-sym" style="color:#22d3ee;">Θ</div>
+      <div class="greek-sym" style="color:#0891b2;">Θ</div>
       <div class="greek-name">Theta — Time Decay Revenue</div>
       <div class="greek-body">The daily erosion of an option's value due to time passing. Market makers who sell options <strong>collect theta as profit every day</strong> — they want time to pass without the stock moving much. Theta accelerates in the final weeks before expiration.
         <br><br>This is why market makers prefer Long Gamma (stable) regimes — their theta income is predictable. In Short Gamma regimes, gamma losses from large moves can overwhelm theta income, causing dealer losses and forced rehedging that amplifies volatility.</div>
@@ -542,7 +542,7 @@
     </div>
 
     <div class="greek-card">
-      <div class="greek-sym" style="color:#fbbf24;">Rho</div>
+      <div class="greek-sym" style="color:#d97706;">Rho</div>
       <div class="greek-name">Rho — Interest Rate Sensitivity</div>
       <div class="greek-body">How much an option's value changes per 1% change in interest rates. As the Fed raised rates 2022–2023, call options became more expensive (higher rho adds value to calls) while put values decreased slightly. Banks and dealers adjusted their structural hedges significantly.
         <br><br><strong>In a high-rate environment,</strong> the cost of carry for dealer delta hedges is higher — they must hold shares financed at the risk-free rate. This makes options (as synthetic leverage) more attractive to institutions, increasing options volume and dealer GEX impact.</div>
@@ -643,7 +643,7 @@
         <li><strong style="color:#22c55e;">🟢 Gamma Wall:</strong> Peak positive GEX strike. Acts as a hard ceiling — massive dealer selling above this. Price rarely closes above gamma wall cleanly on first attempt.</li>
         <li><strong style="color:#f87171;">🔴 Put Wall:</strong> Largest cluster of put open interest. Breaching this triggers dealer selling that can cascade into rapid declines.</li>
         <li><strong style="color:#a78bfa;">🟣 Flip Level:</strong> Where cumulative GEX crosses zero. The most critical level — above = Long Gamma (stable), below = Short Gamma (volatile). Watch for closes below flip level as regime change signals.</li>
-        <li><strong style="color:#fbbf24;">🟡 Max Pain:</strong> Strike where total option value (to buyers) is minimized on expiration day. Strong gravitational force on OPEX Friday — MMs have financial incentive to pin price near max pain.</li>
+        <li><strong style="color:#d97706;">🟡 Max Pain:</strong> Strike where total option value (to buyers) is minimized on expiration day. Strong gravitational force on OPEX Friday — MMs have financial incentive to pin price near max pain.</li>
         <li><strong>Cumulative GEX chart:</strong> Shows where the gamma flip is located by finding where the running total crosses from negative to positive (moving up from lowest strikes). This is often more accurate than individual bar analysis.</li>
       </ul>
     </div>
@@ -699,7 +699,7 @@
 
   <!-- GEX — Futures (ES=F / NQ=F) -->
   <div class="sec-hdr" style="margin-top:1.5rem;">
-    <span class="sec-num" style="background:#fbbf24;">4b</span>
+    <span class="sec-num" style="background:#d97706;">4b</span>
     <span class="sec-title">Equity Futures GEX — ES &amp; NQ</span>
     <span class="sec-sub">— S&amp;P 500 &amp; Nasdaq-100 futures dealer gamma · Overnight &amp; pre-market positioning</span>
   </div>
@@ -708,11 +708,11 @@
     <p>Equity index futures (ES=F, NQ=F) trade nearly 24 hours. Market makers in futures options must delta-hedge just like equity options dealers — but across overnight sessions when cash equities are closed. <strong>Futures GEX levels act as magnetic attractors during pre-market and overnight sessions</strong>, determining where ES and NQ stabilize or accelerate. When futures break below their futures gamma flip level, dealers begin amplifying overnight moves — which often translate into gap-down opens in cash equities.</p>
     <div class="three-col" style="margin-top:.8rem;">
       <div style="background:var(--card);border-radius:8px;padding:.7rem;font-size:.78rem;border:1px solid var(--border);">
-        <div style="font-weight:800;color:#fbbf24;margin-bottom:.25rem;">ES=F (S&amp;P 500 Futures)</div>
+        <div style="font-weight:800;color:#d97706;margin-bottom:.25rem;">ES=F (S&amp;P 500 Futures)</div>
         <div style="color:var(--muted);">~$70B daily notional · 23/5 trading · Citadel + Virtu dominant market makers · Most liquid futures contract in the world</div>
       </div>
       <div style="background:var(--card);border-radius:8px;padding:.7rem;font-size:.78rem;border:1px solid var(--border);">
-        <div style="font-weight:800;color:#22d3ee;margin-bottom:.25rem;">NQ=F (Nasdaq Futures)</div>
+        <div style="font-weight:800;color:#0891b2;margin-bottom:.25rem;">NQ=F (Nasdaq Futures)</div>
         <div style="color:var(--muted);">High beta to mega-cap tech · Amplifies SPY moves by ~1.5× · Extremely gamma-sensitive near major tech earnings</div>
       </div>
       <div style="background:var(--card);border-radius:8px;padding:.7rem;font-size:.78rem;border:1px solid var(--border);">
@@ -788,8 +788,8 @@
         <div style="padding:.5rem 1rem;font-size:.72rem;color:var(--muted);">
           <div class="skew-legend">
             <span><span class="skew-dot" style="background:#a78bfa;"></span>Put IV (always elevated — institutional demand)</span>
-            <span><span class="skew-dot" style="background:#22d3ee;"></span>Call IV (lower — less hedging demand)</span>
-            <span><span class="skew-dot" style="background:#fbbf24;width:1px;height:12px;display:inline-block;vertical-align:middle;"></span>ATM (current price)</span>
+            <span><span class="skew-dot" style="background:#0891b2;"></span>Call IV (lower — less hedging demand)</span>
+            <span><span class="skew-dot" style="background:#d97706;width:1px;height:12px;display:inline-block;vertical-align:middle;"></span>ATM (current price)</span>
           </div>
         </div>
       </div>
@@ -1172,7 +1172,7 @@
   <div class="dh-metrics-strip" id="dh-metrics-strip">
     <div class="dh-metric"><div class="dh-metric-val" id="dh-dealer-buy" style="color:#4ade80;">—</div><div class="dh-metric-lbl">Est. Dealer Buy Flow</div></div>
     <div class="dh-metric"><div class="dh-metric-val" id="dh-dealer-sell" style="color:#f87171;">—</div><div class="dh-metric-lbl">Est. Dealer Sell Flow</div></div>
-    <div class="dh-metric"><div class="dh-metric-val" id="dh-net-flow" style="color:#22d3ee;">—</div><div class="dh-metric-lbl">Net Dealer Δ Flow</div></div>
+    <div class="dh-metric"><div class="dh-metric-val" id="dh-net-flow" style="color:#0891b2;">—</div><div class="dh-metric-lbl">Net Dealer Δ Flow</div></div>
     <div class="dh-metric"><div class="dh-metric-val" id="dh-gex-regime">—</div><div class="dh-metric-lbl">GEX Regime</div></div>
     <div class="dh-metric"><div class="dh-metric-val" id="dh-gamma-flip" style="color:#a78bfa;">—</div><div class="dh-metric-lbl">Gamma Flip Level</div></div>
     <div class="dh-metric"><div class="dh-metric-val" id="dh-spot-to-flip">—</div><div class="dh-metric-lbl">Spot → Flip Distance</div></div>
@@ -1245,12 +1245,12 @@
         <div style="font-weight:800;color:#a78bfa;margin-bottom:.3rem;">① Event Occurs</div>
         <div style="color:var(--muted);">Fed rate decision · CPI print · War outbreak · Earnings miss · Central bank policy shift. The event creates an <em>information shock</em> that forces re-pricing of risk.</div>
       </div>
-      <div style="background:var(--card);border-radius:8px;padding:.75rem;font-size:.78rem;border:1px solid var(--border);border-top:3px solid #fbbf24;">
-        <div style="font-weight:800;color:#fbbf24;margin-bottom:.3rem;">② Options Market Reprices</div>
+      <div style="background:var(--card);border-radius:8px;padding:.75rem;font-size:.78rem;border:1px solid var(--border);border-top:3px solid #d97706;">
+        <div style="font-weight:800;color:#d97706;margin-bottom:.3rem;">② Options Market Reprices</div>
         <div style="color:var(--muted);">Implied volatility spikes (or collapses). Options delta changes across every strike and expiry. Dealers' existing hedges are now wrong — they must rebalance <em>immediately</em>.</div>
       </div>
-      <div style="background:var(--card);border-radius:8px;padding:.75rem;font-size:.78rem;border:1px solid var(--border);border-top:3px solid #22d3ee;">
-        <div style="font-weight:800;color:#22d3ee;margin-bottom:.3rem;">③ Forced Delta Hedging</div>
+      <div style="background:var(--card);border-radius:8px;padding:.75rem;font-size:.78rem;border:1px solid var(--border);border-top:3px solid #0891b2;">
+        <div style="font-weight:800;color:#0891b2;margin-bottom:.3rem;">③ Forced Delta Hedging</div>
         <div style="color:var(--muted);">Market makers must buy/sell billions in equities and futures to re-delta. If GEX is negative (Short Gamma), they move WITH the market → cascade. If positive → dampen.</div>
       </div>
       <div style="background:var(--card);border-radius:8px;padding:.75rem;font-size:.78rem;border:1px solid var(--border);border-top:3px solid #4ade80;">
@@ -1372,7 +1372,7 @@
 
   <!-- Historical Case Studies -->
   <div class="sec-hdr" style="margin-top:1rem;">
-    <span class="sec-num" style="background:#f59e0b;color:#080d1a;">12b</span>
+    <span class="sec-num" style="background:#f59e0b;color:#f1f5f9;">12b</span>
     <span class="sec-title">Historical Case Studies — Institutional Mechanics in Action</span>
     <span class="sec-sub">— How global events translated into dealer flows, GEX regimes, and cascading market moves</span>
   </div>
@@ -1392,7 +1392,7 @@
     <div class="cs-metrics">
       <div class="cs-metric">SPX Move: <span class="v" style="color:#f87171">−34% in 23 days</span></div>
       <div class="cs-metric">VIX Peak: <span class="v" style="color:#f87171">85.47</span></div>
-      <div class="cs-metric">Forced Selling: <span class="v" style="color:#fbbf24">~$400B+</span></div>
+      <div class="cs-metric">Forced Selling: <span class="v" style="color:#d97706">~$400B+</span></div>
       <div class="cs-metric">GEX Regime: <span class="v" style="color:#f87171">Short Gamma</span></div>
       <div class="cs-metric">Recovery: <span class="v" style="color:#4ade80">V-shape in 5 months</span></div>
     </div>
@@ -1412,8 +1412,8 @@
     </div>
     <div class="cs-metrics">
       <div class="cs-metric">SPX Peak-to-Trough: <span class="v" style="color:#f87171">−27.5%</span></div>
-      <div class="cs-metric">Average Daily Range: <span class="v" style="color:#fbbf24">1.8%</span></div>
-      <div class="cs-metric">CTA Selling: <span class="v" style="color:#fbbf24">~$50B+</span></div>
+      <div class="cs-metric">Average Daily Range: <span class="v" style="color:#d97706">1.8%</span></div>
+      <div class="cs-metric">CTA Selling: <span class="v" style="color:#d97706">~$50B+</span></div>
       <div class="cs-metric">VIX Average: <span class="v" style="color:#f87171">26.5</span></div>
       <div class="cs-metric">Duration: <span class="v">18 months Short Gamma</span></div>
     </div>
@@ -1431,7 +1431,7 @@
     </div>
     <div class="cs-metrics">
       <div class="cs-metric">KRE Drawdown: <span class="v" style="color:#f87171">−30% in 3 days</span></div>
-      <div class="cs-metric">Money Market Inflows: <span class="v" style="color:#fbbf24">$500B+</span></div>
+      <div class="cs-metric">Money Market Inflows: <span class="v" style="color:#d97706">$500B+</span></div>
       <div class="cs-metric">2Y Yield Move: <span class="v" style="color:#4ade80">−110bps in 5 days</span></div>
       <div class="cs-metric">FDIC Action: <span class="v">48-hour turnaround</span></div>
     </div>
@@ -1450,7 +1450,7 @@
     <div class="cs-metrics">
       <div class="cs-metric">VIX Peak: <span class="v" style="color:#f87171">65.7</span></div>
       <div class="cs-metric">SPX Gap Down: <span class="v" style="color:#f87171">−3% open</span></div>
-      <div class="cs-metric">Yen Carry Size: <span class="v" style="color:#fbbf24">~$4T estimated</span></div>
+      <div class="cs-metric">Yen Carry Size: <span class="v" style="color:#d97706">~$4T estimated</span></div>
       <div class="cs-metric">Recovery Speed: <span class="v" style="color:#4ade80">3 hours to close -1%</span></div>
       <div class="cs-metric">VIX Collapse: <span class="v" style="color:#4ade80">65 → 30 intraday</span></div>
     </div>
@@ -1471,8 +1471,8 @@
     <div class="cs-metrics">
       <div class="cs-metric">NVDA Peak Return: <span class="v" style="color:#4ade80">+800%+ (2023–24)</span></div>
       <div class="cs-metric">SPY GEX Regime: <span class="v" style="color:#4ade80">Long Gamma 18+ months</span></div>
-      <div class="cs-metric">Mag 7 SPY Weight: <span class="v" style="color:#fbbf24">~32%</span></div>
-      <div class="cs-metric">AI Option Flows: <span class="v" style="color:#22d3ee">$2B+/month call prem</span></div>
+      <div class="cs-metric">Mag 7 SPY Weight: <span class="v" style="color:#d97706">~32%</span></div>
+      <div class="cs-metric">AI Option Flows: <span class="v" style="color:#0891b2">$2B+/month call prem</span></div>
     </div>
   </div>
 
@@ -1527,8 +1527,8 @@ function drawGex(a, cv, H) {
   ctx.scale(dpr, dpr);
   const PAD_L=60, PAD_R=60, PAD_T=20, PAD_B=16;
   const cW = W-PAD_L-PAD_R, halfW = cW/2, zeroX = PAD_L+halfW;
-  ctx.fillStyle='#070d18'; ctx.fillRect(0,0,W,cH);
-  ctx.strokeStyle='rgba(255,255,255,.04)'; ctx.lineWidth=1;
+  ctx.fillStyle='#f8fafc'; ctx.fillRect(0,0,W,cH);
+  ctx.strokeStyle='rgba(0,0,0,.07)'; ctx.lineWidth=1;
   [.25,.5,.75].forEach(f=>{const x=PAD_L+cW*f;ctx.beginPath();ctx.moveTo(x,PAD_T);ctx.lineTo(x,cH-PAD_B);ctx.stroke();});
   const maxGex = Math.max(...pairs.map(p=>Math.abs(p.g)),1e-9);
   const scaleStr = maxGex>=1000?(maxGex/1000).toFixed(1)+'B':maxGex.toFixed(1)+'M';
@@ -1550,7 +1550,7 @@ function drawGex(a, cv, H) {
     }
   });
   const step=Math.max(1,Math.ceil(N/22));
-  ctx.fillStyle='rgba(127,163,190,.75)'; ctx.font='9px Consolas,monospace'; ctx.textAlign='right';
+  ctx.fillStyle='rgba(71,85,105,.8)'; ctx.font='9px Consolas,monospace'; ctx.textAlign='right';
   pairs.forEach((p,i)=>{
     if(i%step!==0) return;
     const y=PAD_T+i*ROW_H+ROW_H/2+3;
@@ -1580,7 +1580,7 @@ function drawCumGex(a, cv) {
   cv.style.width = W+'px'; cv.style.height = H+'px';
   const ctx = cv.getContext('2d');
   ctx.scale(dpr, dpr);
-  ctx.fillStyle = '#070d18'; ctx.fillRect(0,0,W,H);
+  ctx.fillStyle = '#f8fafc'; ctx.fillRect(0,0,W,H);
   const PAD = {l:60,r:60,t:20,b:24};
   const cW = W-PAD.l-PAD.r, cH = H-PAD.t-PAD.b;
   const pairs = a.strikes.map((k,i)=>({k,g:a.gex[i]})).sort((a,b)=>a.k-b.k);
@@ -1591,7 +1591,7 @@ function drawCumGex(a, cv) {
   const toY = v => PAD.t + (1-(v-minV)/range)*cH;
   const zeroY = toY(0);
   // Grid
-  ctx.strokeStyle='rgba(255,255,255,.04)'; ctx.lineWidth=1;
+  ctx.strokeStyle='rgba(0,0,0,.07)'; ctx.lineWidth=1;
   [.25,.5,.75].forEach(f=>{
     ctx.beginPath();ctx.moveTo(PAD.l,PAD.t+cH*f);ctx.lineTo(W-PAD.r,PAD.t+cH*f);ctx.stroke();
   });
@@ -1655,7 +1655,7 @@ function drawCumGex(a, cv) {
   }
   // Labels
   const step=Math.max(1,Math.floor(pairs.length/8));
-  ctx.fillStyle='rgba(127,163,190,.6)'; ctx.font='8px Consolas,monospace'; ctx.textAlign='center';
+  ctx.fillStyle='rgba(71,85,105,.7)'; ctx.font='8px Consolas,monospace'; ctx.textAlign='center';
   pairs.forEach((p,i)=>{
     if(i%step!==0) return;
     const x=PAD.l+(i/Math.max(pairs.length-1,1))*cW;
@@ -1675,8 +1675,8 @@ function drawTornado(r, cv, H) {
   const cW=W-PAD_L-PAD_R, cH=H-PAD_T-PAD_B, rowH=cH/n;
   const maxV=Math.max(1,...r.call_vol,...r.put_vol);
   const cx=PAD_L+cW/2;
-  ctx.fillStyle='#070d18'; ctx.fillRect(0,0,W,H);
-  ctx.strokeStyle='rgba(255,255,255,.04)'; ctx.lineWidth=1;
+  ctx.fillStyle='#f8fafc'; ctx.fillRect(0,0,W,H);
+  ctx.strokeStyle='rgba(0,0,0,.07)'; ctx.lineWidth=1;
   [.25,.5,.75,1].forEach(f=>{
     const x1=PAD_L+(cW/2)*(1-f), x2=PAD_L+(cW/2)*(1+f);
     ctx.beginPath();ctx.moveTo(x1,PAD_T);ctx.lineTo(x1,H-PAD_B);ctx.stroke();
@@ -1715,7 +1715,7 @@ function drawDHSim(cv) {
   cv.style.width = W+'px'; cv.style.height = H+'px';
   const ctx = cv.getContext('2d');
   ctx.scale(dpr, dpr);
-  ctx.fillStyle = '#070d18'; ctx.fillRect(0,0,W,H);
+  ctx.fillStyle = '#f8fafc'; ctx.fillRect(0,0,W,H);
   const PAD = {l:50,r:20,t:20,b:30};
   const cW = W-PAD.l-PAD.r, cH = H-PAD.t-PAD.b;
 
@@ -1727,7 +1727,7 @@ function drawDHSim(cv) {
   const shortGammaDelta = prices.map(x=>-(0.5+0.5*Math.tanh(1.5*x)));  // dealer short delta
 
   // Grid
-  ctx.strokeStyle='rgba(255,255,255,.06)'; ctx.lineWidth=1;
+  ctx.strokeStyle='rgba(0,0,0,.06)'; ctx.lineWidth=1;
   [0.25,0.5,0.75].forEach(f=>{
     ctx.beginPath();ctx.moveTo(PAD.l+cW*f,PAD.t);ctx.lineTo(PAD.l+cW*f,H-PAD.b);ctx.stroke();
     ctx.beginPath();ctx.moveTo(PAD.l,PAD.t+cH*f);ctx.lineTo(W-PAD.r,PAD.t+cH*f);ctx.stroke();
@@ -1766,7 +1766,7 @@ function drawDHSim(cv) {
   ctx.fillText('Short Gamma: Dealers SELL on dips →', PAD.l+4, PAD.t+26);
 
   // X axis labels
-  ctx.fillStyle='rgba(127,163,190,.6)'; ctx.font='8px Consolas,monospace'; ctx.textAlign='center';
+  ctx.fillStyle='rgba(71,85,105,.7)'; ctx.font='8px Consolas,monospace'; ctx.textAlign='center';
   ctx.fillText('← Price Falls', PAD.l+cW*.15, H-PAD.b+10);
   ctx.fillText('ATM', cx, H-PAD.b+10);
   ctx.fillText('Price Rises →', PAD.l+cW*.85, H-PAD.b+10);
@@ -1783,7 +1783,7 @@ function drawIVSkew(cv) {
   cv.width=W*dpr; cv.height=H*dpr;
   cv.style.width=W+'px'; cv.style.height=H+'px';
   const ctx=cv.getContext('2d'); ctx.scale(dpr,dpr);
-  ctx.fillStyle='#070d18'; ctx.fillRect(0,0,W,H);
+  ctx.fillStyle='#f8fafc'; ctx.fillRect(0,0,W,H);
   const PAD={l:50,r:20,t:20,b:30};
   const cW=W-PAD.l-PAD.r, cH=H-PAD.t-PAD.b;
 
@@ -1798,7 +1798,7 @@ function drawIVSkew(cv) {
   const toY = v => PAD.t+(1-(v-0.10)/0.45)*cH;
 
   // Grid
-  ctx.strokeStyle='rgba(255,255,255,.05)'; ctx.lineWidth=1;
+  ctx.strokeStyle='rgba(0,0,0,.08)'; ctx.lineWidth=1;
   [0.15,0.20,0.25,0.30,0.35,0.40,0.45,0.50].forEach(v=>{
     const y=toY(v);
     if(y<PAD.t||y>H-PAD.b) return;
@@ -1843,7 +1843,7 @@ function drawIVSkew(cv) {
   ctx.strokeStyle='#22d3ee'; ctx.lineWidth=2; ctx.stroke();
 
   // Strike labels
-  ctx.fillStyle='rgba(127,163,190,.6)'; ctx.font='8px Consolas,monospace'; ctx.textAlign='center';
+  ctx.fillStyle='rgba(71,85,105,.7)'; ctx.font='8px Consolas,monospace'; ctx.textAlign='center';
   ['-15%','-10%','-5%','ATM','+5%','+10%','+15%'].forEach((lbl,i)=>{
     const s=[-0.15,-0.10,-0.05,0,0.05,0.10,0.15][i];
     ctx.fillText(lbl,toX(s),H-PAD.b+12);
@@ -1865,7 +1865,7 @@ function drawVixGex(cv, gexData) {
   cv.width=W*dpr; cv.height=H*dpr;
   cv.style.width=W+'px'; cv.style.height=H+'px';
   const ctx=cv.getContext('2d'); ctx.scale(dpr,dpr);
-  ctx.fillStyle='#070d18'; ctx.fillRect(0,0,W,H);
+  ctx.fillStyle='#f8fafc'; ctx.fillRect(0,0,W,H);
   const PAD={l:50,r:50,t:20,b:30};
   const cW=W-PAD.l-PAD.r, cH=H-PAD.t-PAD.b;
 
@@ -1935,7 +1935,7 @@ function drawVixGex(cv, gexData) {
   }
 
   // X axis labels
-  ctx.fillStyle='rgba(127,163,190,.6)'; ctx.font='8px Consolas,monospace'; ctx.textAlign='center';
+  ctx.fillStyle='rgba(71,85,105,.7)'; ctx.font='8px Consolas,monospace'; ctx.textAlign='center';
   [12,15,20,25,30,40,50].forEach(v=>{ if(v>=minVix&&v<=maxVix) ctx.fillText('VIX '+v,toX2(v),H-PAD.b+12); });
   ctx.textAlign='right'; ctx.fillText('Long Gamma ▲',PAD.l-2,toY2(0.8));
   ctx.textAlign='right'; ctx.fillText('Short Gamma ▼',PAD.l-2,toY2(-0.8));
@@ -2097,7 +2097,7 @@ function drawDHIntraday(cv, gex, flows) {
   cv.width  = W * dpr; cv.height = H * dpr;
   cv.style.width = W + 'px'; cv.style.height = H + 'px';
   const ctx = cv.getContext('2d'); ctx.scale(dpr, dpr);
-  ctx.fillStyle = '#070d18'; ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = '#f8fafc'; ctx.fillRect(0, 0, W, H);
   const PAD = { l: 55, r: 20, t: 20, b: 32 };
   const cW = W - PAD.l - PAD.r, cH = H - PAD.t - PAD.b;
 
@@ -2127,7 +2127,7 @@ function drawDHIntraday(cv, gex, flows) {
   const N = labels.length;
 
   // Grid lines
-  ctx.strokeStyle = 'rgba(255,255,255,.05)'; ctx.lineWidth = 1;
+  ctx.strokeStyle = 'rgba(0,0,0,.08)'; ctx.lineWidth = 1;
   [-0.5, 0, 0.5].forEach(v => {
     const y = toY(v / maxAbs * maxAbs);
     ctx.beginPath(); ctx.moveTo(PAD.l, y); ctx.lineTo(W - PAD.r, y); ctx.stroke();
@@ -2165,7 +2165,7 @@ function drawDHIntraday(cv, gex, flows) {
   ctx.strokeStyle = 'rgba(34,211,238,.5)'; ctx.lineWidth = 1.5; ctx.stroke();
 
   // X labels
-  ctx.fillStyle = 'rgba(127,163,190,.6)'; ctx.font = '8px Consolas,monospace'; ctx.textAlign = 'center';
+  ctx.fillStyle = 'rgba(71,85,105,.7)'; ctx.font = '8px Consolas,monospace'; ctx.textAlign = 'center';
   labels.forEach((lbl, i) => {
     if (i % 2 !== 0) return;
     const x = PAD.l + (i / (N - 1)) * cW;
@@ -2383,11 +2383,11 @@ async function loadCandlesFor(sym, containerId, gexLevels, regimeChipId) {
   }
   const chart = LightweightCharts.createChart(el, {
     width: el.clientWidth, height: el.clientHeight || 260,
-    layout: { background: { color: '#070d18' }, textColor: '#94a3b8' },
-    grid:   { vertLines: { color: 'rgba(255,255,255,.04)' }, horzLines: { color: 'rgba(255,255,255,.04)' } },
+    layout: { background: { color: '#f8fafc' }, textColor: '#94a3b8' },
+    grid:   { vertLines: { color: 'rgba(0,0,0,.07)' }, horzLines: { color: 'rgba(0,0,0,.07)' } },
     crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
-    rightPriceScale: { borderColor: 'rgba(255,255,255,.08)' },
-    timeScale: { borderColor: 'rgba(255,255,255,.08)', timeVisible: true, secondsVisible: false },
+    rightPriceScale: { borderColor: 'rgba(0,0,0,.08)' },
+    timeScale: { borderColor: 'rgba(0,0,0,.08)', timeVisible: true, secondsVisible: false },
     handleScale: { axisPressedMouseMove: true, mouseWheel: true },
     handleScroll: { mouseWheel: true, pressedMouseMove: true },
   });
