@@ -23,7 +23,7 @@
 
 50%{opacity:.4} }
 .sec-hdr { display:flex;align-items:center;gap:.8rem;margin:2.2rem 0 1rem;padding-bottom:.5rem;border-bottom:2px solid var(--border); }
-    .sec-num { background:#a78bfa;color:#f1f5f9;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:.8rem;flex-shrink:0; }
+    .sec-num { background:#a78bfa;color:var(--bg);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:.8rem;flex-shrink:0; }
     .sec-title { font-size:1.1rem;font-weight:800; }
     .sec-sub { font-size:.76rem;color:var(--muted);margin-left:.3rem; }
 
@@ -72,7 +72,7 @@
 
     .ml-bar-wrap { background:var(--card);border-radius:8px;padding:.8rem 1rem;margin:.5rem 0; }
     .ml-bar-label { display:flex;justify-content:space-between;font-size:.75rem;color:var(--muted);margin-bottom:.35rem; }
-    .ml-bar-track { height:10px;background:rgba(0,0,0,.04);border-radius:5px;overflow:hidden; }
+    .ml-bar-track { height:10px;background:var(--hover-overlay);border-radius:5px;overflow:hidden; }
     .ml-bar-fill  { height:100%;border-radius:5px;transition:width .6s ease; }
     @media(max-width:800px){ .ap-sym{font-size:2.5rem;} }
   </style>
@@ -99,8 +99,8 @@
     <li><a href="market-preparation.html">&#128204; Market Prep</a></li>
     <li><a href="forecast.html" style="color:#f59e0b;font-weight:700;">&#128200; Forecast</a></li>
     <li><a href="asset-details.html">&#128202; Asset Review</a></li>
-    <li><a href="report-ms.html" target="_blank" style="background:#0891b2;color:#f1f5f9;padding:.28rem .85rem;border-radius:5px;font-weight:700;">&#128202; Market Report</a></li>
-    <li><a href="report-tg.html" target="_blank" style="background:#a78bfa;color:#f1f5f9;padding:.28rem .85rem;border-radius:5px;font-weight:700;">&#128214; Trading Guide</a></li>
+    <li><a href="report-ms.html" target="_blank" style="background:#0891b2;color:var(--bg);padding:.28rem .85rem;border-radius:5px;font-weight:700;">&#128202; Market Report</a></li>
+    <li><a href="report-tg.html" target="_blank" style="background:#a78bfa;color:var(--bg);padding:.28rem .85rem;border-radius:5px;font-weight:700;">&#128214; Trading Guide</a></li>
   </ul>
 </nav>
 
@@ -310,7 +310,7 @@
     <div style="display:flex;gap:.8rem;flex-wrap:wrap;">
       <a href="gamma-exposure.html" class="rbtn" style="padding:.5rem 1rem;">&#127919; GEX Charts</a>
       <a href="option-flows.html"   class="rbtn" style="padding:.5rem 1rem;">&#127754; Flows</a>
-      <a href="live-trading.html?sym=NVDA" style="text-decoration:none;background:linear-gradient(135deg,#a78bfa,#a78bfacc);color:#f1f5f9;padding:.55rem 1.4rem;border-radius:8px;font-size:.88rem;font-weight:700;">Live Chart &#8594;</a>
+      <a href="live-trading.html?sym=NVDA" style="text-decoration:none;background:linear-gradient(135deg,#a78bfa,#a78bfacc);color:var(--bg);padding:.55rem 1.4rem;border-radius:8px;font-size:.88rem;font-weight:700;">Live Chart &#8594;</a>
     </div>
   </div>
 

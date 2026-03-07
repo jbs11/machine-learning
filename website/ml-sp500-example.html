@@ -51,7 +51,7 @@
     /* ── Feature tags ── */
     .ftag-row { display: flex; flex-wrap: wrap; gap: .45rem; margin: .75rem 0; }
     .ftag { padding: .22rem .65rem; border-radius: 99px; font-size: .75rem; font-weight: 700; letter-spacing: .04em; border: 1px solid; }
-    .ft-trend     { background: rgba(8,145,178,.08);  border-color: rgba(8,145,178,.25);  color: #0891b2; }
+    .ft-trend     { background: var(--accent-subtle);  border-color: var(--accent-border);  color: #0891b2; }
     .ft-momentum  { background: rgba(129,140,248,.1); border-color: rgba(129,140,248,.3); color: #818cf8; }
     .ft-vol       { background: rgba(251,191,36,.1);  border-color: rgba(251,191,36,.3);  color: #d97706; }
     .ft-volume    { background: rgba(52,211,153,.1);  border-color: rgba(52,211,153,.3);  color: #059669; }
@@ -67,7 +67,7 @@
 
     /* ── Callouts ── */
     .callout {
-      background: rgba(34,211,238,.07); border: 1px solid rgba(8,145,178,.2);
+      background: rgba(34,211,238,.07); border: 1px solid var(--accent-border);
       border-left: 3px solid var(--primary); border-radius: 8px;
       padding: 1rem 1.25rem; margin: 1rem 0; font-size: .92rem;
       color: var(--text); line-height: 1.7;
@@ -86,7 +86,7 @@
     .pipe-box-icon { font-size: 1.6rem; margin-bottom: .2rem; }
     .pipe-box-label { font-size: .78rem; font-weight: 700; color: var(--text); }
     .pipe-box-sub { font-size: .65rem; color: var(--muted); margin-top: .1rem; }
-    .pipe-box.hi { border-color: var(--primary); background: rgba(8,145,178,.06); }
+    .pipe-box.hi { border-color: var(--primary); background: var(--accent-subtle); }
     .pipe-arr { color: var(--primary); font-size: 1.4rem; padding: 0 .4rem; flex-shrink: 0; }
 
     /* ── Signal chips ── */
@@ -97,7 +97,7 @@
     /* ── Timeframe tabs ── */
     .tf-tabs { display:flex;gap:.5rem;margin:1.5rem 0 .5rem; }
     .tf-tab { padding:.4rem 1.2rem;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--muted);font-weight:700;font-size:.85rem;cursor:pointer;transition:all .15s; }
-    .tf-tab.active { background:rgba(8,145,178,.08);border-color:var(--accent);color:var(--accent); }
+    .tf-tab.active { background:var(--accent-subtle);border-color:var(--accent);color:var(--accent); }
     .tf-tab:hover:not(.active) { border-color:var(--muted);color:var(--text); }
     .tf-panel { display:none; }
     .tf-panel.active { display:block; }
@@ -197,8 +197,8 @@
     <li><a href="market-preparation.html">&#128204; Market Prep</a></li>
     <li><a href="forecast.html" style="color:#f59e0b;font-weight:700;">&#128200; Forecast</a></li>
     <li><a href="asset-details.html">&#128202; Asset Review</a></li>
-    <li><a href="report-ms.html" target="_blank" style="background:#0891b2;color:#f1f5f9;padding:.28rem .85rem;border-radius:5px;font-weight:700;letter-spacing:.02em;">&#128202; Market Report</a></li>
-    <li><a href="report-tg.html" target="_blank" style="background:#a78bfa;color:#f1f5f9;padding:.28rem .85rem;border-radius:5px;font-weight:700;letter-spacing:.02em;">&#128214; Trading Guide</a></li>
+    <li><a href="report-ms.html" target="_blank" style="background:#0891b2;color:var(--bg);padding:.28rem .85rem;border-radius:5px;font-weight:700;letter-spacing:.02em;">&#128202; Market Report</a></li>
+    <li><a href="report-tg.html" target="_blank" style="background:#a78bfa;color:var(--bg);padding:.28rem .85rem;border-radius:5px;font-weight:700;letter-spacing:.02em;">&#128214; Trading Guide</a></li>
   </ul>
 </nav>
 
@@ -242,7 +242,7 @@
 
 <!-- ── Hero ── -->
 <section class="ml-hero">
-  <div style="display:inline-block;padding:.3rem .9rem;background:rgba(8,145,178,.08);border:1px solid rgba(8,145,178,.25);border-radius:999px;color:var(--primary);font-size:.8rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;margin-bottom:1.2rem;">
+  <div style="display:inline-block;padding:.3rem .9rem;background:var(--accent-subtle);border:1px solid var(--accent-border);border-radius:999px;color:var(--primary);font-size:.8rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;margin-bottom:1.2rem;">
     Applied ML · Step-by-Step Walkthrough
   </div>
   <h1>Machine Learning<br>Trading Example</h1>
@@ -601,7 +601,7 @@ df[<span class="st">'target_dir_21'</span>] = (df[<span class="st">'Close'</span
               <div style="font-size:.72rem;color:var(--muted);margin-top:.3rem;">n_estimators=400<br>max_depth=4<br>learning_rate=0.05<br>subsample=0.8</div>
             </div>
             <div style="text-align:center;color:var(--muted);font-size:.8rem;">+<br><span style="font-size:.72rem;">soft<br>vote</span></div>
-            <div style="background:rgba(8,145,178,.08);border:1px solid rgba(8,145,178,.25);border-radius:10px;padding:1rem;text-align:center;">
+            <div style="background:var(--accent-subtle);border:1px solid var(--accent-border);border-radius:10px;padding:1rem;text-align:center;">
               <div style="font-size:1.2rem;margin-bottom:.3rem;">🌳</div>
               <div style="font-size:.82rem;font-weight:700;color:#0891b2;">ExtraTreesClassifier</div>
               <div style="font-size:.72rem;color:var(--muted);margin-top:.3rem;">n_estimators=300<br>max_depth=8<br>max_features='sqrt'<br>bootstrap=False</div>
@@ -1161,7 +1161,7 @@ fold_scores = []
 
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.2rem;margin-bottom:1.5rem;">
     <a href="live-trading.html" style="text-decoration:none;">
-      <div class="info-card" style="border-color:rgba(8,145,178,.25);background:rgba(8,145,178,.04);cursor:pointer;transition:border-color .2s;" onmouseover="this.style.borderColor='var(--primary)'" onmouseout="this.style.borderColor='rgba(8,145,178,.25)'">
+      <div class="info-card" style="border-color:var(--accent-border);background:rgba(8,145,178,.04);cursor:pointer;transition:border-color .2s;" onmouseover="this.style.borderColor='var(--primary)'" onmouseout="this.style.borderColor='var(--accent-border)'">
         <h4>📡 Live Trading Dashboard</h4>
         <ul>
           <li>Real-time BUY/SELL markers on candlestick charts</li>
