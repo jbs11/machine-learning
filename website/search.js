@@ -353,24 +353,83 @@ window.batchRender = function batchRender(items, renderOne, chunkSize, delayMs) 
 
 window.cachedFetch = (function () {
   'use strict';
-  const TTL_MS = 2 * 60 * 1000; // 2 minutes
-  const PREFIX = 'mltd_cache_';
+
+  // Per-endpoint client-side TTL (ms)
+  // Fundamentals/strategy change slowly — cache longer to avoid cold-start waits
+  var TTL_MAP = {
+    '/api/fundamentals':      15 * 60 * 1000,  // 15 min — P/E, ratings rarely intraday
+    '/api/options-strategy':   8 * 60 * 1000,  // 8 min
+    '/api/options-summary':    8 * 60 * 1000,
+    '/api/gamma-exposure':     8 * 60 * 1000,
+    '/api/option-flows':       8 * 60 * 1000,
+    '/api/market-summary':     5 * 60 * 1000,  // 5 min
+    '/api/0dte':               5 * 60 * 1000,
+  };
+  var DEFAULT_TTL = 2 * 60 * 1000;
+
+  // Endpoints stored in localStorage (survive tab close, speed up next session open)
+  var LS_KEYS = {
+    '/api/fundamentals':    true,
+    '/api/options-strategy':true,
+    '/api/options-summary': true,
+  };
+
+  var SS_PREFIX = 'mltd_cache_';
+  var LS_PREFIX = 'mltd_ls_';
+
+  function getStore(url) {
+    return LS_KEYS[url.replace(/\?.*$/, '')] ? localStorage : sessionStorage;
+  }
+
+  function getTtl(url) {
+    var base = url.replace(/\?.*$/, '');
+    return TTL_MAP[base] || DEFAULT_TTL;
+  }
+
+  function storageKey(url) {
+    var store = getStore(url);
+    var prefix = store === localStorage ? LS_PREFIX : SS_PREFIX;
+    return prefix + url;
+  }
+
+  function readCache(url) {
+    try {
+      var raw = getStore(url).getItem(storageKey(url));
+      if (raw) return JSON.parse(raw);
+    } catch (_) {}
+    return null;
+  }
+
+  function writeCache(url, data) {
+    try {
+      getStore(url).setItem(storageKey(url), JSON.stringify({ ts: Date.now(), data: data }));
+    } catch (_) {}
+  }
+
+  async function fetchFresh(url, opts) {
+    var resp = await fetch(url, Object.assign({ signal: AbortSignal.timeout(15000) }, opts || {}));
+    var data = await resp.json();
+    writeCache(url, data);
+    return data;
+  }
 
   return async function cachedFetch(url, opts) {
-    const key = PREFIX + url;
-    try {
-      const cached = sessionStorage.getItem(key);
-      if (cached) {
-        const { ts, data } = JSON.parse(cached);
-        if (Date.now() - ts < TTL_MS) return data;
+    var ttl = getTtl(url);
+    var entry = readCache(url);
+    if (entry) {
+      var age = Date.now() - entry.ts;
+      if (age < ttl) {
+        // Fresh — return immediately; if > 75% of TTL elapsed, refresh in background
+        if (age > ttl * 0.75) fetchFresh(url, opts).catch(function(){});
+        return entry.data;
       }
-    } catch (_) {}
-
-    const resp = await fetch(url, Object.assign({ signal: AbortSignal.timeout(15000) }, opts || {}));
-    const data = await resp.json();
-    try {
-      sessionStorage.setItem(key, JSON.stringify({ ts: Date.now(), data }));
-    } catch (_) {}
-    return data;
+      // Stale but not empty — return stale immediately, refresh in background
+      if (age < ttl * 3) {
+        fetchFresh(url, opts).catch(function(){});
+        return entry.data;
+      }
+    }
+    // No cache or too old — must await fresh data
+    return fetchFresh(url, opts);
   };
 })();

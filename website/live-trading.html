@@ -105,7 +105,7 @@
       font-size: .78rem;
       color: var(--muted);
     }
-    /* chart-wrap / chart-container / chart-loading defined below in IBKR section */
+    /* chart-wrap / chart-container / chart-loading */
 
     /* ── Timeframe selector ── */
     .tf-bar {
@@ -431,9 +431,7 @@
     <span class="server-msg" id="server-msg">
       <span class="spinner" id="spinner"></span>Connecting to live-server.py on port 5050…
     </span>
-    <span id="ibkr-status-badge" style="font-size:.73rem; font-weight:700; color:var(--muted); margin-right:.25rem;"></span>
     <span id="last-update" style="font-size:.75rem; color:var(--muted);"></span>
-    <button class="refresh-btn" onclick="ibkrWidget.open()" title="Interactive Brokers connection settings" style="border-color:rgba(16,185,129,.5);color:#10b981;">🔌 IBKR</button>
     <button class="refresh-btn" onclick="refreshAll()">↻ Refresh</button>
   </div>
 
@@ -739,7 +737,7 @@ ib.reqMktData(contract, <span style="color:#86efac;">''</span>, <span style="col
         <h2>🔄 4-Hour Candle Data Pipeline</h2>
 
         <div class="pipeline">
-          <div class="pipe-step" style="border-color:#10b981;">Market Data<br><small style="font-weight:400; color:var(--muted);">IBKR / yfinance</small></div>
+          <div class="pipe-step" style="border-color:#10b981;">Market Data<br><small style="font-weight:400; color:var(--muted);">yfinance</small></div>
           <div class="pipe-arrow">→</div>
           <div class="pipe-step">1H OHLCV<br><small style="font-weight:400; color:var(--muted);">Raw bars</small></div>
           <div class="pipe-arrow">→</div>
@@ -816,7 +814,6 @@ df_4h = raw.resample(<span style="color:#86efac;">'4h'</span>).agg({
       <div class="sidebar-card">
         <h4>Broker Comparison</h4>
         <ul>
-          <li><strong>IBKR</strong> — All three, <code>ib_async</code></li>
           <li><strong>Schwab</strong> — All three, <code>schwab-py</code></li>
           <li><strong>Alpaca</strong> — Stocks+Options, <code>alpaca-py</code></li>
           <li><strong>Polygon.io</strong> — Data only</li>
@@ -1296,29 +1293,6 @@ async function refreshAll() {
   ]);
 }
 
-// ── IBKR Panel ───────────────────────────────────────────────────────────────
-function updateIBKRBadge(connected, dataSource) {
-  const badge = document.getElementById('ibkr-status-badge');
-  if (!badge) return;
-  if (connected) {
-    badge.innerHTML = '<span style="color:#4ade80;">● IBKR Live</span>';
-  } else {
-    const src = dataSource || 'yfinance delayed';
-    badge.innerHTML = `<span style="color:#64748b;" title="${src}">● yfinance</span>`;
-  }
-}
-
-async function checkIBKRStatus() {
-  try {
-    const r = await fetch(`${API}/api/ibkr-status`, { signal: AbortSignal.timeout(3000) });
-    if (r.ok) {
-      const d = await r.json();
-      updateIBKRBadge(d.connected, d.data_source);
-      return d;
-    }
-  } catch(e) {}
-  return null;
-}
 
 // ── Check server health ──────────────────────────────────────────────────────
 async function checkServer() {
@@ -1372,10 +1346,8 @@ window.addEventListener('load', async () => {
             clearInterval(_retryTimer);
             _retryTimer = null;
             setServerOnline(true);
-            await checkIBKRStatus();
             loadAll(currentSymbol, currentType);
             startAutoRefresh();
-            setInterval(checkIBKRStatus, 60000);
           } else {
             dots = (dots + 1) % 4;
             const el = document.getElementById('offline-msg');
@@ -1387,12 +1359,8 @@ window.addEventListener('load', async () => {
       }
     } else {
       if (_retryTimer) { clearInterval(_retryTimer); _retryTimer = null; }
-      // Check IBKR connection status
-      await checkIBKRStatus();
       loadAll(currentSymbol, currentType);
       startAutoRefresh();
-      // Periodic IBKR health check — detects dropped TWS connections within 1 min
-      setInterval(checkIBKRStatus, 60000);
     }
   }
 
@@ -1400,13 +1368,6 @@ window.addEventListener('load', async () => {
 });
 </script>
 
-<script>
-// After IBKR connects, reload chart + signal with fresh IBKR data
-window.ibkrOnConnect = function() {
-  if (typeof loadAll === 'function' && currentSymbol) loadAll(currentSymbol, currentType, true);
-};
-</script>
-<script src="ibkr-widget.js" defer></script>
 <script src="search.js" defer></script>
 </body>
 </html>

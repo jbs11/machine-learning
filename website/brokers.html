@@ -116,38 +116,6 @@ h1{font-size:1.7rem;font-weight:800;color:var(--accent);margin-bottom:.3rem;}
       <div class="status-msg" id="msg-finnhub">Get a free API key at finnhub.io/register (no credit card required)</div>
     </div>
 
-    <!-- IBKR -->
-    <div class="broker-card" id="card-ibkr">
-      <div class="status-dot" id="dot-ibkr"></div>
-      <div class="broker-hdr">
-        <div class="broker-logo" style="background:rgba(34,211,238,.12);color:var(--accent);">IB</div>
-        <div>
-          <div class="broker-name">Interactive Brokers</div>
-          <div class="broker-tagline">Already integrated &mdash; TWS / IB Gateway</div>
-        </div>
-      </div>
-      <div class="features">
-        <span class="feat amber">Account Required</span>
-        <span class="feat">Real-time Data</span>
-        <span class="feat">Options &amp; Futures</span>
-        <span class="feat">Paper Trading</span>
-      </div>
-      <div class="input-row">
-        <label>TWS HOST</label>
-        <input type="text" id="ibkr-host" value="127.0.0.1" placeholder="127.0.0.1">
-      </div>
-      <div class="input-row">
-        <label>PORT</label>
-        <input type="text" id="ibkr-port" value="7497" placeholder="7497 (TWS paper) or 4002 (Gateway paper)">
-      </div>
-      <div class="btn-row">
-        <button class="btn btn-connect" onclick="connectBroker('ibkr')">Connect TWS</button>
-        <button class="btn btn-signup" onclick="window.open('https://www.interactivebrokers.com/en/trading/paper-trading.php','_blank')">&#43; Paper Account</button>
-        <button class="btn btn-disconnect" style="display:none" id="disc-ibkr" onclick="disconnectBroker('ibkr')">Disconnect</button>
-      </div>
-      <div class="status-msg" id="msg-ibkr">Start TWS or IB Gateway, enable API connections, then connect</div>
-    </div>
-
   </div>
 
   <!-- Comparison Table -->
@@ -166,15 +134,6 @@ h1{font-size:1.7rem;font-weight:800;color:var(--accent);margin-bottom:.3rem;}
           <td><span class="check">&#10003; Full fundamentals</span></td>
           <td><span class="warn">&#8722; Basic</span></td>
           <td>60/min</td>
-        </tr>
-        <tr>
-          <td><strong>IBKR</strong></td>
-          <td><span class="warn">Account needed</span></td>
-          <td><span class="check">&#10003; Full OHLCV</span></td>
-          <td><span class="check">&#10003; Real-time</span></td>
-          <td><span class="check">&#10003; Full</span></td>
-          <td><span class="check">&#10003; Full chains</span></td>
-          <td>Unlimited</td>
         </tr>
         <tr>
           <td><strong>yfinance</strong> (default)</td>
@@ -201,11 +160,8 @@ h1{font-size:1.7rem;font-weight:800;color:var(--accent);margin-bottom:.3rem;}
 const API = window.location.origin;
 
 window.addEventListener('load', () => {
-  ['finnhub','ibkr'].forEach(b => {
-    const saved = loadCreds(b);
-    if(saved) restoreFields(b, saved);
-  });
-  checkIBKR();
+  const saved = loadCreds('finnhub');
+  if(saved) restoreFields('finnhub', saved);
 });
 
 function loadCreds(broker){
@@ -221,9 +177,6 @@ function clearCreds(broker){
 function restoreFields(broker, creds){
   if(broker==='finnhub'){
     document.getElementById('finnhub-key').value = creds.key || '';
-  } else if(broker==='ibkr'){
-    document.getElementById('ibkr-host').value = creds.host || '127.0.0.1';
-    document.getElementById('ibkr-port').value = creds.port || '7497';
   }
 }
 
@@ -248,11 +201,6 @@ async function connectBroker(broker){
     if(!key){ setStatus(broker,'err','Enter your Finnhub API key'); return; }
     body = {key};
     saveCreds(broker, body);
-  } else if(broker==='ibkr'){
-    const host = document.getElementById('ibkr-host').value.trim() || '127.0.0.1';
-    const port = parseInt(document.getElementById('ibkr-port').value) || 7497;
-    body = {host, port, clientId: 1};
-    saveCreds(broker, {host, port});
   }
 
   try {
@@ -278,15 +226,7 @@ async function disconnectBroker(broker){
   setStatus(broker, '', 'Disconnected');
 }
 
-async function checkIBKR(){
-  try {
-    const r = await fetch(API + '/api/ibkr-status');
-    const d = await r.json();
-    if(d.connected) setStatus('ibkr', 'ok', 'Connected to TWS — real-time data active');
-  } catch(e){}
-}
 </script>
 <script src="search.js" defer></script>
-<script src="ibkr-widget.js" defer></script>
 </body>
 </html>
