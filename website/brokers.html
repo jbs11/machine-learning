@@ -4,7 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Broker Connections — ML Trading Dashboard</title>
-<link rel="stylesheet" href="style.css">
+<link rel="preload" href="style.css" as="style" fetchpriority="high">
+  <link rel="stylesheet" href="style.css">
 <style>
 :root{--bg:#080d1a;--surf:#0f1729;--card:#1a2540;--border:#243058;
   --accent:#22d3ee;--green:#4ade80;--red:#f87171;--amber:#fbbf24;
@@ -28,7 +29,7 @@ h1{font-size:1.7rem;font-weight:800;color:var(--accent);margin-bottom:.3rem;}
 .status-dot.ok{background:var(--green);}
 .status-dot.err{background:var(--red);}
 .status-dot.loading{background:var(--amber);animation:pulse 1s infinite;}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+50%{opacity:.4}}
 
 .features{display:flex;flex-wrap:wrap;gap:.35rem;margin-bottom:.9rem;}
 .feat{font-size:.72rem;padding:.2rem .5rem;border-radius:4px;background:rgba(34,211,238,.1);color:var(--accent);border:1px solid rgba(34,211,238,.2);}
@@ -73,6 +74,8 @@ h1{font-size:1.7rem;font-weight:800;color:var(--accent);margin-bottom:.3rem;}
     <li><a href="index.html">Home</a></li>
     <li><a href="live-trading.html">Live Trading</a></li>
     <li><a href="brokers.html" class="active">Brokers</a></li>
+    <li><a href="market-preparation.html">&#128204; Market Prep</a></li>
+    <li><a href="asset-details.html">&#128202; Asset Review</a></li>
     <li><a href="report-ms.html" target="_blank" style="background:#22d3ee;color:#080d1a;padding:.28rem .85rem;border-radius:5px;font-weight:700;">&#128202; Market Report</a></li>
     <li><a href="report-tg.html" target="_blank" style="background:#a78bfa;color:#080d1a;padding:.28rem .85rem;border-radius:5px;font-weight:700;">&#128214; Trading Guide</a></li>
   </ul>
@@ -283,7 +286,7 @@ async function checkIBKR(){
   } catch(e){}
 }
 </script>
-<script src="search.js"></script>
-<script src="ibkr-widget.js"></script>
+<script src="search.js" defer></script>
+<script src="ibkr-widget.js" defer></script>
 </body>
 </html>

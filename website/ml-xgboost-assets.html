@@ -4,24 +4,13 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ML XGBoost All Assets — Candlestick Chart Signals</title>
+  <link rel="preload" href="style.css" as="style" fetchpriority="high">
   <link rel="stylesheet" href="style.css">
-  <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
+  <link rel="preload" href="lightweight-charts.min.js" as="script">
+  <script src="lightweight-charts.min.js"></script>
   <style>
     /* ── Layout ── */
-    .xb-wrap { max-width: 1600px; margin: 0 auto; padding: 0 1.5rem 6rem; }
-
-    /* ── Page nav ── */
-    .page-nav {
-      display: flex; align-items: center; gap: 1rem;
-      padding: .6rem 1.5rem; background: var(--surface);
-      border-bottom: 1px solid var(--border); font-size: .83rem;
-    }
-    .page-nav a { color: var(--muted); text-decoration: none; padding: .3rem .7rem; border-radius: 5px; transition: color .15s, background .15s; }
-    .page-nav a:hover { color: var(--text); background: rgba(255,255,255,.06); }
-    .page-nav a.active { color: var(--accent); font-weight: 700; }
-    .page-nav-sep { color: var(--border); }
-
-    /* ── Hero ── */
+    .xb-wrap { max-width: 1600px; margin: 0 auto; padding: 0 1.5rem 6rem; }/* ── Hero ── */
     .xb-hero {
       padding: 3.5rem 1.5rem 2.5rem; text-align: center;
       background: radial-gradient(ellipse 80% 55% at 50% -5%, rgba(251,191,36,.1) 0%, transparent 65%), var(--bg);
@@ -47,21 +36,8 @@
       gap:1px; background:var(--border); border-top:1px solid var(--border); border-bottom:1px solid var(--border); }
     .stat-cell { background:var(--surface); padding:1rem 1.2rem; text-align:center; }
     .stat-val { font-size:1.4rem; font-weight:900; margin-bottom:.1rem; }
-    .stat-lbl { font-size:.7rem; font-weight:600; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); }
-
-    /* ── Server bar ── */
-    .server-bar { display:flex;align-items:center;gap:.75rem;background:var(--surface);
-      border:1px solid var(--border);border-radius:8px;padding:.55rem 1.1rem;
-      margin:1.2rem 0;font-size:.85rem; }
-    .sdot { width:9px;height:9px;border-radius:50%;background:#f87171;flex-shrink:0;transition:background .3s; }
-    .sdot.on { background:#4ade80; } .sdot.loading { background:#fbbf24;animation:pulse 1s infinite; }
-    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
-    .smsg { color:var(--muted); flex:1; }
-    .rbtn { background:transparent;border:1px solid var(--border);color:var(--muted);
-      padding:.28rem .75rem;border-radius:6px;cursor:pointer;font-size:.8rem;transition:border-color .2s,color .2s; }
-    .rbtn:hover { border-color:#fbbf24;color:#fbbf24; }
-
-    /* ── Progress bar ── */
+    .stat-lbl { font-size:.7rem; font-weight:600; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); }50%{opacity:.4} }
+/* ── Progress bar ── */
     .progress-wrap { height:4px;background:var(--border);border-radius:2px;overflow:hidden;margin:.3rem 0; display:none; }
     .progress-fill { height:100%;background:linear-gradient(90deg,#fbbf24,#f59e0b);border-radius:2px;transition:width .4s; width:0%; }
 
@@ -355,6 +331,8 @@
     <li><a href="futures-trading.html">Futures</a></li>
     <li><a href="brokers.html">Brokers</a></li>
     <li><a href="live-trading.html">Live Trading</a></li>
+    <li><a href="market-preparation.html">&#128204; Market Prep</a></li>
+    <li><a href="asset-details.html">&#128202; Asset Review</a></li>
     <li><a href="report-ms.html" target="_blank" style="background:#22d3ee;color:#080d1a;padding:.28rem .85rem;border-radius:5px;font-weight:700;letter-spacing:.02em;">&#128202; Market Report</a></li>
     <li><a href="report-tg.html" target="_blank" style="background:#a78bfa;color:#080d1a;padding:.28rem .85rem;border-radius:5px;font-weight:700;letter-spacing:.02em;">&#128214; Trading Guide</a></li>
   </ul>
@@ -420,6 +398,7 @@
     <div class="sdot loading" id="sdot"></div>
     <div style="flex:1;">
       <span class="smsg" id="smsg">Fetching daily data and training XGBoost for all assets…</span>
+    <button class="rbtn" id="retry-btn" style="display:none;align-items:center;gap:.35rem;">&#8635; Retry</button>
       <div class="progress-wrap" id="progWrap"><div class="progress-fill" id="progFill"></div></div>
     </div>
     <button class="rbtn" onclick="loadData(true)">↻ Refresh</button>
@@ -1712,7 +1691,7 @@ function renderError() {
 window.addEventListener('load', () => loadData());
 setInterval(() => loadData(), 10 * 60 * 1000);  // auto-refresh every 10 min
 </script>
-<script src="ibkr-widget.js"></script>
-<script src="search.js"></script>
+<script src="ibkr-widget.js" defer></script>
+<script src="search.js" defer></script>
 </body>
 </html>

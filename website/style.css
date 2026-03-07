@@ -517,3 +517,42 @@ a:hover { text-decoration: underline; }
   box-shadow: 0 0 12px rgba(34,211,238,.25);
 }
 .footer-logo strong { color: var(--text); font-size: .95rem; }
+
+/* ── PAGE NAV (secondary link bar below main nav) ───────────────────────── */
+.page-nav {
+  display:flex; align-items:center; gap:1rem; flex-wrap:wrap;
+  padding:.6rem 1.5rem; background:var(--surface);
+  border-bottom:1px solid var(--border); font-size:.83rem;
+}
+.page-nav a { color:var(--muted); text-decoration:none; padding:.3rem .7rem; border-radius:5px; transition:color .15s,background .15s; }
+.page-nav a:hover { color:var(--text); background:rgba(255,255,255,.06); text-decoration:none; }
+.page-nav a.active { color:var(--primary); font-weight:700; }
+.page-nav-sep { color:var(--border); }
+.nav-report-btn { padding:.28rem .75rem; border-radius:6px; font-size:.78rem; font-weight:700; text-decoration:none; display:inline-block; transition:opacity .15s; }
+.nav-report-btn:hover { opacity:.8; text-decoration:none; }
+
+/* ── SERVER BAR (status bar on dashboard pages) ─────────────────────────── */
+.server-bar { display:flex; align-items:center; gap:.75rem; background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:.55rem 1.1rem; margin:1.2rem 0; font-size:.85rem; }
+.sdot { width:9px; height:9px; border-radius:50%; background:#f87171; flex-shrink:0; transition:background .3s; }
+.sdot.on { background:#4ade80; }
+.sdot.loading { background:#fbbf24; animation:pulse 1s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.35} }
+.smsg { color:var(--muted); flex:1; }
+.rbtn { background:transparent; border:1px solid var(--border); color:var(--muted); padding:.28rem .75rem; border-radius:6px; cursor:pointer; font-size:.8rem; transition:border-color .2s,color .2s; text-decoration:none; }
+.rbtn:hover { border-color:var(--primary); color:var(--primary); text-decoration:none; }
+
+/* ── SKELETON LOADER (shimmer placeholder while data loads) ─────────────── */
+.skeleton {
+  background: linear-gradient(90deg, var(--surface) 25%, var(--card) 50%, var(--surface) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+  border-radius: 6px;
+  color: transparent !important;
+  pointer-events: none;
+  user-select: none;
+}
+@keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+.skeleton-row { height:.9em; margin:.35rem 0; border-radius:4px; }
+.skeleton-sm  { width:55%; }
+.skeleton-md  { width:75%; }
+.skeleton-lg  { width:100%; }

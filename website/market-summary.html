@@ -4,34 +4,13 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Market Summary — ML Trading Dashboard</title>
+  <link rel="preload" href="style.css" as="style" fetchpriority="high">
   <link rel="stylesheet" href="style.css">
   <style>
     /* ── Page Layout ── */
     .page-wrap { max-width: 1400px; margin: 0 auto; padding: 1.5rem 1.5rem 3rem; }
 
-    /* ── Top Nav ── */
-    .page-nav {
-      display: flex; align-items: center; gap: 1rem;
-      padding: .6rem 1.5rem; background: var(--surface);
-      border-bottom: 1px solid var(--border);
-      font-size: .83rem; margin-bottom: 0;
-    }
-    .page-nav a {
-      color: var(--muted); text-decoration: none; padding: .3rem .7rem;
-      border-radius: 5px; transition: color .15s, background .15s;
-    }
-    .page-nav a:hover { color: var(--text); background: rgba(255,255,255,.06); }
-    .page-nav a.active { color: var(--accent); font-weight: 700; }
-    .page-nav-sep { color: var(--border); user-select: none; }
-
-    /* ── Server bar ── */
-    .server-bar {
-      display: flex; align-items: center; gap: .75rem;
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: 8px; padding: .6rem 1.2rem;
-      margin: 1.2rem 0; font-size: .85rem;
-    }
-    .server-dot { width:10px; height:10px; border-radius:50%; background:#f87171; flex-shrink:0; transition:background .3s; }
+    /* ── Top Nav ── */.server-dot { width:10px; height:10px; border-radius:50%; background:#f87171; flex-shrink:0; transition:background .3s; }
     .server-dot.online { background:#4ade80; }
     .server-msg { color:var(--muted); flex:1; }
     .refresh-btn {
@@ -557,7 +536,8 @@
       display: flex; align-items: center; justify-content: center; margin-top: .1rem;
     }
   </style>
-  <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
+  <link rel="preload" href="lightweight-charts.min.js" as="script">
+  <script src="lightweight-charts.min.js"></script>
 </head>
 <body>
 
@@ -590,6 +570,8 @@
   <a href="institutional-buyers.html">Institutional 🏦</a>
   <span class="page-nav-sep">|</span>
   <a href="hedging-impact.html">Hedging Impact ⚡</a>
+  <span class="page-nav-sep">|</span>
+  <a href="market-preparation.html">Market Prep &#128204;</a><span class="page-nav-sep">|</span><a href="asset-details.html">Asset Review &#128202;</a>
 </nav>
 
 <div class="page-wrap">
@@ -2546,7 +2528,7 @@ window.ibkrOnConnect = function() {
   if (typeof reload === 'function') reload();
 };
 </script>
-<script src="ibkr-widget.js"></script>
-<script src="search.js"></script>
+<script src="ibkr-widget.js" defer></script>
+<script src="search.js" defer></script>
 </body>
 </html>

@@ -259,3 +259,60 @@
     init();
   }
 })();
+
+/**
+ * cachedFetch — sessionStorage-backed API cache (2-min TTL).
+ * Available globally on all pages since search.js is loaded everywhere.
+ * Usage: const data = await cachedFetch('/api/market-summary');
+ */
+/**
+ * showPageError — call when API load fails.
+ * Sets the sdot to red, shows an error message, and wires the retry button.
+ *   showPageError('Connection failed', reloadFn)
+ */
+window.showPageError = function(msg, retryFn) {
+  var dot = document.getElementById('sdot');
+  var smsg = document.getElementById('smsg');
+  var rbtn = document.getElementById('retry-btn');
+  if (dot)  dot.className = 'sdot';            // red dot
+  if (smsg) smsg.textContent = msg || 'Connection error — server may be starting up.';
+  if (rbtn) {
+    rbtn.style.display = 'inline-flex';
+    rbtn.onclick = function() {
+      rbtn.style.display = 'none';
+      if (typeof retryFn === 'function') retryFn();
+    };
+  }
+};
+
+/**
+ * hideRetryBtn — call after successful load to hide the retry button.
+ */
+window.hideRetryBtn = function() {
+  var rbtn = document.getElementById('retry-btn');
+  if (rbtn) rbtn.style.display = 'none';
+};
+
+window.cachedFetch = (function () {
+  'use strict';
+  const TTL_MS = 2 * 60 * 1000; // 2 minutes
+  const PREFIX = 'mltd_cache_';
+
+  return async function cachedFetch(url, opts) {
+    const key = PREFIX + url;
+    try {
+      const cached = sessionStorage.getItem(key);
+      if (cached) {
+        const { ts, data } = JSON.parse(cached);
+        if (Date.now() - ts < TTL_MS) return data;
+      }
+    } catch (_) {}
+
+    const resp = await fetch(url, Object.assign({ signal: AbortSignal.timeout(15000) }, opts || {}));
+    const data = await resp.json();
+    try {
+      sessionStorage.setItem(key, JSON.stringify({ ts: Date.now(), data }));
+    } catch (_) {}
+    return data;
+  };
+})();

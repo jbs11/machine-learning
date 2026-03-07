@@ -4,8 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Live ML Trading Dashboard — Artificial Intelligence Course</title>
+  <link rel="preload" href="style.css" as="style" fetchpriority="high">
   <link rel="stylesheet" href="style.css">
-  <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
+  <link rel="preload" href="lightweight-charts.min.js" as="script">
+  <script src="lightweight-charts.min.js"></script>
   <style>
     /* ── Dashboard Layout ── */
     .dashboard-wrap {
@@ -13,18 +15,7 @@
       margin: 0 auto;
       padding: 2rem 1.5rem;
     }
-    .server-bar {
-      display: flex;
-      align-items: center;
-      gap: .75rem;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: .6rem 1.2rem;
-      margin-bottom: 1.5rem;
-      font-size: .85rem;
-    }
-    .server-dot {
+.server-dot {
       width: 10px; height: 10px;
       border-radius: 50%;
       background: #f87171;
@@ -345,7 +336,9 @@
     <li><a href="futures-trading.html">Futures</a></li>
     <li><a href="brokers.html">Brokers</a></li>
     <li><a href="live-trading.html" class="active">Live Trading</a></li>
-        <li><a href="report-ms.html" target="_blank" style="background:#22d3ee;color:#080d1a;padding:.28rem .85rem;border-radius:5px;font-weight:700;letter-spacing:.02em;">&#128202; Market Report</a></li>
+        <li><a href="market-preparation.html">&#128204; Market Prep</a></li>
+    <li><a href="asset-details.html">&#128202; Asset Review</a></li>
+    <li><a href="report-ms.html" target="_blank" style="background:#22d3ee;color:#080d1a;padding:.28rem .85rem;border-radius:5px;font-weight:700;letter-spacing:.02em;">&#128202; Market Report</a></li>
     <li><a href="report-tg.html" target="_blank" style="background:#a78bfa;color:#080d1a;padding:.28rem .85rem;border-radius:5px;font-weight:700;letter-spacing:.02em;">&#128214; Trading Guide</a></li>
   </ul>
 </nav>
@@ -394,21 +387,38 @@
 </section>
 
 <!-- ── Page Navigation ── -->
-<nav style="display:flex;align-items:center;gap:1rem;padding:.6rem 1.5rem;background:var(--surface);border-bottom:1px solid var(--border);font-size:.83rem;">
-  <a href="live-trading.html"   style="color:var(--accent);font-weight:700;text-decoration:none;">Live Trading</a>|</span>
-  <a href="market-summary.html" style="color:var(--muted);text-decoration:none;padding:.3rem .7rem;border-radius:5px;transition:color .15s;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">Market Summary →</a>|</span>
-  <a href="terminology.html" style="color:var(--muted);text-decoration:none;padding:.3rem .7rem;border-radius:5px;transition:color .15s;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">Terminology 📖</a>|</span>
-  <a href="ml-sp500-example.html" style="color:var(--muted);text-decoration:none;padding:.3rem .7rem;border-radius:5px;transition:color .15s;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">ML Example 🧠</a>|</span>
-  <a href="ml-key-assets.html" style="color:var(--muted);text-decoration:none;padding:.3rem .7rem;border-radius:5px;transition:color .15s;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">ML Key Assets 📋</a>|</span>
-  <a href="ml-xgboost-assets.html" style="color:var(--muted);text-decoration:none;padding:.3rem .7rem;border-radius:5px;transition:color .15s;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">XGBoost Charts 📊</a>|</span>
-  <a href="gamma-exposure.html" style="color:var(--muted);text-decoration:none;padding:.3rem .7rem;border-radius:5px;transition:color .15s;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">GEX Charts 🎯</a>|</span>
-  <a href="options-strategy.html" style="color:var(--muted);text-decoration:none;padding:.3rem .7rem;border-radius:5px;transition:color .15s;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">Options Strategy 📈</a>|</span>
-  <a href="option-flows.html" style="color:var(--muted);text-decoration:none;padding:.3rem .7rem;border-radius:5px;transition:color .15s;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">Option Flows 🌊</a>|</span>
-  <a href="options-summary.html" style="color:var(--muted);text-decoration:none;padding:.3rem .7rem;border-radius:5px;transition:color .15s;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">Options Summary 📊</a>|</span>
-  <a href="0dte-options.html" style="color:var(--muted);text-decoration:none;padding:.3rem .7rem;border-radius:5px;transition:color .15s;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">0DTE 🔥</a>|</span>
-  <a href="fundamentals.html" style="color:var(--muted);text-decoration:none;padding:.3rem .7rem;border-radius:5px;transition:color .15s;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">Fundamentals 📋</a>|</span>
-  <a href="institutional-buyers.html" style="color:var(--muted);text-decoration:none;padding:.3rem .7rem;border-radius:5px;transition:color .15s;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">Institutional 🏦</a>|</span>
-  <a href="hedging-impact.html" style="color:var(--muted);text-decoration:none;padding:.3rem .7rem;border-radius:5px;transition:color .15s;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">Hedging Impact ⚡</a>
+<nav class="page-nav">
+  <a href="live-trading.html" class="active">Live Trading</a>
+  <span class="page-nav-sep">|</span>
+  <a href="market-preparation.html">Market Prep &#128204;</a>
+  <span class="page-nav-sep">|</span>
+  <a href="asset-details.html">Asset Review &#128202;</a>
+  <span class="page-nav-sep">|</span>
+  <a href="market-summary.html">Market Summary</a>
+  <span class="page-nav-sep">|</span>
+  <a href="ml-sp500-example.html">ML Example &#129504;</a>
+  <span class="page-nav-sep">|</span>
+  <a href="ml-key-assets.html">ML Key Assets &#128203;</a>
+  <span class="page-nav-sep">|</span>
+  <a href="ml-xgboost-assets.html">XGBoost Charts &#128202;</a>
+  <span class="page-nav-sep">|</span>
+  <a href="gamma-exposure.html">GEX Charts &#127919;</a>
+  <span class="page-nav-sep">|</span>
+  <a href="options-strategy.html">Options Strategy &#128200;</a>
+  <span class="page-nav-sep">|</span>
+  <a href="option-flows.html">Option Flows &#127754;</a>
+  <span class="page-nav-sep">|</span>
+  <a href="options-summary.html">Options Summary &#128202;</a>
+  <span class="page-nav-sep">|</span>
+  <a href="0dte-options.html">0DTE &#128293;</a>
+  <span class="page-nav-sep">|</span>
+  <a href="fundamentals.html">Fundamentals &#128203;</a>
+  <span class="page-nav-sep">|</span>
+  <a href="institutional-buyers.html">Institutional &#127970;</a>
+  <span class="page-nav-sep">|</span>
+  <a href="hedging-impact.html">Hedging Impact &#9889;</a>
+  <span class="page-nav-sep">|</span>
+  <a href="terminology.html">Terminology &#128218;</a>
 </nav>
 
 <!-- ── Live Dashboard ── -->
@@ -1396,7 +1406,7 @@ window.ibkrOnConnect = function() {
   if (typeof loadAll === 'function' && currentSymbol) loadAll(currentSymbol, currentType, true);
 };
 </script>
-<script src="ibkr-widget.js"></script>
-<script src="search.js"></script>
+<script src="ibkr-widget.js" defer></script>
+<script src="search.js" defer></script>
 </body>
 </html>

@@ -4,16 +4,13 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>BRK-B — Berkshire Hathaway B | Asset Details</title>
+  <link rel="preload" href="style.css" as="style" fetchpriority="high">
   <link rel="stylesheet" href="style.css">
-  <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
+  <link rel="preload" href="lightweight-charts.min.js" as="script">
+  <script src="lightweight-charts.min.js"></script>
   <style>
     .ap-wrap { max-width:1500px;margin:0 auto;padding:0 1.5rem 6rem; }
-    .page-nav { display:flex;align-items:center;gap:1rem;padding:.6rem 1.5rem;background:var(--surface);border-bottom:1px solid var(--border);font-size:.83rem;flex-wrap:wrap; }
-    .page-nav a { color:var(--muted);text-decoration:none;padding:.3rem .7rem;border-radius:5px;transition:color .15s,background .15s; }
-    .page-nav a:hover { color:var(--text);background:rgba(255,255,255,.06); }
-    .page-nav-sep { color:var(--border); }
-
-    .ap-hero { padding:2.5rem 1.5rem 2rem;text-align:center;background:radial-gradient(ellipse 80% 50% at 50% -5%,#fbbf2418 0%,transparent 60%),var(--bg);border-bottom:1px solid var(--border); }
+.ap-hero { padding:2.5rem 1.5rem 2rem;text-align:center;background:radial-gradient(ellipse 80% 50% at 50% -5%,#fbbf2418 0%,transparent 60%),var(--bg);border-bottom:1px solid var(--border); }
     .ap-sym { font-size:clamp(2.5rem,6vw,4.5rem);font-weight:900;font-family:'Consolas',monospace;color:#fbbf24;letter-spacing:-.02em;line-height:1; }
     .ap-name { font-size:clamp(1rem,2.5vw,1.4rem);font-weight:700;color:var(--text);margin:.4rem 0 .2rem; }
     .ap-sector { font-size:.85rem;color:var(--muted);margin-bottom:1rem; }
@@ -24,15 +21,8 @@
     .stat-val { font-size:1.25rem;font-weight:900;margin-bottom:.1rem;font-family:'Consolas',monospace; }
     .stat-lbl { font-size:.65rem;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--muted); }
 
-    .server-bar { display:flex;align-items:center;gap:.75rem;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:.5rem 1rem;margin:1.1rem 0;font-size:.84rem; }
-    .sdot { width:9px;height:9px;border-radius:50%;background:#f87171;flex-shrink:0;transition:background .3s; }
-    .sdot.on { background:#4ade80; } .sdot.loading { background:#fbbf24;animation:pulse 1s infinite; }
-    @keyframes pulse { 0%,100%{opacity:1}50%{opacity:.4} }
-    .smsg { color:var(--muted);flex:1; }
-    .rbtn { background:transparent;border:1px solid var(--border);color:var(--muted);padding:.25rem .7rem;border-radius:5px;cursor:pointer;font-size:.78rem;transition:border-color .2s,color .2s;text-decoration:none; }
-    .rbtn:hover { border-color:#fbbf24;color:#fbbf24;text-decoration:none; }
-
-    .sec-hdr { display:flex;align-items:center;gap:.8rem;margin:2.2rem 0 1rem;padding-bottom:.5rem;border-bottom:2px solid var(--border); }
+50%{opacity:.4} }
+.sec-hdr { display:flex;align-items:center;gap:.8rem;margin:2.2rem 0 1rem;padding-bottom:.5rem;border-bottom:2px solid var(--border); }
     .sec-num { background:#fbbf24;color:#080d1a;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:.8rem;flex-shrink:0; }
     .sec-title { font-size:1.1rem;font-weight:800; }
     .sec-sub { font-size:.76rem;color:var(--muted);margin-left:.3rem; }
@@ -106,6 +96,8 @@
     <li><a href="brokers.html">Brokers</a></li>
     <li><a href="live-trading.html">Live Trading</a></li>
     <li><a href="asset-details.html" style="color:#10b981;font-weight:700;">Asset Details</a></li>
+    <li><a href="market-preparation.html">&#128204; Market Prep</a></li>
+    <li><a href="asset-details.html">&#128202; Asset Review</a></li>
     <li><a href="report-ms.html" target="_blank" style="background:#22d3ee;color:#080d1a;padding:.28rem .85rem;border-radius:5px;font-weight:700;">&#128202; Market Report</a></li>
     <li><a href="report-tg.html" target="_blank" style="background:#a78bfa;color:#080d1a;padding:.28rem .85rem;border-radius:5px;font-weight:700;">&#128214; Trading Guide</a></li>
   </ul>
@@ -154,6 +146,7 @@
   <div class="server-bar">
     <div class="sdot loading" id="sdot"></div>
     <span class="smsg" id="smsg">Loading live data for BRK-B...</span>
+    <button class="rbtn" id="retry-btn" style="display:none;align-items:center;gap:.35rem;">&#8635; Retry</button>
     <button class="rbtn" onclick="loadAll(true)">&#8635; Refresh</button>
     <a href="live-trading.html?sym=BRK-B" class="rbtn">&#128201; Live Chart</a>
     <a href="asset-details.html" class="rbtn">&#8592; All Assets</a>
@@ -347,7 +340,7 @@ function chipDir(d) {
 /* ── Candlestick Chart ── */
 async function loadChart() {
   try {
-    var res = await fetch(API + '/api/candles/' + SYM + '?interval=1h', {cache:'no-store'});
+    var res = await fetch(API + '/api/candles/' + SYM + '?interval=1h', {cache:'no-store', signal: AbortSignal.timeout(15000)});
     if (!res.ok) throw new Error('HTTP ' + res.status);
     var data = await res.json();
     var candles = data.candles || data;
@@ -413,7 +406,7 @@ async function loadChart() {
 /* ── ML Signal ── */
 async function loadSignal() {
   try {
-    var res = await fetch(API + '/api/signal/' + SYM, {cache:'no-store'});
+    var res = await fetch(API + '/api/signal/' + SYM, {cache:'no-store', signal: AbortSignal.timeout(15000)});
     if (!res.ok) throw new Error('HTTP ' + res.status);
     var d = await res.json();
     var dir = (d.direction || 'NEUTRAL').toUpperCase();
@@ -448,7 +441,7 @@ async function loadSignal() {
 /* ── GEX ── */
 async function loadGex() {
   try {
-    var res = await fetch(API + '/api/gamma-exposure', {cache:'no-store'});
+    var res = await fetch(API + '/api/gamma-exposure', {cache:'no-store', signal: AbortSignal.timeout(15000)});
     if (!res.ok) throw new Error('HTTP ' + res.status);
     var data = await res.json();
     var a = (data.assets||[]).find(function(x){ return x.symbol === SYM; });
@@ -487,7 +480,7 @@ async function loadGex() {
 /* ── Option Flow ── */
 async function loadFlows() {
   try {
-    var res = await fetch(API + '/api/option-flows', {cache:'no-store'});
+    var res = await fetch(API + '/api/option-flows', {cache:'no-store', signal: AbortSignal.timeout(15000)});
     if (!res.ok) throw new Error('HTTP ' + res.status);
     var data = await res.json();
     var a = (data.assets||[]).find(function(x){ return x.symbol === SYM; });
@@ -533,7 +526,7 @@ async function loadFlows() {
 /* ── Fundamentals ── */
 async function loadFund() {
   try {
-    var res = await fetch(API + '/api/fundamentals', {cache:'no-store'});
+    var res = await fetch(API + '/api/fundamentals', {cache:'no-store', signal: AbortSignal.timeout(15000)});
     if (!res.ok) throw new Error('HTTP ' + res.status);
     var data = await res.json();
     var assets = data.assets || data || [];
@@ -560,12 +553,21 @@ async function loadAll(nocache) {
   setStatus('loading', 'Loading live data for ' + SYM + '...');
   await Promise.all([loadChart(), loadSignal(), loadGex(), loadFlows(), loadFund()]);
   setStatus('ok', SYM + ' data loaded · refreshes every 8 min');
+  hideRetryBtn();
 }
 
-window.addEventListener('load', function(){ loadAll(); });
-setInterval(function(){ loadAll(); }, 8*60*1000);
+window.addEventListener('load', async function() {
+  try {
+    await loadAll();
+  } catch(e) {
+    showPageError('Data load failed — ' + e.message, loadAll);
+  }
+});
+setInterval(async function() {
+  try { await loadAll(); } catch(e) { showPageError('Refresh failed — ' + e.message, loadAll); }
+}, 8 * 60 * 1000);
 </script>
-<script src="ibkr-widget.js"></script>
-<script src="search.js"></script>
+<script src="ibkr-widget.js" defer></script>
+<script src="search.js" defer></script>
 </body>
 </html>

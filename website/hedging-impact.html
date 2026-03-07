@@ -4,18 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Hedging Impact — Real-Time Options Dealer Flow</title>
+  <link rel="preload" href="style.css" as="style" fetchpriority="high">
   <link rel="stylesheet" href="style.css">
-  <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
+  <link rel="preload" href="lightweight-charts.min.js" as="script">
+  <script src="lightweight-charts.min.js"></script>
   <style>
     .hi-wrap { max-width:1600px; margin:0 auto; padding:0 1.5rem 6rem; }
 
-    .page-nav { display:flex;align-items:center;gap:1rem;padding:.6rem 1.5rem;background:var(--surface);border-bottom:1px solid var(--border);font-size:.83rem;flex-wrap:wrap; }
-    .page-nav a { color:var(--muted);text-decoration:none;padding:.3rem .7rem;border-radius:5px;transition:color .15s,background .15s; }
-    .page-nav a:hover { color:var(--text);background:rgba(255,255,255,.06); }
-    .page-nav a.active { color:#f97316;font-weight:700; }
-    .page-nav-sep { color:var(--border); }
-
-    /* ── Hero ── */
+/* ── Hero ── */
     .hi-hero { padding:3rem 1.5rem 2rem;text-align:center;background:radial-gradient(ellipse 80% 55% at 50% -5%,rgba(249,115,22,.12) 0%,transparent 65%),var(--bg);border-bottom:1px solid var(--border); }
     .hi-hero h1 { font-size:clamp(1.7rem,4vw,2.8rem);font-weight:900;letter-spacing:-.03em;line-height:1.15;margin-bottom:.6rem;background:linear-gradient(135deg,#f97316 0%,#fb923c 40%,#fff 80%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text; }
     .hi-hero p { color:var(--muted);font-size:1rem;max-width:760px;margin:0 auto 1.2rem;line-height:1.7; }
@@ -25,18 +21,8 @@
     .stats-strip { display:grid;grid-template-columns:repeat(auto-fill,minmax(145px,1fr));gap:1px;background:var(--border);border-top:1px solid var(--border);border-bottom:1px solid var(--border); }
     .stat-cell { background:var(--surface);padding:.9rem 1.1rem;text-align:center; }
     .stat-val { font-size:1.3rem;font-weight:900;margin-bottom:.1rem;font-family:'Consolas',monospace; }
-    .stat-lbl { font-size:.68rem;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--muted); }
-
-    /* ── Server bar ── */
-    .server-bar { display:flex;align-items:center;gap:.75rem;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:.5rem 1rem;margin:1.2rem 0;font-size:.84rem; }
-    .sdot { width:9px;height:9px;border-radius:50%;background:#f87171;flex-shrink:0;transition:background .3s; }
-    .sdot.on { background:#4ade80; } .sdot.loading { background:#fbbf24;animation:pulse 1s infinite; }
-    @keyframes pulse { 0%,100%{opacity:1}50%{opacity:.4} }
-    .smsg { color:var(--muted);flex:1; }
-    .rbtn { background:transparent;border:1px solid var(--border);color:var(--muted);padding:.25rem .7rem;border-radius:5px;cursor:pointer;font-size:.78rem;transition:border-color .2s,color .2s; }
-    .rbtn:hover { border-color:#f97316;color:#f97316; }
-
-    /* ── Section headers ── */
+    .stat-lbl { font-size:.68rem;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--muted); }50%{opacity:.4} }
+/* ── Section headers ── */
     .sec-hdr { display:flex;align-items:center;gap:.8rem;margin:2.2rem 0 1.1rem;padding-bottom:.55rem;border-bottom:2px solid var(--border); }
     .sec-num { background:#f97316;color:#080d1a;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:.8rem;flex-shrink:0; }
     .sec-title { font-size:1.15rem;font-weight:800; }
@@ -186,6 +172,8 @@
   <a href="institutional-buyers.html">Institutional 🏦</a>
   <span class="page-nav-sep">|</span>
   <a href="hedging-impact.html" class="active">Hedging Impact ⚡</a>
+  <span class="page-nav-sep">|</span>
+  <a href="market-preparation.html">Market Prep &#128204;</a><span class="page-nav-sep">|</span><a href="asset-details.html">Asset Review &#128202;</a>
 </nav>
 
 <!-- ── Hero ── -->
@@ -231,6 +219,7 @@
   <div class="server-bar">
     <div class="sdot loading" id="sdot"></div>
     <span class="smsg" id="smsg">Connecting to live server…</span>
+    <button class="rbtn" id="retry-btn" style="display:none;align-items:center;gap:.35rem;">&#8635; Retry</button>
     <button class="rbtn" onclick="loadData(true)">↻ Refresh</button>
   </div>
 
@@ -879,7 +868,7 @@ async function loadMainChart(sym, gexAsset) {
   el.innerHTML = '<div class="loading-msg">Loading candles for ' + sym + '…</div>';
   let data = [];
   try {
-    const r = await fetch(API + '/api/candles/' + encodeURIComponent(sym));
+    const r = await fetch(API + '/api/candles/' + encodeURIComponent(sym), { signal: AbortSignal.timeout(15000) });
     data = await r.json();
   } catch(e) { el.innerHTML = '<div class="loading-msg">No candle data for ' + sym + '</div>'; return; }
   if (!Array.isArray(data) || !data.length) { el.innerHTML = '<div class="loading-msg">No data</div>'; return; }
@@ -1171,8 +1160,8 @@ async function loadData(nocache = false) {
   setStatus('loading', 'Fetching live GEX and options flow data…');
   const qs = nocache ? '?nocache=1' : '';
   const [gexRes, flowsRes] = await Promise.all([
-    fetch(API + '/api/gamma-exposure' + qs, {cache:'no-store'}).then(r=>r.json()).catch(()=>null),
-    fetch(API + '/api/option-flows'   + qs, {cache:'no-store'}).then(r=>r.json()).catch(()=>null),
+    cachedFetch(API + '/api/gamma-exposure').catch(()=>null),
+    cachedFetch(API + '/api/option-flows').catch(()=>null),
   ]);
 
   _gexData   = gexRes;
@@ -1180,6 +1169,7 @@ async function loadData(nocache = false) {
 
   if (!gexRes && !flowsRes) {
     setStatus('error', '⚠️ Cannot reach server at localhost:3000 — start with: py live-server.py');
+    showPageError('Cannot reach server — start with: py live-server.py', loadData);
     return;
   }
 
@@ -1212,7 +1202,7 @@ async function loadData(nocache = false) {
 loadData();
 setInterval(loadData, 5 * 60 * 1000);
 </script>
-<script src="ibkr-widget.js"></script>
-<script src="search.js"></script>
+<script src="ibkr-widget.js" defer></script>
+<script src="search.js" defer></script>
 </body>
 </html>

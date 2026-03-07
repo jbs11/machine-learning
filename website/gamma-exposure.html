@@ -4,23 +4,13 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Options Gamma Exposure — All Assets</title>
+  <link rel="preload" href="style.css" as="style" fetchpriority="high">
+  <link rel="preload" href="lightweight-charts.min.js" as="script">
+  <script src="lightweight-charts.min.js"></script>
   <link rel="stylesheet" href="style.css">
   <style>
     /* ── Layout ── */
-    .gex-wrap { max-width: 1600px; margin: 0 auto; padding: 0 1.5rem 6rem; }
-
-    /* ── Page nav ── */
-    .page-nav {
-      display: flex; align-items: center; gap: 1rem;
-      padding: .6rem 1.5rem; background: var(--surface);
-      border-bottom: 1px solid var(--border); font-size: .83rem; flex-wrap: wrap;
-    }
-    .page-nav a { color: var(--muted); text-decoration: none; padding: .3rem .7rem; border-radius: 5px; transition: color .15s, background .15s; }
-    .page-nav a:hover { color: var(--text); background: rgba(255,255,255,.06); }
-    .page-nav a.active { color: #a78bfa; font-weight: 700; }
-    .page-nav-sep { color: var(--border); }
-
-    /* ── Hero ── */
+    .gex-wrap { max-width: 1600px; margin: 0 auto; padding: 0 1.5rem 6rem; }/* ── Hero ── */
     .gex-hero {
       padding: 3.5rem 1.5rem 2.5rem; text-align: center;
       background: radial-gradient(ellipse 80% 55% at 50% -5%, rgba(167,139,250,.12) 0%, transparent 65%), var(--bg);
@@ -46,21 +36,8 @@
       gap:1px; background:var(--border); border-top:1px solid var(--border); border-bottom:1px solid var(--border); }
     .stat-cell { background:var(--surface); padding:1rem 1.2rem; text-align:center; }
     .stat-val { font-size:1.4rem; font-weight:900; margin-bottom:.1rem; }
-    .stat-lbl { font-size:.7rem; font-weight:600; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); }
-
-    /* ── Server bar ── */
-    .server-bar { display:flex;align-items:center;gap:.75rem;background:var(--surface);
-      border:1px solid var(--border);border-radius:8px;padding:.55rem 1.1rem;
-      margin:1.2rem 0;font-size:.85rem; }
-    .sdot { width:9px;height:9px;border-radius:50%;background:#f87171;flex-shrink:0;transition:background .3s; }
-    .sdot.on { background:#4ade80; } .sdot.loading { background:#fbbf24;animation:pulse 1s infinite; }
-    @keyframes pulse { 0%,100%{opacity:1}50%{opacity:.35} }
-    .smsg { color:var(--muted); flex:1; }
-    .rbtn { background:transparent;border:1px solid var(--border);color:var(--muted);
-      padding:.28rem .75rem;border-radius:6px;cursor:pointer;font-size:.8rem;transition:border-color .2s,color .2s; }
-    .rbtn:hover { border-color:#a78bfa;color:#a78bfa; }
-
-    /* ── Filter bar ── */
+    .stat-lbl { font-size:.7rem; font-weight:600; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); }50%{opacity:.35} }
+/* ── Filter bar ── */
     .filter-bar { display:flex;flex-wrap:wrap;align-items:center;gap:.6rem;margin:1.2rem 0; }
     .filter-pill { padding:.3rem .85rem;border-radius:99px;border:1px solid var(--border);
       background:transparent;color:var(--muted);font-size:.78rem;font-weight:700;cursor:pointer;transition:all .15s; }
@@ -145,7 +122,21 @@
     .empty-state { text-align:center; padding:4rem; color:var(--muted); grid-column:1/-1; }
 
     @media(max-width:800px) { .gex-hero h1{font-size:1.6rem;} }
-  </style>
+  
+    /* ── Inline price chart panel ── */
+    .pc-panel { background:var(--surface);border:1px solid var(--border);border-radius:12px;margin-bottom:1.2rem;overflow:hidden; }
+    .pc-hdr { display:flex;align-items:center;justify-content:space-between;padding:.65rem 1rem;border-bottom:1px solid var(--border);gap:.8rem;flex-wrap:wrap; }
+    .pc-title { font-size:.88rem;font-weight:800; }
+    .pc-sym-sel { display:flex;align-items:center;gap:.5rem;flex-wrap:wrap; }
+    .pc-sym-btn { padding:.25rem .65rem;border-radius:6px;font-size:.75rem;font-weight:700;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--muted);transition:all .15s; }
+    .pc-sym-btn:hover,.pc-sym-btn.active { border-color:var(--accent);color:var(--accent);background:rgba(34,211,238,.08); }
+    .pc-interval { border:1px solid var(--border);border-radius:5px;background:var(--card);color:var(--text);font-size:.75rem;padding:.2rem .4rem;cursor:pointer; }
+    .pc-ohlcv { display:flex;gap:1rem;font-size:.73rem;font-family:'Consolas',monospace;color:var(--muted);padding:.3rem 1rem;background:var(--card);border-bottom:1px solid var(--border);flex-wrap:wrap; }
+    .pc-ohlcv span b { color:var(--text); }
+    .pc-chart-area { background:#070d18; }
+    #pc-chart { height:260px; }
+    #pc-vol { height:60px; }
+</style>
 </head>
 <body>
 
@@ -169,6 +160,8 @@
     <li><a href="futures-trading.html">Futures</a></li>
     <li><a href="brokers.html">Brokers</a></li>
     <li><a href="live-trading.html">Live Trading</a></li>
+    <li><a href="market-preparation.html">&#128204; Market Prep</a></li>
+    <li><a href="asset-details.html">&#128202; Asset Review</a></li>
     <li><a href="report-ms.html" target="_blank" style="background:#22d3ee;color:#080d1a;padding:.28rem .85rem;border-radius:5px;font-weight:700;letter-spacing:.02em;">&#128202; Market Report</a></li>
     <li><a href="report-tg.html" target="_blank" style="background:#a78bfa;color:#080d1a;padding:.28rem .85rem;border-radius:5px;font-weight:700;letter-spacing:.02em;">&#128214; Trading Guide</a></li>
   </ul>
@@ -229,10 +222,38 @@
 
 <div class="gex-wrap" style="padding-top:1.2rem;">
 
+    <!-- Live Price Chart Panel (lightweight-charts) -->
+    <div class="pc-panel" id="pc-panel">
+      <div class="pc-hdr">
+        <span class="pc-title">&#128200; Live Price Chart</span>
+        <div class="pc-sym-sel" id="pc-sym-sel"></div>
+        <select class="pc-interval" id="pc-interval" onchange="pcLoadChart()">
+          <option value="15m">15m</option>
+          <option value="1h" selected>1h</option>
+          <option value="4h">4h</option>
+          <option value="1d">1D</option>
+        </select>
+        <span id="pc-status" style="font-size:.72rem;color:var(--muted);">Loading...</span>
+      </div>
+      <div class="pc-ohlcv" id="pc-ohlcv">
+        <span>O <b id="pc-o">--</b></span>
+        <span>H <b id="pc-h">--</b></span>
+        <span>L <b id="pc-l">--</b></span>
+        <span>C <b id="pc-c">--</b></span>
+        <span>V <b id="pc-v">--</b></span>
+      </div>
+      <div class="pc-chart-area">
+        <div id="pc-chart"></div>
+        <div id="pc-vol"></div>
+      </div>
+    </div>
+
+
   <!-- Server bar -->
   <div class="server-bar">
     <div class="sdot loading" id="sdot"></div>
     <span class="smsg" id="smsg">Fetching options chains and computing gamma exposure…</span>
+    <button class="rbtn" id="retry-btn" style="display:none;align-items:center;gap:.35rem;">&#8635; Retry</button>
     <button class="rbtn" onclick="loadData(true)">↻ Refresh</button>
     <a href="live-trading.html" class="rbtn" style="text-decoration:none;">📡 Live Trading</a>
   </div>
@@ -326,9 +347,8 @@ async function loadData(nocache = false) {
   setStatus('loading', 'Fetching options chains and computing gamma exposure…');
   try {
     const url = `${API}/api/gamma-exposure${nocache ? '?nocache=1' : ''}`;
-    const res = await fetch(url, { cache: 'no-store' });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
+    const data = await cachedFetch(url);
+    if (!data) throw new Error('No data returned');
     if (!data.assets || !data.assets.length) throw new Error('No assets returned');
 
     _allData = data;
@@ -338,7 +358,8 @@ async function loadData(nocache = false) {
     setStatus('ok', `${data.count} assets loaded · ${ts} · refreshes every 8 min`);
     document.getElementById('statTs').textContent = ts || '—';
   } catch (e) {
-    setStatus('error', `Cannot reach server: ${e.message}. Start Flask: py live-server.py`);
+    setStatus('error', `Cannot reach server — ${e.message}`);
+    showPageError(`Cannot reach server — ${e.message}`, () => loadData());
     renderError();
   }
 }
@@ -675,7 +696,90 @@ window.addEventListener('resize', () => {
 window.addEventListener('load', () => loadData());
 setInterval(() => loadData(), 8 * 60 * 1000);
 </script>
-<script src="ibkr-widget.js"></script>
-<script src="search.js"></script>
+<script>
+
+  /* ── Price Chart (lightweight-charts) ── */
+  (function() {
+    'use strict';
+    const PC_API = window.location.origin;
+    const PC_SYMS = ['SPY','QQQ','DIA','IWM','ES=F','NQ=F'];
+    let _pcChart = null, _pcCandleSeries = null, _pcVolSeries = null, _pcSym = 'SPY';
+
+    function pcInitButtons() {
+      const wrap = document.getElementById('pc-sym-sel');
+      if (!wrap) return;
+      PC_SYMS.forEach(s => {
+        const b = document.createElement('button');
+        b.className = 'pc-sym-btn' + (s === _pcSym ? ' active' : '');
+        b.textContent = s;
+        b.onclick = () => { _pcSym = s; document.querySelectorAll('.pc-sym-btn').forEach(x=>x.classList.remove('active')); b.classList.add('active'); pcLoadChart(); };
+        wrap.appendChild(b);
+      });
+    }
+
+    function pcInitChart() {
+      if (!window.LightweightCharts) { document.getElementById('pc-status').textContent='Charts library not loaded'; return; }
+      const chartEl = document.getElementById('pc-chart');
+      const volEl   = document.getElementById('pc-vol');
+      if (!chartEl || !volEl) return;
+
+      const opts = { layout:{background:{color:'#070d18'},textColor:'rgba(127,163,190,.85)'},grid:{vertLines:{color:'rgba(255,255,255,.03)'},horzLines:{color:'rgba(255,255,255,.03)'}},crosshair:{mode:1},timeScale:{borderColor:'rgba(255,255,255,.08)',timeVisible:true,secondsVisible:false},rightPriceScale:{borderColor:'rgba(255,255,255,.08)'},handleScroll:true,handleScale:true };
+
+      _pcChart = LightweightCharts.createChart(chartEl, {...opts, height:260});
+      _pcCandleSeries = _pcChart.addCandlestickSeries({ upColor:'#4ade80', downColor:'#f87171', borderUpColor:'#4ade80', borderDownColor:'#f87171', wickUpColor:'#4ade80', wickDownColor:'#f87171' });
+
+      const volChart = LightweightCharts.createChart(volEl, {...opts, height:60, rightPriceScale:{visible:false}, timeScale:{visible:false} });
+      _pcVolSeries = volChart.addHistogramSeries({ color:'rgba(34,211,238,.35)', priceFormat:{type:'volume'} });
+
+      _pcChart.subscribeCrosshairMove(p => {
+        if (p.seriesData && p.seriesData.size > 0) {
+          const d = p.seriesData.get(_pcCandleSeries);
+          if (d) {
+            document.getElementById('pc-o').textContent = d.open ? d.open.toFixed(2) : '--';
+            document.getElementById('pc-h').textContent = d.high ? d.high.toFixed(2) : '--';
+            document.getElementById('pc-l').textContent = d.low  ? d.low.toFixed(2)  : '--';
+            document.getElementById('pc-c').textContent = d.close? d.close.toFixed(2): '--';
+          }
+          const v = p.seriesData.get(_pcVolSeries);
+          if (v) document.getElementById('pc-v').textContent = v.value ? (v.value/1e6).toFixed(2)+'M' : '--';
+        }
+      });
+
+      new ResizeObserver(() => {
+        const w = chartEl.parentElement.clientWidth;
+        if (w > 0) _pcChart.resize(w, 260);
+      }).observe(chartEl.parentElement);
+    }
+
+    window.pcLoadChart = async function() {
+      if (!_pcChart) return;
+      const sym = _pcSym;
+      const interval = (document.getElementById('pc-interval')||{}).value || '1h';
+      const st = document.getElementById('pc-status');
+      if (st) st.textContent = 'Loading ' + sym + '...';
+      try {
+        const r = await fetch(PC_API + '/api/candles/' + encodeURIComponent(sym) + '?interval=' + interval, { signal: AbortSignal.timeout(15000) });
+        const data = await r.json();
+        const candles = (data.candles||data||[]).filter(c=>c.time&&c.open);
+        const vol = candles.map(c=>({time:c.time, value:c.volume||0, color: c.close>=c.open?'rgba(74,222,128,.35)':'rgba(248,113,113,.35)'}));
+        _pcCandleSeries.setData(candles);
+        _pcVolSeries.setData(vol);
+        _pcChart.timeScale().fitContent();
+        if (st) st.textContent = sym + ' · ' + candles.length + ' bars';
+      } catch(e) {
+        if (st) st.textContent = 'Error loading chart data';
+      }
+    };
+
+    document.addEventListener('DOMContentLoaded', () => {
+      pcInitButtons();
+      pcInitChart();
+      pcLoadChart();
+    });
+  })();
+
+  </script>
+  <script src="ibkr-widget.js" defer></script>
+<script src="search.js" defer></script>
 </body>
 </html>

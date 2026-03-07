@@ -42,6 +42,7 @@ warnings.filterwarnings('ignore')
 import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from flask import Flask, jsonify, request, send_from_directory
+from flask_compress import Compress
 from flask_cors import CORS
 import yfinance as yf
 import pandas as pd
@@ -54,6 +55,15 @@ from sklearn.preprocessing import StandardScaler
 from datetime import datetime, timedelta
 
 app = Flask(__name__)
+# Gzip compression — reduces JSON payloads 60-80%, JS/HTML 40-60%
+app.config['COMPRESS_MIMETYPES'] = [
+    'text/html', 'text/css', 'application/json',
+    'application/javascript', 'text/javascript',
+    'text/plain', 'text/xml'
+]
+app.config['COMPRESS_LEVEL'] = 6      # gzip level 6: good speed/ratio balance
+app.config['COMPRESS_MIN_SIZE'] = 256 # compress responses >= 256 bytes
+compress = Compress(app)
 CORS(app)
 
 # ── Available Symbols ─────────────────────────────────────────────────────────
@@ -650,7 +660,7 @@ def train_and_predict(df: pd.DataFrame, asset_type: str = 'stock'):
 
 # ── Cache (simple in-memory, 4-min TTL) ──────────────────────────────────────
 _cache: dict = {}
-CACHE_TTL = 240  # seconds
+CACHE_TTL = 480  # seconds — yfinance is 15-20 min delayed; 8-min server cache is safe
 
 def cache_key(symbol, kind):
     return f'{kind}:{symbol}'
@@ -668,10 +678,18 @@ def cache_set(key, val):
 
 
 @app.after_request
-def add_no_cache_headers(response):
-    """Prevent browsers from caching HTML and JS so fixes take effect immediately."""
+def add_cache_headers(response):
+    """Smart caching: no-cache for HTML/APIs; 1-day cache for static JS/CSS/images."""
+    path = request.path
     ct = response.content_type or ''
-    if 'html' in ct or 'javascript' in ct:
+    # Static local JS and CSS — allow 1-day browser cache
+    if (path.endswith('.js') or path.endswith('.css')) and not path.startswith('/api'):
+        response.headers['Cache-Control'] = 'public, max-age=86400'
+    # Images and fonts — allow 1-day browser cache
+    elif path.endswith(('.png', '.jpg', '.jpeg', '.ico', '.svg', '.woff', '.woff2')):
+        response.headers['Cache-Control'] = 'public, max-age=86400'
+    # HTML pages and API endpoints — always fresh
+    elif 'html' in ct or path.startswith('/api') or path == '/':
         response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
         response.headers['Pragma'] = 'no-cache'
         response.headers['Expires'] = '0'
@@ -4035,5 +4053,23 @@ if __name__ == '__main__':
                      else 'not connected — using yfinance'
             print(f"[IBKR] Probe complete: {status}")
         threading.Thread(target=_bg_ibkr_probe, daemon=True).start()
+
+    # Pre-warm cache in background so first user hits cached data, not cold yfinance
+    def _bg_prewarm():
+        import time, urllib.request
+        time.sleep(6)  # let Flask finish binding the port
+        PREWARM_ENDPOINTS = [
+            '/api/market-summary',
+            '/api/gamma-exposure',
+            '/api/option-flows',
+            '/api/0dte',
+        ]
+        for ep in PREWARM_ENDPOINTS:
+            try:
+                urllib.request.urlopen(f'http://localhost:3000{ep}', timeout=90)
+                print(f'[prewarm] {ep} ✓ cached')
+            except Exception as e:
+                print(f'[prewarm] {ep} ✗ {e}')
+    threading.Thread(target=_bg_prewarm, daemon=True).start()
 
     app.run(host='0.0.0.0', port=3000, debug=False, threaded=True)

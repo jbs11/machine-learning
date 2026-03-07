@@ -4,23 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Fundamentals — Financial Analysis &amp; Rankings</title>
+  <link rel="preload" href="style.css" as="style" fetchpriority="high">
   <link rel="stylesheet" href="style.css">
   <style>
     /* ── Layout ── */
-    .fund-wrap { max-width: 1600px; margin: 0 auto; padding: 0 1.5rem 6rem; }
-
-    /* ── Page nav ── */
-    .page-nav {
-      display: flex; align-items: center; gap: 1rem;
-      padding: .6rem 1.5rem; background: var(--surface);
-      border-bottom: 1px solid var(--border); font-size: .83rem; flex-wrap: wrap;
-    }
-    .page-nav a { color: var(--muted); text-decoration: none; padding: .3rem .7rem; border-radius: 5px; transition: color .15s, background .15s; }
-    .page-nav a:hover { color: var(--text); background: rgba(255,255,255,.06); }
-    .page-nav a.active { color: #10b981; font-weight: 700; }
-    .page-nav-sep { color: var(--border); }
-
-    /* ── Hero ── */
+    .fund-wrap { max-width: 1600px; margin: 0 auto; padding: 0 1.5rem 6rem; }/* ── Hero ── */
     .fund-hero {
       padding: 3.5rem 1.5rem 2.5rem; text-align: center;
       background: radial-gradient(ellipse 80% 55% at 50% -5%, rgba(16,185,129,.13) 0%, transparent 65%), var(--bg);
@@ -46,21 +34,8 @@
       gap:1px; background:var(--border); border-top:1px solid var(--border); border-bottom:1px solid var(--border); }
     .stat-cell { background:var(--surface); padding:1rem 1.2rem; text-align:center; }
     .stat-val  { font-size:1.4rem; font-weight:900; margin-bottom:.1rem; }
-    .stat-lbl  { font-size:.7rem; font-weight:600; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); }
-
-    /* ── Server bar ── */
-    .server-bar { display:flex;align-items:center;gap:.75rem;background:var(--surface);
-      border:1px solid var(--border);border-radius:8px;padding:.55rem 1.1rem;
-      margin:1.2rem 0;font-size:.85rem; }
-    .sdot { width:9px;height:9px;border-radius:50%;background:#f87171;flex-shrink:0;transition:background .3s; }
-    .sdot.on { background:#4ade80; } .sdot.loading { background:#fbbf24;animation:pulse 1s infinite; }
-    @keyframes pulse { 0%,100%{opacity:1}50%{opacity:.35} }
-    .smsg { color:var(--muted); flex:1; }
-    .rbtn { background:transparent;border:1px solid var(--border);color:var(--muted);
-      padding:.28rem .75rem;border-radius:6px;cursor:pointer;font-size:.8rem;transition:border-color .2s,color .2s; }
-    .rbtn:hover { border-color:#10b981;color:#10b981; }
-
-    /* ── Filter bar ── */
+    .stat-lbl  { font-size:.7rem; font-weight:600; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); }50%{opacity:.35} }
+/* ── Filter bar ── */
     .filter-bar { display:flex;flex-wrap:wrap;align-items:center;gap:.6rem;margin:1.2rem 0; }
     .filter-pill { padding:.3rem .85rem;border-radius:99px;border:1px solid var(--border);
       background:transparent;color:var(--muted);font-size:.78rem;font-weight:700;cursor:pointer;transition:all .15s; }
@@ -214,6 +189,8 @@
   <a href="fundamentals.html" class="active">Fundamentals &#128203;</a>
   <span class="page-nav-sep">|</span>
   <a href="institutional-buyers.html">Institutional 🏦</a>
+  <span class="page-nav-sep">|</span>
+  <a href="market-preparation.html">Market Prep &#128204;</a><span class="page-nav-sep">|</span><a href="asset-details.html">Asset Review &#128202;</a>
 </nav>
 
 <!-- ── Hero ── -->
@@ -241,6 +218,7 @@
   <div class="server-bar">
     <div class="sdot loading" id="sdot"></div>
     <span class="smsg" id="smsg">Loading fundamentals data&hellip;</span>
+    <button class="rbtn" id="retry-btn" style="display:none;align-items:center;gap:.35rem;">&#8635; Retry</button>
     <span id="stime" style="font-size:.75rem;color:var(--muted)"></span>
     <button class="rbtn" onclick="loadData(true)">&#8635; Refresh</button>
   </div>
@@ -707,7 +685,7 @@ async function loadData(nocache = false) {
 
   try {
     const url = 'http://localhost:3000/api/fundamentals' + (nocache ? '?nocache=1' : '');
-    const res = await fetch(url);
+    const res = await cachedFetch(url);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
 
@@ -719,9 +697,11 @@ async function loadData(nocache = false) {
 
     updateStats();
     applyFilters();
+    hideRetryBtn();
   } catch (err) {
     dot.className = 'sdot';
-    msg.textContent = `Error: ${err.message} — Is the Flask server running on port 5050?`;
+    msg.textContent = `Error: ${err.message} — Is the Flask server running on port 3000?`;
+    showPageError(`Load failed: ${err.message}`, loadData);
     document.getElementById('cardsContainer').innerHTML = `
       <div class="empty-state">
         <h3>Could not load data</h3>
@@ -733,7 +713,7 @@ async function loadData(nocache = false) {
 // ── Init ──────────────────────────────────────────────────────────────────────
 loadData();
 </script>
-<script src="ibkr-widget.js"></script>
-<script src="search.js"></script>
+<script src="ibkr-widget.js" defer></script>
+<script src="search.js" defer></script>
 </body>
 </html>
