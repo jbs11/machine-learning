@@ -33,6 +33,14 @@
     .sig-bear { background:rgba(248,113,113,.12);color:#f87171; }
     .sig-neut { background:rgba(167,139,250,.12);color:#a78bfa; }
 50%{opacity:.4} }
+    .adc-footer { display:flex;justify-content:space-between;align-items:center;margin-top:.5rem;padding-top:.5rem;border-top:1px solid var(--border);flex-wrap:wrap;gap:.3rem; }
+    .adc-meta { display:flex;gap:.4rem;align-items:center;flex-wrap:wrap; }
+    .adc-pe { font-size:.68rem;color:var(--muted);font-family:'Consolas',monospace; }
+    .adc-rating { font-size:.65rem;font-weight:800;padding:.1rem .4rem;border-radius:4px;letter-spacing:.04em; }
+    .rat-buy { background:rgba(74,222,128,.15);color:#4ade80; }
+    .rat-hold { background:rgba(251,191,36,.12);color:#fbbf24; }
+    .rat-sell { background:rgba(248,113,113,.12);color:#f87171; }
+    .adc-offline { font-size:.72rem;color:var(--muted);font-style:italic; }
 </style>
 </head>
 <body>
@@ -53,7 +61,6 @@
     <li><a href="futures-trading.html">Futures</a></li>
     <li><a href="brokers.html">Brokers</a></li>
     <li><a href="live-trading.html">Live Trading</a></li>
-    <li><a href="asset-details.html" style="color:#10b981;font-weight:700;">Asset Details</a></li>
     <li><a href="market-preparation.html">&#128204; Market Prep</a></li>
     <li><a href="asset-details.html" class="active">&#128202; Asset Review</a></li>
     <li><a href="report-ms.html" target="_blank" style="background:#22d3ee;color:#080d1a;padding:.28rem .85rem;border-radius:5px;font-weight:700;">&#128202; Market Report</a></li>
@@ -96,7 +103,11 @@
           <div class="adc-desc">The SPDR S&P 500 ETF (SPY) is the world's largest and most actively traded ETF, tracking the S&P 500 Index. Launched in January 1993 as the first US-listed ETF,...</div>
           <div class="adc-footer">
             <div class="adc-price" id="hp-spy-price">--</div>
-            <div class="adc-signal" id="hp-spy-sig">Loading...</div>
+            <div class="adc-meta">
+              <div class="adc-signal" id="hp-spy-sig">—</div>
+              <div class="adc-rating" id="hp-spy-rat" style="display:none;"></div>
+              <div class="adc-pe" id="hp-spy-pe" style="display:none;"></div>
+            </div>
           </div>
         </a><a href="asset-qqq.html" class="ad-card" data-group="ETF">
           <div class="adc-top">
@@ -108,7 +119,11 @@
           <div class="adc-desc">The Invesco QQQ Trust tracks the Nasdaq-100 Index — the 100 largest non-financial companies listed on the NASDAQ. Known as the 'triple Q', QQQ is heavily weight...</div>
           <div class="adc-footer">
             <div class="adc-price" id="hp-qqq-price">--</div>
-            <div class="adc-signal" id="hp-qqq-sig">Loading...</div>
+            <div class="adc-meta">
+              <div class="adc-signal" id="hp-qqq-sig">—</div>
+              <div class="adc-rating" id="hp-qqq-rat" style="display:none;"></div>
+              <div class="adc-pe" id="hp-qqq-pe" style="display:none;"></div>
+            </div>
           </div>
         </a><a href="asset-dia.html" class="ad-card" data-group="ETF">
           <div class="adc-top">
@@ -120,7 +135,11 @@
           <div class="adc-desc">The SPDR DJIA ETF (DIA) tracks the Dow Jones Industrial Average, the oldest and most widely-cited US stock market index. Uniquely, the DJIA is price-weighted (n...</div>
           <div class="adc-footer">
             <div class="adc-price" id="hp-dia-price">--</div>
-            <div class="adc-signal" id="hp-dia-sig">Loading...</div>
+            <div class="adc-meta">
+              <div class="adc-signal" id="hp-dia-sig">—</div>
+              <div class="adc-rating" id="hp-dia-rat" style="display:none;"></div>
+              <div class="adc-pe" id="hp-dia-pe" style="display:none;"></div>
+            </div>
           </div>
         </a><a href="asset-iwm.html" class="ad-card" data-group="ETF">
           <div class="adc-top">
@@ -132,7 +151,11 @@
           <div class="adc-desc">The iShares Russell 2000 ETF (IWM) tracks the Russell 2000 Index — approximately 2,000 small-capitalization US stocks representing the bottom 2000 of the Russel...</div>
           <div class="adc-footer">
             <div class="adc-price" id="hp-iwm-price">--</div>
-            <div class="adc-signal" id="hp-iwm-sig">Loading...</div>
+            <div class="adc-meta">
+              <div class="adc-signal" id="hp-iwm-sig">—</div>
+              <div class="adc-rating" id="hp-iwm-rat" style="display:none;"></div>
+              <div class="adc-pe" id="hp-iwm-pe" style="display:none;"></div>
+            </div>
           </div>
         </a></div>
   <div class="ad-sec-hdr" style="color:#a78bfa;">Magnificent 7 — Mega-Cap Technology</div><div class="ad-grid"><a href="asset-aapl.html" class="ad-card" data-group="Mag 7">
@@ -145,7 +168,11 @@
           <div class="adc-desc">Apple Inc. is the world's most valuable company by market capitalization and the creator of the iPhone, Mac, iPad, Apple Watch, and AirPods ecosystem. Apple's S...</div>
           <div class="adc-footer">
             <div class="adc-price" id="hp-aapl-price">--</div>
-            <div class="adc-signal" id="hp-aapl-sig">Loading...</div>
+            <div class="adc-meta">
+              <div class="adc-signal" id="hp-aapl-sig">—</div>
+              <div class="adc-rating" id="hp-aapl-rat" style="display:none;"></div>
+              <div class="adc-pe" id="hp-aapl-pe" style="display:none;"></div>
+            </div>
           </div>
         </a><a href="asset-msft.html" class="ad-card" data-group="Mag 7">
           <div class="adc-top">
@@ -157,7 +184,11 @@
           <div class="adc-desc">Microsoft is the world's leading enterprise software and cloud computing company. Azure — its cloud infrastructure platform — is the #2 global cloud provider be...</div>
           <div class="adc-footer">
             <div class="adc-price" id="hp-msft-price">--</div>
-            <div class="adc-signal" id="hp-msft-sig">Loading...</div>
+            <div class="adc-meta">
+              <div class="adc-signal" id="hp-msft-sig">—</div>
+              <div class="adc-rating" id="hp-msft-rat" style="display:none;"></div>
+              <div class="adc-pe" id="hp-msft-pe" style="display:none;"></div>
+            </div>
           </div>
         </a><a href="asset-nvda.html" class="ad-card" data-group="Mag 7">
           <div class="adc-top">
@@ -169,7 +200,11 @@
           <div class="adc-desc">NVIDIA is the dominant designer of graphics processing units (GPUs) and has emerged as the foundational infrastructure provider for artificial intelligence. NVI...</div>
           <div class="adc-footer">
             <div class="adc-price" id="hp-nvda-price">--</div>
-            <div class="adc-signal" id="hp-nvda-sig">Loading...</div>
+            <div class="adc-meta">
+              <div class="adc-signal" id="hp-nvda-sig">—</div>
+              <div class="adc-rating" id="hp-nvda-rat" style="display:none;"></div>
+              <div class="adc-pe" id="hp-nvda-pe" style="display:none;"></div>
+            </div>
           </div>
         </a><a href="asset-googl.html" class="ad-card" data-group="Mag 7">
           <div class="adc-top">
@@ -181,7 +216,11 @@
           <div class="adc-desc">Alphabet is the parent company of Google, the world's dominant search engine (91% global market share), YouTube (2.5B+ monthly users), Google Cloud Platform (GC...</div>
           <div class="adc-footer">
             <div class="adc-price" id="hp-googl-price">--</div>
-            <div class="adc-signal" id="hp-googl-sig">Loading...</div>
+            <div class="adc-meta">
+              <div class="adc-signal" id="hp-googl-sig">—</div>
+              <div class="adc-rating" id="hp-googl-rat" style="display:none;"></div>
+              <div class="adc-pe" id="hp-googl-pe" style="display:none;"></div>
+            </div>
           </div>
         </a><a href="asset-amzn.html" class="ad-card" data-group="Mag 7">
           <div class="adc-top">
@@ -193,7 +232,11 @@
           <div class="adc-desc">Amazon is the world's largest e-commerce marketplace, the #1 global cloud provider (AWS with ~32% market share), and the fastest-growing large-scale digital adv...</div>
           <div class="adc-footer">
             <div class="adc-price" id="hp-amzn-price">--</div>
-            <div class="adc-signal" id="hp-amzn-sig">Loading...</div>
+            <div class="adc-meta">
+              <div class="adc-signal" id="hp-amzn-sig">—</div>
+              <div class="adc-rating" id="hp-amzn-rat" style="display:none;"></div>
+              <div class="adc-pe" id="hp-amzn-pe" style="display:none;"></div>
+            </div>
           </div>
         </a><a href="asset-meta.html" class="ad-card" data-group="Mag 7">
           <div class="adc-top">
@@ -205,7 +248,11 @@
           <div class="adc-desc">Meta Platforms operates the world's largest social media ecosystem: Facebook (3.0B+ monthly active users), Instagram (2.0B+ MAU), WhatsApp (2.0B+ MAU), and Thre...</div>
           <div class="adc-footer">
             <div class="adc-price" id="hp-meta-price">--</div>
-            <div class="adc-signal" id="hp-meta-sig">Loading...</div>
+            <div class="adc-meta">
+              <div class="adc-signal" id="hp-meta-sig">—</div>
+              <div class="adc-rating" id="hp-meta-rat" style="display:none;"></div>
+              <div class="adc-pe" id="hp-meta-pe" style="display:none;"></div>
+            </div>
           </div>
         </a><a href="asset-tsla.html" class="ad-card" data-group="Mag 7">
           <div class="adc-top">
@@ -217,7 +264,11 @@
           <div class="adc-desc">Tesla is the world's leading battery electric vehicle (BEV) manufacturer and a diversified energy technology company. Beyond EVs (Model S/3/X/Y/Cybertruck), Tes...</div>
           <div class="adc-footer">
             <div class="adc-price" id="hp-tsla-price">--</div>
-            <div class="adc-signal" id="hp-tsla-sig">Loading...</div>
+            <div class="adc-meta">
+              <div class="adc-signal" id="hp-tsla-sig">—</div>
+              <div class="adc-rating" id="hp-tsla-rat" style="display:none;"></div>
+              <div class="adc-pe" id="hp-tsla-pe" style="display:none;"></div>
+            </div>
           </div>
         </a></div>
   <div class="ad-sec-hdr" style="color:#fbbf24;">Blue Chip — Large-Cap S&P 500 Leaders</div><div class="ad-grid"><a href="asset-jpm.html" class="ad-card" data-group="Blue Chip">
@@ -230,7 +281,11 @@
           <div class="adc-desc">JPMorgan Chase is the largest US bank by assets ($3.9T+) and consistently one of the most profitable financial institutions globally. The firm operates through ...</div>
           <div class="adc-footer">
             <div class="adc-price" id="hp-jpm-price">--</div>
-            <div class="adc-signal" id="hp-jpm-sig">Loading...</div>
+            <div class="adc-meta">
+              <div class="adc-signal" id="hp-jpm-sig">—</div>
+              <div class="adc-rating" id="hp-jpm-rat" style="display:none;"></div>
+              <div class="adc-pe" id="hp-jpm-pe" style="display:none;"></div>
+            </div>
           </div>
         </a><a href="asset-bac.html" class="ad-card" data-group="Blue Chip">
           <div class="adc-top">
@@ -242,7 +297,11 @@
           <div class="adc-desc">Bank of America is the second-largest US bank by assets ($3.3T) and one of the most recognizable financial brands in America. The bank serves 68M+ consumer and ...</div>
           <div class="adc-footer">
             <div class="adc-price" id="hp-bac-price">--</div>
-            <div class="adc-signal" id="hp-bac-sig">Loading...</div>
+            <div class="adc-meta">
+              <div class="adc-signal" id="hp-bac-sig">—</div>
+              <div class="adc-rating" id="hp-bac-rat" style="display:none;"></div>
+              <div class="adc-pe" id="hp-bac-pe" style="display:none;"></div>
+            </div>
           </div>
         </a><a href="asset-v.html" class="ad-card" data-group="Blue Chip">
           <div class="adc-top">
@@ -254,7 +313,11 @@
           <div class="adc-desc">Visa operates the world's largest retail electronic payments network. As a network operator — not a bank or lender — Visa takes no credit risk. Instead, it earn...</div>
           <div class="adc-footer">
             <div class="adc-price" id="hp-v-price">--</div>
-            <div class="adc-signal" id="hp-v-sig">Loading...</div>
+            <div class="adc-meta">
+              <div class="adc-signal" id="hp-v-sig">—</div>
+              <div class="adc-rating" id="hp-v-rat" style="display:none;"></div>
+              <div class="adc-pe" id="hp-v-pe" style="display:none;"></div>
+            </div>
           </div>
         </a><a href="asset-xom.html" class="ad-card" data-group="Blue Chip">
           <div class="adc-top">
@@ -266,7 +329,11 @@
           <div class="adc-desc">ExxonMobil is the largest US publicly-traded integrated oil and gas company by market cap and the most profitable energy company in American history. Operating ...</div>
           <div class="adc-footer">
             <div class="adc-price" id="hp-xom-price">--</div>
-            <div class="adc-signal" id="hp-xom-sig">Loading...</div>
+            <div class="adc-meta">
+              <div class="adc-signal" id="hp-xom-sig">—</div>
+              <div class="adc-rating" id="hp-xom-rat" style="display:none;"></div>
+              <div class="adc-pe" id="hp-xom-pe" style="display:none;"></div>
+            </div>
           </div>
         </a><a href="asset-cvx.html" class="ad-card" data-group="Blue Chip">
           <div class="adc-top">
@@ -278,7 +345,11 @@
           <div class="adc-desc">Chevron is the second-largest US integrated oil and gas company. With operations in upstream exploration and production, refining, chemicals, and growing LNG (l...</div>
           <div class="adc-footer">
             <div class="adc-price" id="hp-cvx-price">--</div>
-            <div class="adc-signal" id="hp-cvx-sig">Loading...</div>
+            <div class="adc-meta">
+              <div class="adc-signal" id="hp-cvx-sig">—</div>
+              <div class="adc-rating" id="hp-cvx-rat" style="display:none;"></div>
+              <div class="adc-pe" id="hp-cvx-pe" style="display:none;"></div>
+            </div>
           </div>
         </a><a href="asset-jnj.html" class="ad-card" data-group="Blue Chip">
           <div class="adc-top">
@@ -290,7 +361,11 @@
           <div class="adc-desc">Johnson & Johnson is a diversified healthcare giant operating through two primary segments after spinning off Kenvue (consumer health brands: Tylenol, Band-Aid,...</div>
           <div class="adc-footer">
             <div class="adc-price" id="hp-jnj-price">--</div>
-            <div class="adc-signal" id="hp-jnj-sig">Loading...</div>
+            <div class="adc-meta">
+              <div class="adc-signal" id="hp-jnj-sig">—</div>
+              <div class="adc-rating" id="hp-jnj-rat" style="display:none;"></div>
+              <div class="adc-pe" id="hp-jnj-pe" style="display:none;"></div>
+            </div>
           </div>
         </a><a href="asset-unh.html" class="ad-card" data-group="Blue Chip">
           <div class="adc-top">
@@ -302,7 +377,11 @@
           <div class="adc-desc">UnitedHealth Group is the largest US health insurance company and the largest healthcare company in the world by revenue. The company operates through two segme...</div>
           <div class="adc-footer">
             <div class="adc-price" id="hp-unh-price">--</div>
-            <div class="adc-signal" id="hp-unh-sig">Loading...</div>
+            <div class="adc-meta">
+              <div class="adc-signal" id="hp-unh-sig">—</div>
+              <div class="adc-rating" id="hp-unh-rat" style="display:none;"></div>
+              <div class="adc-pe" id="hp-unh-pe" style="display:none;"></div>
+            </div>
           </div>
         </a><a href="asset-wmt.html" class="ad-card" data-group="Blue Chip">
           <div class="adc-top">
@@ -314,7 +393,11 @@
           <div class="adc-desc">Walmart is the world's largest company by revenue ($650B+) and the largest private employer in the United States (1.6M+ US associates, 2.3M globally). Operating...</div>
           <div class="adc-footer">
             <div class="adc-price" id="hp-wmt-price">--</div>
-            <div class="adc-signal" id="hp-wmt-sig">Loading...</div>
+            <div class="adc-meta">
+              <div class="adc-signal" id="hp-wmt-sig">—</div>
+              <div class="adc-rating" id="hp-wmt-rat" style="display:none;"></div>
+              <div class="adc-pe" id="hp-wmt-pe" style="display:none;"></div>
+            </div>
           </div>
         </a><a href="asset-hd.html" class="ad-card" data-group="Blue Chip">
           <div class="adc-top">
@@ -326,7 +409,11 @@
           <div class="adc-desc">The Home Depot is the world's largest home improvement retailer, operating 2,300+ stores across the US, Canada, and Mexico. With average store size of 105,000 s...</div>
           <div class="adc-footer">
             <div class="adc-price" id="hp-hd-price">--</div>
-            <div class="adc-signal" id="hp-hd-sig">Loading...</div>
+            <div class="adc-meta">
+              <div class="adc-signal" id="hp-hd-sig">—</div>
+              <div class="adc-rating" id="hp-hd-rat" style="display:none;"></div>
+              <div class="adc-pe" id="hp-hd-pe" style="display:none;"></div>
+            </div>
           </div>
         </a><a href="asset-brk-b.html" class="ad-card" data-group="Blue Chip">
           <div class="adc-top">
@@ -338,7 +425,11 @@
           <div class="adc-desc">Berkshire Hathaway is Warren Buffett's legendary diversified holding company — widely considered the greatest investment vehicle of all time. The company wholly...</div>
           <div class="adc-footer">
             <div class="adc-price" id="hp-brk-b-price">--</div>
-            <div class="adc-signal" id="hp-brk-b-sig">Loading...</div>
+            <div class="adc-meta">
+              <div class="adc-signal" id="hp-brk-b-sig">—</div>
+              <div class="adc-rating" id="hp-brk-b-rat" style="display:none;"></div>
+              <div class="adc-pe" id="hp-brk-b-pe" style="display:none;"></div>
+            </div>
           </div>
         </a></div>
   <div class="ad-sec-hdr" style="color:#f97316;">Futures — Index &amp; Commodity Contracts</div><div class="ad-grid"><a href="asset-esf.html" class="ad-card" data-group="Futures">
@@ -351,7 +442,11 @@
           <div class="adc-desc">The E-mini S&P 500 futures contract (ES) is the world's most liquid equity index futures instrument, trading electronically on the CME Globex platform nearly 24...</div>
           <div class="adc-footer">
             <div class="adc-price" id="hp-esf-price">--</div>
-            <div class="adc-signal" id="hp-esf-sig">Loading...</div>
+            <div class="adc-meta">
+              <div class="adc-signal" id="hp-esf-sig">—</div>
+              <div class="adc-rating" id="hp-esf-rat" style="display:none;"></div>
+              <div class="adc-pe" id="hp-esf-pe" style="display:none;"></div>
+            </div>
           </div>
         </a></div>
 </div>
@@ -373,44 +468,100 @@ function filterCards(grp, btn) {
 function applyMktData(data) {
   const dot = document.getElementById('sdot');
   const msg = document.getElementById('smsg');
-  if (!data) { dot.className = 'sdot'; msg.textContent = 'Server offline — start with: py live-server.py'; return; }
+  if (!data) {
+    dot.className = 'sdot';
+    msg.textContent = 'Server offline — start with: py live-server.py';
+    return;
+  }
   dot.className = 'sdot on';
-  msg.textContent = 'Live ML signals loaded · refreshes every 5 min';
-  (data.ml_ranking || []).forEach(r => {
-    const slug = SLUG_MAP[r.symbol];
+  msg.textContent = 'ML signals + fundamentals loaded · auto-refreshes every 5 min';
+  (data.ml_ranking || []).forEach(function(r) {
+    var slug = SLUG_MAP[r.symbol];
     if (!slug) return;
-    const el = document.getElementById('hp-' + slug + '-sig');
+    var el = document.getElementById('hp-' + slug + '-sig');
     if (!el) return;
-    const d = (r.direction || 'NEUTRAL').toUpperCase();
+    var d = (r.direction || 'NEUTRAL').toUpperCase();
     el.textContent = d;
     el.className = 'adc-signal ' + (d.includes('BULL') ? 'sig-bull' : d.includes('BEAR') ? 'sig-bear' : 'sig-neut');
   });
 }
 
 function applyPriceData(data) {
-  Object.keys(data || {}).forEach(sym => {
-    const slug = SLUG_MAP[sym];
+  Object.keys(data || {}).forEach(function(sym) {
+    var slug = SLUG_MAP[sym];
     if (!slug) return;
-    const el = document.getElementById('hp-' + slug + '-price');
-    const r = data[sym];
-    if (el && r && r.price) el.textContent = '$' + parseFloat(r.price).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+    var el = document.getElementById('hp-' + slug + '-price');
+    var r = data[sym];
+    if (el && r && r.price) {
+      var chg = r.change_pct != null ? (r.change_pct >= 0 ? '+' : '') + parseFloat(r.change_pct).toFixed(2) + '%' : '';
+      var color = r.change_pct > 0 ? '#4ade80' : r.change_pct < 0 ? '#f87171' : 'var(--muted)';
+      el.innerHTML = '$' + parseFloat(r.price).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})
+        + (chg ? ' <span style="font-size:.7rem;color:' + color + ';">' + chg + '</span>' : '');
+    }
+  });
+}
+
+function applyFundamentals(data) {
+  (data.assets || []).forEach(function(a) {
+    var slug = SLUG_MAP[a.symbol];
+    if (!slug) return;
+    // Rating chip
+    var ratEl = document.getElementById('hp-' + slug + '-rat');
+    if (ratEl && a.rating) {
+      var rat = (a.rating || '').toUpperCase();
+      ratEl.textContent = rat;
+      ratEl.className = 'adc-rating ' + (rat === 'BUY' ? 'rat-buy' : rat === 'SELL' ? 'rat-sell' : 'rat-hold');
+      ratEl.style.display = '';
+    }
+    // Forward PE
+    var peEl = document.getElementById('hp-' + slug + '-pe');
+    if (peEl && a.forward_pe && a.forward_pe > 0) {
+      peEl.textContent = 'PE ' + parseFloat(a.forward_pe).toFixed(1) + 'x';
+      peEl.style.display = '';
+    }
+  });
+}
+
+// Fallback: after timeout, clear any still-stuck indicators
+function clearStuckIndicators() {
+  document.querySelectorAll('.adc-signal').forEach(function(el) {
+    if (el.textContent === '—' || el.textContent === 'Loading...') {
+      el.textContent = '—';
+      el.className = 'adc-signal sig-neut';
+    }
   });
 }
 
 async function loadAll() {
-  const batchSym = SYM_LIST.filter(s => !s.includes('^')).join(',');
-  const [mkt, prices] = await Promise.all([
-    cachedFetch(API + '/api/market-summary').catch(() => null),
-    cachedFetch(API + '/api/multi/' + encodeURIComponent(batchSym)).catch(() => ({}))
-  ]);
-  applyMktData(mkt);
-  applyPriceData(prices);
+  var batchSym = SYM_LIST.filter(function(s) { return !s.includes('^'); }).join(',');
+  var timeout = new Promise(function(_, rej) { setTimeout(function() { rej(new Error('timeout')); }, 12000); });
+  try {
+    var results = await Promise.race([
+      Promise.all([
+        cachedFetch(API + '/api/market-summary').catch(function() { return null; }),
+        cachedFetch(API + '/api/multi/' + encodeURIComponent(batchSym)).catch(function() { return {}; }),
+        cachedFetch(API + '/api/fundamentals').catch(function() { return null; })
+      ]),
+      timeout
+    ]);
+    applyMktData(results[0]);
+    applyPriceData(results[1]);
+    if (results[2]) applyFundamentals(results[2]);
+    hideRetryBtn();
+  } catch(e) {
+    clearStuckIndicators();
+    if (e.message === 'timeout') {
+      document.getElementById('smsg').textContent = 'Data load timed out — showing cached data where available';
+    } else {
+      showPageError('Load failed — ' + e.message, loadAll);
+    }
+  }
 }
 
-window.addEventListener('load', () => {
+window.addEventListener('load', function() {
   loadAll();
   setInterval(function() { if (document.hidden) return; loadAll(); }, 5 * 60 * 1000);
-document.addEventListener('visibilitychange', function() { if (!document.hidden) loadAll(); });
+  document.addEventListener('visibilitychange', function() { if (!document.hidden) loadAll(); });
 });
 </script>
 <script src="search.js" defer></script>
