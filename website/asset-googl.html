@@ -564,8 +564,12 @@ window.addEventListener('load', async function() {
   }
 });
 setInterval(async function() {
+  if (document.hidden) return;
   try { await loadAll(); } catch(e) { showPageError('Refresh failed — ' + e.message, loadAll); }
 }, 8 * 60 * 1000);
+document.addEventListener('visibilitychange', function() {
+  if (!document.hidden) loadAll().catch(function(e) { showPageError('Refresh failed — ' + e.message, loadAll); });
+});
 </script>
 <script src="ibkr-widget.js" defer></script>
 <script src="search.js" defer></script>

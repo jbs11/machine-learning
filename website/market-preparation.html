@@ -1507,7 +1507,8 @@
   // ── Init ───────────────────────────────────────────────────────────────────
   window.addEventListener('load', ()=>{
     loadAll();
-    setInterval(loadAll, 8*60*1000); // 8-min auto-refresh
+    setInterval(function() { if (document.hidden) return; loadAll(); }, 8*60*1000); // 8-min auto-refresh
+    document.addEventListener('visibilitychange', function() { if (!document.hidden) loadAll(); });
   });
   </script>
   <script src="ibkr-widget.js" defer></script>

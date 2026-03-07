@@ -1509,6 +1509,7 @@ async function loadAllForecasts() {
   ]);
 
   // Apply GEX level lines + strips to each forecast chart
+  window._gexCache = gexResp;
   const gexAssets = gexResp?.assets || (Array.isArray(gexResp) ? gexResp : null) || [];
   FORECAST_SYMBOLS.forEach(sym => {
     // Map GEX by symbol — ES=F may proxy as ES_F internally
@@ -2270,7 +2271,7 @@ async function loadExtendedForecast(summaries, marketData) {
   let gexData = null, flowsData = null;
   try {
     const [gR, fR] = await Promise.all([
-      fetch(`${API}/api/gamma-exposure`, { signal: AbortSignal.timeout(15000) }).then(r => r.ok ? r.json() : null).catch(()=>null),
+      window._gexCache ? Promise.resolve(window._gexCache) : fetch(`${API}/api/gamma-exposure`, { signal: AbortSignal.timeout(15000) }).then(r => r.ok ? r.json() : null).catch(()=>null),
       fetch(`${API}/api/option-flows`,   { signal: AbortSignal.timeout(15000) }).then(r => r.ok ? r.json() : null).catch(()=>null),
     ]);
     gexData   = gR?.assets  || (Array.isArray(gR)  ? gR  : null);
@@ -2518,7 +2519,8 @@ async function reload(nocache = false) {
 window.addEventListener('load', () => {
   loadAllForecasts();
   reload();
-  setInterval(() => { loadAllForecasts(); reload(); }, 300000);  // refresh every 5 min
+  setInterval(function() { if (document.hidden) return; loadAllForecasts(); reload(); }, 300000);  // refresh every 5 min
+  document.addEventListener('visibilitychange', function() { if (!document.hidden) { loadAllForecasts(); reload(); } });
 });
 </script>
 

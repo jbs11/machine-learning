@@ -2982,8 +2982,7 @@ def _flow_row(symbol: str, group: str, nocache: bool = False) -> dict | None:
             return cached
     try:
         # ── Spot price ─────────────────────────────────────────────────────────
-        with _yf_lock:
-            ticker = yf.Ticker(symbol)
+        ticker = yf.Ticker(symbol)  # object creation only — no lock needed
         try:
             spot = float(ticker.fast_info.last_price or 0)
         except Exception:

@@ -698,7 +698,8 @@ window.addEventListener('resize', () => {
 
 // ── Init ──────────────────────────────────────────────────────────────────
 window.addEventListener('load', () => loadData());
-setInterval(() => loadData(), 8 * 60 * 1000);
+setInterval(function() { if (document.hidden) return; loadData(); }, 8 * 60 * 1000);
+document.addEventListener('visibilitychange', function() { if (!document.hidden) loadData(); });
 </script>
 <script>
 

@@ -409,7 +409,8 @@ async function loadAll() {
 
 window.addEventListener('load', () => {
   loadAll();
-  setInterval(loadAll, 5 * 60 * 1000);
+  setInterval(function() { if (document.hidden) return; loadAll(); }, 5 * 60 * 1000);
+document.addEventListener('visibilitychange', function() { if (!document.hidden) loadAll(); });
 });
 </script>
 <script src="ibkr-widget.js" defer></script>

@@ -2521,7 +2521,7 @@ async function loadData() {
 </div>
 
 loadData();
-setInterval(loadData), 5*60*1000);
+setInterval(function() { if (document.hidden) return; loadData(); }, 5*60*1000);
 </script>
 <script src="ibkr-widget.js" defer></script>
 <script src="search.js" defer></script>

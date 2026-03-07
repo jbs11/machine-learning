@@ -777,7 +777,8 @@ async function loadData(nocache = false) {
 }
 
 loadData();
-setInterval(() => loadData(), 10 * 60 * 1000);
+setInterval(function() { if (document.hidden) return; loadData(); }, 10 * 60 * 1000);
+document.addEventListener('visibilitychange', function() { if (!document.hidden) loadData(); });
 </script>
 <script>
 

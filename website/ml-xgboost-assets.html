@@ -1689,7 +1689,8 @@ function renderError() {
 
 // ── Init ──────────────────────────────────────────────────────────────────
 window.addEventListener('load', () => loadData());
-setInterval(() => loadData(), 10 * 60 * 1000);  // auto-refresh every 10 min
+setInterval(function() { if (document.hidden) return; loadData(); }, 10 * 60 * 1000);  // auto-refresh every 10 min
+document.addEventListener('visibilitychange', function() { if (!document.hidden) loadData(); });
 </script>
 <script src="ibkr-widget.js" defer></script>
 <script src="search.js" defer></script>
