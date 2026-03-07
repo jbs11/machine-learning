@@ -22,12 +22,12 @@
     .ad-card:hover { border-color:rgba(16,185,129,.4);box-shadow:0 6px 28px rgba(0,0,0,.35);transform:translateY(-2px);text-decoration:none; }
     .adc-top { display:flex;justify-content:space-between;align-items:center; }
     .adc-badge { font-size:.62rem;font-weight:800;padding:.12rem .5rem;border-radius:5px;border:1px solid;letter-spacing:.05em; }
-    .adc-sym { font-size:1.4rem;font-weight:900;font-family:'Consolas',monospace;margin:.1rem 0; }
+    .adc-sym { font-size:1.4rem;font-weight:900;font-family:Consolas,monospace;margin:.1rem 0; }
     .adc-name { font-size:.9rem;font-weight:700;color:var(--text); }
     .adc-sector { font-size:.72rem;color:var(--muted);margin-bottom:.1rem; }
     .adc-desc { font-size:.78rem;color:var(--muted);line-height:1.55;flex:1; }
     .adc-footer { display:flex;justify-content:space-between;align-items:center;margin-top:.5rem;padding-top:.5rem;border-top:1px solid var(--border); }
-    .adc-price { font-family:'Consolas',monospace;font-weight:700;font-size:.88rem; }
+    .adc-price { font-family:Consolas,monospace;font-weight:700;font-size:.88rem; }
     .adc-signal { font-size:.72rem;font-weight:700;padding:.12rem .5rem;border-radius:4px; }
     .sig-bull { background:rgba(34,197,94,.12);color:#4ade80; }
     .sig-bear { background:rgba(248,113,113,.12);color:#f87171; }
@@ -35,7 +35,7 @@
 50%{opacity:.4} }
     .adc-footer { display:flex;justify-content:space-between;align-items:center;margin-top:.5rem;padding-top:.5rem;border-top:1px solid var(--border);flex-wrap:wrap;gap:.3rem; }
     .adc-meta { display:flex;gap:.4rem;align-items:center;flex-wrap:wrap; }
-    .adc-pe { font-size:.68rem;color:var(--muted);font-family:'Consolas',monospace; }
+    .adc-pe { font-size:.68rem;color:var(--muted);font-family:Consolas,monospace; }
     .adc-rating { font-size:.65rem;font-weight:800;padding:.1rem .4rem;border-radius:4px;letter-spacing:.04em; }
     .rat-buy { background:rgba(74,222,128,.15);color:#4ade80; }
     .rat-hold { background:rgba(251,191,36,.12);color:#fbbf24; }
@@ -62,6 +62,7 @@
     <li><a href="brokers.html">Brokers</a></li>
     <li><a href="live-trading.html">Live Trading</a></li>
     <li><a href="market-preparation.html">&#128204; Market Prep</a></li>
+    <li><a href="forecast.html" style="color:#f59e0b;font-weight:700;">&#128200; Forecast</a></li>
     <li><a href="asset-details.html" class="active">&#128202; Asset Review</a></li>
     <li><a href="report-ms.html" target="_blank" style="background:#22d3ee;color:#080d1a;padding:.28rem .85rem;border-radius:5px;font-weight:700;">&#128202; Market Report</a></li>
     <li><a href="report-tg.html" target="_blank" style="background:#a78bfa;color:#080d1a;padding:.28rem .85rem;border-radius:5px;font-weight:700;">&#128214; Trading Guide</a></li>
@@ -475,14 +476,15 @@ function applyMktData(data) {
   }
   dot.className = 'sdot on';
   msg.textContent = 'ML signals + fundamentals loaded · auto-refreshes every 5 min';
-  (data.ml_ranking || []).forEach(function(r) {
+  (data.top_magnitude || []).forEach(function(r) {
     var slug = SLUG_MAP[r.symbol];
     if (!slug) return;
     var el = document.getElementById('hp-' + slug + '-sig');
     if (!el) return;
-    var d = (r.direction || 'NEUTRAL').toUpperCase();
-    el.textContent = d;
-    el.className = 'adc-signal ' + (d.includes('BULL') ? 'sig-bull' : d.includes('BEAR') ? 'sig-bear' : 'sig-neut');
+    var sig = (r.signal || 'HOLD').toUpperCase();
+    var d = sig === 'BUY' ? 'BULLISH' : sig === 'SELL' ? 'BEARISH' : 'NEUTRAL';
+    el.textContent = sig;
+    el.className = 'adc-signal ' + (sig === 'BUY' ? 'sig-bull' : sig === 'SELL' ? 'sig-bear' : 'sig-neut');
   });
 }
 
@@ -492,10 +494,11 @@ function applyPriceData(data) {
     if (!slug) return;
     var el = document.getElementById('hp-' + slug + '-price');
     var r = data[sym];
-    if (el && r && r.price) {
+    var price = r && (r.price || r.close);
+    if (el && price) {
       var chg = r.change_pct != null ? (r.change_pct >= 0 ? '+' : '') + parseFloat(r.change_pct).toFixed(2) + '%' : '';
       var color = r.change_pct > 0 ? '#4ade80' : r.change_pct < 0 ? '#f87171' : 'var(--muted)';
-      el.innerHTML = '$' + parseFloat(r.price).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})
+      el.innerHTML = '$' + parseFloat(price).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})
         + (chg ? ' <span style="font-size:.7rem;color:' + color + ';">' + chg + '</span>' : '');
     }
   });
@@ -522,6 +525,28 @@ function applyFundamentals(data) {
   });
 }
 
+
+// Enrich card prices with Finnhub real-time quotes (runs async after initial load)
+async function enrichPricesFromFinnhub() {
+  var stockSyms = SYM_LIST.filter(function(s) { return !s.includes('='); });
+  for (var i = 0; i < stockSyms.length; i++) {
+    try {
+      var sym = stockSyms[i];
+      var q = await cachedFetch(API + '/api/quote/' + sym).catch(function() { return null; });
+      if (!q || !q.price) continue;
+      var slug = SLUG_MAP[sym];
+      if (!slug) continue;
+      var el = document.getElementById('hp-' + slug + '-price');
+      if (!el) continue;
+      var price = parseFloat(q.price);
+      var chgPct = q.change_pct != null ? parseFloat(q.change_pct) : null;
+      var chg = chgPct != null ? (chgPct >= 0 ? '+' : '') + chgPct.toFixed(2) + '%' : '';
+      var color = chgPct > 0 ? '#4ade80' : chgPct < 0 ? '#f87171' : 'var(--muted)';
+      el.innerHTML = '$' + price.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})
+        + (chg ? ' <span style="font-size:.7rem;color:' + color + ';">' + chg + '</span>' : '');
+    } catch(e) { /* skip individual errors */ }
+  }
+}
 // Fallback: after timeout, clear any still-stuck indicators
 function clearStuckIndicators() {
   document.querySelectorAll('.adc-signal').forEach(function(el) {
@@ -548,6 +573,7 @@ async function loadAll() {
     applyPriceData(results[1]);
     if (results[2]) applyFundamentals(results[2]);
     hideRetryBtn();
+    enrichPricesFromFinnhub();
   } catch(e) {
     clearStuckIndicators();
     if (e.message === 'timeout') {

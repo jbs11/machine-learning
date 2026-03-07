@@ -66,6 +66,89 @@ app.config['COMPRESS_MIN_SIZE'] = 256 # compress responses >= 256 bytes
 compress = Compress(app)
 CORS(app)
 
+# ── Finnhub Auto-Init ─────────────────────────────────────────────────────────
+_FINNHUB_API_KEY = 'd6m2tlpr01ql7984n450d6m2tlpr01ql7984n45g'
+_finnhub_client = None
+try:
+    import finnhub as _fh_mod
+    _finnhub_client = _fh_mod.Client(api_key=_FINNHUB_API_KEY)
+    _fh_test = _finnhub_client.quote('SPY')
+    print(f'[Finnhub] Auto-initialized — SPY ${_fh_test.get("c", "?")}')
+except Exception as _fh_err:
+    print(f'[Finnhub] Auto-init warning: {_fh_err}')
+
+def _fh_quote(symbol: str) -> dict:
+    """Return Finnhub real-time quote dict or {} on error."""
+    if not _finnhub_client:
+        return {}
+    try:
+        # Finnhub uses dashes for some symbols (BRK-B → BRK.B)
+        fh_sym = symbol.replace('-', '.').replace('=F', '')
+        q = _finnhub_client.quote(fh_sym)
+        return q if isinstance(q, dict) else {}
+    except Exception:
+        return {}
+
+def _fh_basic_financials(symbol: str) -> dict:
+    """Return Finnhub basic_financials 'metric' dict or {} on error."""
+    if not _finnhub_client:
+        return {}
+    try:
+        fh_sym = symbol.replace('-', '.').replace('=F', '')
+        res = _finnhub_client.company_basic_financials(fh_sym, 'all')
+        return res.get('metric', {}) if isinstance(res, dict) else {}
+    except Exception:
+        return {}
+
+def _fh_recommendations(symbol: str) -> dict:
+    """Return latest Finnhub recommendation trend entry or {} on error."""
+    if not _finnhub_client:
+        return {}
+    try:
+        fh_sym = symbol.replace('-', '.').replace('=F', '')
+        trends = _finnhub_client.recommendation_trends(fh_sym)
+        if trends and isinstance(trends, list):
+            return trends[0]  # most recent period
+        return {}
+    except Exception:
+        return {}
+
+def _fh_price_target(symbol: str) -> dict:
+    """Return Finnhub price target dict or {} on error."""
+    if not _finnhub_client:
+        return {}
+    try:
+        fh_sym = symbol.replace('-', '.').replace('=F', '')
+        pt = _finnhub_client.price_target(fh_sym)
+        return pt if isinstance(pt, dict) else {}
+    except Exception:
+        return {}
+
+def _fh_news(symbol: str, count: int = 7) -> list:
+    """Return list of recent Finnhub news articles for symbol."""
+    if not _finnhub_client:
+        return []
+    try:
+        from datetime import datetime, timedelta
+        fh_sym = symbol.replace('-', '.').replace('=F', '')
+        today = datetime.now().strftime('%Y-%m-%d')
+        week_ago = (datetime.now() - timedelta(days=7)).strftime('%Y-%m-%d')
+        articles = _finnhub_client.company_news(fh_sym, _from=week_ago, to=today)
+        if not articles:
+            return []
+        result = []
+        for a in articles[:count]:
+            result.append({
+                'title':     str(a.get('headline', ''))[:120],
+                'url':       str(a.get('url', '')),
+                'published': (lambda ts: __import__('datetime').datetime.fromtimestamp(int(ts)).strftime('%Y-%m-%d') if ts and str(ts).isdigit() else str(ts)[:10])(a.get('datetime', '')),
+                'source':    str(a.get('source', '')),
+                'summary':   str(a.get('summary', ''))[:200],
+            })
+        return result
+    except Exception:
+        return []
+
 # ── Available Symbols ─────────────────────────────────────────────────────────
 SYMBOLS = {
     # S&P 500 index ETFs
@@ -3481,6 +3564,16 @@ def _fund_row(symbol: str, group: str, nocache: bool = False) -> dict | None:
         spot     = _g('currentPrice') or _g('regularMarketPrice') or _g('previousClose') or 0
         spot     = float(spot) if spot else 0
 
+        # ── Finnhub enrichment (fills gaps when yfinance returns None/ETF 404) ──
+        _fh_q  = _fh_quote(symbol)
+        _fh_bf = _fh_basic_financials(symbol)
+        _fh_pt = _fh_price_target(symbol)
+        _fh_rec = _fh_recommendations(symbol)
+
+        # Use Finnhub spot if yfinance returned 0
+        if not spot and _fh_q.get('c'):
+            spot = float(_fh_q['c'])
+
         # Valuation
         mktcap   = _g('marketCap')
         ev       = _g('enterpriseValue')
@@ -3530,6 +3623,41 @@ def _fund_row(symbol: str, group: str, nocache: bool = False) -> dict | None:
         rec_key   = (_g('recommendationKey') or '').upper().replace('_', ' ')
         n_analysts= int(_g('numberOfAnalystOpinions') or 0)
 
+        # Supplement analyst data with Finnhub if yfinance returned nothing
+        if tgt_mean is None and _fh_pt.get('targetMean'):
+            tgt_mean = _fh_pt.get('targetMean')
+            tgt_lo   = _fh_pt.get('targetLow')
+            tgt_hi   = _fh_pt.get('targetHigh')
+        if rec_mean is None and _fh_rec:
+            # Finnhub gives buy/hold/sell counts — derive a mean (1=Strong Buy, 5=Strong Sell)
+            _buy   = (_fh_rec.get('strongBuy', 0)  + _fh_rec.get('buy', 0))
+            _hold  = _fh_rec.get('hold', 0)
+            _sell  = (_fh_rec.get('sell', 0) + _fh_rec.get('strongSell', 0))
+            _total = _buy + _hold + _sell
+            if _total > 0:
+                rec_mean   = round((_buy * 1.5 + _hold * 3.0 + _sell * 4.5) / _total, 2)
+                n_analysts = _total
+        if n_analysts == 0 and _fh_pt.get('numberOfAnalysts'):
+            n_analysts = int(_fh_pt['numberOfAnalysts'])
+
+        # Supplement key financials with Finnhub basic_financials when yfinance missing
+        if fwd_pe is None and _fh_bf.get('forwardPE'):
+            fwd_pe = _fh_bf['forwardPE']
+        if trail_pe is None and _fh_bf.get('peNormalizedAnnual'):
+            trail_pe = _fh_bf['peNormalizedAnnual']
+        if beta is None and _fh_bf.get('beta'):
+            beta = _fh_bf['beta']
+        if net_m is None and _fh_bf.get('netProfitMarginAnnual'):
+            net_m = _fh_bf['netProfitMarginAnnual'] / 100.0  # Finnhub returns percentage
+        if roe is None and _fh_bf.get('roeTTM'):
+            roe = _fh_bf['roeTTM'] / 100.0
+        if rev_grow is None and _fh_bf.get('revenueGrowthQuarterlyYoy'):
+            rev_grow = _fh_bf['revenueGrowthQuarterlyYoy'] / 100.0
+        if wk52_hi is None and _fh_bf.get('52WeekHigh'):
+            wk52_hi = _fh_bf['52WeekHigh']
+        if wk52_lo is None and _fh_bf.get('52WeekLow'):
+            wk52_lo = _fh_bf['52WeekLow']
+
         # Compute upside
         upside_pct = None
         if tgt_mean and spot and float(spot) > 0:
@@ -3575,9 +3703,14 @@ def _fund_row(symbol: str, group: str, nocache: bool = False) -> dict | None:
         except Exception:
             pass
 
-        # ── Recent News (last 5) ─────────────────────────────────────────
+        # ── Recent News (last 5) — Finnhub preferred, yfinance fallback ───────
         news = []
         try:
+            news = _fh_news(symbol, count=5)
+        except Exception:
+            pass
+        if not news:
+          try:
             raw_news = ticker.news or []
             for n in raw_news[:5]:
                 content = n.get('content', {}) if isinstance(n, dict) else {}
@@ -3587,7 +3720,7 @@ def _fund_row(symbol: str, group: str, nocache: bool = False) -> dict | None:
                 src   = (content.get('provider', {}) or {}).get('displayName', '') or n.get('publisher', '')
                 if title and url:
                     news.append({'title': str(title)[:120], 'url': str(url), 'published': str(pub)[:10], 'source': str(src)})
-        except Exception:
+          except Exception:
             pass
 
         # ── Fundamental Score ────────────────────────────────────────────
@@ -3727,6 +3860,57 @@ def fundamentals_endpoint():
     out = {'assets': rows, 'count': len(rows), 'timestamp': datetime.now().isoformat()}
     cache_set(ck, out)
     return jsonify(out)
+
+
+# ── Finnhub Real-Time Endpoints ───────────────────────────────────────────────
+
+@app.route('/api/quote/<symbol>')
+def quote_endpoint(symbol):
+    """Real-time quote: Finnhub → yfinance fallback."""
+    symbol = symbol.upper().strip()
+    q = _fh_quote(symbol)
+    if q and q.get('c'):
+        return jsonify({
+            'symbol': symbol,
+            'price':  q.get('c'),
+            'open':   q.get('o'),
+            'high':   q.get('h'),
+            'low':    q.get('l'),
+            'prev_close': q.get('pc'),
+            'change': round(q.get('c', 0) - q.get('pc', 0), 4) if q.get('pc') else None,
+            'change_pct': round((q.get('c', 0) - q.get('pc', 0)) / q.get('pc', 1) * 100, 3) if q.get('pc') else None,
+            'source': 'finnhub',
+            'timestamp': datetime.now().isoformat(),
+        })
+    # Fallback to yfinance
+    try:
+        with _yf_lock:
+            t = yf.Ticker(symbol)
+            info = t.info
+        price = info.get('currentPrice') or info.get('regularMarketPrice') or info.get('previousClose')
+        return jsonify({
+            'symbol': symbol,
+            'price':  price,
+            'source': 'yfinance',
+            'timestamp': datetime.now().isoformat(),
+        })
+    except Exception as e:
+        return jsonify({'symbol': symbol, 'error': str(e)[:100]}), 500
+
+
+@app.route('/api/news/<symbol>')
+def news_endpoint(symbol):
+    """Recent company news via Finnhub."""
+    symbol = symbol.upper().strip()
+    count  = min(int(request.args.get('count', 10)), 30)
+    articles = _fh_news(symbol, count=count)
+    return jsonify({
+        'symbol':   symbol,
+        'articles': articles,
+        'count':    len(articles),
+        'source':   'finnhub' if articles else 'none',
+        'timestamp': datetime.now().isoformat(),
+    })
 
 
 # ── XGBoost All-Assets Charts ─────────────────────────────────────────────────

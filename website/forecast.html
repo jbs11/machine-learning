@@ -1,0 +1,972 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Market Forecast — Direction &amp; Magnitude Intelligence</title>
+  <link rel="preload" href="style.css" as="style" fetchpriority="high">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    :root { --amber:#f59e0b; --amber2:#fbbf24; }
+    .fc-wrap { max-width:1600px;margin:0 auto;padding:0 1.5rem 6rem; }
+
+    /* Hero */
+    .fc-hero { padding:3.5rem 1.5rem 2.5rem;text-align:center;background:radial-gradient(ellipse 80% 55% at 50% -5%,rgba(245,158,11,.12) 0%,transparent 65%),var(--bg);border-bottom:1px solid var(--border); }
+    .fc-hero h1 { font-size:clamp(1.8rem,4vw,3rem);font-weight:900;background:linear-gradient(135deg,#f59e0b 0%,#fbbf24 45%,#fff 85%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:.6rem;line-height:1.15; }
+    .fc-hero p { color:var(--muted);font-size:1.05rem;max-width:800px;margin:0 auto;line-height:1.7; }
+    .fc-badge { display:inline-flex;align-items:center;gap:.5rem;padding:.3rem 1rem;background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.28);border-radius:999px;color:#f59e0b;font-size:.78rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;margin-bottom:1rem; }
+
+    /* Stats strip */
+    .stats-strip { display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:1px;background:var(--border);border-top:1px solid var(--border);border-bottom:1px solid var(--border); }
+    .stat-cell { background:var(--surface);padding:.85rem 1rem;text-align:center; }
+    .stat-val { font-size:1.25rem;font-weight:900;margin-bottom:.1rem;font-family:Consolas,monospace; }
+    .stat-lbl { font-size:.66rem;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--muted); }
+
+    /* Tab nav */
+    .tab-nav { display:flex;gap:.5rem;margin:1.5rem 0 1rem;flex-wrap:wrap; }
+    .tab-btn { padding:.55rem 1.3rem;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--muted);font-size:.88rem;font-weight:700;cursor:pointer;transition:all .18s; }
+    .tab-btn:hover { border-color:#f59e0b;color:#f59e0b; }
+    .tab-btn.active { background:#f59e0b;border-color:#f59e0b;color:#080d1a; }
+    .tab-panel { display:none; }
+    .tab-panel.active { display:block; }
+
+    /* Verdict card */
+    .verdict-wrap { display:grid;grid-template-columns:1fr auto;gap:1.2rem;align-items:start;border-radius:14px;padding:1.4rem 1.6rem;margin-bottom:1.2rem; }
+    .verdict-bull { background:rgba(34,197,94,.08);border:2px solid rgba(34,197,94,.3); }
+    .verdict-bear { background:rgba(248,113,113,.08);border:2px solid rgba(248,113,113,.3); }
+    .verdict-neut { background:rgba(245,158,11,.08);border:2px solid rgba(245,158,11,.3); }
+    .verdict-dir { font-size:1.9rem;font-weight:900;margin-bottom:.2rem; }
+    .verdict-sub { font-size:.83rem;color:var(--muted);line-height:1.65; }
+    .verdict-right { text-align:center;min-width:100px; }
+    .verdict-mag-num { font-size:2.4rem;font-weight:900;font-family:Consolas,monospace;line-height:1; }
+    .verdict-mag-lbl { font-size:.68rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-top:.25rem; }
+    .conf-bar-wrap { height:8px;background:rgba(255,255,255,.07);border-radius:4px;overflow:hidden;margin-top:.9rem; }
+    .conf-bar-fill { height:100%;border-radius:4px;transition:width .6s ease; }
+
+    /* Level grid */
+    .level-grid { display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:.65rem;margin:.9rem 0; }
+    .level-cell { background:var(--card);border:1px solid var(--border);border-radius:9px;padding:.65rem 1rem;text-align:center; }
+    .level-val { font-size:1.05rem;font-weight:900;font-family:Consolas,monospace;margin-bottom:.12rem; }
+    .level-lbl { font-size:.62rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted); }
+
+    /* Section headers */
+    .sec-hdr { display:flex;align-items:center;gap:.8rem;margin:2.5rem 0 1.2rem;padding-bottom:.6rem;border-bottom:2px solid var(--border); }
+    .sec-num { background:#f59e0b;color:#080d1a;border-radius:50%;width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:.82rem;flex-shrink:0; }
+    .sec-title { font-size:1.2rem;font-weight:800; }
+    .sec-sub { font-size:.78rem;color:var(--muted);margin-left:.3rem; }
+
+    /* Grids */
+    .two-col { display:grid;grid-template-columns:1fr 1fr;gap:1.2rem;margin-bottom:1.2rem; }
+    .three-col { display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-bottom:1.2rem; }
+    @media(max-width:1000px){.three-col{grid-template-columns:1fr 1fr;}}
+    @media(max-width:700px){.two-col,.three-col{grid-template-columns:1fr;}}
+
+    /* Cards */
+    .info-card { background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.1rem 1.3rem; }
+    .info-card h3 { font-size:.95rem;font-weight:800;margin-bottom:.5rem; }
+    .info-card p,.info-card li { font-size:.82rem;color:var(--muted);line-height:1.7; }
+    .info-card strong { color:var(--text); }
+    .info-card ul { padding-left:1.2rem;margin-top:.3rem; }
+    .info-card li { margin-bottom:.25rem; }
+
+    /* Highlight boxes */
+    .hl-bull { border-radius:9px;padding:.85rem 1.1rem;margin:.5rem 0;font-size:.82rem;line-height:1.65;background:rgba(34,197,94,.07);border:1px solid rgba(34,197,94,.25);color:#4ade80; }
+    .hl-bear { border-radius:9px;padding:.85rem 1.1rem;margin:.5rem 0;font-size:.82rem;line-height:1.65;background:rgba(248,113,113,.07);border:1px solid rgba(248,113,113,.25);color:#f87171; }
+    .hl-amber { border-radius:9px;padding:.85rem 1.1rem;margin:.5rem 0;font-size:.82rem;line-height:1.65;background:rgba(245,158,11,.07);border:1px solid rgba(245,158,11,.25);color:#fbbf24; }
+    .hl-info { border-radius:9px;padding:.85rem 1.1rem;margin:.5rem 0;font-size:.82rem;line-height:1.65;background:#22d3ee0d;border:1px solid #22d3ee30;color:var(--text); }
+    .hl-purple { border-radius:9px;padding:.85rem 1.1rem;margin:.5rem 0;font-size:.82rem;line-height:1.65;background:rgba(167,139,250,.07);border:1px solid rgba(167,139,250,.25);color:#a78bfa; }
+
+    /* Chips */
+    .chip { display:inline-block;font-size:.67rem;font-weight:800;padding:.15rem .6rem;border-radius:5px;letter-spacing:.04em; }
+    .chip-green { background:rgba(34,197,94,.15);color:#4ade80;border:1px solid rgba(34,197,94,.3); }
+    .chip-red { background:rgba(248,113,113,.15);color:#f87171;border:1px solid rgba(248,113,113,.3); }
+    .chip-amber { background:rgba(245,158,11,.15);color:#fbbf24;border:1px solid rgba(245,158,11,.3); }
+    .chip-cyan { background:#22d3ee1a;color:#22d3ee;border:1px solid #22d3ee40; }
+    .chip-purple { background:rgba(167,139,250,.15);color:#a78bfa;border:1px solid rgba(167,139,250,.3); }
+
+    /* Tables */
+    .kl-table { width:100%;border-collapse:collapse;font-size:.82rem; }
+    .kl-table th { background:var(--surface);color:var(--muted);padding:.42rem .85rem;text-align:left;border-bottom:1px solid var(--border);font-size:.7rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase; }
+    .kl-table td { padding:.42rem .85rem;border-bottom:1px solid rgba(36,48,88,.4);vertical-align:middle; }
+    .kl-table tr:hover td { background:rgba(255,255,255,.02); }
+
+    /* Winners / Losers */
+    .wl-grid { display:grid;grid-template-columns:1fr 1fr;gap:1.2rem;margin-bottom:1.2rem; }
+    @media(max-width:800px){.wl-grid{grid-template-columns:1fr;}}
+    .wl-win { background:rgba(34,197,94,.05);border:1px solid rgba(34,197,94,.22);border-radius:12px;overflow:hidden; }
+    .wl-lose { background:rgba(248,113,113,.05);border:1px solid rgba(248,113,113,.22);border-radius:12px;overflow:hidden; }
+    .wl-hdr { padding:.65rem 1rem;font-size:.9rem;font-weight:800;border-bottom:1px solid rgba(255,255,255,.05); }
+
+    /* Scenarios */
+    .scenario-grid { display:grid;grid-template-columns:repeat(3,1fr);gap:1.1rem;margin-bottom:1.2rem; }
+    @media(max-width:1000px){.scenario-grid{grid-template-columns:1fr;}}
+    .sc-card { border-radius:12px;padding:1.1rem 1.3rem; }
+    .sc-bull { background:rgba(34,197,94,.06);border:2px solid rgba(34,197,94,.3); }
+    .sc-base { background:rgba(245,158,11,.06);border:2px solid rgba(245,158,11,.3); }
+    .sc-bear { background:rgba(248,113,113,.06);border:2px solid rgba(248,113,113,.3); }
+    .sc-title { font-size:1rem;font-weight:900;margin-bottom:.5rem; }
+    .sc-prob { font-size:.72rem;font-weight:700;padding:.18rem .5rem;border-radius:4px;display:inline-block;margin-bottom:.6rem; }
+    .sc-line { font-size:.81rem;color:var(--muted);line-height:1.65;padding:.22rem 0;border-bottom:1px solid rgba(255,255,255,.04); }
+    .sc-line:last-child { border-bottom:none; }
+    .sc-line::before { content:"→ ";color:var(--accent); }
+
+    /* Pos bars */
+    .pos-row { display:flex;align-items:center;gap:.7rem;margin:.4rem 0; }
+    .pos-lbl { font-size:.72rem;color:var(--muted);width:100px;flex-shrink:0; }
+    .pos-track { flex:1;height:10px;background:rgba(255,255,255,.06);border-radius:5px;overflow:hidden; }
+    .pos-fill { height:100%;border-radius:5px;transition:width .6s; }
+    .pos-val { font-size:.72rem;font-weight:700;width:36px;text-align:right;flex-shrink:0; }
+
+    /* Events */
+    .event-card { background:var(--card);border:1px solid var(--border);border-radius:9px;padding:.75rem 1rem;margin:.5rem 0; }
+    .event-cat { font-size:.63rem;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:#f59e0b;margin-bottom:.2rem; }
+    .event-desc { font-size:.81rem;color:var(--muted);line-height:1.6;margin-bottom:.35rem; }
+    .event-action { font-size:.78rem;color:#22d3ee;font-style:italic; }
+
+    /* Server bar */
+    .server-bar { display:flex;align-items:center;gap:.7rem;padding:.5rem 0;margin-bottom:1rem; }
+    .sdot { width:10px;height:10px;border-radius:50%;background:#ef4444;flex-shrink:0; }
+    .sdot.on { background:#22c55e;box-shadow:0 0 6px #22c55e66; }
+    .sdot.loading { background:#f59e0b;animation:fc-pulse 1.2s ease-in-out infinite; }
+    @keyframes fc-pulse { 0%,100%{opacity:1} 50%{opacity:.35} }
+    .smsg { font-size:.78rem;color:var(--muted); }
+  </style>
+</head>
+<body>
+<nav class="nav">
+  <a href="index.html" class="nav-logo">
+    <img src="images/steve.jpg" class="nav-logo-photo" alt="Stephen Borick">
+    <div class="nav-logo-text">
+      <span class="nav-company">Artificial Intelligence</span>
+      <span class="nav-name">Solutions, Inc.</span>
+    </div>
+  </a>
+  <ul class="nav-links">
+    <li><a href="index.html">Home</a></li>
+    <li><a href="machine-learning.html">Machine Learning</a></li>
+    <li><a href="ml-trading.html">ML in Trading</a></li>
+    <li><a href="stock-trading.html">Stock Trading</a></li>
+    <li><a href="options-trading.html">Options</a></li>
+    <li><a href="futures-trading.html">Futures</a></li>
+    <li><a href="brokers.html">Brokers</a></li>
+    <li><a href="live-trading.html">Live Trading</a></li>
+    <li><a href="asset-details.html">Asset Details</a></li>
+    <li><a href="market-preparation.html">&#128204; Market Prep</a></li>
+    <li><a href="forecast.html" style="color:#f59e0b;font-weight:700;">&#128270; Forecast</a></li>
+    <li><a href="asset-details.html">&#128202; Asset Review</a></li>
+    <li><a href="report-ms.html" target="_blank" style="background:#22d3ee;color:#080d1a;padding:.28rem .85rem;border-radius:5px;font-weight:700;">&#128202; Market Report</a></li>
+    <li><a href="report-tg.html" target="_blank" style="background:#a78bfa;color:#080d1a;padding:.28rem .85rem;border-radius:5px;font-weight:700;">&#128214; Trading Guide</a></li>
+  </ul>
+</nav>
+
+<!-- Hero -->
+<div class="fc-hero">
+  <div class="fc-badge">&#128270; Multi-Timeframe Intelligence</div>
+  <h1>Market Forecast</h1>
+  <p>Directional analysis across four timeframes using ML signals, Gamma Exposure, options flows, and institutional delta-hedging dynamics — integrated into actionable forecasts for the S&amp;P 500, ES Futures, and key assets.</p>
+</div>
+
+<!-- Stats strip -->
+<div class="stats-strip">
+  <div class="stat-cell"><div class="stat-val" id="st-dir" style="color:#fbbf24">--</div><div class="stat-lbl">Market Direction</div></div>
+  <div class="stat-cell"><div class="stat-val" id="st-spy" style="color:#22d3ee">--</div><div class="stat-lbl">SPY Price</div></div>
+  <div class="stat-cell"><div class="stat-val" id="st-es" style="color:#22d3ee">--</div><div class="stat-lbl">ES Futures</div></div>
+  <div class="stat-cell"><div class="stat-val" id="st-gex" style="color:#fbbf24">--</div><div class="stat-lbl">GEX Regime</div></div>
+  <div class="stat-cell"><div class="stat-val" id="st-bull" style="color:#4ade80">--%</div><div class="stat-lbl">Bull Sentiment</div></div>
+  <div class="stat-cell"><div class="stat-val" id="st-vix" style="color:#f87171">--</div><div class="stat-lbl">VIX</div></div>
+  <div class="stat-cell"><div class="stat-val" id="st-flip" style="color:#a78bfa">--</div><div class="stat-lbl">Gamma Flip</div></div>
+  <div class="stat-cell"><div class="stat-val" id="st-ts" style="color:var(--muted);font-size:.85rem">--</div><div class="stat-lbl">Updated</div></div>
+</div>
+
+<div class="fc-wrap">
+  <!-- Server status -->
+  <div class="server-bar">
+    <div class="sdot loading" id="sdot"></div>
+    <div class="smsg" id="smsg">Connecting to live server...</div>
+    <button class="rbtn" onclick="loadAll()">&#8635; Refresh</button>
+  </div>
+
+  <!-- Market Commentary -->
+  <div class="info-card" style="margin-bottom:1.2rem;border-color:#f59e0b40;">
+    <h3 style="color:#f59e0b;">&#128196; Live Market Commentary</h3>
+    <div id="fc-commentary" style="font-size:.83rem;color:var(--muted);line-height:1.7;">Fetching live market analysis...</div>
+  </div>
+
+  <!-- Timeframe tabs -->
+  <div class="tab-nav">
+    <button class="tab-btn active" onclick="switchTab('day',this)">&#128197; Next Day</button>
+    <button class="tab-btn" onclick="switchTab('week',this)">&#128198; Next Week</button>
+    <button class="tab-btn" onclick="switchTab('month',this)">&#128203; Next Month</button>
+    <button class="tab-btn" onclick="switchTab('year',this)">&#128200; Year End</button>
+  </div>
+
+  <!-- Next Day tab -->
+  <div class="tab-panel active" id="tab-day">
+    <div id="day-verdict"></div>
+    <div class="two-col">
+      <div class="info-card">
+        <h3>&#127919; Key GEX Levels — SPY</h3>
+        <div id="day-spy-levels"><div style="color:var(--muted);font-size:.82rem;">Loading...</div></div>
+        <div id="day-gex-note" style="margin-top:.7rem;"></div>
+      </div>
+      <div class="info-card">
+        <h3>&#128248; ES Futures Positioning</h3>
+        <div id="day-es-levels"><div style="color:var(--muted);font-size:.82rem;">Loading...</div></div>
+        <div id="day-es-note" style="margin-top:.7rem;"></div>
+      </div>
+    </div>
+    <div class="two-col">
+      <div class="info-card">
+        <h3>&#127754; Options Flow Intelligence</h3>
+        <div id="day-flows"><div style="color:var(--muted);font-size:.82rem;">Loading...</div></div>
+      </div>
+      <div class="info-card">
+        <h3>&#9889; 0DTE Gamma Dynamics</h3>
+        <div class="hl-info"><strong>Intraday gamma effect:</strong> 0DTE options now account for &gt;40% of daily SPX volume. Dealer hedging of same-day expiries creates predictable intraday patterns — large gamma at ATM forces price toward high-OI strikes by 3:50pm ET.</div>
+        <div id="day-dte-note" style="margin-top:.6rem;font-size:.82rem;color:var(--muted);"></div>
+      </div>
+    </div>
+    <div class="info-card">
+      <h3>&#128203; Day-Ahead Trade Plan</h3>
+      <div id="day-plan"><div style="color:var(--muted);font-size:.82rem;">Loading...</div></div>
+    </div>
+  </div>
+
+  <!-- Next Week tab -->
+  <div class="tab-panel" id="tab-week">
+    <div id="week-verdict"></div>
+    <div class="two-col">
+      <div class="info-card">
+        <h3>&#129504; ML Signal Consensus — Weekly</h3>
+        <div id="week-ml-table"><div style="color:var(--muted);font-size:.82rem;">Loading...</div></div>
+      </div>
+      <div class="info-card">
+        <h3>&#128198; Weekly Structural Outlook</h3>
+        <div id="week-structure"><div style="color:var(--muted);font-size:.82rem;">Loading...</div></div>
+      </div>
+    </div>
+    <div class="info-card">
+      <h3>&#128736; Sector Rotation — Weekly Leaders &amp; Laggards</h3>
+      <div id="week-sectors"><div style="color:var(--muted);font-size:.82rem;">Loading...</div></div>
+    </div>
+  </div>
+
+  <!-- Next Month tab -->
+  <div class="tab-panel" id="tab-month">
+    <div id="month-verdict"></div>
+    <div class="two-col">
+      <div class="info-card">
+        <h3>&#128200; Monthly ML Signal Rankings</h3>
+        <div id="month-ml-table"><div style="color:var(--muted);font-size:.82rem;">Loading...</div></div>
+      </div>
+      <div class="info-card">
+        <h3>&#128178; Options Strategy — Monthly Positioning</h3>
+        <div id="month-strategy"><div style="color:var(--muted);font-size:.82rem;">Loading...</div></div>
+      </div>
+    </div>
+    <div class="info-card">
+      <h3>&#128203; Options Expiration Impact (OpEx Dynamics)</h3>
+      <div class="hl-purple" style="margin-bottom:.5rem;"><strong>Monthly OpEx effect:</strong> Every 3rd Friday, massive open interest expires. The week of OpEx typically sees pinning behavior near large-OI strikes. Post-OpEx week (week 4) often sees the largest directional move of the month as vanna/charm hedges unwind and dealers go gamma-flat.</div>
+      <div class="two-col" style="margin-top:.7rem;margin-bottom:0;">
+        <div>
+          <div style="font-size:.78rem;font-weight:700;color:var(--text);margin-bottom:.3rem;">Pre-OpEx (week 3)</div>
+          <div style="font-size:.78rem;color:var(--muted);line-height:1.6;">Pinning to large open interest strikes. Gamma peaks. Vol compresses. Short-premium strategies outperform. Price gravitates to max pain by Thursday.</div>
+        </div>
+        <div>
+          <div style="font-size:.78rem;font-weight:700;color:var(--text);margin-bottom:.3rem;">Post-OpEx (week 4)</div>
+          <div style="font-size:.78rem;color:var(--muted);line-height:1.6;">Vanna/charm unwind drives directional move. Dealers go gamma-flat. New institutional positioning sets the tone for the following month. Often the cleanest trending week.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Year End tab -->
+  <div class="tab-panel" id="tab-year">
+    <div id="year-verdict"></div>
+    <div class="two-col">
+      <div class="info-card">
+        <h3>&#128178; Fundamental Valuation Backdrop</h3>
+        <div id="year-fundamentals"><div style="color:var(--muted);font-size:.82rem;">Loading...</div></div>
+      </div>
+      <div class="info-card">
+        <h3>&#127758; Macro &amp; Structural Themes — 2026</h3>
+        <div id="year-macro"><div style="color:var(--muted);font-size:.82rem;">Loading...</div></div>
+      </div>
+    </div>
+    <div class="info-card">
+      <h3>&#128293; World Events &amp; Market Catalysts</h3>
+      <div id="year-events"><div style="color:var(--muted);font-size:.82rem;">Loading...</div></div>
+    </div>
+  </div>
+
+  <!-- §1 GEX & Options Architecture -->
+  <div class="sec-hdr">
+    <div class="sec-num">1</div>
+    <div class="sec-title">GEX &amp; Options Market Architecture</div>
+    <div class="sec-sub">Gamma exposure levels shaping S&amp;P 500 and ES Futures price behavior</div>
+  </div>
+  <div class="two-col">
+    <div class="info-card">
+      <h3>&#127919; SPY — Gamma Exposure Levels</h3>
+      <div id="gex-spy-levels"><div style="color:var(--muted);font-size:.82rem;">Loading...</div></div>
+      <div id="gex-spy-regime" style="margin-top:.7rem;"></div>
+    </div>
+    <div class="info-card">
+      <h3>&#128248; ES Futures — Gamma Exposure</h3>
+      <div id="gex-es-levels"><div style="color:var(--muted);font-size:.82rem;">Loading...</div></div>
+      <div id="gex-es-regime" style="margin-top:.7rem;"></div>
+    </div>
+  </div>
+  <div class="three-col">
+    <div class="info-card">
+      <h3>&#128256; Long Gamma Regime</h3>
+      <p style="margin-bottom:.5rem;">When dealers are <strong>net long gamma</strong>, they sell strength and buy weakness — creating a dampening, range-bound environment. Realized vol falls below implied vol. Mean-reversion strategies thrive.</p>
+      <ul>
+        <li><strong>Signal:</strong> Spot above Gamma Flip level</li>
+        <li><strong>Strategy:</strong> Sell OTM premium, fade extremes, iron condors</li>
+        <li><strong>Expected move:</strong> Contained within Gamma Wall and Put Wall</li>
+        <li><strong>Risk:</strong> Sustained break above Gamma Wall triggers short squeeze</li>
+      </ul>
+    </div>
+    <div class="info-card">
+      <h3>&#128308; Short Gamma Regime</h3>
+      <p style="margin-bottom:.5rem;">When dealers are <strong>net short gamma</strong>, they buy rallies and sell dips — amplifying every move. Realized vol exceeds implied vol. Momentum and breakout strategies thrive.</p>
+      <ul>
+        <li><strong>Signal:</strong> Spot below Gamma Flip level</li>
+        <li><strong>Strategy:</strong> Trend-following, momentum, buy debit spreads</li>
+        <li><strong>Expected move:</strong> Accelerating moves toward Put Wall</li>
+        <li><strong>Risk:</strong> Put Wall provides mechanical floor from dealer buying</li>
+      </ul>
+    </div>
+    <div class="info-card">
+      <h3>&#127754; PCR &amp; Flow Sentiment</h3>
+      <p style="margin-bottom:.5rem;">Put/Call ratio and options premium flows reveal institutional sentiment beyond price action.</p>
+      <div id="gex-pcr-flows"><div style="color:var(--muted);font-size:.82rem;margin-bottom:.5rem;">Loading...</div></div>
+      <ul>
+        <li><strong>PCR &gt; 1.2:</strong> Bearish hedging dominant — contrarian bullish signal</li>
+        <li><strong>PCR &lt; 0.7:</strong> Complacency — contrarian bearish signal</li>
+        <li><strong>Call premium surge:</strong> Bullish speculation or dealer short covering</li>
+        <li><strong>Put premium surge:</strong> Institutional hedging or directional bearish bet</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- §2 Institutional Delta Hedging -->
+  <div class="sec-hdr">
+    <div class="sec-num">2</div>
+    <div class="sec-title">Institutional Delta Hedging &amp; Dealer Flows</div>
+    <div class="sec-sub">How option dealer hedging creates systematic non-fundamental price movements</div>
+  </div>
+  <div class="two-col">
+    <div class="info-card">
+      <h3>&#129504; How Dealer Delta Hedging Moves Markets</h3>
+      <p style="margin-bottom:.5rem;">Options dealers (market makers) must remain delta-neutral on their books. When they sell a call option, they must buy the underlying to hedge. This continuous rebalancing is the largest systematic, non-fundamental force in modern equity markets — larger than CTAs, larger than most institutional flows.</p>
+      <div class="hl-info" style="margin-bottom:.5rem;"><strong>The amplification math:</strong> A 1% move in SPY creates dealer delta changes worth billions. In a long-gamma regime, dealers re-hedge by selling into rallies and buying into dips. In short-gamma, they do the opposite — each 1% move forces additional hedging in the same direction, creating self-reinforcing momentum.</div>
+      <ul>
+        <li><strong>Vanna flow:</strong> When IV falls (post-event crush), dealer delta changes force large buying. Post-earnings/FOMC vol crush = systematic buying over 2-5 sessions</li>
+        <li><strong>Charm flow:</strong> As 0DTE options approach expiry, deltas migrate to 0 or 1, forcing dealers to unwind hedges. Peak effect: final 90 minutes of 0DTE day</li>
+        <li><strong>Speed flow:</strong> Rate of gamma decay — high speed means dealer GEX hedging will drop rapidly, potentially breaking a range-bound regime</li>
+      </ul>
+    </div>
+    <div>
+      <div class="info-card" style="margin-bottom:1rem;">
+        <h3>&#128200; Current Dealer Positioning</h3>
+        <div id="inst-dealer-pos"><div style="color:var(--muted);font-size:.82rem;">Loading...</div></div>
+      </div>
+      <div class="info-card">
+        <h3>&#127917; CTA &amp; Systematic Fund Impact</h3>
+        <p style="font-size:.82rem;color:var(--muted);line-height:1.65;margin-bottom:.5rem;">CTA (Commodity Trading Advisors) manage ~$350B AUM in trend-following strategies. They buy what is going up and sell what is going down based on price signals.</p>
+        <div id="inst-cta"><div style="color:var(--muted);font-size:.82rem;">Loading...</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- §3 Retail vs Institutional Positioning -->
+  <div class="sec-hdr">
+    <div class="sec-num">3</div>
+    <div class="sec-title">Retail vs Institutional Positioning</div>
+    <div class="sec-sub">Sentiment breakdown and flow analysis showing who is positioned where and how it impacts direction</div>
+  </div>
+  <div class="two-col">
+    <div class="info-card">
+      <h3>&#128101; Market Participant Sentiment</h3>
+      <div id="retail-sentiment"><div style="color:var(--muted);font-size:.82rem;">Loading...</div></div>
+      <div style="margin-top:.8rem;">
+        <div class="pos-row"><span class="pos-lbl">Institutional</span><div class="pos-track"><div class="pos-fill" id="inst-bar" style="width:60%;background:#22d3ee;"></div></div><span class="pos-val" id="inst-pct" style="color:#22d3ee;">60%</span></div>
+        <div class="pos-row"><span class="pos-lbl">Retail (PFOF)</span><div class="pos-track"><div class="pos-fill" id="retail-bar" style="width:30%;background:#a78bfa;"></div></div><span class="pos-val" id="retail-pct" style="color:#a78bfa;">30%</span></div>
+        <div class="pos-row"><span class="pos-lbl">Dark Pool</span><div class="pos-track"><div class="pos-fill" id="dark-bar" style="width:35%;background:#fbbf24;"></div></div><span class="pos-val" id="dark-pct" style="color:#fbbf24;">35%</span></div>
+        <div style="font-size:.66rem;color:var(--muted);margin-top:.4rem;">Approximate US equity volume distribution</div>
+      </div>
+    </div>
+    <div class="info-card">
+      <h3>&#127881; Net Impact on Price Action</h3>
+      <div id="retail-impact"><div style="color:var(--muted);font-size:.82rem;">Loading...</div></div>
+      <div style="margin-top:.8rem;">
+        <div class="hl-info"><strong>MOC Imbalance (3:50pm ET):</strong> NYSE publishes Market-on-Close buy/sell imbalances. Large buy imbalance ($500M+) = strong close; large sell imbalance = weak close. One of the most reliable same-day signals.</div>
+        <div class="hl-purple" style="margin-top:.5rem;"><strong>Dark Pool Prints:</strong> ~35% of US equity volume trades off-exchange. Large institutional dark pool prints that appear on the tape with delay signal accumulation or distribution by the largest players. Watch for unusually large block prints in SPY, QQQ, and mag-7.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- §4 Winners & Losers -->
+  <div class="sec-hdr">
+    <div class="sec-num">4</div>
+    <div class="sec-title">Winners &amp; Losers</div>
+    <div class="sec-sub">Top ML-ranked assets expected to outperform and underperform — and the structural reasons why</div>
+  </div>
+  <div class="wl-grid">
+    <div class="wl-win">
+      <div class="wl-hdr" style="color:#4ade80;">&#128994; Expected Winners — BUY Signals</div>
+      <table class="kl-table">
+        <thead><tr><th>Symbol</th><th>Group</th><th>Prob Up</th><th>ML Signal</th><th>Target</th><th>Key Driver</th></tr></thead>
+        <tbody id="winners-body"><tr><td colspan="6" style="color:var(--muted);text-align:center;padding:1rem;">Loading...</td></tr></tbody>
+      </table>
+    </div>
+    <div class="wl-lose">
+      <div class="wl-hdr" style="color:#f87171;">&#128308; Expected Losers — SELL Signals</div>
+      <table class="kl-table">
+        <thead><tr><th>Symbol</th><th>Group</th><th>Prob Down</th><th>ML Signal</th><th>Target</th><th>Key Driver</th></tr></thead>
+        <tbody id="losers-body"><tr><td colspan="6" style="color:var(--muted);text-align:center;padding:1rem;">Loading...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- §5 Key Scenarios -->
+  <div class="sec-hdr">
+    <div class="sec-num">5</div>
+    <div class="sec-title">Key Expected Scenarios</div>
+    <div class="sec-sub">Bull, base, and bear cases with triggers, probability, and expected market impact</div>
+  </div>
+  <div class="scenario-grid">
+    <div class="sc-card sc-bull">
+      <div class="sc-title" style="color:#4ade80;">&#128994; Bull Scenario</div>
+      <div id="sc-bull-prob" class="sc-prob" style="background:rgba(34,197,94,.15);color:#4ade80;">~35% probability</div>
+      <div id="sc-bull-lines"><div style="color:var(--muted);font-size:.82rem;">Loading...</div></div>
+    </div>
+    <div class="sc-card sc-base">
+      <div class="sc-title" style="color:#fbbf24;">&#128992; Base Case</div>
+      <div id="sc-base-prob" class="sc-prob" style="background:rgba(245,158,11,.15);color:#fbbf24;">~45% probability</div>
+      <div id="sc-base-lines"><div style="color:var(--muted);font-size:.82rem;">Loading...</div></div>
+    </div>
+    <div class="sc-card sc-bear">
+      <div class="sc-title" style="color:#f87171;">&#128308; Bear Scenario</div>
+      <div id="sc-bear-prob" class="sc-prob" style="background:rgba(248,113,113,.15);color:#f87171;">~20% probability</div>
+      <div id="sc-bear-lines"><div style="color:var(--muted);font-size:.82rem;">Loading...</div></div>
+    </div>
+  </div>
+
+  <!-- Static scenario factors -->
+  <div class="three-col">
+    <div class="info-card">
+      <h3 style="color:#4ade80;">Bull Triggers to Watch</h3>
+      <ul>
+        <li><strong>SPY holds above Gamma Flip</strong> — long gamma regime sustains mechanical buying on dips</li>
+        <li><strong>ML consensus &gt; 60% bullish</strong> — broad model agreement across sectors</li>
+        <li><strong>VIX compression below 18</strong> — vanna flows force systematic dealer buying as IV drops</li>
+        <li><strong>Call premium surges in SPY/QQQ</strong> — institutional bullish positioning via options</li>
+        <li><strong>CTA long triggers</strong> — systematic funds add long exposure, amplifying moves higher</li>
+      </ul>
+    </div>
+    <div class="info-card">
+      <h3 style="color:#fbbf24;">Base Case Assumptions</h3>
+      <ul>
+        <li><strong>SPY oscillates around Gamma Flip</strong> — mixed long/short gamma days, range-bound</li>
+        <li><strong>ML consensus 45-55% bullish</strong> — no strong directional signal, sector rotation</li>
+        <li><strong>VIX 16-22</strong> — normal volatility environment, balanced hedging</li>
+        <li><strong>Balanced call/put premium</strong> — institutional hedging offset by speculative calls</li>
+        <li><strong>Earnings risk contained</strong> — individual stock vol without index contagion</li>
+      </ul>
+    </div>
+    <div class="info-card">
+      <h3 style="color:#f87171;">Bear Risks to Monitor</h3>
+      <ul>
+        <li><strong>Break below Gamma Flip</strong> — triggers short-gamma cascade: dealers sell dips, CTAs flip short, vol spikes</li>
+        <li><strong>ML consensus &lt; 35% bullish</strong> — broad model agreement on downside</li>
+        <li><strong>VIX spike above 25</strong> — risk-parity and vol-targeting funds forced to sell, amplifying drawdown</li>
+        <li><strong>Put premium surge</strong> — institutional panic hedging signals large player concern</li>
+        <li><strong>Macro event shock</strong> — FOMC surprise, geopolitical, credit event breaking correlation assumptions</li>
+      </ul>
+    </div>
+  </div>
+</div><!-- /fc-wrap -->
+
+<script>
+'use strict';
+const API = window.location.origin;
+let _mkt = null, _gex = null, _flow = null, _fund = null;
+
+/* ── Utilities ───────────────────────────────────────────────────────── */
+function fmtP(v) { return v != null ? '$' + parseFloat(v).toFixed(2) : '--'; }
+function fmtPct(v) { return v != null ? (parseFloat(v) * 100).toFixed(1) + '%' : '--'; }
+function fmtMag(v) { return v != null ? parseFloat(v).toFixed(2) + '%' : '--'; }
+
+function sigColor(s) {
+  const d = String(s || '').toUpperCase();
+  if (d === 'BUY' || d.includes('BULL') || d === 'UP') return '#4ade80';
+  if (d === 'SELL' || d.includes('BEAR') || d === 'DOWN') return '#f87171';
+  return '#fbbf24';
+}
+
+function sigChip(s) {
+  const d = String(s || '').toUpperCase();
+  const cls = (d === 'BUY' || d.includes('BULL')) ? 'chip-green' : (d === 'SELL' || d.includes('BEAR')) ? 'chip-red' : 'chip-amber';
+  return `<span class="chip ${cls}">${d || 'HOLD'}</span>`;
+}
+
+function dirLabel(dir) {
+  const d = String(dir || '').toUpperCase();
+  if (d.includes('BULL') || d === 'BUY') return 'BULLISH';
+  if (d.includes('BEAR') || d === 'SELL') return 'BEARISH';
+  return 'NEUTRAL';
+}
+
+function verdictClass(dir) {
+  const d = dirLabel(dir);
+  return d === 'BULLISH' ? 'verdict-bull' : d === 'BEARISH' ? 'verdict-bear' : 'verdict-neut';
+}
+
+function getSPYGex() { return (_gex && _gex.assets && _gex.assets.find(a => a.symbol === 'SPY')) || {}; }
+function getESGex()  { return (_gex && _gex.assets && _gex.assets.find(a => a.symbol === 'ES=F')) || {}; }
+function getSPYFlow() {
+  if (!_flow || !_flow.assets) return {};
+  return _flow.assets.find(a => a.symbol === 'SPY') || _flow.assets.find(a => a.flow_sentiment) || {};
+}
+function getBullPct() { return (_mkt && _mkt.sentiment && _mkt.sentiment.bull_pct) ? parseFloat(_mkt.sentiment.bull_pct) : 50; }
+function getTopRanking() { return (_mkt && _mkt.top_magnitude) || []; }
+function getStrongSignals() { return (_mkt && _mkt.strong_signals) || []; }
+
+function levelGrid(levels) {
+  return '<div class="level-grid">' +
+    levels.filter(l => l.val).map(l =>
+      `<div class="level-cell"><div class="level-val" style="color:${l.color || '#22d3ee'};">${l.val}</div><div class="level-lbl">${l.lbl}</div></div>`
+    ).join('') +
+    '</div>';
+}
+
+function regimeNote(spy) {
+  const isLong = String(spy.regime || '').toLowerCase().includes('long');
+  return `<div class="${isLong ? 'hl-bull' : 'hl-bear'}"><strong>${isLong ? 'Long Gamma (Stabilizing)' : 'Short Gamma (Trending)'}</strong> — ${isLong ? 'Dealers sell strength, buy weakness. Range-bound conditions favor premium sellers and mean-reversion.' : 'Dealers amplify every move. Breakout and momentum strategies outperform. Put Wall is key support.'}</div>`;
+}
+
+/* ── Stats Strip ─────────────────────────────────────────────────────── */
+function renderStats() {
+  const m = _mkt;
+  const spy = getSPYGex();
+  const dir = m.market_direction || 'NEUTRAL';
+  const bull = getBullPct();
+  const vix = m.vix || m.vix_proxy || '--';
+  const strong = getStrongSignals();
+  const spx = strong.find(a => a.symbol === '^GSPC' || a.symbol === 'SPY') || {};
+  const es  = getESGex();
+
+  document.getElementById('st-dir').textContent = dir;
+  document.getElementById('st-dir').style.color = sigColor(dir);
+  document.getElementById('st-spy').textContent = spx.close ? '$' + parseFloat(spx.close).toFixed(2) : (spy.spot ? '$' + parseFloat(spy.spot).toFixed(2) : '--');
+  document.getElementById('st-es').textContent = es.spot ? fmtP(es.spot) : '--';
+  document.getElementById('st-gex').textContent = spy.regime || '--';
+  document.getElementById('st-gex').style.color = sigColor(spy.regime || '');
+  document.getElementById('st-bull').textContent = bull.toFixed(1) + '%';
+  document.getElementById('st-bull').style.color = bull > 55 ? '#4ade80' : bull < 45 ? '#f87171' : '#fbbf24';
+  document.getElementById('st-vix').textContent = isNaN(vix) ? '--' : parseFloat(vix).toFixed(1);
+  document.getElementById('st-flip').textContent = spy.flip_level ? fmtP(spy.flip_level) : '--';
+  const ts = m.timestamp ? new Date(m.timestamp).toLocaleTimeString() : new Date().toLocaleTimeString();
+  document.getElementById('st-ts').textContent = ts;
+}
+
+/* ── Market Commentary ───────────────────────────────────────────────── */
+function renderCommentary() {
+  const el = document.getElementById('fc-commentary');
+  if (_mkt.market_commentary) {
+    el.innerHTML = _mkt.market_commentary;
+  } else {
+    el.textContent = 'Market direction: ' + (_mkt.market_direction || 'NEUTRAL');
+  }
+}
+
+/* ── Verdict Card helper ─────────────────────────────────────────────── */
+function makeVerdict(targetId, dir, probPct, subtitle, confPct, color) {
+  const vc = verdictClass(dir);
+  const label = dirLabel(dir);
+  document.getElementById(targetId).innerHTML =
+    `<div class="verdict-wrap ${vc}">
+      <div>
+        <div class="verdict-dir" style="color:${color || sigColor(dir)};">${label}</div>
+        <div class="verdict-sub">${subtitle}</div>
+        <div class="conf-bar-wrap"><div class="conf-bar-fill" style="width:${confPct}%;background:${color || sigColor(dir)};"></div></div>
+        <div style="font-size:.72rem;color:var(--muted);margin-top:.3rem;">Confidence: ${confPct}%</div>
+      </div>
+      <div class="verdict-right">
+        <div class="verdict-mag-num" style="color:${color || sigColor(dir)};">${probPct}%</div>
+        <div class="verdict-mag-lbl">Probability</div>
+      </div>
+    </div>`;
+}
+
+/* ── Next Day Tab ────────────────────────────────────────────────────── */
+function renderDayTab() {
+  const spy = getSPYGex();
+  const es  = getESGex();
+  const flow = getSPYFlow();
+  const dir = _mkt.market_direction || 'NEUTRAL';
+  const bull = getBullPct();
+  const isAboveFlip = spy.spot && spy.flip_level && parseFloat(spy.spot) > parseFloat(spy.flip_level);
+  const dayDir = isAboveFlip && bull > 52 ? 'BULLISH' : !isAboveFlip && bull < 48 ? 'BEARISH' : 'NEUTRAL';
+  const dayProb = Math.round(Math.max(bull, 100 - bull));
+  const dayConf = Math.min(90, Math.round(Math.abs(bull - 50) * 2.5 + 35));
+
+  makeVerdict('day-verdict', dayDir, dayProb, `GEX regime: ${spy.regime || '--'} · SPY ${isAboveFlip ? 'above' : 'below'} Gamma Flip (${fmtP(spy.flip_level)}) · ${bull.toFixed(1)}% bull sentiment across ML models`, dayConf, sigColor(dayDir));
+
+  // SPY levels
+  document.getElementById('day-spy-levels').innerHTML = levelGrid([
+    {val: fmtP(spy.gamma_wall), lbl: 'Gamma Wall', color: '#22c55e'},
+    {val: fmtP(spy.flip_level), lbl: 'Gamma Flip', color: '#a78bfa'},
+    {val: fmtP(spy.put_wall),   lbl: 'Put Wall',   color: '#f87171'},
+    {val: fmtP(spy.spot),       lbl: 'Spot Price', color: '#fbbf24'},
+  ]);
+  document.getElementById('day-gex-note').innerHTML = spy.regime ? regimeNote(spy) : '';
+
+  // ES levels
+  document.getElementById('day-es-levels').innerHTML = es.spot ? levelGrid([
+    {val: fmtP(es.gamma_wall), lbl: 'Gamma Wall', color: '#22c55e'},
+    {val: fmtP(es.flip_level), lbl: 'Gamma Flip', color: '#a78bfa'},
+    {val: fmtP(es.put_wall),   lbl: 'Put Wall',   color: '#f87171'},
+    {val: fmtP(es.spot),       lbl: 'ES Spot',    color: '#fbbf24'},
+  ]) : '<div class="hl-amber">ES=F GEX data loading or unavailable — check server connection.</div>';
+  document.getElementById('day-es-note').innerHTML = es.regime ? regimeNote(es) : '';
+
+  // Flows
+  const fs = flow.flow_sentiment || 'UNKNOWN';
+  const pcr = spy.pcr;
+  document.getElementById('day-flows').innerHTML =
+    `<table class="kl-table"><tbody>
+      <tr><td><strong>Flow Sentiment</strong></td><td>${sigChip(fs)}</td></tr>
+      ${pcr != null ? `<tr><td><strong>Put/Call Ratio (SPY)</strong></td><td style="color:${pcr>1.2?'#f87171':pcr<0.7?'#4ade80':'#fbbf24'};font-weight:700;">${pcr.toFixed(2)} ${pcr>1.2?' (bearish hedge dominant)':pcr<0.7?' (bullish complacency)':' (balanced)'}</td></tr>` : ''}
+      <tr><td><strong>Net GEX ($M)</strong></td><td style="color:${spy.total_gex_m>0?'#4ade80':'#f87171'};">${spy.total_gex_m != null ? '$' + spy.total_gex_m.toFixed(0) + 'M' : '--'}</td></tr>
+    </tbody></table>`;
+
+  // 0DTE note
+  const strong = getStrongSignals();
+  const spx = strong.find(a => a.symbol === '^GSPC') || {};
+  document.getElementById('day-dte-note').innerHTML = spx.target_long ? `Current day range target: <strong style="color:#4ade80;">${fmtP(spx.target_long)}</strong> (bull) / <strong style="color:#f87171;">${fmtP(spx.target_short)}</strong> (bear) based on S&P 500 ATR. Stop: ${fmtP(spx.stop_long)}.` : 'S&amp;P 500 index target data unavailable.';
+
+  // Day plan
+  const planItems = isAboveFlip ?
+    ['Hold above gamma flip → long gamma regime active, mean-reversion favored',
+     `Buy dips toward Put Wall (${fmtP(spy.put_wall)}) if market tests support`,
+     `Resistance at Gamma Wall (${fmtP(spy.gamma_wall)}) — consider short premium near this level`,
+     'Sell OTM calls or iron condors if VIX elevated — premium compression likely',
+     '0DTE: Watch for charm-driven intraday drift toward ATM strikes into close'] :
+    ['Below gamma flip → short gamma regime, momentum and breakouts favored',
+     `Put Wall (${fmtP(spy.put_wall)}) is mechanical dealer-buying floor — watch for bounce`,
+     'Avoid selling naked premium — short gamma amplifies adverse moves',
+     'Buy debit spreads or outright puts if break below Put Wall',
+     '0DTE: Expect larger intraday swings, be cautious with small-size positions'];
+  document.getElementById('day-plan').innerHTML = planItems.map(i => `<div class="hl-info" style="margin:.3rem 0;">${i}</div>`).join('');
+}
+
+/* ── Next Week Tab ───────────────────────────────────────────────────── */
+function renderWeekTab() {
+  const ranking = getTopRanking();
+  const bull = getBullPct();
+  const dir = _mkt.market_direction || 'NEUTRAL';
+  const spy = getSPYGex();
+  const buyCount = (_mkt.sentiment && _mkt.sentiment.buy) || 0;
+  const sellCount = (_mkt.sentiment && _mkt.sentiment.sell) || 0;
+  const total = (_mkt.sentiment && _mkt.sentiment.total) || 1;
+  const weekProb = Math.round(bull);
+  const weekConf = Math.min(88, Math.round(Math.abs(buyCount - sellCount) / total * 100 + 30));
+  const weekDir = bull > 55 ? 'BULLISH' : bull < 45 ? 'BEARISH' : 'NEUTRAL';
+
+  makeVerdict('week-verdict', weekDir, weekProb,
+    `ML consensus: ${buyCount} BUY / ${sellCount} SELL / ${(_mkt.sentiment && _mkt.sentiment.hold) || 0} HOLD across ${total} signals · GEX regime: ${spy.regime || '--'}`,
+    weekConf, sigColor(weekDir));
+
+  // ML table
+  const topAssets = ranking.filter(r => !r.symbol.startsWith('^')).slice(0, 8);
+  const rows = topAssets.map((r, i) =>
+    `<tr><td>${i + 1}</td><td><strong>${r.symbol}</strong></td><td style="color:var(--muted);font-size:.78rem;">${r.group || ''}</td><td>${sigChip(r.signal)}</td><td style="color:${r.prob_up > 0.6 ? '#4ade80' : r.prob_up < 0.4 ? '#f87171' : '#fbbf24'};font-weight:700;">${((r.prob_up || 0) * 100).toFixed(0)}%</td><td style="color:${r.pred_magnitude_pct >= 0 ? '#4ade80' : '#f87171'};">${r.pred_magnitude_pct >= 0 ? '+' : ''}${(r.pred_magnitude_pct || 0).toFixed(2)}%</td></tr>`
+  ).join('');
+  document.getElementById('week-ml-table').innerHTML =
+    `<table class="kl-table"><thead><tr><th>#</th><th>Symbol</th><th>Group</th><th>Signal</th><th>Prob Up</th><th>Mag</th></tr></thead><tbody>${rows || '<tr><td colspan="6" style="color:var(--muted);text-align:center;">No data</td></tr>'}</tbody></table>`;
+
+  // Weekly structure
+  const isLong = String(spy.regime || '').toLowerCase().includes('long');
+  document.getElementById('week-structure').innerHTML =
+    `<div class="${isLong ? 'hl-bull' : 'hl-bear'}" style="margin-bottom:.5rem;"><strong>GEX Regime: ${spy.regime || '--'}</strong> — ${isLong ? 'Range-bound week expected. Sell premium at extremes. Fade moves toward Gamma Wall.' : 'Trending week likely. Follow momentum. Breaks below flip accelerate.'}</div>` +
+    `<div class="hl-amber"><strong>Sentiment:</strong> ${bull.toFixed(1)}% bullish · ${buyCount} BUY vs ${sellCount} SELL signals — ${bull > 55 ? 'broad bullish consensus supports upside bias this week' : bull < 45 ? 'broad bearish consensus — defensive posture warranted' : 'mixed signals indicate range-bound or rotational week'}</div>` +
+    `<div class="hl-info" style="margin-top:.5rem;"><strong>OpEx timing:</strong> Check if this is OpEx week (3rd Friday). If so, expect strike pinning Thu–Fri and vol compression. Post-OpEx week = largest directional move opportunity.</div>`;
+
+  // Sectors
+  const byGroup = _mkt.by_group || {};
+  const groupRows = Object.entries(byGroup).map(([grp, assets]) => {
+    if (!Array.isArray(assets) || !assets.length) return '';
+    const buys = assets.filter(a => a.signal === 'BUY').length;
+    const pct = Math.round(buys / assets.length * 100);
+    const col = pct > 60 ? '#4ade80' : pct < 40 ? '#f87171' : '#fbbf24';
+    return `<tr><td><strong>${grp.toUpperCase()}</strong></td><td style="color:${col};font-weight:700;">${pct}% bull</td><td>${buys}/${assets.length} BUY</td><td>${sigChip(pct > 60 ? 'BUY' : pct < 40 ? 'SELL' : 'HOLD')}</td></tr>`;
+  }).filter(Boolean).join('');
+  document.getElementById('week-sectors').innerHTML =
+    `<table class="kl-table"><thead><tr><th>Sector Group</th><th>Bull %</th><th>Signals</th><th>Bias</th></tr></thead><tbody>${groupRows || '<tr><td colspan="4" style="color:var(--muted);text-align:center;">No sector data</td></tr>'}</tbody></table>`;
+}
+
+/* ── Next Month Tab ──────────────────────────────────────────────────── */
+function renderMonthTab() {
+  const ranking = getTopRanking();
+  const bull = getBullPct();
+  const strong = getStrongSignals();
+  const spx = strong.find(a => a.symbol === '^GSPC') || {};
+  const probUp = spx.prob_up != null ? parseFloat(spx.prob_up) * 100 : bull;
+  const monthDir = probUp > 55 ? 'BULLISH' : probUp < 45 ? 'BEARISH' : 'NEUTRAL';
+  const monthConf = Math.min(85, Math.round(Math.abs(probUp - 50) * 1.8 + 30));
+
+  makeVerdict('month-verdict', monthDir, Math.round(probUp),
+    `S&amp;P 500 model prob_up: ${probUp.toFixed(1)}% · Magnitude: ${spx.pred_magnitude_pct != null ? (spx.pred_magnitude_pct >= 0 ? '+' : '') + spx.pred_magnitude_pct.toFixed(2) + '%' : '--'} · Overall bull sentiment: ${bull.toFixed(1)}%`,
+    monthConf, sigColor(monthDir));
+
+  // Monthly ML table — all assets
+  const allAssets = ranking.filter(r => !r.symbol.startsWith('^')).slice(0, 12);
+  const mRows = allAssets.map((r, i) =>
+    `<tr><td>${i + 1}</td><td><strong>${r.symbol}</strong></td><td>${sigChip(r.signal)}</td><td style="color:${r.prob_up > 0.6 ? '#4ade80' : r.prob_up < 0.4 ? '#f87171' : '#fbbf24'};">${((r.prob_up || 0) * 100).toFixed(0)}%</td></tr>`
+  ).join('');
+  document.getElementById('month-ml-table').innerHTML =
+    `<table class="kl-table"><thead><tr><th>#</th><th>Symbol</th><th>Signal</th><th>Prob Up</th></tr></thead><tbody>${mRows || '<tr><td colspan="4" style="color:var(--muted);">No data</td></tr>'}</tbody></table>`;
+
+  // Strategy note
+  const spy = getSPYGex();
+  const isLong = String(spy.regime || '').toLowerCase().includes('long');
+  document.getElementById('month-strategy').innerHTML =
+    `<div class="${isLong ? 'hl-bull' : 'hl-bear'}" style="margin-bottom:.5rem;"><strong>Current GEX regime: ${spy.regime || '--'}</strong><br>${isLong ? 'Monthly iron condors, credit spreads, and covered calls are favored. Sell premium at Gamma Wall. Manage via Gamma Flip as stop.' : 'Buy debit spreads and directional puts. Use Put Wall as target. Short gamma amplifies monthly moves.'}</div>` +
+    `<div class="hl-purple"><strong>Seasonal positioning:</strong> March historically sees large institutional rebalancing flows. Quarterly rebalancing (QR) at month-end adds buy or sell pressure based on equity/bond performance ratio. Watch for MOC imbalances on last trading day.</div>` +
+    `<div class="hl-amber" style="margin-top:.5rem;"><strong>IV and premium environment:</strong> ${(_mkt.vix || _mkt.vix_proxy) ? 'VIX at ' + parseFloat(_mkt.vix || _mkt.vix_proxy).toFixed(1) + (parseFloat(_mkt.vix || _mkt.vix_proxy) > 20 ? ' — elevated premium. Favor selling spreads.' : ' — normal. Balanced long/short premium approaches.') : 'VIX data unavailable — use live-trading dashboard for current IV environment.'}</div>`;
+}
+
+/* ── Year End Tab ────────────────────────────────────────────────────── */
+function renderYearTab() {
+  const bull = getBullPct();
+  const strong = getStrongSignals();
+  const spx = strong.find(a => a.symbol === '^GSPC') || {};
+  const dir = _mkt.market_direction || 'NEUTRAL';
+  const yearProb = spx.prob_up != null ? Math.round(spx.prob_up * 100) : Math.round(bull);
+  const yearDir = yearProb > 55 ? 'BULLISH' : yearProb < 45 ? 'BEARISH' : 'NEUTRAL';
+
+  makeVerdict('year-verdict', yearDir, yearProb,
+    'Year-end forecast based on current ML signal momentum, fundamental backdrop, macro trends, and key risk factors. Current S&amp;P 500 forward PE and earnings growth are primary drivers.',
+    Math.min(75, Math.round(Math.abs(yearProb - 50) * 1.5 + 25)), sigColor(yearDir));
+
+  // Fundamentals from fund data
+  if (_fund && _fund.assets) {
+    const megaCap = _fund.assets.filter(a => ['SPY','QQQ','MSFT','AAPL','NVDA','AMZN','GOOGL','META'].includes(a.symbol));
+    const avgPE = megaCap.filter(a => a.forward_pe).reduce((s, a) => s + parseFloat(a.forward_pe), 0) / (megaCap.filter(a => a.forward_pe).length || 1);
+    const avgGrowth = megaCap.filter(a => a.revenue_growth).reduce((s, a) => s + parseFloat(a.revenue_growth), 0) / (megaCap.filter(a => a.revenue_growth).length || 1);
+    const rows = megaCap.slice(0, 8).map(a =>
+      `<tr><td><strong>${a.symbol}</strong></td><td>${sigChip(a.rating || a.signal || '')}</td><td style="color:#22d3ee;">${a.forward_pe ? parseFloat(a.forward_pe).toFixed(1) + 'x' : '--'}</td><td style="color:${parseFloat(a.revenue_growth || 0) > 0 ? '#4ade80' : '#f87171'};">${a.revenue_growth ? (parseFloat(a.revenue_growth) * 100).toFixed(1) + '%' : '--'}</td><td style="color:${parseFloat(a.upside_pct || 0) > 0 ? '#4ade80' : '#f87171'};">${a.upside_pct ? parseFloat(a.upside_pct).toFixed(1) + '%' : '--'}</td></tr>`
+    ).join('');
+    document.getElementById('year-fundamentals').innerHTML =
+      `<div class="hl-info" style="margin-bottom:.6rem;"><strong>Avg Forward PE:</strong> ${avgPE.toFixed(1)}x · <strong>Avg Revenue Growth:</strong> ${(avgGrowth * 100).toFixed(1)}%</div>` +
+      `<table class="kl-table"><thead><tr><th>Symbol</th><th>Rating</th><th>Fwd PE</th><th>Rev Growth</th><th>Upside</th></tr></thead><tbody>${rows || '<tr><td colspan="5" style="color:var(--muted);">No data</td></tr>'}</tbody></table>`;
+  } else {
+    document.getElementById('year-fundamentals').innerHTML = '<div class="hl-amber">Fundamental data loading — start server and refresh.</div>';
+  }
+
+  // Macro themes
+  document.getElementById('year-macro').innerHTML =
+    `<div class="hl-purple" style="margin-bottom:.5rem;"><strong>Interest Rate Trajectory:</strong> The Fed rate path is the primary year-end determinant. Lower rates compress discount rates, supporting higher forward PE multiples. Watch for Fed dot plot revisions at each FOMC meeting.</div>` +
+    `<div class="hl-info" style="margin-bottom:.5rem;"><strong>AI &amp; Technology Earnings Cycle:</strong> NVIDIA, Microsoft, Alphabet drive S&amp;P earnings growth. AI capex spending is the key growth engine. Any negative revision to AI investment plans creates broad market risk.</div>` +
+    `<div class="hl-amber" style="margin-bottom:.5rem;"><strong>Geopolitical &amp; Trade Policy:</strong> Tariff escalations, supply chain disruptions, and geopolitical events create tail risk. Watch USD strength — a strong dollar compresses international earnings for US multinationals.</div>` +
+    `<div class="hl-bear"><strong>Key downside risk:</strong> Credit market stress (HYG spreads), commercial real estate exposure in regional banks, and persistent inflation preventing Fed cuts could pressure multiples by year-end.</div>`;
+
+  // World events
+  const events = (_mkt.world_events || []).slice(0, 6);
+  if (events.length) {
+    document.getElementById('year-events').innerHTML = events.map(ev =>
+      `<div class="event-card"><div class="event-cat">${ev.category || 'Event'}</div><div class="event-desc">${ev.description || ''}</div><div class="event-action">&#9654; ${ev.action || ''}</div></div>`
+    ).join('');
+  } else {
+    document.getElementById('year-events').innerHTML = '<div style="color:var(--muted);font-size:.82rem;">No world event data available from server.</div>';
+  }
+}
+
+/* ── GEX Section ─────────────────────────────────────────────────────── */
+function renderGEXSection() {
+  const spy = getSPYGex();
+  const es  = getESGex();
+
+  const spyLevels = levelGrid([
+    {val: fmtP(spy.gamma_wall), lbl: 'Gamma Wall',  color: '#22c55e'},
+    {val: fmtP(spy.flip_level), lbl: 'Gamma Flip',  color: '#a78bfa'},
+    {val: fmtP(spy.put_wall),   lbl: 'Put Wall',    color: '#f87171'},
+    {val: fmtP(spy.spot),       lbl: 'Spot Price',  color: '#fbbf24'},
+    {val: spy.total_gex_m != null ? '$' + spy.total_gex_m.toFixed(0) + 'M' : null, lbl: 'Net GEX', color: spy.total_gex_m > 0 ? '#4ade80' : '#f87171'},
+    {val: spy.pcr != null ? spy.pcr.toFixed(2) : null, lbl: 'Put/Call Ratio', color: spy.pcr > 1.2 ? '#f87171' : spy.pcr < 0.7 ? '#4ade80' : '#fbbf24'},
+  ]);
+  document.getElementById('gex-spy-levels').innerHTML = spyLevels;
+  document.getElementById('gex-spy-regime').innerHTML = spy.regime ? regimeNote(spy) : '<div class="hl-amber">SPY GEX data unavailable</div>';
+
+  const esLevels = es.spot ? levelGrid([
+    {val: fmtP(es.gamma_wall), lbl: 'Gamma Wall', color: '#22c55e'},
+    {val: fmtP(es.flip_level), lbl: 'Gamma Flip', color: '#a78bfa'},
+    {val: fmtP(es.put_wall),   lbl: 'Put Wall',   color: '#f87171'},
+    {val: fmtP(es.spot),       lbl: 'ES Spot',    color: '#fbbf24'},
+  ]) : '<div class="hl-amber" style="font-size:.82rem;">ES=F GEX data unavailable — server may not have futures options data.</div>';
+  document.getElementById('gex-es-levels').innerHTML = esLevels;
+  document.getElementById('gex-es-regime').innerHTML = es.regime ? regimeNote(es) : '';
+
+  // PCR/flows summary
+  const spyFlow = getSPYFlow();
+  const fs = spyFlow.flow_sentiment;
+  document.getElementById('gex-pcr-flows').innerHTML =
+    `<table class="kl-table"><tbody>
+      <tr><td><strong>SPY Flow Sentiment</strong></td><td>${sigChip(fs || '--')}</td></tr>
+      ${spy.pcr != null ? `<tr><td><strong>Put/Call Ratio</strong></td><td style="color:${spy.pcr > 1.2 ? '#f87171' : spy.pcr < 0.7 ? '#4ade80' : '#fbbf24'};font-weight:700;">${spy.pcr.toFixed(2)}</td></tr>` : ''}
+      <tr><td><strong>Net GEX</strong></td><td style="color:${spy.total_gex_m > 0 ? '#4ade80' : '#f87171'};">${spy.total_gex_m != null ? '$' + spy.total_gex_m.toFixed(0) + 'M' : '--'}</td></tr>
+    </tbody></table>`;
+}
+
+/* ── Institutional Section ───────────────────────────────────────────── */
+function renderInstitutional() {
+  const spy = getSPYGex();
+  const bull = getBullPct();
+  const buyPct = (_mkt.sentiment && _mkt.sentiment.buy && _mkt.sentiment.total) ? Math.round(_mkt.sentiment.buy / _mkt.sentiment.total * 100) : Math.round(bull);
+  const sellPct = (_mkt.sentiment && _mkt.sentiment.sell && _mkt.sentiment.total) ? Math.round(_mkt.sentiment.sell / _mkt.sentiment.total * 100) : Math.round(100 - bull);
+  const holdPct = 100 - buyPct - sellPct;
+  const isLong = String(spy.regime || '').toLowerCase().includes('long');
+  const gexAbs = Math.abs(spy.total_gex_m || 0);
+
+  document.getElementById('inst-dealer-pos').innerHTML =
+    `<div class="hl-info" style="margin-bottom:.5rem;"><strong>Regime: ${spy.regime || '--'}</strong> — Net GEX: $${gexAbs.toFixed(0)}M ${isLong ? '(positive — dealers long gamma)' : '(negative — dealers short gamma)'}</div>` +
+    `<div class="pos-row"><span class="pos-lbl">Dealer long γ</span><div class="pos-track"><div class="pos-fill" style="width:${isLong ? 70 : 30}%;background:#4ade80;"></div></div><span class="pos-val" style="color:#4ade80;">${isLong ? 'HIGH' : 'LOW'}</span></div>` +
+    `<div class="pos-row"><span class="pos-lbl">Dealer short γ</span><div class="pos-track"><div class="pos-fill" style="width:${isLong ? 30 : 70}%;background:#f87171;"></div></div><span class="pos-val" style="color:#f87171;">${isLong ? 'LOW' : 'HIGH'}</span></div>` +
+    `<div class="pos-row"><span class="pos-lbl">Vanna pressure</span><div class="pos-track"><div class="pos-fill" style="width:55%;background:#a78bfa;"></div></div><span class="pos-val" style="color:#a78bfa;">MOD</span></div>`;
+
+  document.getElementById('inst-cta').innerHTML =
+    `<div class="pos-row"><span class="pos-lbl">CTA net long</span><div class="pos-track"><div class="pos-fill" style="width:${isLong ? 65 : 40}%;background:#22d3ee;"></div></div><span class="pos-val" style="color:#22d3ee;">${isLong ? '65%' : '40%'}</span></div>` +
+    `<div style="font-size:.79rem;color:var(--muted);margin-top:.4rem;">${isLong ? 'CTAs likely positioned long — momentum above key MAs. A break of Gamma Flip could trigger rapid de-leveraging.' : 'CTAs reducing long exposure or flipping short — momentum deteriorating. Every bounce could be sold.'}</div>`;
+
+  document.getElementById('retail-sentiment').innerHTML =
+    `<div class="pos-row"><span class="pos-lbl">Bull signals</span><div class="pos-track"><div class="pos-fill" style="width:${buyPct}%;background:#4ade80;"></div></div><span class="pos-val" style="color:#4ade80;">${buyPct}%</span></div>` +
+    `<div class="pos-row"><span class="pos-lbl">Bear signals</span><div class="pos-track"><div class="pos-fill" style="width:${sellPct}%;background:#f87171;"></div></div><span class="pos-val" style="color:#f87171;">${sellPct}%</span></div>` +
+    `<div class="pos-row"><span class="pos-lbl">Hold/Neutral</span><div class="pos-track"><div class="pos-fill" style="width:${Math.max(0,holdPct)}%;background:#fbbf24;"></div></div><span class="pos-val" style="color:#fbbf24;">${Math.max(0,holdPct)}%</span></div>`;
+
+  document.getElementById('retail-impact').innerHTML =
+    `<div class="${buyPct > 55 ? 'hl-bull' : buyPct < 45 ? 'hl-bear' : 'hl-amber'}"><strong>Net bias: ${buyPct}% BUY signals</strong> — ${buyPct > 55 ? 'Institutional models broadly agree on upside. Buying pressure likely to persist through gamma levels.' : buyPct < 45 ? 'Institutional models broadly bearish. Selling pressure may intensify at resistance. Risk-off posture recommended.' : 'No clear institutional consensus. Expect range-bound, choppy price action with sector rotation.'}</div>`;
+}
+
+/* ── Winners & Losers ────────────────────────────────────────────────── */
+function renderWinnersLosers() {
+  const ranking = getTopRanking();
+  const winners = ranking.filter(r => r.signal === 'BUY' && !r.symbol.startsWith('^')).slice(0, 6);
+  const losers  = ranking.filter(r => r.signal === 'SELL' && !r.symbol.startsWith('^')).slice(0, 6);
+
+  function driverReason(r) {
+    const g = r.group || '';
+    if (r.prob_up > 0.8) return 'Strong ML consensus — broad indicator alignment';
+    if (g === 'futures') return 'Futures positioning and basis premium signal';
+    if (g === 'mag7') return 'AI/tech earnings cycle momentum';
+    if (g === 'bluechip') return 'Fundamental quality + institutional accumulation';
+    if (g === 'sp500') return 'Index inclusion and options positioning';
+    return 'Multi-factor ML signal convergence';
+  }
+
+  const wRows = winners.map(r =>
+    `<tr><td><a href="asset-${r.symbol.toLowerCase().replace('=','-').replace('^','')}.html" style="color:#22d3ee;text-decoration:none;font-weight:700;">${r.symbol}</a></td><td style="color:var(--muted);font-size:.75rem;">${r.group || ''}</td><td style="color:#4ade80;font-weight:700;">${((r.prob_up || 0) * 100).toFixed(0)}%</td><td>${sigChip(r.signal)}</td><td style="color:#4ade80;font-family:Consolas,monospace;">${r.target_long ? fmtP(r.target_long) : '--'}</td><td style="font-size:.74rem;color:var(--muted);">${driverReason(r)}</td></tr>`
+  ).join('');
+  document.getElementById('winners-body').innerHTML = wRows || '<tr><td colspan="6" style="color:var(--muted);text-align:center;padding:1rem;">No strong BUY signals</td></tr>';
+
+  const lRows = losers.map(r =>
+    `<tr><td><a href="asset-${r.symbol.toLowerCase().replace('=','-').replace('^','')}.html" style="color:#22d3ee;text-decoration:none;font-weight:700;">${r.symbol}</a></td><td style="color:var(--muted);font-size:.75rem;">${r.group || ''}</td><td style="color:#f87171;font-weight:700;">${((r.prob_down || 0) * 100).toFixed(0)}%</td><td>${sigChip(r.signal)}</td><td style="color:#f87171;font-family:Consolas,monospace;">${r.target_short ? fmtP(r.target_short) : '--'}</td><td style="font-size:.74rem;color:var(--muted);">${driverReason(r)}</td></tr>`
+  ).join('');
+  document.getElementById('losers-body').innerHTML = lRows || '<tr><td colspan="6" style="color:var(--muted);text-align:center;padding:1rem;">No strong SELL signals</td></tr>';
+}
+
+/* ── Scenarios ───────────────────────────────────────────────────────── */
+function renderScenarios() {
+  const spy = getSPYGex();
+  const bull = getBullPct();
+  const buyCount = (_mkt.sentiment && _mkt.sentiment.buy) || 0;
+  const total = (_mkt.sentiment && _mkt.sentiment.total) || 1;
+  const bullProb = Math.round(bull);
+  const bearProb = Math.round(100 - bull);
+  const baseProb = Math.max(30, Math.min(50, 100 - Math.abs(bullProb - 50) * 2));
+
+  document.getElementById('sc-bull-prob').textContent = `~${bullProb > 55 ? bullProb : Math.round(bullProb * 0.7)}% probability`;
+  document.getElementById('sc-base-prob').textContent = `~${baseProb}% probability`;
+  document.getElementById('sc-bear-prob').textContent = `~${bearProb < 45 ? bearProb : Math.round(bearProb * 0.7)}% probability`;
+
+  document.getElementById('sc-bull-lines').innerHTML =
+    [`SPY holds above Gamma Flip (${fmtP(spy.flip_level)}) — long gamma sustains`,
+     `ML bull consensus expands beyond 60% (currently ${bull.toFixed(0)}%)`,
+     `VIX compresses below 18 — vanna flows force systematic dealer buying`,
+     `Gamma Wall (${fmtP(spy.gamma_wall)}) breaks higher — triggers short-squeeze above`,
+     'CTAs add long exposure as 50-day MA holds — trend signal strengthens'].map(s => `<div class="sc-line">${s}</div>`).join('');
+
+  document.getElementById('sc-base-lines').innerHTML =
+    [`SPY oscillates around Gamma Flip (${fmtP(spy.flip_level)}) — mixed regime days`,
+     `ML consensus 45-55% (currently ${bull.toFixed(0)}%) — sector rotation continues`,
+     'VIX 16-22 range — balanced premium environment, no vol crush or spike',
+     'Options premium flows mixed — institutional hedging offset by call buying',
+     'Earnings season risk contained — individual vol without index contagion'].map(s => `<div class="sc-line">${s}</div>`).join('');
+
+  document.getElementById('sc-bear-lines').innerHTML =
+    [`Break below Gamma Flip (${fmtP(spy.flip_level)}) — short gamma cascade triggers`,
+     `ML bear consensus rises above 55% (currently ${(100 - bull).toFixed(0)}% bear)`,
+     'VIX spikes above 25 — risk-parity funds forced to sell, vol-targeting deleverages',
+     `Put Wall (${fmtP(spy.put_wall)}) breaks — removes mechanical dealer buying support`,
+     'CTA flip to short — trend-following amplifies every down leg, 3-5% correction'].map(s => `<div class="sc-line">${s}</div>`).join('');
+}
+
+/* ── Main render ─────────────────────────────────────────────────────── */
+function renderAll() {
+  if (_mkt) {
+    renderStats();
+    renderCommentary();
+    renderDayTab();
+    renderWeekTab();
+    renderMonthTab();
+    renderYearTab();
+    renderInstitutional();
+    renderScenarios();
+  }
+  if (_gex) renderGEXSection();
+  if (_mkt) renderWinnersLosers();
+}
+
+/* ── Tab switching ───────────────────────────────────────────────────── */
+function switchTab(id, el) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  if (el) el.classList.add('active');
+  const panel = document.getElementById('tab-' + id);
+  if (panel) panel.classList.add('active');
+}
+
+/* ── Load all ────────────────────────────────────────────────────────── */
+async function loadAll() {
+  const dot = document.getElementById('sdot');
+  const msg = document.getElementById('smsg');
+  dot.className = 'sdot loading';
+  msg.textContent = 'Fetching live market forecast data...';
+  try {
+    const [mkt, gex, flow, fund] = await Promise.all([
+      cachedFetch(API + '/api/market-summary').catch(() => null),
+      cachedFetch(API + '/api/gamma-exposure').catch(() => null),
+      cachedFetch(API + '/api/option-flows').catch(() => null),
+      cachedFetch(API + '/api/fundamentals').catch(() => null),
+    ]);
+    _mkt = mkt; _gex = gex; _flow = flow; _fund = fund;
+    renderAll();
+    dot.className = 'sdot on';
+    msg.textContent = 'Forecast updated · auto-refresh every 8 minutes';
+  } catch (e) {
+    showPageError('Connection error — ensure server is running: py live-server.py', loadAll);
+  }
+}
+
+window.addEventListener('load', () => {
+  loadAll();
+  setInterval(function () { if (document.hidden) return; loadAll(); }, 8 * 60 * 1000);
+  document.addEventListener('visibilitychange', function () { if (!document.hidden) loadAll(); });
+});
+</script>
+<script src="search.js" defer></script>
+</body>
+</html>

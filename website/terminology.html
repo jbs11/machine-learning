@@ -213,6 +213,7 @@
     <li><a href="brokers.html">Brokers</a></li>
     <li><a href="live-trading.html">Live Trading</a></li>
     <li><a href="market-preparation.html">&#128204; Market Prep</a></li>
+    <li><a href="forecast.html" style="color:#f59e0b;font-weight:700;">&#128200; Forecast</a></li>
     <li><a href="asset-details.html">&#128202; Asset Review</a></li>
     <li><a href="report-ms.html" target="_blank" style="background:#22d3ee;color:#080d1a;padding:.28rem .85rem;border-radius:5px;font-weight:700;letter-spacing:.02em;">&#128202; Market Report</a></li>
     <li><a href="report-tg.html" target="_blank" style="background:#a78bfa;color:#080d1a;padding:.28rem .85rem;border-radius:5px;font-weight:700;letter-spacing:.02em;">&#128214; Trading Guide</a></li>
@@ -279,6 +280,8 @@
     <button class="cat-pill" onclick="setCat('assets', this)">🏦 Asset Types</button>
     <button class="cat-pill" onclick="setCat('timeframes', this)">⏱ Timeframes</button>
     <button class="cat-pill" onclick="setCat('platform', this)">🔌 Platform &amp; Data</button>
+    <button class="cat-pill" onclick="setCat('gex', this)">📡 GEX &amp; Options Flow</button>
+    <button class="cat-pill" onclick="setCat('fundamentals', this)">📋 Fundamentals</button>
   </div>
 
   <!-- ══════════════════════════════════════════════════════════════════════ -->
@@ -755,6 +758,136 @@
     </div>
   </div>
 
+
+  <!-- ══════════════════════════════════════════════════════════════════════ -->
+  <!-- GEX & OPTIONS FLOW -->
+  <!-- ══════════════════════════════════════════════════════════════════════ -->
+  <div class="cat-section" data-cat="gex">
+    <div class="cat-section-header">
+      <span class="cat-icon">📡</span>
+      <span class="cat-title">GEX &amp; Options Flow</span>
+      <span class="cat-count" id="cnt-gex"></span>
+    </div>
+    <div class="term-grid" id="grid-gex">
+
+      <div class="term-card">
+        <div class="term-name">GEX <span class="term-abbr">Gamma Exposure</span></div>
+        <div class="term-def">The aggregate net gamma that all options market makers (dealers) must hedge in the underlying asset. Computed as the sum of gamma × open interest × contract size × spot price across all strikes and expiries. <strong>Positive GEX</strong> = dealers are net long gamma (stabilizing). <strong>Negative GEX</strong> = dealers are net short gamma (amplifying). The single most important structural indicator for near-term S&amp;P 500 behavior.</div>
+        <div class="term-tags"><span class="term-tag tag-sum">Market Prep</span><span class="term-tag tag-live">Forecast</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">Gamma Wall</div>
+        <div class="term-def">The strike price with the <strong>largest concentration of positive dealer gamma</strong>. Acts as a strong magnetic resistance ceiling — dealers must aggressively sell the underlying as price approaches this level to maintain delta-neutrality, capping upside. In a long-gamma regime, price often oscillates below the Gamma Wall for days to weeks. Breaking through it triggers a short-squeeze acceleration.</div>
+        <div class="term-tags"><span class="term-tag tag-sum">Market Prep</span><span class="term-tag tag-live">Forecast</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">Put Wall</div>
+        <div class="term-def">The strike price with the <strong>largest concentration of put open interest</strong> and associated dealer long gamma. As price falls toward the Put Wall, dealers must buy large quantities of the underlying to hedge their short delta from the puts — creating a powerful mechanical support floor. Institutions often place protective puts at round numbers, making the Put Wall highly predictable and self-fulfilling.</div>
+        <div class="term-tags"><span class="term-tag tag-sum">Market Prep</span><span class="term-tag tag-live">Forecast</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">Gamma Flip Level <span class="term-abbr">Zero Gamma Line</span></div>
+        <div class="term-def">The underlying price at which aggregate dealer gamma crosses from positive to negative (or vice versa). <strong>Above the flip</strong> = Long Gamma Regime (dampening). <strong>Below the flip</strong> = Short Gamma Regime (amplifying). This level is the most critical intraday decision point — a sustained break below it shifts dealer behavior from stabilizing to momentum-amplifying. Displayed in the stats strip on the Market Prep and Forecast pages.</div>
+        <div class="term-tags"><span class="term-tag tag-sum">Market Prep</span><span class="term-tag tag-live">Forecast</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">Long Gamma Regime <span class="term-abbr">GEX Positive</span></div>
+        <div class="term-def">When dealers are <strong>net long gamma</strong> (spot price above Gamma Flip level). Dealers sell rallies and buy dips to maintain delta-neutrality — <strong>dampening</strong> realized volatility. Markets become range-bound with low realized vol. Characteristics: slow grind higher, dips bought aggressively, vol crushed. Best strategies: iron condors, credit spreads, selling premium, mean-reversion fades. Typical during: low-VIX environments, post-OpEx calm periods.</div>
+        <div class="term-tags"><span class="term-tag tag-sum">Market Prep</span><span class="term-tag tag-live">Forecast</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">Short Gamma Regime <span class="term-abbr">GEX Negative</span></div>
+        <div class="term-def">When dealers are <strong>net short gamma</strong> (spot price below Gamma Flip level). Dealers buy rallies and sell dips — <strong>amplifying</strong> every move. Realized volatility exceeds implied volatility. Characteristics: trending directional moves, stops triggered in cascades, vol spikes. Best strategies: momentum trend-following, buying debit spreads, long straddles. Typical during: fear regimes, earnings seasons, macro events, VIX &gt; 20.</div>
+        <div class="term-tags"><span class="term-tag tag-sum">Market Prep</span><span class="term-tag tag-live">Forecast</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">Delta Hedging</div>
+        <div class="term-def">The continuous process by which options dealers buy or sell the underlying asset to maintain a <strong>delta-neutral portfolio</strong>. When a dealer sells a call, they must buy shares to hedge. As price moves, delta changes (due to gamma), forcing re-hedging. This systematic, non-fundamental buying and selling is the largest mechanical force in US equity markets — estimated at billions of dollars per 1% SPY move. Delta hedging creates the structural support (Put Wall) and resistance (Gamma Wall) levels visible on GEX charts.</div>
+        <div class="term-tags"><span class="term-tag tag-sum">Market Prep</span><span class="term-tag tag-live">Forecast</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">Vanna</div>
+        <div class="term-def">The rate of change of delta with respect to implied volatility: ∂Delta/∂IV. When IV falls (a "vol crush" post-event), dealer deltas change, forcing large hedging flows in the underlying. <strong>Vanna flow</strong> is why equities often rally for 2–5 sessions after an event that causes IV to crush (earnings, FOMC, CPI). A 5-point IV drop on SPY can force billions in systematic buying via vanna unwinding. One of the three major higher-order Greeks driving systematic non-fundamental price moves (alongside Charm and Speed).</div>
+        <div class="term-tags"><span class="term-tag tag-sum">Market Prep</span><span class="term-tag tag-live">Forecast</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">Charm <span class="term-abbr">Delta Decay</span></div>
+        <div class="term-def">The rate of change of delta with respect to time: ∂Delta/∂t. As options approach expiry, their deltas migrate toward 0 (OTM) or 1 (ITM) — forcing dealers to unwind hedges. <strong>Charm flow</strong> is strongest in the final 90 minutes of a 0DTE trading day, as thousands of near-expiry options rapidly change delta. Post-OpEx charm unwind (week 4 of each month) is often the cleanest trending week as vanna + charm hedges unwind simultaneously and dealers go gamma-flat.</div>
+        <div class="term-tags"><span class="term-tag tag-sum">Market Prep</span><span class="term-tag tag-live">Forecast</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">Flow Sentiment</div>
+        <div class="term-def">An aggregated measure of bullish vs. bearish options premium flow for a given asset. Computed from the relative volume and premium of call vs. put activity: <strong>BULLISH</strong> = call premium dominates; <strong>BEARISH</strong> = put premium dominates; <strong>NEUTRAL</strong> = balanced. Displayed in the stats strip on the Market Prep page and as a column in the option flows table. Unlike PCR (which measures volume), Flow Sentiment weights by premium paid — capturing institutional intent more accurately than raw volume counts.</div>
+        <div class="term-tags"><span class="term-tag tag-sum">Market Prep</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">PCR <span class="term-abbr">Put/Call Ratio</span></div>
+        <div class="term-def">Total put volume divided by total call volume for a given asset over the trading session. <strong>PCR &gt; 1.2</strong> = bearish hedging dominant — historically a contrarian bullish signal (market is overly hedged). <strong>PCR &lt; 0.7</strong> = call speculation dominant — contrarian bearish signal (complacency). Displayed in the options flow table on the Market Prep page. Equity PCR and index (SPX) PCR often diverge — index PCR is more useful for macro hedging signals.</div>
+        <div class="term-tags"><span class="term-tag tag-sum">Market Prep</span><span class="term-tag tag-live">Forecast</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">Max Pain Strike</div>
+        <div class="term-def">The options strike price at which the total dollar value of expiring options (both calls and puts) is minimized — causing the <strong>maximum financial loss for option buyers</strong> as a group. Calculated by summing the intrinsic value of all open calls and puts at each potential expiry price. Because option sellers (often dealers and institutions) have incentive to pin price near max pain by expiry, this level often acts as a gravitational target during OpEx week, particularly in the last few hours before Friday close.</div>
+        <div class="term-tags"><span class="term-tag tag-sum">Market Prep</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">IV Crush <span class="term-abbr">Implied Volatility Collapse</span></div>
+        <div class="term-def">The rapid collapse of implied volatility immediately <strong>after a binary event</strong> (earnings, FOMC, CPI, product announcements). IV spikes into the event as buyers pay up for protection/speculation, then collapses once the uncertainty resolves — even if the price moves significantly. Options lose value due to vega exposure despite being "right" on direction. Exploited by selling straddles or iron condors before events. The resulting vol crush also triggers vanna flows that can drive systematic buying over the following 2–5 sessions.</div>
+        <div class="term-tags"><span class="term-tag tag-sum">Market Prep</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">OpEx <span class="term-abbr">Options Expiration</span></div>
+        <div class="term-def">The date on which options contracts expire. <strong>Monthly OpEx</strong> = 3rd Friday of each month — the most important, as quarterly and monthly positions all expire simultaneously. <strong>Pre-OpEx week (week 3)</strong>: price pins near large open interest strikes (max pain effect), gamma peaks, vol compresses. <strong>Post-OpEx (week 4)</strong>: all hedges vanish, dealers go gamma-flat, vanna + charm unwinds drive the cleanest directional move of the month. Quarterly OpEx (March, June, September, December) is the largest — also called "triple witching" (stocks + index + ETF options all expire).</div>
+        <div class="term-tags"><span class="term-tag tag-sum">Market Prep</span><span class="term-tag tag-live">Forecast</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">0DTE <span class="term-abbr">Zero Days to Expiration</span></div>
+        <div class="term-def">Options expiring the same trading day. Now account for <strong>&gt;40% of daily SPX options volume</strong>. Because gamma spikes as expiry approaches (a 0DTE ATM option can have gamma 10–100× a weekly option), dealer hedging of 0DTE creates powerful intraday price dynamics. Price is magnetically attracted toward high-OI 0DTE strikes as dealers re-hedge continuously. The final 90 minutes of 0DTE trading days often sees the largest moves as charm flow accelerates. Tracked on the 0DTE page and in the Market Prep 0DTE section.</div>
+        <div class="term-tags"><span class="term-tag tag-sum">Market Prep</span><span class="term-tag tag-live">Forecast</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">Put Skew</div>
+        <div class="term-def">The phenomenon where <strong>OTM puts carry higher implied volatility than OTM calls</strong> at the same distance from the money. Reflects the crash-risk premium in markets — investors pay more to hedge downside than to speculate on upside. <strong>Steep skew</strong> = elevated fear (protective put demand high). <strong>Flat skew</strong> = complacency. <strong>Skew inversion</strong> (calls &gt; puts IV) = rare melt-up panic buying. Monitored via the IV Surface section of Market Preparation.</div>
+        <div class="term-tags"><span class="term-tag tag-sum">Market Prep</span></div>
+      </div>
+
+
+      <div class="term-card">
+        <div class="term-name">Long Straddle</div>
+        <div class="term-def">Buy an ATM call <strong>and</strong> an ATM put with the same strike and expiry. Profits from a <strong>large move in either direction</strong> — you don't need to know which way, just that vol will be realized. Use when IV Rank is low (cheap to buy) and a catalyst (earnings, FOMC) is expected. Maximum loss = combined premium paid. Best in Short Gamma regimes where realized vol tends to exceed implied.</div>
+        <div class="term-tags"><span class="term-tag tag-sum">Market Prep</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">Calendar Spread <span class="term-abbr">Time Spread</span></div>
+        <div class="term-def">Sell a near-term option, buy the <strong>same strike at a longer expiry</strong>. Profits from near-term IV crush + time decay while maintaining the longer-dated position. Net long vega — benefits when IV rises post-entry. Best use case: after a binary event crushes near-term IV (making the short leg cheaper to buy back), while IV in longer expiries remains elevated. Also used to sell expensive 0DTE premium while hedging with a weekly at the same strike.</div>
+        <div class="term-tags"><span class="term-tag tag-sum">Market Prep</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">Covered Call</div>
+        <div class="term-def">Own shares (or a long futures position) and <strong>sell an OTM call</strong> against the holding. Generates income from the call premium, capping upside above the call strike. Reduces effective cost basis over time. Best in Long Gamma regimes (range-bound markets) when the ML signal is neutral to slightly bullish. Risk: if the stock surges above the short call strike, gains are capped at the strike + premium received.</div>
+        <div class="term-tags"><span class="term-tag tag-live">Live Trading</span></div>
+      </div>
+
+    </div>
+  </div>
+
   <!-- ══════════════════════════════════════════════════════════════════════ -->
   <!-- FUTURES -->
   <!-- ══════════════════════════════════════════════════════════════════════ -->
@@ -806,6 +939,31 @@
         <div class="term-name">ZB=F <span class="term-abbr">30-Year US Treasury Bond Futures</span></div>
         <div class="term-def">CBOT futures on the 30-year US Treasury bond. <strong>Multiplier: $1,000 per point.</strong> Moves inversely to long-term interest rates. Rising ZB = falling long yields (risk-off, flight to safety). The Market Summary World Events engine uses ZB signals to detect Fed policy shifts and monetary policy events.</div>
         <div class="term-tags"><span class="term-tag tag-both">Both Pages</span></div>
+      </div>
+
+
+      <div class="term-card">
+        <div class="term-name">Contango</div>
+        <div class="term-def">A futures market structure where <strong>futures prices are higher than the current spot price</strong>. Normal for most markets — reflects cost-of-carry (financing, storage). ETFs that roll futures (USO for oil, VIX products) suffer negative roll yield in steep contango — the fund buys expensive far contracts and later sells them cheaper. ES futures typically trade at a slight contango to fair value in normal interest-rate environments.</div>
+        <div class="term-tags"><span class="term-tag tag-sum">Market Prep</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">Backwardation</div>
+        <div class="term-def">A futures market structure where <strong>futures prices are below the current spot price</strong>. Signals either extreme demand pressure or a supply squeeze in the near-term. <strong>VIX backwardation</strong> (spot VIX &gt; 3-month VIX futures) = near-term fear elevated, historically a reversal precursor within 1–5 sessions. <strong>CL backwardation</strong> = oil demand spike or supply shock. ETF roll yield is positive in backwardation.</div>
+        <div class="term-tags"><span class="term-tag tag-sum">Market Prep</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">Fair Value <span class="term-abbr">ES Futures Fair Value</span></div>
+        <div class="term-def">The theoretical price of ES futures relative to the S&amp;P 500 cash index: <strong>Fair Value = SPX × (1 + r×t − d)</strong> where r = risk-free rate, t = time to expiry, d = dividend yield. When ES trades above fair value, arbitrageurs buy the cash basket and sell futures (pushing them together). When below fair value, they sell the basket and buy futures. Broadcasted daily by financial media before market open — the "futures premium/discount to fair value" determines the implied cash open price.</div>
+        <div class="term-tags"><span class="term-tag tag-sum">Market Prep</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">COT Data <span class="term-abbr">Commitment of Traders</span></div>
+        <div class="term-def">A weekly CFTC report showing the <strong>net long/short positioning of Commercial (hedgers), Non-Commercial (speculators), and Non-Reportable (small traders)</strong> participants for each futures market. Released every Friday at 3:30pm ET for the prior Tuesday's positions. <strong>Extreme net speculative longs</strong> (above 80th percentile of historical range) = elevated reversal risk. <strong>Extreme net speculative shorts</strong> = squeeze potential — look for catalyst. The Market Prep page displays COT proxy bars for ES, NQ, CL, GC, and ZB.</div>
+        <div class="term-tags"><span class="term-tag tag-sum">Market Prep</span></div>
       </div>
 
       <div class="term-card">
@@ -870,10 +1028,122 @@
         <div class="term-tags"><span class="term-tag tag-sum">Market Summary</span></div>
       </div>
 
+
+      <div class="term-card">
+        <div class="term-name">Sector Rotation</div>
+        <div class="term-def">The movement of institutional capital from one market sector to another as economic conditions shift. At different phases of the economic cycle, different sectors outperform: <strong>Early cycle:</strong> Financials, Consumer Discretionary, Tech, Real Estate. <strong>Mid cycle:</strong> Tech, Industrials, Materials. <strong>Late cycle:</strong> Energy, Materials, Healthcare. <strong>Recession:</strong> Utilities, Healthcare, Consumer Staples. Detected by tracking 4-week relative outperformance of sector ETFs (XLF, XLK, XLE, XLU, XLP, XLV) vs. SPY.</div>
+        <div class="term-tags"><span class="term-tag tag-sum">Market Prep</span><span class="term-tag tag-live">Forecast</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">CTA <span class="term-abbr">Commodity Trading Advisors / Trend Followers</span></div>
+        <div class="term-def">Large systematic hedge funds managing ~$350B AUM that use <strong>quantitative momentum strategies</strong> — they buy what is going up and sell what is going down based on price signals (20/50/100-day breakouts). When CTAs are <strong>max long</strong>, reversal risk is extreme because there are no new buyers. When CTAs are <strong>max short</strong>, violent short squeezes occur on any positive catalyst. CTA flip levels (price levels where they switch from long to short) are well-known and create self-fulfilling momentum cascades. Major CTA flip = potential 5–15B daily flow at key S&amp;P price levels.</div>
+        <div class="term-tags"><span class="term-tag tag-sum">Market Prep</span><span class="term-tag tag-live">Forecast</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">PFOF <span class="term-abbr">Payment for Order Flow</span></div>
+        <div class="term-def">The practice where retail brokers (Robinhood, Schwab, TD Ameritrade) sell their customers' order flow to wholesale market makers (Citadel Securities, Virtu Financial, Susquehanna) who pay a small fee per share for the right to fill orders. The wholesaler profits from the bid-ask spread. Result: <strong>40%+ of retail orders never reach public exchanges</strong> — they are internalized. This means retail order flow is "toxic information" to wholesalers, who only internalize it if they can profit. The practice distorts displayed market depth and allows wholesalers to front-run retail sentiment.</div>
+        <div class="term-tags"><span class="term-tag tag-sum">Market Prep</span><span class="term-tag tag-live">Forecast</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">Dark Pools <span class="term-abbr">Alternative Trading Systems</span></div>
+        <div class="term-def">Private, off-exchange trading venues where large institutions trade <strong>without revealing order size or price to the public market</strong> until after execution. Account for approximately <strong>35–40% of total US equity volume</strong>. Institutions use dark pools to execute large blocks (100K–10M shares) without moving the market. <strong>Large dark pool prints</strong> that appear on the tape (delayed) signal accumulation or distribution by the largest players — particularly telling in SPY, QQQ, and Mag 7 names. Monitored in the Forecast page's Retail vs. Institutional section.</div>
+        <div class="term-tags"><span class="term-tag tag-sum">Market Prep</span><span class="term-tag tag-live">Forecast</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">MOC Imbalance <span class="term-abbr">Market-on-Close Imbalance</span></div>
+        <div class="term-def">At <strong>3:50pm ET</strong>, NYSE publishes buy/sell imbalances for the Market-on-Close (MOC) auction — the list of stocks where there are more buy than sell orders (or vice versa) for the 4pm closing print. <strong>Large buy imbalance (&gt;$500M SPY equivalent)</strong> = strong close almost guaranteed; <strong>large sell imbalance</strong> = weak final 10 minutes. One of the most reliable same-day intraday signals available to traders. Used by market makers and sophisticated traders to position ahead of the close.</div>
+        <div class="term-tags"><span class="term-tag tag-sum">Market Prep</span><span class="term-tag tag-live">Forecast</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">Factor Models <span class="term-abbr">Factor Investing</span></div>
+        <div class="term-def">Quantitative investment frameworks that explain stock returns through <strong>systematic risk factors</strong> beyond the market beta: <strong>Momentum</strong> (12-1 month returns above average tend to persist until sharp reversal — use RSI divergence to time exit). <strong>Quality</strong> (high ROE + low debt + stable earnings outperforms in late cycle and recessions — MSFT, AAPL, V, JNJ, UNH). <strong>Value</strong> (low P/E + high dividend yield outperforms when rates peak — BAC, XOM, CVX, WMT, HD). <strong>Low Volatility</strong> (low-beta stocks outperform in risk-off environments — JNJ, UNH, WMT, XLU, XLP). Covered in the Factor Exposure Guide on the Market Prep page.</div>
+        <div class="term-tags"><span class="term-tag tag-sum">Market Prep</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">Window Dressing</div>
+        <div class="term-def">A practice by fund managers at <strong>quarter-end</strong> (March, June, September, December) of buying recent winners and selling losers so their 13F holdings report looks good to investors. Creates predictable buying pressure on momentum stocks in the last week of each quarter and selling in the first week (as new-quarter repositioning occurs). The <strong>first week of the new quarter</strong> often reverses the window-dressing effect. Monitored in the Market Prep Institutional Rebalancing Calendar.</div>
+        <div class="term-tags"><span class="term-tag tag-sum">Market Prep</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">Adverse Selection</div>
+        <div class="term-def">In market making, the risk that the counterparty in a trade <strong>knows more about the true value of the asset</strong> than the market maker. When informed traders (institutions with edge) consistently transact with market makers, MMs lose money — they widen the bid-ask spread to compensate. <strong>Toxic flow</strong> = flow from informed traders that consistently moves against the market maker's position. Retail flow (PFOF) is generally considered non-toxic (non-informed), while dark pool prints are often informed. Wider spreads = higher adverse selection risk detected.</div>
+        <div class="term-tags"><span class="term-tag tag-sum">Market Prep</span></div>
+      </div>
+
       <div class="term-card">
         <div class="term-name">World Events Engine</div>
         <div class="term-def">An algorithmic system that analyzes the live ML signals from all tracked assets and synthesizes them into <strong>economic and geopolitical event narratives</strong>. Detects: Monetary Policy, Inflation, Geopolitical Risk, Volatility Events, Tech Sector cycles, Energy signals, and Market Breadth conditions.</div>
         <div class="term-tags"><span class="term-tag tag-sum">Market Summary</span></div>
+      </div>
+
+    </div>
+  </div>
+
+
+  <!-- ══════════════════════════════════════════════════════════════════════ -->
+  <!-- FUNDAMENTALS & ANALYSIS -->
+  <!-- ══════════════════════════════════════════════════════════════════════ -->
+  <div class="cat-section" data-cat="fundamentals">
+    <div class="cat-section-header">
+      <span class="cat-icon">📋</span>
+      <span class="cat-title">Fundamentals &amp; Asset Analysis</span>
+      <span class="cat-count" id="cnt-fundamentals"></span>
+    </div>
+    <div class="term-grid" id="grid-fundamentals">
+
+      <div class="term-card">
+        <div class="term-name">Forward PE <span class="term-abbr">Forward Price-to-Earnings Ratio</span></div>
+        <div class="term-def">Current stock price divided by <strong>next 12 months' estimated earnings per share</strong> (analyst consensus). A valuation multiple measuring how expensive a stock is relative to expected profitability. <strong>S&amp;P 500 historical average: ~16–18×.</strong> High forward PE (e.g., NVDA 35×+) implies strong growth expectations. Low forward PE (e.g., BAC, XOM 10–13×) implies value or slower growth. Used on the Asset Details hub and in the Year End forecast tab for valuation backdrop analysis.</div>
+        <div class="term-tags"><span class="term-tag tag-sum">Asset Details</span><span class="term-tag tag-live">Forecast</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">Analyst Rating <span class="term-abbr">Fundamental BUY / HOLD / SELL</span></div>
+        <div class="term-def">Wall Street analyst consensus recommendation derived from aggregated price targets and ratings across major banks. <strong>BUY</strong> = analysts expect &gt;10% upside to target; <strong>HOLD</strong> = roughly fairly valued, limited catalyst; <strong>SELL</strong> = analysts expect downside or structural headwinds. Displayed as color-coded chips on Asset Details cards (green BUY, amber HOLD, red SELL). Distinct from the ML model's directional signal — represents medium-term (6–12 month) fundamental view.</div>
+        <div class="term-tags"><span class="term-tag tag-sum">Asset Details</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">Revenue Growth <span class="term-abbr">YoY Revenue Growth %</span></div>
+        <div class="term-def">Year-over-year percentage increase in a company's total sales. A key indicator of business momentum and market share. <strong>High revenue growth</strong> (e.g., NVDA 120%+) justifies high PE multiples during growth phases. <strong>Decelerating growth</strong> often precedes multiple compression. Combined with earnings growth and margin trends in the fundamentals page to assess whether a stock's ML BUY signal has fundamental confirmation.</div>
+        <div class="term-tags"><span class="term-tag tag-sum">Asset Details</span><span class="term-tag tag-live">Forecast</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">Net Margin</div>
+        <div class="term-def">Net income divided by total revenue — the percentage of sales that becomes profit after all expenses, taxes, and interest. <strong>Software/platform businesses</strong> (MSFT, META, GOOGL) typically have net margins of 20–40%. <strong>Banks</strong> report differently (NIM-based). <strong>Retail</strong> (WMT, HD) and hardware typically have thinner margins (3–10%). High and expanding margins are a quality signal; compressing margins under revenue pressure indicate cost or pricing problems.</div>
+        <div class="term-tags"><span class="term-tag tag-sum">Asset Details</span><span class="term-tag tag-live">Forecast</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">ROE <span class="term-abbr">Return on Equity</span></div>
+        <div class="term-def">Net income divided by shareholders' equity — measures <strong>how efficiently management generates profits from equity capital</strong>. A Warren Buffett favorite: consistent ROE &gt; 15–20% over a decade signals a durable competitive advantage (moat). <strong>Quality factor</strong> companies like MSFT, AAPL, V, and UNH maintain high ROE. Used in the Market Prep Factor Exposure Guide to identify quality-factor stocks that outperform in late cycle and recession environments.</div>
+        <div class="term-tags"><span class="term-tag tag-sum">Market Prep</span><span class="term-tag tag-live">Forecast</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">Upside % <span class="term-abbr">Price Target Upside</span></div>
+        <div class="term-def">The percentage difference between the current stock price and the analyst consensus 12-month price target: (Target − Current) / Current × 100. <strong>Upside &gt; 15%</strong> = significant analyst conviction; <strong>Upside &lt; 5%</strong> = near or above consensus target (limited expected return). Displayed in the Fundamentals and Forecast pages. When ML BUY signal + high upside % align, the combined setup has both technical momentum and fundamental support.</div>
+        <div class="term-tags"><span class="term-tag tag-live">Forecast</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">Market Cap <span class="term-abbr">Market Capitalization</span></div>
+        <div class="term-def">Total market value of a company's outstanding shares: Share Price × Shares Outstanding. <strong>Mega-cap</strong> (&gt;$1T): AAPL, MSFT, NVDA, GOOGL, AMZN, META. <strong>Large-cap</strong> ($10B–$1T): most S&amp;P 500 members. <strong>Small-cap</strong> (&lt;$2B): Russell 2000 (IWM). Larger market caps generally mean lower volatility, better liquidity, more analyst coverage, and higher index fund ownership — but also less potential for explosive growth.</div>
+        <div class="term-tags"><span class="term-tag tag-sum">Asset Details</span><span class="term-tag tag-live">Forecast</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">Fund Score <span class="term-abbr">Fundamental Score</span></div>
+        <div class="term-def">A composite 0–100 score computed from multiple fundamental metrics: analyst rating, forward PE relative to sector, revenue growth, net margin, ROE, and price-to-target upside. <strong>Score &gt; 70</strong> = fundamentally strong stock worth BUY signal confirmation. <strong>Score &lt; 30</strong> = fundamentally challenged — SELL signals have additional support. Displayed as a progress bar on the Fundamentals page and the Asset Details hub cards.</div>
+        <div class="term-tags"><span class="term-tag tag-sum">Asset Details</span></div>
       </div>
 
     </div>
@@ -1111,6 +1381,8 @@ function initCounts() {
     assets:     'cnt-assets',
     timeframes: 'cnt-timeframes',
     platform:   'cnt-platform',
+    gex:        'cnt-gex',
+    fundamentals: 'cnt-fundamentals',
   };
   Object.entries(catMap).forEach(([cat, id]) => {
     const grid = document.getElementById('grid-' + cat);

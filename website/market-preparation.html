@@ -247,6 +247,7 @@
     <a href="institutional-buyers.html">Institutional</a><span class="page-nav-sep">|</span>
     <a href="hedging-impact.html">Hedging</a><span class="page-nav-sep">|</span>
     <a href="market-preparation.html" class="active">Market Prep</a><span class="page-nav-sep">|</span>
+    <a href="forecast.html" style="color:#f59e0b;font-weight:700;">&#128200; Forecast</a><span class="page-nav-sep">|</span>
     <a href="asset-details.html">Assets</a>
     <span style="flex:1"></span>
     <a href="report-ms.html" class="nav-report-btn" style="background:rgba(34,211,238,.12);color:#22d3ee;border:1px solid rgba(34,211,238,.25);">&#128202; Market Report</a>
@@ -1204,8 +1205,8 @@
   }
   function dirChip(dir){
     const d=(dir||'').toUpperCase();
-    if(d==='UP'||d==='BULLISH') return '<span class="chip chip-green">UP</span>';
-    if(d==='DOWN'||d==='BEARISH') return '<span class="chip chip-red">DOWN</span>';
+    if(d==='UP'||d==='BULLISH'||d==='BUY') return '<span class="chip chip-green">'+d+'</span>';
+    if(d==='DOWN'||d==='BEARISH'||d==='SELL') return '<span class="chip chip-red">'+d+'</span>';
     return '<span class="chip chip-amber">'+d+'</span>';
   }
   function magChip(m){
@@ -1238,17 +1239,28 @@
       dot.className='sdot on';
       msg.textContent='Live data loaded — auto-refresh every 8 minutes';
     } catch(e) {
-      showPageError('Connection error — server may still be starting. Click Retry.', loadAll);
+      const msg = e && e.message ? e.message : String(e);
+      showPageError('Load error: ' + msg + ' — Click Retry.', loadAll);
+      console.error('[market-prep] loadAll error:', e);
     }
   }
 
   // ── Render All ─────────────────────────────────────────────────────────────
+  function safeCall(fn, name) {
+    try { fn(); } catch(e) { console.error('[market-prep] ' + name + ' failed:', e); }
+  }
   function renderAll(){
-    if(_mktData) { renderStats(); renderBreadth(); renderMLRankings(); renderChecklists(); renderForecasts(); }
-    if(_gexData)  { renderFuturesGex(); renderDHLevels(); }
-    if(_flowData) { renderFlowTable(); }
-    if(_dteData)  { renderDTE(); }
-    updateTimestamp();
+    if(_mktData) {
+      safeCall(renderStats,       'renderStats');
+      safeCall(renderBreadth,     'renderBreadth');
+      safeCall(renderMLRankings,  'renderMLRankings');
+      safeCall(renderChecklists,  'renderChecklists');
+      safeCall(renderForecasts,   'renderForecasts');
+    }
+    if(_gexData)  { safeCall(renderFuturesGex, 'renderFuturesGex'); safeCall(renderDHLevels, 'renderDHLevels'); }
+    if(_flowData) { safeCall(renderFlowTable,  'renderFlowTable'); }
+    if(_dteData)  { safeCall(renderDTE,        'renderDTE'); }
+    safeCall(updateTimestamp, 'updateTimestamp');
   }
 
   // ── Stats Strip ────────────────────────────────────────────────────────────
@@ -1281,10 +1293,11 @@
       }
     }
     // Top ML signal
-    if(m.ml_ranking&&m.ml_ranking.length>0){
-      const top=m.ml_ranking[0];
-      document.getElementById('stat-ml').textContent=(top.symbol||'--')+' '+(top.direction||'');
-      document.getElementById('stat-ml').style.color=col(top.direction,['up','bullish'],['down','bearish'],'#fbbf24');
+    const _topRanking=m.top_magnitude||[];
+    if(_topRanking.length>0){
+      const top=_topRanking[0];
+      document.getElementById('stat-ml').textContent=(top.symbol||'--')+' '+(top.signal||'');
+      document.getElementById('stat-ml').style.color=col(top.signal,['buy','up','bullish'],['sell','down','bearish'],'#fbbf24');
     }
     // VIX proxy from market data
     const vix=m.vix||m.vix_proxy||'--';
@@ -1297,8 +1310,8 @@
     const bullPct=m.sentiment&&m.sentiment.bull_pct?parseFloat(m.sentiment.bull_pct):50;
     document.getElementById('breadth-bar').style.width=bullPct+'%';
 
-    const ranking=m.ml_ranking||[];
-    const upCount=ranking.filter(r=>String(r.direction||'').toLowerCase()==='up').length;
+    const ranking=m.top_magnitude||[];
+    const upCount=ranking.filter(r=>r.signal==='BUY').length;
     const total=ranking.length||1;
     const advPct=Math.round(upCount/total*100);
 
@@ -1323,11 +1336,10 @@
 
   // ── ML Rankings ────────────────────────────────────────────────────────────
   function renderMLRankings(){
-    const ranking=(_mktData.ml_ranking||[]).slice(0,12);
-    const byGroup=_mktData.by_group||{};
+    const ranking=((_mktData.top_magnitude)||[]).slice(0,12);
     let rows='';
     ranking.forEach((r,i)=>{
-      rows+=`<tr><td>${i+1}</td><td><strong>${r.symbol||''}</strong></td><td>${r.group||''}</td><td>${dirChip(r.direction)}</td><td>${magChip(r.magnitude)}</td></tr>`;
+      rows+=`<tr><td>${i+1}</td><td><strong>${r.symbol||''}</strong></td><td>${r.group||''}</td><td>${dirChip(r.signal)}</td><td>${magChip(r.prob_up)}</td></tr>`;
     });
     document.getElementById('ml-rankings-body').innerHTML=rows||'<tr><td colspan="5" style="color:var(--muted);text-align:center;padding:.8rem;">No ML data available</td></tr>';
   }
@@ -1436,14 +1448,14 @@
       li(bull>55?g:bull<45?r:a,'Bull Sentiment:',bull+'%'),
     ].join('');
 
-    const ranking=m.ml_ranking||[];
-    const topSig=ranking.slice(0,3).map((r,i)=>`${i+1}. ${r.symbol} ${r.direction}`).join(' | ')||'--';
-    const upCt=ranking.filter(r=>String(r.direction||'').toLowerCase()==='up').length;
+    const ranking=m.top_magnitude||[];
+    const topSig=ranking.slice(0,3).map((r,i)=>`${i+1}. ${r.symbol} ${r.signal}`).join(' | ')||'--';
+    const upCt=ranking.filter(r=>r.signal==='BUY').length;
     document.getElementById('ml-checklist').innerHTML=[
       li(upCt>(ranking.length*0.6)?g:upCt<(ranking.length*0.4)?r:a,'ML Consensus:',upCt+'/'+ranking.length+' bullish'),
       li(a,'Top ML Signals:',topSig),
       li(a,'#1 Ranked:',ranking[0]?ranking[0].symbol+' ('+ranking[0].direction+')':'--'),
-      li(a,'Mag Leader:',ranking.sort((x,y)=>(y.magnitude||0)-(x.magnitude||0))[0]?ranking[0].symbol+' '+((ranking[0].magnitude||0)*100).toFixed(0)+'%':'--'),
+      li(a,'Mag Leader:',ranking.sort((x,y)=>(y.prob_up||0)-(x.prob_up||0))[0]?ranking[0].symbol+' '+((ranking[0].prob_up||0)*100).toFixed(0)+'%':'--'),
       li(g,'Model updated:','Real-time via /api/market-summary'),
     ].join('');
   }
@@ -1451,12 +1463,12 @@
   // ── Forecast Renders ───────────────────────────────────────────────────────
   function renderForecasts(){
     const m=_mktData;
-    const ranking=(m.ml_ranking||[]).slice(0,8);
+    const ranking=(m.top_magnitude||[]).slice(0,8);
     const gex=(_gexData&&_gexData.assets&&_gexData.assets.find(a=>a.symbol==='SPY'))||{};
     const bull=m.sentiment&&m.sentiment.bull_pct?parseFloat(m.sentiment.bull_pct):50;
 
     // Day forecast ML
-    const dayRows=ranking.slice(0,6).map((r,i)=>`<tr><td>${i+1}</td><td><strong>${r.symbol}</strong></td><td>${dirChip(r.direction)}</td><td>${magChip(r.magnitude)}</td><td>${magChip(r.confidence||r.magnitude)}</td></tr>`).join('');
+    const dayRows=ranking.slice(0,6).map((r,i)=>`<tr><td>${i+1}</td><td><strong>${r.symbol}</strong></td><td>${dirChip(r.signal)}</td><td>${magChip(r.prob_up)}</td><td>${magChip(r.prob_up)}</td></tr>`).join('');
     document.getElementById('fc-day-ml').innerHTML=dayRows||'<tr><td colspan="5" style="color:var(--muted);text-align:center">No data</td></tr>';
 
     // Day checklist
@@ -1474,17 +1486,17 @@
     ].join('');
 
     // Week forecast ML
-    const wkRows=ranking.slice(0,8).map((r,i)=>`<tr><td>${i+1}</td><td><strong>${r.symbol}</strong></td><td>${r.group||'--'}</td><td>${((r.magnitude||0)*100).toFixed(0)}%</td><td>${dirChip(r.direction)}</td></tr>`).join('');
+    const wkRows=ranking.slice(0,8).map((r,i)=>`<tr><td>${i+1}</td><td><strong>${r.symbol}</strong></td><td>${r.group||'--'}</td><td>${((r.prob_up||0)*100).toFixed(0)}%</td><td>${dirChip(r.signal)}</td></tr>`).join('');
     document.getElementById('fc-week-ml').innerHTML=wkRows||'<tr><td colspan="5" style="color:var(--muted);text-align:center">No data</td></tr>';
 
     // Week bull/bear
-    const topBull=ranking.filter(r=>String(r.direction||'').toLowerCase()==='up').slice(0,3).map(r=>r.symbol).join(', ')||'No strong bull signals';
-    const topBear=ranking.filter(r=>String(r.direction||'').toLowerCase()==='down').slice(0,3).map(r=>r.symbol).join(', ')||'No strong bear signals';
+    const topBull=ranking.filter(r=>r.signal==='BUY').slice(0,3).map(r=>r.symbol).join(', ')||'No strong bull signals';
+    const topBear=ranking.filter(r=>r.signal==='SELL').slice(0,3).map(r=>r.symbol).join(', ')||'No strong bear signals';
     document.getElementById('wk-bull-text').textContent=topBull;
     document.getElementById('wk-bear-text').textContent=topBear;
 
     // Month forecast ML
-    const moRows=ranking.slice(0,8).map(r=>`<tr><td><strong>${r.symbol}</strong></td><td>${dirChip(r.direction)}</td><td>${magChip(r.magnitude)}</td><td>${r.group||'--'}</td></tr>`).join('');
+    const moRows=ranking.slice(0,8).map(r=>`<tr><td><strong>${r.symbol}</strong></td><td>${dirChip(r.signal)}</td><td>${magChip(r.prob_up)}</td><td>${r.group||'--'}</td></tr>`).join('');
     document.getElementById('fc-month-ml').innerHTML=moRows||'<tr><td colspan="4" style="color:var(--muted);text-align:center">No data</td></tr>';
   }
 
