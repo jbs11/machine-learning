@@ -658,9 +658,43 @@ def train_and_predict(df: pd.DataFrame, asset_type: str = 'stock'):
     }
 
 
-# ── Cache (simple in-memory, 4-min TTL) ──────────────────────────────────────
+# ── Cache (in-memory, per-kind TTL) ─────────────────────────────────────────
 _cache: dict = {}
-CACHE_TTL = 480  # seconds — yfinance is 15-20 min delayed; 8-min server cache is safe
+CACHE_TTL = 480  # default: 8 min — safe because yfinance is 15-20 min delayed
+
+# Stable data caches longer; volatile data caches shorter
+_CACHE_TTL_BY_KIND: dict = {
+    'fundamentals':     1800,  # 30 min — P/E, revenue growth rarely intraday
+    'options_strategy':  600,  # 10 min
+    'opt-strategy':      600,  # 10 min (key used by options-strategy endpoint)
+    '0dte':              300,  # 5 min
+    'market_summary':    300,  # 5 min
+}
+
+# API-level response cache — caches fully-assembled endpoint JSON
+# Skips the per-symbol loop even when symbol cache is warm
+_api_resp_cache: dict = {}
+_API_RESP_TTL: dict = {
+    '/api/fundamentals':       1800,
+    '/api/options-strategy':    600,
+    '/api/options-summary':     600,
+    '/api/0dte':                300,
+    '/api/market-summary':      300,
+    '/api/gamma-exposure':      480,
+    '/api/option-flows':        480,
+}
+
+def api_resp_get(endpoint):
+    """Return cached full API response if still fresh, else None."""
+    if endpoint in _api_resp_cache:
+        ts, val = _api_resp_cache[endpoint]
+        ttl = _API_RESP_TTL.get(endpoint, CACHE_TTL)
+        if (datetime.now() - ts).total_seconds() < ttl:
+            return val
+    return None
+
+def api_resp_set(endpoint, val):
+    _api_resp_cache[endpoint] = (datetime.now(), val)
 
 def cache_key(symbol, kind):
     return f'{kind}:{symbol}'
@@ -668,7 +702,9 @@ def cache_key(symbol, kind):
 def cache_get(key):
     if key in _cache:
         ts, val = _cache[key]
-        if (datetime.now() - ts).total_seconds() < CACHE_TTL:
+        kind = key.split(':')[0] if ':' in key else ''
+        ttl = _CACHE_TTL_BY_KIND.get(kind, CACHE_TTL)
+        if (datetime.now() - ts).total_seconds() < ttl:
             return val
     return None
 
@@ -840,6 +876,7 @@ def ibkr_connect():
                 _ib_connection_info = {'host': host, 'port': port, 'clientId': client_id}
                 # ── Clear stale yfinance cache so next fetch uses IBKR ──
                 _cache.clear()
+                _api_resp_cache.clear()
                 print(f"[IBKR] Connected via /api/ibkr-connect → {host}:{port} cid={client_id}")
                 try:
                     acct = ib.managedAccounts()
@@ -919,6 +956,7 @@ def clear_cache():
     """Force-clear the in-memory data cache so next request fetches fresh data."""
     count = len(_cache)
     _cache.clear()
+    _api_resp_cache.clear()
     return jsonify({'cleared': count, 'time': datetime.now().isoformat()})
 
 
@@ -4062,6 +4100,15 @@ if __name__ == '__main__':
             '/api/gamma-exposure',
             '/api/option-flows',
             '/api/0dte',
+            '/api/options-strategy',
+            '/api/fundamentals',
+            # Key asset candles + signals (most-visited asset pages)
+            '/api/candles/SPY?interval=1h',
+            '/api/candles/QQQ?interval=1h',
+            '/api/candles/AAPL?interval=1h',
+            '/api/signal/SPY',
+            '/api/signal/QQQ',
+            '/api/signal/AAPL',
         ]
         for ep in PREWARM_ENDPOINTS:
             try:

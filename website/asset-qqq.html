@@ -340,15 +340,15 @@ function chipDir(d) {
 /* ── Candlestick Chart ── */
 async function loadChart() {
   try {
-    var res = await fetch(API + '/api/candles/' + SYM + '?interval=1h', {cache:'no-store', signal: AbortSignal.timeout(15000)});
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    var data = await res.json();
+    var data = await cachedFetch(API + '/api/candles/' + SYM + '?interval=1h');
     var candles = data.candles || data;
     if (!candles || !candles.length) throw new Error('No candle data');
 
     var container = document.getElementById('chart-container');
+    container.innerHTML = '';  // clear any previous chart instance
+    var w = container.clientWidth || container.offsetWidth || 800;
     var chart = LightweightCharts.createChart(container, {
-      width: container.clientWidth, height: 420,
+      width: w, height: 420,
       layout: { background: { color: '#070d18' }, textColor: '#7fa3be' },
       grid: { vertLines: { color: 'rgba(36,48,88,.4)' }, horzLines: { color: 'rgba(36,48,88,.4)' } },
       crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
@@ -406,9 +406,7 @@ async function loadChart() {
 /* ── ML Signal ── */
 async function loadSignal() {
   try {
-    var res = await fetch(API + '/api/signal/' + SYM, {cache:'no-store', signal: AbortSignal.timeout(15000)});
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    var d = await res.json();
+    var d = await cachedFetch(API + '/api/signal/' + SYM);
     var dir = (d.direction || 'NEUTRAL').toUpperCase();
     var mag = d.magnitude != null ? d.magnitude : 0.5;
     var conf = d.confidence != null ? d.confidence : mag;
@@ -441,9 +439,7 @@ async function loadSignal() {
 /* ── GEX ── */
 async function loadGex() {
   try {
-    var res = await fetch(API + '/api/gamma-exposure', {cache:'no-store', signal: AbortSignal.timeout(15000)});
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    var data = await res.json();
+    var data = await cachedFetch(API + '/api/gamma-exposure');
     var a = (data.assets||[]).find(function(x){ return x.symbol === SYM; });
     if (!a) { document.getElementById('gex-levels-body').innerHTML = '<tr><td colspan="4" style="color:var(--muted);text-align:center;padding:.8rem;">No GEX data for ' + SYM + '</td></tr>'; return; }
 
@@ -480,9 +476,7 @@ async function loadGex() {
 /* ── Option Flow ── */
 async function loadFlows() {
   try {
-    var res = await fetch(API + '/api/option-flows', {cache:'no-store', signal: AbortSignal.timeout(15000)});
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    var data = await res.json();
+    var data = await cachedFetch(API + '/api/option-flows');
     var a = (data.assets||[]).find(function(x){ return x.symbol === SYM; });
     if (!a) { document.getElementById('flow-content').innerHTML = 'No option flow data for ' + SYM; return; }
 
@@ -526,9 +520,7 @@ async function loadFlows() {
 /* ── Fundamentals ── */
 async function loadFund() {
   try {
-    var res = await fetch(API + '/api/fundamentals', {cache:'no-store', signal: AbortSignal.timeout(15000)});
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    var data = await res.json();
+    var data = await cachedFetch(API + '/api/fundamentals');
     var assets = data.assets || data || [];
     var a = assets.find(function(x){ return x.symbol === SYM; });
     if (!a) { document.getElementById('fund-content').innerHTML = '<div style="color:var(--muted);font-size:.82rem;">No fundamental data for ' + SYM + '</div>'; return; }
