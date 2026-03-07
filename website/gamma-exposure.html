@@ -431,11 +431,15 @@ function renderAll(assets) {
     html += `</div>`;
   });
   container.innerHTML = html;
-  requestAnimationFrame(() => {
-    list.forEach(a => {
-      // Only draw if we have actual strike data
-      if (!a.no_options && a.strikes && a.strikes.length > 0) drawGexChart(a);
-    });
+  // Lazy-draw: each GEX chart renders only when it scrolls into view
+  list.forEach(function(a) {
+    if (!a.no_options && a.strikes && a.strikes.length > 0) {
+      var cv = document.getElementById('gex-cv-' + a.symbol.replace(/[^a-z0-9]/gi,'_'));
+      var target = cv || document.querySelector('[data-sym="' + a.symbol + '"]');
+      lazyLoad(target || document.getElementById('chartsContainer'), function() {
+        drawGexChart(a);
+      });
+    }
   });
 }
 

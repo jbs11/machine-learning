@@ -4056,7 +4056,7 @@ if __name__ == '__main__':
 
     # Pre-warm cache in background so first user hits cached data, not cold yfinance
     def _bg_prewarm():
-        import time, urllib.request
+        import time, urllib.request, sys
         time.sleep(6)  # let Flask finish binding the port
         PREWARM_ENDPOINTS = [
             '/api/market-summary',
@@ -4067,9 +4067,11 @@ if __name__ == '__main__':
         for ep in PREWARM_ENDPOINTS:
             try:
                 urllib.request.urlopen(f'http://localhost:3000{ep}', timeout=90)
-                print(f'[prewarm] {ep} ✓ cached')
+                sys.stdout.buffer.write(f'[prewarm] {ep} OK cached\n'.encode('utf-8'))
+                sys.stdout.buffer.flush()
             except Exception as e:
-                print(f'[prewarm] {ep} ✗ {e}')
+                sys.stdout.buffer.write(f'[prewarm] {ep} FAIL {e}\n'.encode('utf-8'))
+                sys.stdout.buffer.flush()
     threading.Thread(target=_bg_prewarm, daemon=True).start()
 
     app.run(host='0.0.0.0', port=3000, debug=False, threaded=True)

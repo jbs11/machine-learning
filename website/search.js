@@ -293,6 +293,64 @@ window.hideRetryBtn = function() {
   if (rbtn) rbtn.style.display = 'none';
 };
 
+/**
+ * lazyLoad(el, renderFn, rootMargin)
+ * ──────────────────────────────────
+ * Defers renderFn() until el is near the viewport (IntersectionObserver).
+ * Falls back to immediate render if IO not supported.
+ * Renders only ONCE — disconnects observer after first intersection.
+ *
+ * Usage:  lazyLoad(canvasEl, () => drawChart(canvasEl, data));
+ */
+window.lazyLoad = function lazyLoad(el, renderFn, rootMargin) {
+  if (!el) { renderFn(); return; }
+  if (!('IntersectionObserver' in window)) { renderFn(); return; }
+  var io = new IntersectionObserver(function(entries) {
+    if (entries[0].isIntersecting) {
+      io.disconnect();
+      renderFn();
+    }
+  }, { rootMargin: rootMargin || '300px 0px' });
+  io.observe(el);
+};
+
+/**
+ * memoize(fn)
+ * ───────────
+ * Returns a version of fn that caches results by JSON-serialized args.
+ * Use for pure, expensive computations (not canvas draws).
+ *
+ * Usage:  const fastBuildCard = memoize(buildCard);
+ */
+window.memoize = function memoize(fn) {
+  var cache = Object.create(null);
+  return function() {
+    var key = JSON.stringify(Array.prototype.slice.call(arguments));
+    if (key in cache) return cache[key];
+    return (cache[key] = fn.apply(this, arguments));
+  };
+};
+
+/**
+ * batchRender(items, renderOne, chunkSize, delayMs)
+ * ──────────────────────────────────────────────────
+ * Renders items in chunks using setTimeout to yield to the browser between
+ * chunks — prevents long tasks from blocking user interaction.
+ *
+ * Usage:  batchRender(assets, a => drawCard(a), 4, 16);
+ */
+window.batchRender = function batchRender(items, renderOne, chunkSize, delayMs) {
+  chunkSize = chunkSize || 4;
+  delayMs   = delayMs   || 16;
+  var i = 0;
+  function next() {
+    var end = Math.min(i + chunkSize, items.length);
+    for (; i < end; i++) renderOne(items[i]);
+    if (i < items.length) setTimeout(next, delayMs);
+  }
+  next();
+};
+
 window.cachedFetch = (function () {
   'use strict';
   const TTL_MS = 2 * 60 * 1000; // 2 minutes

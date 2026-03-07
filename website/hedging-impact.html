@@ -1187,15 +1187,19 @@ async function loadData(nocache = false) {
   renderHISummary(gexRes, flowsRes);
   updateGauge(gexRes, flowsRes);
 
-  // Canvas charts
-  requestAnimationFrame(() => {
+  // Above-fold charts: draw immediately
+  requestAnimationFrame(function() {
     const spy = gexRes ? (gexRes.assets || []).find(a => a.symbol === 'SPY') : null;
     const qqq = gexRes ? (gexRes.assets || []).find(a => a.symbol === 'QQQ') : null;
     drawHIProfile(document.getElementById('cv-hi-profile'), gexActive);
     drawIntradayFlow(document.getElementById('cv-intraday-flow'), gexRes, flowsRes);
-    if (spy) { drawGexBar(document.getElementById('cv-spy-hi'), spy, 260); drawCumGex(document.getElementById('cv-spy-cum'), spy); }
-    if (qqq) { drawGexBar(document.getElementById('cv-qqq-hi'), qqq, 260); drawCumGex(document.getElementById('cv-qqq-cum'), qqq); }
-    if (gexActive) drawGexBar(document.getElementById('cv-gex-profile'), gexActive, 240);
+    // Below-fold charts: lazy-draw when scrolled into view
+    var cvSpyHi  = document.getElementById('cv-spy-hi');
+    var cvQqqHi  = document.getElementById('cv-qqq-hi');
+    var cvGexPro = document.getElementById('cv-gex-profile');
+    if (spy) lazyLoad(cvSpyHi,  function() { drawGexBar(cvSpyHi, spy, 260); drawCumGex(document.getElementById('cv-spy-cum'), spy); });
+    if (qqq) lazyLoad(cvQqqHi,  function() { drawGexBar(cvQqqHi, qqq, 260); drawCumGex(document.getElementById('cv-qqq-cum'), qqq); });
+    if (gexActive) lazyLoad(cvGexPro, function() { drawGexBar(cvGexPro, gexActive, 240); });
   });
 }
 

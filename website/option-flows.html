@@ -556,15 +556,17 @@ function renderCards() {
     <div class="cards-grid">${g.rows.map(r => buildCard(r)).join('')}</div>
   `).join('');
 
-  // Draw all canvases after DOM update
-  requestAnimationFrame(() => {
-    filtered.forEach(r => {
-      if (!r.no_options && r.strikes && r.strikes.length) {
+  // Lazy-draw each flow chart as it scrolls into view
+  filtered.forEach(function(r) {
+    if (!r.no_options && r.strikes && r.strikes.length) {
+      var card = document.querySelector('[data-symbol="' + r.symbol + '"]') ||
+                 document.getElementById('chartsContainer');
+      lazyLoad(card, function() {
         drawTornado(r);
         drawNetPrem(r);
         drawDealerDelta(r);
-      }
-    });
+      });
+    }
   });
 }
 

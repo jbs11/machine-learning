@@ -666,33 +666,37 @@ function buildCard(a) {
 
 // ── Render all canvases ───────────────────────────────────────────────────────
 function renderCharts(assets) {
-  for (const a of assets) {
-    const id = `card-${a.symbol.replace(/[^a-z0-9]/gi, '_')}`;
+  assets.forEach(function(a) {
+    var id = 'card-' + a.symbol.replace(/[^a-z0-9]/gi, '_');
 
-    // Candlestick (shown for all including no_options)
-    const cv = document.getElementById(`cv-${id}`);
+    // Candlestick — lazy: only draw when card scrolls into view
+    var cv = document.getElementById('cv-' + id);
     if (cv) {
-      const wrap = cv.parentElement;
-      cv.width  = wrap.clientWidth * DPR;
-      cv.height = wrap.clientHeight * DPR;
-      cv.style.width  = wrap.clientWidth  + 'px';
-      cv.style.height = wrap.clientHeight + 'px';
-      drawCandles(cv, a.candles, a.strategy || null, a.spot);
+      lazyLoad(cv, function() {
+        var wrap = cv.parentElement;
+        cv.width  = wrap.clientWidth * DPR;
+        cv.height = wrap.clientHeight * DPR;
+        cv.style.width  = wrap.clientWidth  + 'px';
+        cv.style.height = wrap.clientHeight + 'px';
+        drawCandles(cv, a.candles, a.strategy || null, a.spot);
+      });
     }
 
-    if (a.no_options) continue;
+    if (a.no_options) return;
 
-    // P&L diagram
-    const pv = document.getElementById(`pnl-${id}`);
+    // P&L diagram — lazy
+    var pv = document.getElementById('pnl-' + id);
     if (pv) {
-      const wrap = pv.parentElement;
-      pv.width  = wrap.clientWidth * DPR;
-      pv.height = wrap.clientHeight * DPR;
-      pv.style.width  = wrap.clientWidth  + 'px';
-      pv.style.height = wrap.clientHeight + 'px';
-      drawPnl(pv, a.strategy, a.spot);
+      lazyLoad(pv, function() {
+        var wrap = pv.parentElement;
+        pv.width  = wrap.clientWidth * DPR;
+        pv.height = wrap.clientHeight * DPR;
+        pv.style.width  = wrap.clientWidth  + 'px';
+        pv.style.height = wrap.clientHeight + 'px';
+        drawPnl(pv, a.strategy, a.spot);
+      });
     }
-  }
+  });
 }
 
 // ── Stats strip ───────────────────────────────────────────────────────────────
