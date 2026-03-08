@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Asset Algorithms — ML Trading Dashboard</title>
+  <link rel="preload" href="style.css" as="style" fetchpriority="high">
+  <link rel="stylesheet" href="style.css">
+  <script src="lightweight-charts.min.js"></script>
+  <style>
+    /* ── Page layout ─────────────────────────────────────────────── */
+    .algo-hero { padding:1.6rem 0 1rem; }
+
+    /* ── Filter tabs ─────────────────────────────────────────────── */
+    .filter-bar {
+      display:flex; gap:.5rem; flex-wrap:wrap;
+      padding:.8rem 0 .9rem; align-items:center;
+    }
+    .filter-btn {
+      background:var(--surface); border:1px solid var(--border);
+      color:var(--muted); padding:.32rem .85rem; border-radius:6px;
+      cursor:pointer; font-size:.78rem; font-weight:700;
+      transition:all .15s; text-transform:uppercase; letter-spacing:.04em;
+    }
+    .filter-btn:hover { border-color:var(--accent); color:var(--text); }
+    .filter-btn.active { background:var(--accent); border-color:var(--accent); color:#000; }
+    .filter-btn[data-g="etf"].active   { background:#22d3ee; border-color:#22d3ee; color:#000; }
+    .filter-btn[data-g="mag7"].active  { background:#4ade80; border-color:#4ade80; color:#000; }
+    .filter-btn[data-g="blue"].active  { background:#a78bfa; border-color:#a78bfa; color:#000; }
+    .filter-btn[data-g="fut"].active   { background:#fbbf24; border-color:#fbbf24; color:#000; }
+
+    /* ── Legend ──────────────────────────────────────────────────── */
+    .legend-bar {
+      display:flex; gap:1.1rem; flex-wrap:wrap; align-items:center;
+      padding:.55rem 1rem; background:var(--surface);
+      border:1px solid var(--border); border-radius:8px;
+      margin-bottom:1.2rem; font-size:.78rem; color:var(--text);
+    }
+    .leg { display:flex; align-items:center; gap:.35rem; white-space:nowrap; }
+    .leg-line { width:24px; height:2.5px; border-radius:2px; }
+    .leg-dash  { width:24px; height:0; border-top:2px dashed; }
+    .leg-dot   { width:10px; height:10px; border-radius:50%; }
+
+    /* ── Asset grid ──────────────────────────────────────────────── */
+    .asset-grid {
+      display:grid;
+      grid-template-columns:repeat(auto-fill,minmax(560px,1fr));
+      gap:1.5rem;
+    }
+    @media(max-width:620px){ .asset-grid{ grid-template-columns:1fr; } }
+
+    /* ── Asset card ──────────────────────────────────────────────── */
+    .ac {
+      background:var(--surface); border:1px solid var(--border);
+      border-radius:12px; overflow:hidden; transition:border-color .2s;
+    }
+    .ac:hover { border-color:rgba(34,211,238,.35); }
+
+    .ac-head {
+      display:flex; align-items:center; gap:.7rem;
+      padding:.75rem 1rem .55rem; border-bottom:1px solid var(--border);
+    }
+    .ac-sym   { font-size:1.1rem; font-weight:800; }
+    .ac-name  { font-size:.77rem; color:var(--muted); flex:1; }
+    .ac-price { font-size:.92rem; font-weight:700; color:var(--text); }
+    .ac-sig   {
+      font-size:.72rem; font-weight:800; letter-spacing:.06em;
+      padding:.2rem .6rem; border-radius:4px; text-transform:uppercase;
+    }
+    .sig-buy  { background:rgba(74,222,128,.15);  color:#4ade80; border:1px solid rgba(74,222,128,.3); }
+    .sig-sell { background:rgba(248,113,113,.15); color:#f87171; border:1px solid rgba(248,113,113,.3); }
+    .sig-hold { background:rgba(251,191,36,.12);  color:#fbbf24; border:1px solid rgba(251,191,36,.3); }
+
+    /* ── OHLC crosshair strip ────────────────────────────────────── */
+    .ac-ohlc {
+      display:flex; gap:.9rem; padding:.3rem 1rem;
+      background:#070d18; font-size:.75rem; color:#7fa3be;
+      border-bottom:1px solid var(--border);
+      font-family:monospace;
+    }
+    .ac-ohlc span { color:#dbeafe; }
+
+    /* ── Chart div (LW Charts mounts here) ──────────────────────── */
+    .ac-chart-wrap { position:relative; }
+    .ac-chart-div  { height:340px; background:#070d18; }
+    .ac-loading {
+      position:absolute; inset:0; display:flex;
+      align-items:center; justify-content:center;
+      background:rgba(7,13,24,.88); font-size:.84rem; color:var(--muted);
+      pointer-events:none;
+    }
+
+    /* ── Indicator legend strip (always visible) ─────────────────── */
+    .ac-ind-legend {
+      display:flex; gap:1rem; flex-wrap:wrap;
+      padding:.35rem 1rem; background:#070d18;
+      border-top:1px solid var(--border);
+      font-size:.76rem; font-weight:700;
+    }
+    .ind-chip { display:flex; align-items:center; gap:.3rem; }
+    .ind-swatch { width:20px; height:2.5px; border-radius:2px; }
+    .ind-swatch-dash { width:20px; height:0; border-top:2px dashed; border-radius:2px; }
+
+    /* ── Stats row ───────────────────────────────────────────────── */
+    .ac-stats {
+      display:grid; grid-template-columns:repeat(5,1fr);
+      border-bottom:1px solid var(--border);
+    }
+    .ac-stat {
+      padding:.5rem .6rem; text-align:center;
+      border-right:1px solid var(--border);
+    }
+    .ac-stat:last-child { border-right:none; }
+    .ac-stat-lbl { font-size:.67rem; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; }
+    .ac-stat-val { font-size:.9rem; font-weight:700; color:var(--text); margin-top:.1rem; }
+
+    /* ── GEX levels bar ──────────────────────────────────────────── */
+    .ac-gex {
+      display:flex; gap:.65rem; flex-wrap:wrap;
+      padding:.45rem 1rem; border-bottom:1px solid var(--border);
+      font-size:.76rem; align-items:center;
+    }
+    .ac-gex-lbl { color:var(--muted); font-weight:700; font-size:.72rem; }
+    .gex-chip {
+      display:flex; align-items:center; gap:.28rem; font-weight:700;
+    }
+    .gex-chip-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+    .gex-chip-name { font-size:.68rem; font-weight:400; color:var(--muted); }
+
+    /* ── Description ─────────────────────────────────────────────── */
+    .ac-desc {
+      padding:.75rem 1rem;
+      font-size:.78rem; color:var(--muted); line-height:1.68;
+    }
+
+    /* ── Refresh bar ─────────────────────────────────────────────── */
+    .refresh-bar {
+      display:flex; align-items:center; justify-content:space-between;
+      padding:.4rem 0 .9rem; font-size:.75rem; color:var(--muted);
+    }
+    .refresh-dot {
+      width:7px; height:7px; border-radius:50%;
+      background:#f87171; display:inline-block; margin-right:.4rem;
+      transition:background .3s;
+    }
+    .refresh-dot.ok { background:#4ade80; }
+    .refresh-btn {
+      background:var(--surface); border:1px solid var(--border);
+      color:var(--muted); padding:.28rem .75rem; border-radius:5px;
+      cursor:pointer; font-size:.74rem; transition:all .2s;
+    }
+    .refresh-btn:hover { border-color:var(--accent); color:var(--accent); }
+
+    /* ── Timeframe buttons ──────────────────────────────────────────── */
+    .ac-tf {
+      display:flex; align-items:center; gap:.35rem;
+      padding:.35rem 1rem; background:#070d18;
+      border-bottom:1px solid var(--border);
+    }
+    .ac-tf-lbl { font-size:.68rem; color:var(--muted); font-weight:700; margin-right:.2rem; }
+    .tf-btn {
+      background:var(--surface); border:1px solid var(--border);
+      color:var(--muted); padding:.18rem .55rem; border-radius:4px;
+      cursor:pointer; font-size:.72rem; font-weight:700;
+      transition:all .12s;
+    }
+    .tf-btn:hover { border-color:var(--accent); color:var(--text); }
+    .tf-btn.active { background:#22d3ee; border-color:#22d3ee; color:#000; }
+    .tf-loading { font-size:.72rem; color:var(--muted); margin-left:.3rem; display:none; }
+  </style>
+</head>
+<body>
+
+<!-- ── Navigation ── -->
+<nav class="nav">
+  <a href="index.html" class="nav-logo">
+    <img src="images/steve.jpg" class="nav-logo-photo" alt="Stephen Borick">
+    <div class="nav-logo-text">
+      <span class="nav-company">Artificial Intelligence</span>
+      <span class="nav-name">Solutions, Inc.</span>
+    </div>
+  </a>
+  <ul class="nav-links">
+    <li><a href="index.html">Home</a></li>
+    <li><a href="neural-networks.html">Neural Networks</a></li>
+    <li><a href="machine-learning.html">Machine Learning</a></li>
+    <li><a href="ml-trading.html">ML in Trading</a></li>
+    <li><a href="stock-trading.html">Stocks</a></li>
+    <li><a href="options-trading.html">Options</a></li>
+    <li><a href="futures-trading.html">Futures</a></li>
+    <li><a href="brokers.html">Brokers</a></li>
+    <li><a href="algorithms-bots.html" style="color:#4ade80;font-weight:700;">&#129302; Algo Bots</a></li>
+    <li><a href="asset-algorithms.html" class="active" style="color:#22d3ee;font-weight:700;">&#128200; Asset Algos</a></li>
+    <li><a href="live-trading.html">Live Trading</a></li>
+    <li><a href="forecast.html" style="color:#f59e0b;font-weight:700;">&#128200; Forecast</a></li>
+    <li><a href="asset-details.html">&#128202; Asset Review</a></li>
+    <li><a href="report-ms.html" target="_blank" style="background:#22d3ee;color:#080d1a;padding:.28rem .85rem;border-radius:5px;font-weight:700;">&#128202; Market Report</a></li>
+    <li><a href="report-tg.html" target="_blank" style="background:#a78bfa;color:#080d1a;padding:.28rem .85rem;border-radius:5px;font-weight:700;">&#128214; Trading Guide</a></li>
+  </ul>
+</nav>
+
+<!-- ── Breadcrumb ── -->
+<div style="background:var(--surface);border-bottom:1px solid var(--border);">
+  <div class="breadcrumb">
+    <a href="index.html">AI Course</a>
+    <span class="breadcrumb-sep">›</span>
+    <a href="ml-trading.html">ML in Trading</a>
+    <span class="breadcrumb-sep">›</span>
+    <a href="algorithms-bots.html">Algo Bots</a>
+    <span class="breadcrumb-sep">›</span>
+    <span>Asset Algorithms</span>
+  </div>
+</div>
+
+<!-- ── Hero ── -->
+<section class="page-hero">
+  <div class="page-hero-inner">
+    <span class="badge" style="background:rgba(34,211,238,.12);color:#22d3ee;border:1px solid rgba(34,211,238,.35);margin-bottom:1rem;display:inline-block;">
+      XGBoost Ensemble &nbsp;&#183;&nbsp; 22 Assets &nbsp;&#183;&nbsp; Zoomable &amp; Pannable Charts
+    </span>
+    <h1>&#128200; Asset Algorithms</h1>
+    <p>
+      XGBoost Classifier + Regressor ensemble predicting direction probability and magnitude for every
+      tracked asset. Each interactive chart overlays SMA&nbsp;20, SMA&nbsp;50, and Bollinger Band predictors
+      with live GEX levels — Call Wall, Put Wall, Flip Level — updating as world events, institutional
+      order flow, and options gamma exposure shift throughout the trading day.
+      <strong style="color:#22d3ee;">Scroll to zoom &middot; Drag to pan &middot; Pinch on mobile.</strong>
+    </p>
+  </div>
+</section>
+
+<!-- ── Page nav ── -->
+<nav class="page-nav">
+  <a href="live-trading.html">Live Trading</a>
+  <span class="page-nav-sep">|</span>
+  <a href="asset-details.html">Asset Review &#128202;</a>
+  <span class="page-nav-sep">|</span>
+  <a href="gamma-exposure.html">GEX &#9889;</a>
+  <span class="page-nav-sep">|</span>
+  <a href="option-flows.html">Option Flows &#127754;</a>
+  <span class="page-nav-sep">|</span>
+  <a href="market-summary.html">Market Summary</a>
+  <span class="page-nav-sep">|</span>
+  <a href="algorithms-bots.html">&#129302; Algo Bots</a>
+  <span class="page-nav-sep">|</span>
+  <a href="asset-algorithms.html" class="active">&#128200; Asset Algos</a>
+</nav>
+
+<!-- ── Main ── -->
+<div class="section">
+
+  <!-- Refresh bar -->
+  <div class="refresh-bar">
+    <div>
+      <span class="refresh-dot" id="rdot"></span>
+      <span id="rstat">Loading data&hellip;</span>
+    </div>
+    <button class="refresh-btn" onclick="loadAll(true)">&#8635; Refresh Now</button>
+  </div>
+
+  <!-- Filter tabs -->
+  <div class="filter-bar">
+    <button class="filter-btn active" data-g="all"  onclick="setGroup('all',this)">All 22</button>
+    <button class="filter-btn"        data-g="etf"  onclick="setGroup('etf',this)">&#128200; ETFs</button>
+    <button class="filter-btn"        data-g="mag7" onclick="setGroup('mag7',this)">&#129302; Mag&nbsp;7</button>
+    <button class="filter-btn"        data-g="blue" onclick="setGroup('blue',this)">&#127963; Blue&nbsp;Chip</button>
+    <button class="filter-btn"        data-g="fut"  onclick="setGroup('fut',this)">&#9660; Futures</button>
+  </div>
+
+  <!-- Legend -->
+  <div class="legend-bar">
+    <div class="leg"><div class="leg-line" style="background:#4ade80;"></div><span>SMA&nbsp;20</span></div>
+    <div class="leg"><div class="leg-line" style="background:#60a5fa;"></div><span>SMA&nbsp;50</span></div>
+    <div class="leg"><div class="leg-dash" style="border-color:rgba(255,255,255,0.80);"></div><span>Bollinger&nbsp;Bands</span></div>
+    <div class="leg"><div class="leg-dash" style="border-color:#22d3ee;"></div><span>Call&nbsp;Wall</span></div>
+    <div class="leg"><div class="leg-dash" style="border-color:#f87171;"></div><span>Put&nbsp;Wall</span></div>
+    <div class="leg"><div class="leg-dash" style="border-color:#fbbf24;"></div><span>Flip&nbsp;Level</span></div>
+    <div class="leg"><div class="leg-dash" style="border-color:rgba(220,240,255,.55);"></div><span>Spot</span></div>
+    <div class="leg"><div class="leg-dot" style="background:#4ade80;"></div><span>BUY&nbsp;&#9650;</span></div>
+    <div class="leg"><div class="leg-dot" style="background:#f87171;"></div><span>SELL&nbsp;&#9660;</span></div>
+  </div>
+
+  <!-- Grid (populated by JS) -->
+  <div class="asset-grid" id="asset-grid"></div>
+
+</div>
+
+<script src="search.js" defer></script>
+<script>
+(function(){
+'use strict';
+
+// ── Asset list ────────────────────────────────────────────────────────────────
+var ASSETS = [
+  { sym:'SPY',   name:'S&P 500 ETF Trust',         group:'etf',  color:'#22d3ee' },
+  { sym:'QQQ',   name:'Invesco NASDAQ-100 ETF',     group:'etf',  color:'#22d3ee' },
+  { sym:'DIA',   name:'SPDR Dow Jones ETF',         group:'etf',  color:'#22d3ee' },
+  { sym:'IWM',   name:'iShares Russell 2000 ETF',   group:'etf',  color:'#22d3ee' },
+  { sym:'AAPL',  name:'Apple Inc.',                 group:'mag7', color:'#4ade80' },
+  { sym:'MSFT',  name:'Microsoft Corp.',            group:'mag7', color:'#4ade80' },
+  { sym:'NVDA',  name:'NVIDIA Corp.',               group:'mag7', color:'#4ade80' },
+  { sym:'GOOGL', name:'Alphabet Inc.',              group:'mag7', color:'#4ade80' },
+  { sym:'AMZN',  name:'Amazon.com Inc.',            group:'mag7', color:'#4ade80' },
+  { sym:'META',  name:'Meta Platforms Inc.',        group:'mag7', color:'#4ade80' },
+  { sym:'TSLA',  name:'Tesla Inc.',                 group:'mag7', color:'#4ade80' },
+  { sym:'JPM',   name:'JPMorgan Chase & Co.',       group:'blue', color:'#a78bfa' },
+  { sym:'BAC',   name:'Bank of America Corp.',      group:'blue', color:'#a78bfa' },
+  { sym:'V',     name:'Visa Inc.',                  group:'blue', color:'#a78bfa' },
+  { sym:'XOM',   name:'ExxonMobil Corp.',           group:'blue', color:'#a78bfa' },
+  { sym:'CVX',   name:'Chevron Corp.',              group:'blue', color:'#a78bfa' },
+  { sym:'JNJ',   name:'Johnson & Johnson',          group:'blue', color:'#a78bfa' },
+  { sym:'UNH',   name:'UnitedHealth Group',         group:'blue', color:'#a78bfa' },
+  { sym:'WMT',   name:'Walmart Inc.',               group:'blue', color:'#a78bfa' },
+  { sym:'HD',    name:'The Home Depot Inc.',        group:'blue', color:'#a78bfa' },
+  { sym:'BRK-B', name:'Berkshire Hathaway B',       group:'blue', color:'#a78bfa' },
+  { sym:'ES=F',  name:'E-mini S&P 500 Futures',    group:'fut',  color:'#fbbf24' },
+];
+
+var DESC = {
+  SPY:   'SPDR S&P 500 ETF Trust tracks 503 large-cap US stocks weighted by market cap. The most liquid ETF globally with $500B+ AUM. Its options chain is the most actively traded in the world, making GEX analysis on SPY the single most important gamma exposure reading. XGBoost signal incorporates VIX regime, institutional flow, and 23 technical features to predict the next 4-hour bar direction and magnitude.',
+  QQQ:   'Invesco QQQ Trust tracks 100 non-financial NASDAQ stocks — 40%+ concentrated in NVDA, MSFT, AAPL, AMZN, and META. Amplifies tech sector moves by 1.3–1.5× relative to SPY. QQQ GEX gamma walls define key resistance for the entire technology sector. The XGBoost model weights MACD and momentum features heavily because QQQ responds strongly to trending AI/cloud revenue narratives.',
+  DIA:   'SPDR DJIA ETF tracks 30 price-weighted blue-chip stocks. Unlike SPY, DIA weights by stock price not market cap, giving UNH, GS, and HD outsized influence. Lower beta than SPY. The XGBoost model on DIA incorporates volume ratio and SMA200 as top features, reflecting DIA\'s tendency toward mean-reversion trades during overbought/oversold extremes.',
+  IWM:   'iShares Russell 2000 ETF tracks 2,000 small-cap US stocks — 30% financials, 17% healthcare, 15% industrials. Small caps are more sensitive to domestic rates and credit conditions than mega-caps. IWM leads SPY at economic turning points. The XGBoost model emphasizes RSI extremes and ATR expansion as high-predictive features, capturing small-cap momentum bursts.',
+  AAPL:  'Apple generates $380B+ annually through iPhone (52%), Services (22%), Mac, iPad, and Wearables. The Services segment — App Store, iCloud, Apple Pay — carries 70%+ gross margins. AAPL options have extreme open interest, making GEX Call Wall and Put Wall critical price anchors. The XGBoost model identifies SMA20/SMA50 crossovers and MACD momentum as the top directional predictors for AAPL.',
+  MSFT:  'Microsoft dominates enterprise cloud with Azure growing 25–30% YoY, plus Office 365, LinkedIn, GitHub, and a $13B OpenAI stake. Copilot AI across all products drives ARPU expansion. MSFT\'s predictable recurring revenue (70%+ subscription-based) creates low volatility and tight Bollinger Bands — the XGBoost regressor consistently predicts smaller magnitude moves but with high directional accuracy.',
+  NVDA:  'NVIDIA designs the world\'s most powerful AI accelerator GPUs. Data center revenue exploded from $3B to $60B+ in two years. H100/B200 clusters sell at $30,000–$40,000 per unit with year-long waitlists. NVDA has the highest beta in the dashboard — the XGBoost magnitude regressor often predicts 2–4% expected moves. Vol regime feature is critical: NVDA frequently operates in Short Gamma (high vol amplification) zones.',
+  GOOGL: 'Alphabet operates Google Search (91% global share), YouTube, GCP (fastest-growing major cloud at 28% YoY), Waymo, and DeepMind. Advertising ($200B+ annually) is the core profit engine. Gemini AI competes directly with GPT-4o. GOOGL\'s GEX structure is dominated by mega-expiry options, meaning the gamma_wall level is particularly sticky and reliable as a resistance/support anchor.',
+  AMZN:  'Amazon leads e-commerce globally and cloud infrastructure through AWS (31% market share, 35%+ margins). Advertising ($50B+) and Prime ecosystem create powerful recurring cash flows. AWS AI services (Bedrock, SageMaker) accelerate enterprise adoption. AMZN\'s XGBoost model assigns high importance to volume ratio and OBV trend — institutional accumulation patterns precede AMZN\'s strongest BUY signals.',
+  META:  'Meta owns the world\'s largest social media ecosystem — Facebook, Instagram, WhatsApp, Messenger — with 3.3B monthly active users. AI-powered ad targeting delivers industry-best ROI, driving 98% of revenue. Reality Labs (VR, Ray-Ban Smart Glasses) is the long-term metaverse bet. META\'s Bollinger Band position is the top XGBoost feature — it predictably reverts from BB extremes before trending in the new direction.',
+  TSLA:  'Tesla leads global EV with 1.8M annual deliveries and the most advanced FSD autonomous driving. Megapack energy storage grows 50%+ YoY. The Robotaxi and Optimus humanoid robot represent multi-trillion TAM expansion. TSLA has the highest retail sentiment and social momentum in the dashboard. The XGBoost model incorporates stochastic K and Williams %R to capture TSLA\'s frequent overbought/oversold reversals.',
+  JPM:   'JPMorgan Chase ($3.9T assets) leads US banking with consumer banking, investment banking, asset management, and commercial lending. JPM benefits from rising interest rates through wider NIMs. The XGBoost model weights SMA200 ratio heavily — JPM respects the 200-period moving average as a reliable trend separator in the 4H timeframe.',
+  BAC:   'Bank of America is the second-largest US bank by assets with 4,000+ branches, $1T+ deposits, and Merrill Lynch ($3.8T AUM). BAC has the highest sensitivity to long-duration interest rates of any large bank — yield curve steepening is strongly bullish. The XGBoost signal on BAC performs best when combined with GEX flip level positioning.',
+  V:     'Visa operates the world\'s payment network — $15T+ annual transaction volume, 200 countries. Pure network economics earning fees on every transaction. Visa\'s low-volatility profile means XGBoost magnitude predictions are typically 0.5–1.5%. The SMA50 is the key feature — Visa trends persistently above or below it.',
+  XOM:   'ExxonMobil is the largest US integrated oil major — exploration, refining, and chemicals. Crude oil price is the primary profit driver; each $10/bbl move changes EPS ~$0.60. XOM\'s XGBoost model heavily weights ATR percent and vol regime — energy stocks experience sharp regime changes between low and high volatility GEX environments.',
+  CVX:   'Chevron is the second-largest US oil major with Permian Basin, Kazakhstan (Tengiz), and Gulf of Mexico operations. Lower production costs than XOM give CVX a margin advantage in low-price environments. CVX\'s XGBoost model identifies MACD histogram as the top feature — momentum-based reversals from extreme readings are the highest-probability setups.',
+  JNJ:   'Johnson & Johnson operates Innovative Medicine (oncology, immunology) and MedTech (surgical robotics, cardiovascular). JNJ has paid a dividend for 60+ consecutive years. The XGBoost model emphasizes RSI and Stochastic K — JNJ regularly oscillates in measured ranges ideal for mean-reversion signals.',
+  UNH:   'UnitedHealth Group ($370B+ revenue) is America\'s largest health insurer. Optum generates 50%+ of profits growing 20%+ annually. UNH\'s vertical integration across the healthcare value chain creates a durable pricing moat. The XGBoost model on UNH weights SMA20/50 crossovers and volume ratio highly — institutional accumulation precedes its strongest trending moves.',
+  WMT:   'Walmart ($680B+ revenue) is the world\'s largest retailer. Unmatched supplier leverage and cost advantages. WMT is highly defensive in recessions. The XGBoost model assigns high importance to OBV trend and SMA200 ratio — WMT is a classic steady accumulation story with low-noise trending moves.',
+  HD:    'Home Depot ($155B revenue) is the world\'s largest home improvement retailer with 2,300+ stores. Pro contractor segment (45–50% of sales) drives higher ticket sizes. Housing turnover and remodeling activity are the primary demand drivers. HD\'s XGBoost model weights Bollinger Band position most heavily — HD frequently consolidates within BB before explosive directional breakouts.',
+  'BRK-B': 'Berkshire Hathaway ($1T+ market cap) is Warren Buffett\'s conglomerate — GEICO, BNSF railroad, Berkshire Energy, and 60+ operating businesses. BRK-B has one of the lowest betas in the dashboard. XGBoost magnitude predictions are typically small (0.3–0.8%) but directional accuracy is high given BRK-B\'s low-noise price action.',
+  'ES=F':  'E-mini S&P 500 Futures (ES) trade nearly 24 hours on CME Globex. Each contract = $50 × S&P 500 index (~$275,000 notional). ES is the first market to react to after-hours news, earnings, and geopolitical events. The XGBoost model for ES uses a specialized futures feature set emphasizing SMA200 ratio, ADX trend strength, and ATR percent to capture amplified overnight and pre-market moves.',
+};
+
+// ── State ─────────────────────────────────────────────────────────────────────
+var gexMap  = {};
+var flowMap = {};
+var sigMap  = {};
+var canMap  = {};
+var chartInst = {};  // sym -> LW Charts instance
+var roMap   = {};    // sym -> ResizeObserver
+var seriesMap = {};  // sym -> { cs, sma20s, sma50s, bbUS, bbLS }
+var tfMap   = {};    // sym -> active interval
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function el(id){ return document.getElementById(id); }
+function fmtPx(v){ if(v==null||v===undefined) return '\u2014'; return (v>=1000?'$'+Number(v).toFixed(0):'$'+Number(v).toFixed(2)); }
+function fmtPct(v){ if(v==null) return '\u2014'; var n=Number(v); return (n>=0?'+':'')+n.toFixed(2)+'%'; }
+function sigClass(s){ return s==='BUY'?'sig-buy':s==='SELL'?'sig-sell':'sig-hold'; }
+function sentColor(s){ return s==='BULLISH'?'#4ade80':s==='BEARISH'?'#f87171':'#fbbf24'; }
+
+// ── Create card HTML ──────────────────────────────────────────────────────────
+function createCard(a) {
+  var id = 'ac-' + a.sym.replace(/[^A-Za-z0-9]/g,'');
+  var div = document.createElement('div');
+  div.className = 'ac';
+  div.id = id;
+  div.dataset.group = a.group;
+  div.innerHTML = [
+    '<div class="ac-head">',
+      '<span class="ac-sym" style="color:'+a.color+'">'+a.sym+'</span>',
+      '<span class="ac-name">'+a.name+'</span>',
+      '<span class="ac-price" id="'+id+'-price">\u2014</span>',
+      '<span class="ac-sig sig-hold" id="'+id+'-sig">HOLD</span>',
+    '</div>',
+    '<div class="ac-ohlc" id="'+id+'-ohlc">',
+      '<span>O <span id="'+id+'-oo">\u2014</span></span>',
+      '<span>H <span id="'+id+'-oh">\u2014</span></span>',
+      '<span>L <span id="'+id+'-ol">\u2014</span></span>',
+      '<span>C <span id="'+id+'-oc">\u2014</span></span>',
+    '</div>',
+    '<div class="ac-tf" id="'+id+'-tf">',
+      '<span class="ac-tf-lbl">TF:</span>',
+      '<button class="tf-btn active" onclick="changeTF(\''+a.sym+'\',\'4h\',this)">4H</button>',
+      '<button class="tf-btn" onclick="changeTF(\''+a.sym+'\',\'1h\',this)">1H</button>',
+      '<button class="tf-btn" onclick="changeTF(\''+a.sym+'\',\'30m\',this)">30m</button>',
+      '<button class="tf-btn" onclick="changeTF(\''+a.sym+'\',\'15m\',this)">15m</button>',
+      '<button class="tf-btn" onclick="changeTF(\''+a.sym+'\',\'5m\',this)">5m</button>',
+      '<span class="tf-loading" id="'+id+'-tfld">&#8987;</span>',
+    '</div>',
+    '<div class="ac-chart-wrap">',
+      '<div class="ac-chart-div" id="'+id+'-cv"></div>',
+      '<div class="ac-loading" id="'+id+'-ld">&#9203; Loading chart\u2026</div>',
+    '</div>',
+    /* Indicator legend strip */
+    '<div class="ac-ind-legend">',
+      '<div class="ind-chip"><div class="ind-swatch" style="background:#4ade80;"></div><span style="color:#4ade80;">SMA&nbsp;20</span></div>',
+      '<div class="ind-chip"><div class="ind-swatch" style="background:#60a5fa;"></div><span style="color:#60a5fa;">SMA&nbsp;50</span></div>',
+      '<div class="ind-chip"><div class="ind-swatch-dash" style="border-color:rgba(255,255,255,0.80);"></div><span style="color:rgba(255,255,255,0.90);">Bollinger&nbsp;Bands</span></div>',
+      '<div class="ind-chip"><div class="ind-swatch-dash" style="border-color:#22d3ee;"></div><span style="color:#22d3ee;">Call&nbsp;Wall</span></div>',
+      '<div class="ind-chip"><div class="ind-swatch-dash" style="border-color:#f87171;"></div><span style="color:#f87171;">Put&nbsp;Wall</span></div>',
+      '<div class="ind-chip"><div class="ind-swatch-dash" style="border-color:#fbbf24;"></div><span style="color:#fbbf24;">Flip</span></div>',
+      '<div class="ind-chip"><div class="ind-swatch-dash" style="border-color:rgba(220,240,255,.5);"></div><span style="color:rgba(220,240,255,.75);">Spot</span></div>',
+    '</div>',
+    '<div class="ac-stats">',
+      '<div class="ac-stat"><div class="ac-stat-lbl">Prob&nbsp;Up</div><div class="ac-stat-val" id="'+id+'-pu">\u2014</div></div>',
+      '<div class="ac-stat"><div class="ac-stat-lbl">Magnitude</div><div class="ac-stat-val" id="'+id+'-mg">\u2014</div></div>',
+      '<div class="ac-stat"><div class="ac-stat-lbl">CV&nbsp;Accuracy</div><div class="ac-stat-val" id="'+id+'-cv2">\u2014</div></div>',
+      '<div class="ac-stat"><div class="ac-stat-lbl">Flow</div><div class="ac-stat-val" id="'+id+'-fl">\u2014</div></div>',
+      '<div class="ac-stat"><div class="ac-stat-lbl">GEX&nbsp;Regime</div><div class="ac-stat-val" id="'+id+'-rg">\u2014</div></div>',
+    '</div>',
+    '<div class="ac-gex">',
+      '<span class="ac-gex-lbl">GEX&nbsp;Levels:</span>',
+      '<span class="gex-chip"><span class="gex-chip-dot" style="background:#22d3ee;"></span><span class="gex-chip-name">Call&nbsp;Wall</span>&nbsp;<strong style="color:#22d3ee;" id="'+id+'-cw">\u2014</strong></span>',
+      '<span class="gex-chip"><span class="gex-chip-dot" style="background:#f87171;"></span><span class="gex-chip-name">Put&nbsp;Wall</span>&nbsp;<strong style="color:#f87171;" id="'+id+'-pw">\u2014</strong></span>',
+      '<span class="gex-chip"><span class="gex-chip-dot" style="background:#fbbf24;"></span><span class="gex-chip-name">Flip</span>&nbsp;<strong style="color:#fbbf24;" id="'+id+'-fp">\u2014</strong></span>',
+      '<span class="gex-chip"><span class="gex-chip-dot" style="background:rgba(220,240,255,.6);"></span><span class="gex-chip-name">Spot</span>&nbsp;<strong style="color:rgba(220,240,255,.9);" id="'+id+'-sp">\u2014</strong></span>',
+    '</div>',
+    '<div class="ac-desc">'+DESC[a.sym]+'</div>',
+  ].join('');
+  return div;
+}
+
+function buildGrid() {
+  var grid = el('asset-grid');
+  grid.innerHTML = '';
+  ASSETS.forEach(function(a){ grid.appendChild(createCard(a)); });
+}
+
+// ── Filter ────────────────────────────────────────────────────────────────────
+function setGroup(g, btn) {
+  document.querySelectorAll('.filter-btn').forEach(function(b){ b.classList.remove('active'); });
+  btn.classList.add('active');
+  document.querySelectorAll('.ac').forEach(function(card){
+    card.style.display = (g==='all' || card.dataset.group===g) ? '' : 'none';
+  });
+  // Resize visible charts after display change
+  setTimeout(function(){
+    ASSETS.forEach(function(a){
+      if(chartInst[a.sym]){
+        var id = 'ac-' + a.sym.replace(/[^A-Za-z0-9]/g,'');
+        var cv = el(id+'-cv');
+        if(cv && cv.clientWidth > 0) chartInst[a.sym].applyOptions({ width: cv.clientWidth });
+      }
+    });
+  }, 50);
+}
+window.setGroup = setGroup;
+
+// ── Update card stats / GEX text ──────────────────────────────────────────────
+function updateCardUI(a) {
+  var id = 'ac-' + a.sym.replace(/[^A-Za-z0-9]/g,'');
+  var sig  = sigMap[a.sym]  || {};
+  var gex  = gexMap[a.sym]  || {};
+  var flow = flowMap[a.sym] || {};
+
+  // Price + change
+  var pEl = el(id+'-price');
+  if(pEl && sig.entry){
+    var chg = sig.change_pct != null ? sig.change_pct : null;
+    var chgStr = '';
+    if(chg!=null){ chgStr = ' <span style="font-size:.69rem;color:'+(chg>=0?'#4ade80':'#f87171')+'">'+(chg>=0?'+':'')+Number(chg).toFixed(2)+'%</span>'; }
+    pEl.innerHTML = fmtPx(sig.entry)+chgStr;
+  }
+
+  // Signal badge
+  var sEl = el(id+'-sig');
+  if(sEl && sig.signal){ sEl.textContent=sig.signal; sEl.className='ac-sig '+sigClass(sig.signal); }
+
+  // Stats
+  var puEl = el(id+'-pu');
+  if(puEl && sig.prob_up!=null){
+    var pct = Math.round(sig.prob_up*100);
+    puEl.textContent = pct+'%';
+    puEl.style.color = pct>=65?'#4ade80':pct<=35?'#f87171':'#fbbf24';
+  }
+  var mgEl = el(id+'-mg');
+  if(mgEl && sig.pred_magnitude_pct!=null){
+    var m = Number(sig.pred_magnitude_pct);
+    mgEl.textContent = (m>=0?'+':'')+m.toFixed(2)+'%';
+    mgEl.style.color = m>=0?'#4ade80':'#f87171';
+  }
+  var cv2El = el(id+'-cv2');
+  if(cv2El && sig.cv_accuracy!=null){
+    cv2El.textContent = Math.round(sig.cv_accuracy*100)+'%';
+    cv2El.style.color = sig.cv_accuracy>=0.6?'#4ade80':'#fbbf24';
+  }
+  var flEl = el(id+'-fl');
+  if(flEl && flow.flow_sentiment){ flEl.textContent=flow.flow_sentiment; flEl.style.color=sentColor(flow.flow_sentiment); }
+  var rgEl = el(id+'-rg');
+  if(rgEl && gex.regime){ rgEl.textContent=gex.regime; rgEl.style.color=(gex.regime||'').includes('Long')?'#4ade80':'#f87171'; }
+
+  // GEX levels
+  var cwEl=el(id+'-cw'); if(cwEl) cwEl.textContent=fmtPx(gex.gamma_wall||gex.call_wall);
+  var pwEl=el(id+'-pw'); if(pwEl) pwEl.textContent=fmtPx(gex.put_wall);
+  var fpEl=el(id+'-fp'); if(fpEl) fpEl.textContent=fmtPx(gex.flip_level);
+  var spEl=el(id+'-sp'); if(spEl) spEl.textContent=fmtPx(gex.spot);
+}
+
+// ── Indicator math ────────────────────────────────────────────────────────────
+function calcSMA(closes, n){
+  return closes.map(function(_,i){
+    if(i<n-1) return null;
+    var s=0; for(var j=i-n+1;j<=i;j++) s+=closes[j]; return s/n;
+  });
+}
+function calcBB(closes, n){
+  return closes.map(function(_,i){
+    if(i<n-1) return null;
+    var sl=closes.slice(i-n+1,i+1);
+    var m=sl.reduce(function(a,b){return a+b;})/n;
+    var v=sl.reduce(function(a,b){return a+(b-m)*(b-m);},0)/n;
+    var s=Math.sqrt(v);
+    return {upper:m+2*s, lower:m-2*s};
+  });
+}
+
+// ── Indicator data builder (shared) ──────────────────────────────────────────
+function buildIndData(candles) {
+  var closes  = candles.map(function(c){ return c.close; });
+  var sma20v  = calcSMA(closes, 20);
+  var sma50v  = calcSMA(closes, 50);
+  var bbv     = calcBB(closes, 20);
+  function toSeries(arr, getter) {
+    var out = [];
+    arr.forEach(function(item, i){
+      var val = getter ? getter(item) : item;
+      if(val!=null) out.push({ time: candles[i].time, value: val });
+    });
+    return out;
+  }
+  return {
+    sma20: toSeries(sma20v, null),
+    sma50: toSeries(sma50v, null),
+    bbU:   toSeries(bbv, function(b){ return b ? b.upper : null; }),
+    bbL:   toSeries(bbv, function(b){ return b ? b.lower : null; }),
+    mapped: candles.map(function(c){
+      return { time:c.time, open:c.open, high:c.high, low:c.low, close:c.close };
+    }).filter(function(c){ return c.time && c.open && c.close; }),
+  };
+}
+
+// ── updateChartData — updates series data only (no chart recreation) ──────────
+function updateChartData(sym) {
+  var candles = canMap[sym];
+  var sm      = seriesMap[sym];
+  var sig     = sigMap[sym] || {};
+  if(!candles || !candles.length || !sm) return;
+
+  var ind = buildIndData(candles);
+
+  sm.bbUS.setData(ind.bbU);
+  sm.bbLS.setData(ind.bbL);
+  sm.sma20s.setData(ind.sma20);
+  sm.sma50s.setData(ind.sma50);
+  sm.cs.setData(ind.mapped);
+
+  // Markers
+  var markers = [];
+  var mlist = (sig && sig.signal_markers) ? sig.signal_markers : [];
+  mlist.forEach(function(m){
+    markers.push({
+      time: m.time,
+      position: m.signal==='BUY' ? 'belowBar' : 'aboveBar',
+      color:    m.signal==='BUY' ? '#4ade80'  : '#f87171',
+      shape:    m.signal==='BUY' ? 'arrowUp'  : 'arrowDown',
+      text: m.signal, size: 1,
+    });
+  });
+  if(sig.signal && sig.signal!=='HOLD' && ind.mapped.length){
+    var lb = ind.mapped[ind.mapped.length-1];
+    var existsLast = markers.some(function(m){ return m.time===lb.time; });
+    if(!existsLast){
+      markers.push({
+        time: lb.time,
+        position: sig.signal==='BUY' ? 'belowBar' : 'aboveBar',
+        color:    sig.signal==='BUY' ? '#4ade80'  : '#f87171',
+        shape:    sig.signal==='BUY' ? 'arrowUp'  : 'arrowDown',
+        text: sig.signal, size: 2,
+      });
+    }
+  }
+  if(markers.length){
+    markers.sort(function(a,b){ return a.time-b.time; });
+    sm.cs.setMarkers(markers);
+  }
+
+  sm.chart.timeScale().fitContent();
+}
+
+// ── changeTF — switches timeframe for one asset ───────────────────────────────
+function changeTF(sym, interval, btn) {
+  var id   = 'ac-' + sym.replace(/[^A-Za-z0-9]/g,'');
+  var tfBar = el(id+'-tf');
+  var ldEl  = el(id+'-tfld');
+
+  // Update active button
+  if(tfBar) tfBar.querySelectorAll('.tf-btn').forEach(function(b){ b.classList.remove('active'); });
+  if(btn) btn.classList.add('active');
+
+  // Show spinner
+  if(ldEl) ldEl.style.display = 'inline';
+
+  tfMap[sym] = interval;
+  var base = window.location.origin;
+  fetch(base+'/api/candles/'+encodeURIComponent(sym)+'?interval='+interval)
+    .then(function(r){ return r.json(); })
+    .then(function(candles){
+      if(candles && candles.length){ canMap[sym] = candles; }
+      updateChartData(sym);
+      if(ldEl) ldEl.style.display = 'none';
+    })
+    .catch(function(){
+      if(ldEl) ldEl.style.display = 'none';
+    });
+}
+window.changeTF = changeTF;
+
+// ── initChart — creates chart and series once per asset ───────────────────────
+function initChart(a) {
+  var sym = a.sym;
+  var id  = 'ac-' + sym.replace(/[^A-Za-z0-9]/g,'');
+  var container = el(id+'-cv');
+  var ldEl      = el(id+'-ld');
+  var candles   = canMap[sym];
+  var gex       = gexMap[sym]  || {};
+
+  if(!container || !candles || !candles.length) return;
+
+  // Destroy previous chart + observer
+  if(chartInst[sym]){ try{ chartInst[sym].remove(); }catch(e){} delete chartInst[sym]; }
+  if(roMap[sym]){ try{ roMap[sym].disconnect(); }catch(e){} delete roMap[sym]; }
+  container.innerHTML = '';
+
+  var W = container.clientWidth || 560;
+
+  // ── Chart config ─────────────────────────────────────────────────
+  var chart = LightweightCharts.createChart(container, {
+    width:  W,
+    height: 340,
+    layout: {
+      background: { color: '#070d18' },
+      textColor:  '#dbeafe',
+      fontSize:   13,
+    },
+    grid: {
+      vertLines: { color: 'rgba(36,48,88,.5)' },
+      horzLines: { color: 'rgba(36,48,88,.5)' },
+    },
+    crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
+    rightPriceScale: {
+      borderColor: '#243058',
+      scaleMargins: { top: 0.06, bottom: 0.06 },
+    },
+    timeScale: {
+      borderColor: '#243058',
+      timeVisible: true,
+      secondsVisible: false,
+    },
+    handleScroll: { mouseWheel:true, pressedMouseMove:true, horzTouchDrag:true, vertTouchDrag:false },
+    handleScale:  { axisPressedMouseMove:true, mouseWheel:true, pinch:true },
+  });
+
+  chartInst[sym] = chart;
+
+  // ── Bollinger Bands ───────────────────────────────────────────────
+  var bbOpts = {
+    color: 'rgba(255,255,255,0.80)', lineWidth: 2, lineStyle: 2,
+    priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false,
+  };
+  var bbUS = chart.addLineSeries(Object.assign({}, bbOpts, { title:'BB Upper' }));
+  var bbLS = chart.addLineSeries(Object.assign({}, bbOpts, { title:'BB Lower' }));
+
+  // ── SMA lines ─────────────────────────────────────────────────────
+  var sma20s = chart.addLineSeries({
+    color: '#4ade80', lineWidth: 2,
+    priceLineVisible: false, lastValueVisible: true,
+    crosshairMarkerVisible: false, title: 'SMA 20',
+  });
+  var sma50s = chart.addLineSeries({
+    color: '#60a5fa', lineWidth: 2,
+    priceLineVisible: false, lastValueVisible: true,
+    crosshairMarkerVisible: false, title: 'SMA 50',
+  });
+
+  // ── Candlestick series ────────────────────────────────────────────
+  var cs = chart.addCandlestickSeries({
+    upColor: '#22c55e', downColor: '#f87171',
+    borderUpColor: '#22c55e', borderDownColor: '#f87171',
+    wickUpColor: '#22c55e', wickDownColor: '#f87171',
+  });
+
+  // ── GEX horizontal price lines (set once — persist across TF changes) ────
+  var gexDefs = [
+    { key:'gamma_wall', fallback:'call_wall', color:'#22d3ee', label:'Call Wall' },
+    { key:'put_wall',   fallback:null,        color:'#f87171', label:'Put Wall'  },
+    { key:'flip_level', fallback:null,        color:'#fbbf24', label:'Flip'      },
+    { key:'spot',       fallback:null,        color:'rgba(210,235,255,0.65)', label:'Spot' },
+  ];
+  gexDefs.forEach(function(g){
+    var val = gex[g.key] || (g.fallback ? gex[g.fallback] : null);
+    if(!val) return;
+    var priceStr = val>=1000 ? val.toFixed(0) : val.toFixed(2);
+    cs.createPriceLine({
+      price: val, color: g.color, lineWidth: 2, lineStyle: 2,
+      axisLabelVisible: true, title: g.label + ' $' + priceStr,
+    });
+  });
+
+  // ── Store series refs ─────────────────────────────────────────────
+  seriesMap[sym] = { chart:chart, cs:cs, sma20s:sma20s, sma50s:sma50s, bbUS:bbUS, bbLS:bbLS };
+
+  // ── OHLC crosshair readout ────────────────────────────────────────
+  chart.subscribeCrosshairMove(function(p){
+    if(!p || !p.seriesData || !p.seriesData.size) return;
+    var d = p.seriesData.get(cs);
+    if(!d) return;
+    var oo=el(id+'-oo'), oh=el(id+'-oh'), ol=el(id+'-ol'), oc=el(id+'-oc');
+    if(oo) oo.textContent = Number(d.open).toFixed(2);
+    if(oh) oh.textContent = Number(d.high).toFixed(2);
+    if(ol) ol.textContent = Number(d.low).toFixed(2);
+    if(oc) oc.textContent = Number(d.close).toFixed(2);
+  });
+
+  // ── Responsive resize ─────────────────────────────────────────────
+  if(window.ResizeObserver){
+    var ro = new ResizeObserver(function(){
+      if(container.clientWidth > 0)
+        chart.applyOptions({ width: container.clientWidth });
+    });
+    ro.observe(container);
+    roMap[sym] = ro;
+  }
+
+  if(ldEl) ldEl.style.display = 'none';
+
+  // ── Populate data ─────────────────────────────────────────────────
+  updateChartData(sym);
+}
+
+// ── Data loading ──────────────────────────────────────────────────────────────
+function setStatus(msg, ok){
+  var d=el('rdot'); var s=el('rstat');
+  if(d) d.className='refresh-dot'+(ok?' ok':'');
+  if(s) s.textContent=msg;
+}
+
+function loadAll(){
+  setStatus('Refreshing data\u2026', false);
+  var base = window.location.origin;
+
+  Promise.all([
+    fetch(base+'/api/gamma-exposure').then(function(r){return r.json();}).catch(function(){return null;}),
+    fetch(base+'/api/option-flows').then(function(r){return r.json();}).catch(function(){return null;}),
+  ]).then(function(res){
+    (res[0]&&res[0].assets?res[0].assets:[]).forEach(function(a){ gexMap[a.symbol]=a; });
+    (res[1]&&res[1].assets?res[1].assets:[]).forEach(function(a){ flowMap[a.symbol]=a; });
+
+    return Promise.all(ASSETS.map(function(a){
+      var enc = encodeURIComponent(a.sym);
+      return Promise.all([
+        fetch(base+'/api/signal/'+enc).then(function(r){return r.json();}).catch(function(){return null;}),
+        fetch(base+'/api/candles/'+enc+'?interval=4h').then(function(r){return r.json();}).catch(function(){return [];}),
+      ]).then(function(pair){
+        if(pair[0]) sigMap[a.sym]=pair[0];
+        if(pair[1]&&pair[1].length) canMap[a.sym]=pair[1];
+        updateCardUI(a);
+        initChart(a);
+      });
+    }));
+  }).then(function(){
+    setStatus('Updated '+new Date().toLocaleTimeString(), true);
+  }).catch(function(e){
+    setStatus('Error: '+e.message, false);
+  });
+}
+window.loadAll = loadAll;
+
+// ── Boot ──────────────────────────────────────────────────────────────────────
+buildGrid();
+loadAll();
+setInterval(function(){ if(!document.hidden) loadAll(); }, 5*60*1000);
+document.addEventListener('visibilitychange', function(){ if(!document.hidden) loadAll(); });
+
+})();
+</script>
+
+</body>
+</html>

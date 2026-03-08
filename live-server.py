@@ -818,34 +818,6 @@ def add_cache_headers(response):
 # ── Broker credentials store (in-memory, set via /api/broker-connect/*) ──────
 _broker_creds = {}
 
-# ── Broker: Alpaca ────────────────────────────────────────────────────────────
-@app.route('/api/broker-connect/alpaca', methods=['POST'])
-def broker_connect_alpaca():
-    data   = request.get_json(force=True)
-    key    = data.get('key','').strip()
-    secret = data.get('secret','').strip()
-    paper  = data.get('paper', True)
-    if not key or not secret:
-        return jsonify({'ok': False, 'error': 'Missing API key or secret'})
-    try:
-        from alpaca.data.historical import StockHistoricalDataClient
-        client = StockHistoricalDataClient(key, secret)
-        # Quick test: fetch latest bar for SPY
-        from alpaca.data.requests import StockLatestBarRequest
-        req = StockLatestBarRequest(symbol_or_symbols='SPY')
-        bar = client.get_stock_latest_bar(req)
-        spot = float(bar['SPY'].close)
-        _broker_creds['alpaca'] = {'key': key, 'secret': secret, 'paper': paper}
-        return jsonify({'ok': True, 'message': f'Alpaca connected — SPY last close ${spot:.2f}'})
-    except Exception as e:
-        return jsonify({'ok': False, 'error': str(e)[:200]})
-
-@app.route('/api/broker-disconnect/alpaca', methods=['POST'])
-def broker_disconnect_alpaca():
-    _broker_creds.pop('alpaca', None)
-    return jsonify({'ok': True})
-
-# ── Broker: Tradier ───────────────────────────────────────────────────────────
 @app.route('/api/broker-connect/tradier', methods=['POST'])
 def broker_connect_tradier():
     data    = request.get_json(force=True)
@@ -4248,6 +4220,238 @@ def volatility_surface_endpoint():
 
 
 # ── Startup ───────────────────────────────────────────────────────────────────
+
+# ══════════════════════════════════════════════════════════════════════════════
+# ALGORITHM & BOT ENGINE
+# ══════════════════════════════════════════════════════════════════════════════
+import uuid as _uuid_mod
+
+BOT_ASSETS = [
+    'SPY', 'QQQ', 'DIA', 'IWM',                                    # ETFs
+    'AAPL', 'MSFT', 'NVDA', 'GOOGL', 'AMZN', 'META', 'TSLA',      # Mag 7
+    'JPM', 'BAC', 'V', 'XOM', 'CVX', 'JNJ', 'UNH', 'WMT', 'HD', 'BRK-B',  # Blue chips
+    'ES=F',                                                          # Futures
+]
+
+BOT_ASSET_TYPE = {
+    **{s: 'stock' for s in ['SPY','QQQ','DIA','IWM','AAPL','MSFT','NVDA','GOOGL',
+                              'AMZN','META','TSLA','JPM','BAC','V','XOM','CVX',
+                              'JNJ','UNH','WMT','HD','BRK-B']},
+    'ES=F': 'futures',
+}
+
+_bot_lock  = threading.Lock()
+_bot_threads = {}
+_bot_states  = {}
+
+def _bot_default_state(sym):
+    atype = BOT_ASSET_TYPE.get(sym, 'stock')
+    return {
+        'symbol': sym, 'asset_type': atype,
+        'running': False, 'position': None,
+        'trades': [], 'pnl': 0.0, 'total_trades': 0, 'wins': 0,
+        'config': {
+            'capital': 50000 if atype == 'futures' else 10000,
+            'risk_pct': 1.0, 'stop_loss_pct': 1.5,
+            'take_profit_pct': 3.0, 'signal_threshold': 65,
+            'mode': 'paper', 'instrument': atype, 'interval_sec': 60,
+        },
+        'status': 'idle', 'last_signal': None,
+        'last_check': None, 'error': None,
+    }
+
+for _s in BOT_ASSETS:
+    _bot_states[_s] = _bot_default_state(_s)
+
+def _bot_fetch_signal(symbol):
+    try:
+        import urllib.request as _ur2, json as _j2
+        with _ur2.urlopen(f'http://localhost:3000/api/signal/{symbol}', timeout=30) as r:
+            return _j2.loads(r.read())
+    except Exception:
+        return None
+
+
+def _bot_open_position(symbol, price, side, sig):
+    state = _bot_states[symbol]
+    cfg   = state['config']
+    atype = state['asset_type']
+    mult  = sig.get('futures_multiplier', 50) if atype == 'futures' else 1
+    size  = round((cfg['capital'] * cfg['risk_pct'] / 100) / (price * mult), 4) if price > 0 else 0
+    stop   = sig.get('stop_long'   if side == 'long'  else 'stop_short',
+                     price * (0.985 if side == 'long' else 1.015))
+    target = sig.get('target_long' if side == 'long'  else 'target_short',
+                     price * (1.03  if side == 'long' else 0.97))
+    state['position'] = {
+        'side': side, 'entry': price, 'size': size,
+        'stop': stop, 'target': target,
+        'time': datetime.utcnow().isoformat() + 'Z',
+        'instrument': cfg.get('instrument', 'stock'),
+    }
+    state['status'] = side
+    state['error']  = None
+
+def _bot_close_position(symbol, price, reason):
+    state = _bot_states[symbol]
+    pos   = state['position']
+    if not pos:
+        return
+    pnl_pts = (price - pos['entry']) if pos['side'] == 'long' else (pos['entry'] - price)
+    pnl     = round(pnl_pts * pos['size'], 2)
+    trade   = {
+        'id':   str(_uuid_mod.uuid4())[:8],
+        'symbol': symbol, 'side': pos['side'],
+        'entry': pos['entry'], 'exit': price,
+        'size': pos['size'], 'pnl': pnl, 'reason': reason,
+        'opened': pos['time'], 'closed': datetime.utcnow().isoformat() + 'Z',
+        'instrument': pos.get('instrument', 'stock'),
+    }
+    state['trades'].insert(0, trade)
+    if len(state['trades']) > 100:
+        state['trades'] = state['trades'][:100]
+    state['pnl']          = round(state['pnl'] + pnl, 2)
+    state['total_trades'] += 1
+    if pnl > 0:
+        state['wins'] += 1
+    state['position'] = None
+    state['status']   = 'running'
+
+def _bot_algo_tick(symbol):
+    state = _bot_states[symbol]
+    sig   = _bot_fetch_signal(symbol)
+    if not sig:
+        state['error'] = 'Signal fetch failed'
+        return
+    price    = sig.get('close', 0)
+    prob_up  = sig.get('prob_up', 0.5) * 100
+    cfg      = state['config']
+    thresh   = cfg['signal_threshold']
+    state['last_check']  = datetime.utcnow().isoformat() + 'Z'
+    state['last_signal'] = {
+        'direction': sig.get('signal', 'HOLD'),
+        'prob_up': round(prob_up, 1), 'price': price,
+        'time': state['last_check'],
+    }
+    state['error'] = None
+    pos = state['position']
+    if pos and price > 0:
+        pnl_pct = ((price - pos['entry']) / pos['entry'] * 100) if pos['side'] == 'long'                   else ((pos['entry'] - price) / pos['entry'] * 100)
+        if pnl_pct <= -cfg['stop_loss_pct']:
+            _bot_close_position(symbol, price, 'Stop Loss'); return
+        if pnl_pct >= cfg['take_profit_pct']:
+            _bot_close_position(symbol, price, 'Take Profit'); return
+        if pos['side'] == 'long'  and prob_up <= (100 - thresh):
+            _bot_close_position(symbol, price, 'Signal Reversal'); return
+        if pos['side'] == 'short' and prob_up >= thresh:
+            _bot_close_position(symbol, price, 'Signal Reversal'); return
+    if not pos and price > 0:
+        if prob_up >= thresh:
+            _bot_open_position(symbol, price, 'long',  sig)
+        elif prob_up <= (100 - thresh):
+            _bot_open_position(symbol, price, 'short', sig)
+
+def _bot_run_loop(symbol):
+    state = _bot_states[symbol]
+    while state['running']:
+        try:
+            with _bot_lock:
+                _bot_algo_tick(symbol)
+        except Exception as e:
+            state['error'] = str(e)[:200]
+        interval = state['config'].get('interval_sec', 60)
+        for _ in range(interval * 4):
+            if not state['running']:
+                break
+            time.sleep(0.25)
+    state['status'] = 'idle'
+
+# ── Bot API ───────────────────────────────────────────────────────────────────
+@app.route('/api/bots')
+def api_bots():
+    with _bot_lock:
+        result = {}
+        for sym, st in _bot_states.items():
+            result[sym] = {
+                'symbol': sym, 'asset_type': st['asset_type'],
+                'running': st['running'], 'status': st['status'],
+                'pnl': st['pnl'], 'total_trades': st['total_trades'],
+                'wins': st['wins'], 'position': st['position'],
+                'last_signal': st['last_signal'], 'last_check': st['last_check'],
+                'config': st['config'], 'error': st['error'],
+                'recent_trades': st['trades'][:5],
+            }
+    return jsonify(result)
+
+@app.route('/api/bots/<symbol>/start', methods=['POST'])
+def api_bot_start(symbol):
+    if symbol not in _bot_states:
+        return jsonify({'ok': False, 'error': 'Unknown symbol'})
+    cfg_in = request.get_json(force=True) or {}
+    state  = _bot_states[symbol]
+    if state['running']:
+        return jsonify({'ok': True, 'message': 'Already running'})
+    state['config'].update({k: v for k, v in cfg_in.items() if k in state['config']})
+    state['running'] = True
+    state['status']  = 'running'
+    state['error']   = None
+    t = threading.Thread(target=_bot_run_loop, args=(symbol,), daemon=True)
+    _bot_threads[symbol] = t
+    t.start()
+    return jsonify({'ok': True, 'message': f'{symbol} bot started'})
+
+@app.route('/api/bots/<symbol>/stop', methods=['POST'])
+def api_bot_stop(symbol):
+    if symbol not in _bot_states:
+        return jsonify({'ok': False, 'error': 'Unknown symbol'})
+    _bot_states[symbol]['running'] = False
+    return jsonify({'ok': True, 'message': f'{symbol} bot stopping'})
+
+@app.route('/api/bots/start-all', methods=['POST'])
+def api_bots_start_all():
+    started = []
+    for sym in BOT_ASSETS:
+        state = _bot_states[sym]
+        if not state['running']:
+            state['running'] = True
+            state['status']  = 'running'
+            t = threading.Thread(target=_bot_run_loop, args=(sym,), daemon=True)
+            _bot_threads[sym] = t
+            t.start()
+            started.append(sym)
+    return jsonify({'ok': True, 'started': started})
+
+@app.route('/api/bots/stop-all', methods=['POST'])
+def api_bots_stop_all():
+    for sym in BOT_ASSETS:
+        _bot_states[sym]['running'] = False
+    return jsonify({'ok': True})
+
+@app.route('/api/bots/<symbol>/config', methods=['POST'])
+def api_bot_config(symbol):
+    if symbol not in _bot_states:
+        return jsonify({'ok': False, 'error': 'Unknown symbol'})
+    cfg = request.get_json(force=True) or {}
+    _bot_states[symbol]['config'].update({k: v for k, v in cfg.items()
+                                          if k in _bot_states[symbol]['config']})
+    return jsonify({'ok': True, 'config': _bot_states[symbol]['config']})
+
+@app.route('/api/bots/<symbol>/reset', methods=['POST'])
+def api_bot_reset(symbol):
+    if symbol not in _bot_states:
+        return jsonify({'ok': False, 'error': 'Unknown symbol'})
+    state = _bot_states[symbol]
+    if state['running']:
+        return jsonify({'ok': False, 'error': 'Stop bot before reset'})
+    state.update({'trades': [], 'pnl': 0.0, 'total_trades': 0, 'wins': 0,
+                  'position': None, 'status': 'idle', 'last_signal': None, 'error': None})
+    return jsonify({'ok': True})
+
+@app.route('/api/bots/<symbol>/trades')
+def api_bot_trades(symbol):
+    if symbol not in _bot_states:
+        return jsonify({'ok': False, 'error': 'Unknown symbol'})
+    return jsonify({'ok': True, 'trades': _bot_states[symbol]['trades']})
+
 if __name__ == '__main__':
     print("=" * 60)
     print("  Live ML Trading Server  —  http://localhost:3000")

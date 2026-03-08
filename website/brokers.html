@@ -72,6 +72,7 @@ h1{font-size:1.7rem;font-weight:800;color:var(--accent);margin-bottom:.3rem;}
   <div class="nav-logo"><a href="index.html">Steve Borick</a></div>
   <ul class="nav-links">
     <li><a href="index.html">Home</a></li>
+    <li><a href="asset-algorithms.html" style="color:#22d3ee;font-weight:700;">&#128200; Asset Algos</a></li>
     <li><a href="live-trading.html">Live Trading</a></li>
     <li><a href="brokers.html" class="active">Brokers</a></li>
     <li><a href="market-preparation.html">&#128204; Market Prep</a></li>
@@ -161,8 +162,10 @@ h1{font-size:1.7rem;font-weight:800;color:var(--accent);margin-bottom:.3rem;}
 const API = window.location.origin;
 
 window.addEventListener('load', () => {
-  const saved = loadCreds('finnhub');
-  if(saved) restoreFields('finnhub', saved);
+  ['finnhub'].forEach(b => {
+    const saved = loadCreds(b);
+    if(saved) restoreFields(b, saved);
+  });
 });
 
 function loadCreds(broker){
@@ -201,6 +204,9 @@ async function connectBroker(broker){
     const key = document.getElementById('finnhub-key').value.trim();
     if(!key){ setStatus(broker,'err','Enter your Finnhub API key'); return; }
     body = {key};
+    saveCreds(broker, body);
+  }
+    body = {key, secret, paper};
     saveCreds(broker, body);
   }
 

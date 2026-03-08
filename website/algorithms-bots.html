@@ -1,0 +1,1620 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Algorithms &amp; Bots — ML Trading Dashboard</title>
+<link rel="stylesheet" href="style.css">
+<style>
+:root {
+  --green2:#4ade80; --red2:#f87171; --amber2:#fbbf24;
+  --cyan2:#22d3ee;  --purple2:#a78bfa; --orange2:#fb923c;
+}
+
+/* ── Shared card ─────────────────────────────────────────────────────── */
+.info-card {
+  background:var(--card); border:1px solid var(--border); border-radius:12px;
+  padding:1.4rem 1.6rem;
+}
+.info-card h3 { font-size:1rem; font-weight:800; color:var(--text); margin:0 0 .5rem; }
+.info-card p, .info-card li { font-size:.86rem; color:var(--muted); line-height:1.7; }
+.info-card ul { padding-left:1.1rem; margin:.4rem 0; }
+.accent-bar { height:3px; border-radius:2px; margin-bottom:1rem; }
+
+/* ── Pill tags ───────────────────────────────────────────────────────── */
+.tag {
+  display:inline-block; font-size:.68rem; font-weight:700; letter-spacing:.06em;
+  text-transform:uppercase; border-radius:4px; padding:.18rem .55rem; margin:.15rem .1rem;
+}
+.tag.cyan   { background:rgba(34,211,238,.12); color:var(--cyan2); border:1px solid rgba(34,211,238,.25); }
+.tag.green  { background:rgba(74,222,128,.12); color:var(--green2); border:1px solid rgba(74,222,128,.25); }
+.tag.red    { background:rgba(248,113,113,.12); color:var(--red2); border:1px solid rgba(248,113,113,.25); }
+.tag.amber  { background:rgba(251,191,36,.12); color:var(--amber2); border:1px solid rgba(251,191,36,.25); }
+.tag.purple { background:rgba(167,139,250,.12); color:var(--purple2); border:1px solid rgba(167,139,250,.25); }
+.tag.orange { background:rgba(251,146,60,.12); color:var(--orange2); border:1px solid rgba(251,146,60,.25); }
+
+/* ── Grids ───────────────────────────────────────────────────────────── */
+.grid-2 { display:grid; grid-template-columns:repeat(auto-fill,minmax(340px,1fr)); gap:1.2rem; }
+.grid-3 { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:1.1rem; }
+
+/* ── Step list ───────────────────────────────────────────────────────── */
+.step-list { display:flex; flex-direction:column; gap:.85rem; }
+.step-item { display:flex; gap:1rem; align-items:flex-start; }
+.step-num  {
+  min-width:32px; height:32px; border-radius:50%; background:var(--primary);
+  color:#080d1a; font-size:.82rem; font-weight:900; display:flex;
+  align-items:center; justify-content:center; flex-shrink:0; margin-top:.1rem;
+}
+.step-body h4 { font-size:.9rem; font-weight:800; color:var(--text); margin:0 0 .25rem; }
+.step-body p  { font-size:.82rem; color:var(--muted); line-height:1.65; margin:0; }
+
+/* ── Algorithm detail card ───────────────────────────────────────────── */
+.algo-detail {
+  background:var(--card); border:1px solid var(--border); border-radius:12px;
+  overflow:hidden;
+}
+.algo-detail-hdr {
+  padding:1rem 1.4rem; border-bottom:1px solid var(--border);
+  display:flex; align-items:center; gap:.8rem;
+}
+.algo-icon-lg { font-size:1.8rem; flex-shrink:0; }
+.algo-detail-hdr h3 { font-size:1rem; font-weight:800; color:var(--text); margin:0 0 .2rem; }
+.algo-detail-hdr p  { font-size:.78rem; color:var(--muted); margin:0; }
+.algo-detail-body { padding:1.1rem 1.4rem; }
+.algo-detail-body p { font-size:.84rem; color:var(--muted); line-height:1.7; margin:0 0 .8rem; }
+.algo-kv { display:flex; flex-direction:column; gap:.35rem; }
+.algo-kv-row { display:flex; gap:.6rem; font-size:.8rem; }
+.kv-key   { color:var(--muted); min-width:110px; flex-shrink:0; }
+.kv-val   { color:var(--text); font-weight:600; }
+.algo-tags { margin-top:.7rem; }
+
+/* ── Bot builder panel ───────────────────────────────────────────────── */
+.bot-type-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:1rem; }
+.bot-type-card {
+  background:var(--card); border:2px solid var(--border); border-radius:12px;
+  padding:1.3rem 1.4rem; cursor:pointer; transition:all .18s; position:relative;
+}
+.bot-type-card:hover { border-color:var(--primary); background:rgba(34,211,238,.04); }
+.bot-type-card.selected { border-color:var(--primary); background:rgba(34,211,238,.07); }
+.bot-type-card.selected::after {
+  content:'✓ Selected'; position:absolute; top:.6rem; right:.8rem;
+  font-size:.68rem; font-weight:700; color:var(--primary); letter-spacing:.06em;
+}
+.bot-card-icon { font-size:2rem; margin-bottom:.6rem; }
+.bot-card-name { font-size:.95rem; font-weight:800; color:var(--text); margin-bottom:.3rem; }
+.bot-card-desc { font-size:.8rem; color:var(--muted); line-height:1.6; margin-bottom:.7rem; }
+.bot-card-meta { display:flex; flex-wrap:wrap; gap:.35rem; }
+
+/* ── Bot builder form ─────────────────────────────────────────────────── */
+.builder-panel {
+  background:var(--card); border:1px solid var(--border); border-radius:12px;
+  padding:1.6rem; margin-top:1.4rem;
+}
+.builder-panel h3 { font-size:1rem; font-weight:800; color:var(--text); margin:0 0 1.2rem; }
+.builder-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:1rem; }
+.field-group { display:flex; flex-direction:column; gap:.4rem; }
+.field-group label { font-size:.75rem; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; }
+.field-group input, .field-group select, .field-group textarea {
+  background:var(--surface); border:1px solid var(--border); color:var(--text);
+  padding:.45rem .7rem; border-radius:7px; font-size:.84rem; width:100%; box-sizing:border-box;
+}
+.field-group textarea { resize:vertical; min-height:70px; }
+.field-group input:focus, .field-group select:focus { outline:none; border-color:var(--primary); }
+.btn-build {
+  margin-top:1.2rem; padding:.6rem 2rem; background:var(--primary); color:#080d1a;
+  border:none; border-radius:8px; font-size:.9rem; font-weight:800; cursor:pointer;
+  transition:all .15s;
+}
+.btn-build:hover { filter:brightness(1.1); }
+.btn-secondary {
+  margin-top:1.2rem; margin-left:.6rem; padding:.6rem 1.4rem;
+  background:var(--surface); color:var(--muted); border:1px solid var(--border);
+  border-radius:8px; font-size:.88rem; font-weight:700; cursor:pointer;
+}
+
+/* ── Architecture diagram ─────────────────────────────────────────────── */
+.arch-flow {
+  display:flex; gap:0; align-items:stretch; flex-wrap:wrap;
+  background:var(--surface); border-radius:12px; border:1px solid var(--border); overflow:hidden;
+}
+.arch-box {
+  flex:1; min-width:160px; padding:1.1rem 1rem; text-align:center;
+  border-right:1px solid var(--border); position:relative;
+}
+.arch-box:last-child { border-right:none; }
+.arch-box-icon { font-size:1.6rem; margin-bottom:.5rem; }
+.arch-box-name { font-size:.78rem; font-weight:800; color:var(--text); margin-bottom:.3rem; text-transform:uppercase; letter-spacing:.05em; }
+.arch-box-desc { font-size:.72rem; color:var(--muted); line-height:1.5; }
+.arch-arrow {
+  display:flex; align-items:center; padding:0 .2rem; color:var(--primary);
+  font-size:1.2rem; flex-shrink:0;
+}
+
+/* ── Classification table ─────────────────────────────────────────────── */
+.class-table { width:100%; border-collapse:collapse; font-size:.82rem; }
+.class-table th {
+  text-align:left; padding:.6rem 1rem; color:var(--muted); font-size:.72rem;
+  font-weight:700; letter-spacing:.07em; text-transform:uppercase;
+  border-bottom:2px solid var(--border); background:var(--surface);
+}
+.class-table td { padding:.65rem 1rem; border-bottom:1px solid var(--border); color:var(--text); vertical-align:top; }
+.class-table tr:last-child td { border-bottom:none; }
+.class-table tr:hover td { background:rgba(255,255,255,.02); }
+.class-table td:first-child { font-weight:700; color:var(--primary); white-space:nowrap; }
+
+/* ── Notification ─────────────────────────────────────────────────────── */
+.notif {
+  position:fixed; bottom:1.5rem; right:1.5rem; z-index:999;
+  background:var(--card); border:1px solid var(--green2); border-radius:10px;
+  padding:.8rem 1.3rem; font-size:.84rem; color:var(--text);
+  box-shadow:0 4px 20px rgba(0,0,0,.4); display:none; max-width:340px;
+}
+.notif.show { display:block; animation:slide-in .25s ease; }
+@keyframes slide-in { from{transform:translateY(20px);opacity:0} to{transform:none;opacity:1} }
+
+/* ── Active bot list ──────────────────────────────────────────────────── */
+.active-bots-list { display:flex; flex-direction:column; gap:.6rem; }
+.active-bot-row {
+  display:flex; align-items:center; gap:.8rem; padding:.7rem 1rem;
+  background:var(--surface); border:1px solid var(--border); border-radius:8px;
+}
+.active-bot-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+.active-bot-dot.running { background:var(--green2); box-shadow:0 0 5px var(--green2); }
+.active-bot-dot.stopped { background:var(--muted); }
+.active-bot-name { font-size:.88rem; font-weight:700; color:var(--text); flex:1; }
+.active-bot-type { font-size:.72rem; color:var(--muted); }
+.active-bot-status { font-size:.75rem; font-weight:700; }
+.active-bot-status.running { color:var(--green2); }
+.active-bot-status.stopped { color:var(--muted); }
+.btn-stop-bot {
+  background:rgba(248,113,113,.12); color:var(--red2); border:1px solid rgba(248,113,113,.3);
+  border-radius:5px; padding:.2rem .65rem; font-size:.72rem; font-weight:700; cursor:pointer;
+}
+.no-bots-msg { color:var(--muted); font-size:.86rem; text-align:center; padding:1.5rem; }
+</style>
+</head>
+<body>
+
+<!-- ── Nav ─────────────────────────────────────────────────────────────── -->
+<nav class="nav">
+  <a href="index.html" class="nav-logo">
+    <img src="images/steve.jpg" class="nav-logo-photo" alt="Stephen Borick">
+    <div class="nav-logo-text">
+      <span class="nav-company">Artificial Intelligence</span>
+      <span class="nav-name">Solutions, Inc.</span>
+    </div>
+  </a>
+  <ul class="nav-links">
+    <li><a href="index.html">Home</a></li>
+    <li><a href="neural-networks.html">Neural Networks</a></li>
+    <li><a href="machine-learning.html">Machine Learning</a></li>
+    <li><a href="ml-trading.html">ML in Trading</a></li>
+    <li><a href="stock-trading.html">Stocks</a></li>
+    <li><a href="options-trading.html">Options</a></li>
+    <li><a href="futures-trading.html">Futures</a></li>
+    <li><a href="brokers.html">Brokers</a></li>
+    <li><a href="algorithms-bots.html" class="active" style="color:#4ade80;font-weight:700;">&#129302; Algo Bots</a></li>
+    <li><a href="asset-algorithms.html" style="color:#22d3ee;font-weight:700;">&#128200; Asset Algos</a></li>
+    <li><a href="live-trading.html">Live Trading</a></li>
+    <li><a href="market-preparation.html">&#128204; Market Prep</a></li>
+    <li><a href="forecast.html" style="color:#f59e0b;font-weight:700;">&#128200; Forecast</a></li>
+    <li><a href="asset-details.html">&#128202; Asset Review</a></li>
+    <li><a href="report-ms.html" target="_blank" style="background:#22d3ee;color:#080d1a;padding:.28rem .85rem;border-radius:5px;font-weight:700;">&#128202; Market Report</a></li>
+    <li><a href="report-tg.html" target="_blank" style="background:#a78bfa;color:#080d1a;padding:.28rem .85rem;border-radius:5px;font-weight:700;">&#128214; Trading Guide</a></li>
+  </ul>
+</nav>
+
+<nav class="page-nav">
+  <a href="live-trading.html">Live Trading</a>
+  <span class="page-nav-sep">|</span>
+  <a href="algorithms-bots.html" class="active">&#129302; Algo Bots</a>
+  <span class="page-nav-sep">|</span>
+  <a href="brokers.html">Brokers</a>
+  <span class="page-nav-sep">|</span>
+  <a href="market-preparation.html">Market Prep &#128204;</a>
+  <span class="page-nav-sep">|</span>
+  <a href="forecast.html">&#128200; Forecast</a>
+  <span class="page-nav-sep">|</span>
+  <a href="asset-details.html">Asset Review &#128202;</a>
+</nav>
+
+
+<!-- ══════════════════════════════════════════════════════════════════════
+     §1  OVERVIEW
+══════════════════════════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-header">
+    <div class="section-label">Systematic Trading</div>
+    <h2>&#129302; Algorithms &amp; Trading Bots</h2>
+    <p style="color:var(--muted);max-width:700px;">
+      A complete guide to algorithmic trading — from how strategies are classified and constructed
+      step-by-step, to the most prominent algorithms used by institutions and quantitative funds.
+      Use the Bot Builder below to configure and deploy an automated strategy.
+    </p>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════════════════
+     §2  WHAT IS ALGORITHMIC TRADING?
+══════════════════════════════════════════════════════════════════════ -->
+<div class="section" style="padding-top:0;">
+  <div class="section-header" style="margin-bottom:1rem;">
+    <div class="section-label">Foundation</div>
+    <h2 style="font-size:1.35rem;">What Is Algorithmic Trading?</h2>
+  </div>
+
+  <div class="grid-2" style="margin-bottom:1.4rem;">
+    <div class="info-card">
+      <div class="accent-bar" style="background:var(--cyan2);"></div>
+      <h3>Definition</h3>
+      <p>Algorithmic trading (also called <strong style="color:var(--text);">algo trading</strong> or <strong style="color:var(--text);">automated trading</strong>) uses computer programs to execute buy and sell orders based on pre-defined rules — faster and more consistently than a human trader. The algorithm monitors prices, signals, and risk continuously and acts within milliseconds.</p>
+      <p>Modern algorithms range from simple moving-average crossovers run by retail traders to sophisticated machine-learning models deployed by hedge funds managing billions of dollars.</p>
+    </div>
+    <div class="info-card">
+      <div class="accent-bar" style="background:var(--purple2);"></div>
+      <h3>Why Use Algorithms?</h3>
+      <ul>
+        <li><strong style="color:var(--text);">Emotion-free execution</strong> — no fear, greed, or hesitation</li>
+        <li><strong style="color:var(--text);">Speed</strong> — microsecond to millisecond order placement</li>
+        <li><strong style="color:var(--text);">Consistency</strong> — identical rules applied every trade</li>
+        <li><strong style="color:var(--text);">Backtesting</strong> — validate strategy on historical data before risking capital</li>
+        <li><strong style="color:var(--text);">24/7 coverage</strong> — monitors markets around the clock</li>
+        <li><strong style="color:var(--text);">Multi-asset</strong> — simultaneously watches dozens of instruments</li>
+        <li><strong style="color:var(--text);">Risk management</strong> — enforces stops and position limits automatically</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Architecture flow -->
+  <div class="arch-flow" style="margin-bottom:1.4rem;">
+    <div class="arch-box" style="border-top:3px solid var(--cyan2);">
+      <div class="arch-box-icon">📡</div>
+      <div class="arch-box-name">Market Data</div>
+      <div class="arch-box-desc">Price feeds, order book, volume, options chain, news</div>
+    </div>
+    <div class="arch-arrow">→</div>
+    <div class="arch-box" style="border-top:3px solid var(--purple2);">
+      <div class="arch-box-icon">🧠</div>
+      <div class="arch-box-name">Signal Engine</div>
+      <div class="arch-box-desc">Technical indicators, ML model, statistical tests</div>
+    </div>
+    <div class="arch-arrow">→</div>
+    <div class="arch-box" style="border-top:3px solid var(--amber2);">
+      <div class="arch-box-icon">⚖️</div>
+      <div class="arch-box-name">Risk Manager</div>
+      <div class="arch-box-desc">Position limits, stop losses, drawdown controls</div>
+    </div>
+    <div class="arch-arrow">→</div>
+    <div class="arch-box" style="border-top:3px solid var(--green2);">
+      <div class="arch-box-icon">📋</div>
+      <div class="arch-box-name">Order Router</div>
+      <div class="arch-box-desc">Smart order routing, execution timing, slippage</div>
+    </div>
+    <div class="arch-arrow">→</div>
+    <div class="arch-box" style="border-top:3px solid var(--orange2);">
+      <div class="arch-box-icon">📊</div>
+      <div class="arch-box-name">Monitor &amp; Log</div>
+      <div class="arch-box-desc">P&L tracking, performance analytics, alerts</div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════════════════
+     §3  CLASSIFICATION OF ALGORITHMS
+══════════════════════════════════════════════════════════════════════ -->
+<div class="section" style="padding-top:0;">
+  <div class="section-header" style="margin-bottom:1rem;">
+    <div class="section-label">Taxonomy</div>
+    <h2 style="font-size:1.35rem;">How Trading Algorithms Are Classified</h2>
+  </div>
+
+  <div class="info-card" style="margin-bottom:1.4rem;overflow-x:auto;">
+    <table class="class-table">
+      <thead>
+        <tr>
+          <th>Dimension</th>
+          <th>Categories</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>By Strategy</td>
+          <td><span class="tag cyan">Trend Following</span> <span class="tag green">Mean Reversion</span> <span class="tag purple">Arbitrage</span> <span class="tag amber">Market Making</span></td>
+          <td>The core market hypothesis the algo bets on — momentum persists, prices revert, mispricings exist, or spreads can be captured.</td>
+        </tr>
+        <tr>
+          <td>By Holding Period</td>
+          <td><span class="tag red">HFT (&lt;1ms)</span> <span class="tag amber">Intraday</span> <span class="tag cyan">Swing (days)</span> <span class="tag green">Position (weeks+)</span></td>
+          <td>High-frequency algos hold positions for microseconds; position algos hold for weeks or months.</td>
+        </tr>
+        <tr>
+          <td>By Signal Type</td>
+          <td><span class="tag cyan">Technical</span> <span class="tag purple">Fundamental</span> <span class="tag green">Statistical</span> <span class="tag amber">ML / AI</span> <span class="tag orange">Sentiment</span></td>
+          <td>Where the edge comes from — price patterns, company financials, statistical relationships, predictive models, or text/news data.</td>
+        </tr>
+        <tr>
+          <td>By Asset Class</td>
+          <td><span class="tag green">Equities</span> <span class="tag cyan">Options</span> <span class="tag amber">Futures</span> <span class="tag purple">Forex</span> <span class="tag orange">Crypto</span> <span class="tag red">Fixed Income</span></td>
+          <td>Algorithms are often specialized for one asset class because microstructure, liquidity, and data availability differ dramatically.</td>
+        </tr>
+        <tr>
+          <td>By Execution Goal</td>
+          <td><span class="tag cyan">Alpha-seeking</span> <span class="tag amber">Execution (VWAP/TWAP)</span> <span class="tag green">Hedging</span></td>
+          <td>Alpha-seeking tries to profit from an edge; execution algorithms minimize market impact when filling large institutional orders.</td>
+        </tr>
+        <tr>
+          <td>By Model Type</td>
+          <td><span class="tag cyan">Rule-based</span> <span class="tag purple">Statistical</span> <span class="tag green">Machine Learning</span> <span class="tag amber">Hybrid</span></td>
+          <td>Rule-based uses explicit if/then logic; ML models discover patterns from data; hybrids combine both approaches.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════════════════
+     §4  HOW TO BUILD AN ALGORITHM (STEP BY STEP)
+══════════════════════════════════════════════════════════════════════ -->
+<div class="section" style="padding-top:0;">
+  <div class="section-header" style="margin-bottom:1rem;">
+    <div class="section-label">Construction</div>
+    <h2 style="font-size:1.35rem;">Building a Trading Algorithm — Step by Step</h2>
+  </div>
+
+  <div class="grid-2">
+    <!-- Phase 1 -->
+    <div class="info-card">
+      <div class="accent-bar" style="background:var(--cyan2);"></div>
+      <h3>Phase 1 — Research &amp; Hypothesis</h3>
+      <div class="step-list">
+        <div class="step-item">
+          <div class="step-num">1</div>
+          <div class="step-body">
+            <h4>Define the Edge</h4>
+            <p>State a specific market hypothesis: "High-probability ML signals predict next-day direction with &gt;65% accuracy." The edge must be grounded in a reason — behavioral bias, structural friction, or information advantage.</p>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-num">2</div>
+          <div class="step-body">
+            <h4>Select Universe &amp; Timeframe</h4>
+            <p>Choose which assets to trade (e.g. large-cap stocks, E-mini futures) and the timeframe (1-minute bars, daily bars). Match liquidity to your position size to avoid excessive slippage.</p>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-num">3</div>
+          <div class="step-body">
+            <h4>Identify Signal Features</h4>
+            <p>List candidate input features: RSI, MACD, ATR, Bollinger Bands, volume ratios, order-book imbalance, earnings surprise, news sentiment. More features are not always better — beware overfitting.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Phase 2 -->
+    <div class="info-card">
+      <div class="accent-bar" style="background:var(--purple2);"></div>
+      <h3>Phase 2 — Development &amp; Backtesting</h3>
+      <div class="step-list">
+        <div class="step-item">
+          <div class="step-num">4</div>
+          <div class="step-body">
+            <h4>Gather &amp; Clean Data</h4>
+            <p>Source OHLCV bars, corporate actions, dividend adjustments, and survivorship-bias-free data. Remove erroneous ticks, split-adjust prices, and align timestamps across assets.</p>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-num">5</div>
+          <div class="step-body">
+            <h4>Build the Signal Model</h4>
+            <p>For ML: engineer features → train/validate on walk-forward splits → evaluate precision/recall. For rule-based: code explicit conditions and test on out-of-sample data.</p>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-num">6</div>
+          <div class="step-body">
+            <h4>Backtest with Realistic Costs</h4>
+            <p>Include commission (e.g. $0.005/share), bid-ask spread slippage, and market-impact estimates. A strategy that looks great ignoring costs often loses money live.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Phase 3 -->
+    <div class="info-card">
+      <div class="accent-bar" style="background:var(--amber2);"></div>
+      <h3>Phase 3 — Risk Management</h3>
+      <div class="step-list">
+        <div class="step-item">
+          <div class="step-num">7</div>
+          <div class="step-body">
+            <h4>Position Sizing</h4>
+            <p>Use fixed-fraction (risk N% of capital per trade), Kelly Criterion (maximize log-growth), or volatility-scaled sizing (1/ATR). Never risk more than 2% of total capital on a single trade.</p>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-num">8</div>
+          <div class="step-body">
+            <h4>Stop-Loss &amp; Take-Profit Rules</h4>
+            <p>Set hard stops based on ATR multiples (e.g. 1.5×ATR below entry) or percentage drawdown (e.g. −1.5%). Define profit targets or use trailing stops to let winners run.</p>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-num">9</div>
+          <div class="step-body">
+            <h4>Portfolio-Level Controls</h4>
+            <p>Limit maximum open positions, maximum sector exposure, and daily loss limits. Shut down the bot if drawdown exceeds a threshold (circuit breaker).</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Phase 4 -->
+    <div class="info-card">
+      <div class="accent-bar" style="background:var(--green2);"></div>
+      <h3>Phase 4 — Deployment &amp; Monitoring</h3>
+      <div class="step-list">
+        <div class="step-item">
+          <div class="step-num">10</div>
+          <div class="step-body">
+            <h4>Paper Trading Validation</h4>
+            <p>Run the algorithm on live market data but with simulated orders for 30–90 days. Confirm that live performance matches backtest; look for data-feed anomalies or execution issues.</p>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-num">11</div>
+          <div class="step-body">
+            <h4>Go Live with Reduced Size</h4>
+            <p>Start with 10–25% of intended capital. Scale up only after observing consistent live performance matching paper results. Use Interactive Brokers or Tradier for order execution.</p>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-num">12</div>
+          <div class="step-body">
+            <h4>Continuous Monitoring &amp; Retraining</h4>
+            <p>Track Sharpe ratio, max drawdown, win rate, and expectancy daily. Retrain ML models periodically as market regimes change. Set alerts for unusual behavior (e.g. 3 consecutive losses).</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════════════════
+     §5  PROMINENT ALGORITHMS IN DETAIL
+══════════════════════════════════════════════════════════════════════ -->
+<div class="section" style="padding-top:0;">
+  <div class="section-header" style="margin-bottom:1rem;">
+    <div class="section-label">Industry Reference</div>
+    <h2 style="font-size:1.35rem;">Most Prominent Trading Algorithms Explained</h2>
+  </div>
+
+  <div class="grid-2">
+
+    <!-- VWAP -->
+    <div class="algo-detail">
+      <div class="algo-detail-hdr">
+        <div class="algo-icon-lg">📊</div>
+        <div>
+          <h3>VWAP — Volume-Weighted Average Price</h3>
+          <p>Execution algorithm used by institutions</p>
+        </div>
+      </div>
+      <div class="algo-detail-body">
+        <p>VWAP slices a large order into smaller child orders distributed throughout the day, proportional to expected volume at each time interval. The goal is to execute the full order at or better than the day's VWAP — used as a benchmark by fund managers.</p>
+        <div class="algo-kv">
+          <div class="algo-kv-row"><span class="kv-key">Type</span><span class="kv-val">Execution / Institutional</span></div>
+          <div class="algo-kv-row"><span class="kv-key">Holding period</span><span class="kv-val">Intraday (minutes to hours)</span></div>
+          <div class="algo-kv-row"><span class="kv-key">Signal</span><span class="kv-val">Historical volume profile per time-of-day</span></div>
+          <div class="algo-kv-row"><span class="kv-key">Used by</span><span class="kv-val">Pension funds, mutual funds, ETF rebalancers</span></div>
+          <div class="algo-kv-row"><span class="kv-key">Strengths</span><span class="kv-val">Minimizes market impact; transparent benchmark</span></div>
+          <div class="algo-kv-row"><span class="kv-key">Weaknesses</span><span class="kv-val">Does not adapt to price; ignores momentum</span></div>
+        </div>
+        <div class="algo-tags"><span class="tag cyan">Execution</span><span class="tag green">Equities</span><span class="tag amber">Intraday</span></div>
+      </div>
+    </div>
+
+    <!-- TWAP -->
+    <div class="algo-detail">
+      <div class="algo-detail-hdr">
+        <div class="algo-icon-lg">⏱️</div>
+        <div>
+          <h3>TWAP — Time-Weighted Average Price</h3>
+          <p>Execution algorithm with uniform time slicing</p>
+        </div>
+      </div>
+      <div class="algo-detail-body">
+        <p>TWAP divides a large order into equal-sized child orders placed at fixed time intervals regardless of volume. Simpler than VWAP, it is used when the trader wants predictable, steady execution without referencing volume curves.</p>
+        <div class="algo-kv">
+          <div class="algo-kv-row"><span class="kv-key">Type</span><span class="kv-val">Execution / Institutional</span></div>
+          <div class="algo-kv-row"><span class="kv-key">Holding period</span><span class="kv-val">Intraday</span></div>
+          <div class="algo-kv-row"><span class="kv-key">Signal</span><span class="kv-val">Clock-based — fixed intervals only</span></div>
+          <div class="algo-kv-row"><span class="kv-key">Used by</span><span class="kv-val">Index managers, systematic liquidators</span></div>
+          <div class="algo-kv-row"><span class="kv-key">Strengths</span><span class="kv-val">Simplicity; predictable; easy to audit</span></div>
+          <div class="algo-kv-row"><span class="kv-key">Weaknesses</span><span class="kv-val">Ignores volume; can be front-run easily</span></div>
+        </div>
+        <div class="algo-tags"><span class="tag cyan">Execution</span><span class="tag green">Equities</span><span class="tag amber">Intraday</span></div>
+      </div>
+    </div>
+
+    <!-- Trend Following / CTA -->
+    <div class="algo-detail">
+      <div class="algo-detail-hdr">
+        <div class="algo-icon-lg">📈</div>
+        <div>
+          <h3>Trend Following (CTA / Momentum)</h3>
+          <p>Buy strength, sell weakness across asset classes</p>
+        </div>
+      </div>
+      <div class="algo-detail-body">
+        <p>Trend-following algorithms (used by Commodity Trading Advisors) enter long when prices break above a moving average or recent high, and short when they break below. The bet is that strong trends persist longer than expected due to slow information diffusion and behavioral anchoring.</p>
+        <div class="algo-kv">
+          <div class="algo-kv-row"><span class="kv-key">Type</span><span class="kv-val">Alpha-seeking / Directional</span></div>
+          <div class="algo-kv-row"><span class="kv-key">Holding period</span><span class="kv-val">Days to months (medium-long term)</span></div>
+          <div class="algo-kv-row"><span class="kv-key">Signals</span><span class="kv-val">SMA crossover, Donchian channel, ATR breakout, RSI</span></div>
+          <div class="algo-kv-row"><span class="kv-key">Used by</span><span class="kv-val">Winton, Man AHL, Two Sigma, Millburn</span></div>
+          <div class="algo-kv-row"><span class="kv-key">Strengths</span><span class="kv-val">Profits in strong trends; diversifiable across assets</span></div>
+          <div class="algo-kv-row"><span class="kv-key">Weaknesses</span><span class="kv-val">Whipsaws in choppy/ranging markets; slow to react</span></div>
+        </div>
+        <div class="algo-tags"><span class="tag green">Alpha</span><span class="tag amber">Futures</span><span class="tag cyan">Forex</span><span class="tag purple">Multi-Asset</span></div>
+      </div>
+    </div>
+
+    <!-- Mean Reversion -->
+    <div class="algo-detail">
+      <div class="algo-detail-hdr">
+        <div class="algo-icon-lg">🔄</div>
+        <div>
+          <h3>Mean Reversion</h3>
+          <p>Prices that deviate too far tend to snap back</p>
+        </div>
+      </div>
+      <div class="algo-detail-body">
+        <p>Mean-reversion strategies buy when price falls significantly below its historical average (z-score &lt; −2) and sell when it rises far above. Based on the statistical tendency of prices, spreads, or ratios to revert to equilibrium over time.</p>
+        <div class="algo-kv">
+          <div class="algo-kv-row"><span class="kv-key">Type</span><span class="kv-val">Alpha-seeking / Counter-trend</span></div>
+          <div class="algo-kv-row"><span class="kv-key">Holding period</span><span class="kv-val">Minutes to days</span></div>
+          <div class="algo-kv-row"><span class="kv-key">Signals</span><span class="kv-val">Bollinger Bands, RSI overbought/oversold, z-score, deviation from VWAP</span></div>
+          <div class="algo-kv-row"><span class="kv-key">Used by</span><span class="kv-val">Renaissance Medallion, quantitative hedge funds</span></div>
+          <div class="algo-kv-row"><span class="kv-key">Strengths</span><span class="kv-val">High win rate in sideways markets; defined risk</span></div>
+          <div class="algo-kv-row"><span class="kv-key">Weaknesses</span><span class="kv-val">Catastrophic in strong trending markets (catching falling knives)</span></div>
+        </div>
+        <div class="algo-tags"><span class="tag green">Alpha</span><span class="tag cyan">Equities</span><span class="tag amber">Intraday</span></div>
+      </div>
+    </div>
+
+    <!-- Statistical Arbitrage / Pairs Trading -->
+    <div class="algo-detail">
+      <div class="algo-detail-hdr">
+        <div class="algo-icon-lg">⚖️</div>
+        <div>
+          <h3>Statistical Arbitrage &amp; Pairs Trading</h3>
+          <p>Exploit pricing divergence between correlated assets</p>
+        </div>
+      </div>
+      <div class="algo-detail-body">
+        <p>Pairs trading identifies two co-integrated securities (e.g. SPY/QQQ, Coke/Pepsi). When the price spread between them deviates beyond 2 standard deviations, the algo goes long the cheap one and short the expensive one — betting the spread will converge.</p>
+        <div class="algo-kv">
+          <div class="algo-kv-row"><span class="kv-key">Type</span><span class="kv-val">Statistical Arbitrage / Market-neutral</span></div>
+          <div class="algo-kv-row"><span class="kv-key">Holding period</span><span class="kv-val">Hours to days</span></div>
+          <div class="algo-kv-row"><span class="kv-key">Signals</span><span class="kv-val">Cointegration test (Engle-Granger), z-score of spread, half-life of reversion</span></div>
+          <div class="algo-kv-row"><span class="kv-key">Used by</span><span class="kv-val">DE Shaw, Citadel, Two Sigma</span></div>
+          <div class="algo-kv-row"><span class="kv-key">Strengths</span><span class="kv-val">Market-neutral; insulated from broad market moves</span></div>
+          <div class="algo-kv-row"><span class="kv-key">Weaknesses</span><span class="kv-val">Spread can diverge further (regime break); requires large capital</span></div>
+        </div>
+        <div class="algo-tags"><span class="tag purple">Stat Arb</span><span class="tag green">Market-Neutral</span><span class="tag cyan">Equities</span></div>
+      </div>
+    </div>
+
+    <!-- Market Making -->
+    <div class="algo-detail">
+      <div class="algo-detail-hdr">
+        <div class="algo-icon-lg">🏦</div>
+        <div>
+          <h3>Market Making</h3>
+          <p>Earn the bid-ask spread by always quoting both sides</p>
+        </div>
+      </div>
+      <div class="algo-detail-body">
+        <p>Market-making algorithms simultaneously post limit orders on both the bid and ask side of the order book. They earn the spread as compensation for providing liquidity. Risk is managed by dynamically adjusting quotes based on inventory level and volatility.</p>
+        <div class="algo-kv">
+          <div class="algo-kv-row"><span class="kv-key">Type</span><span class="kv-val">Liquidity provision / HFT</span></div>
+          <div class="algo-kv-row"><span class="kv-key">Holding period</span><span class="kv-val">Milliseconds to seconds</span></div>
+          <div class="algo-kv-row"><span class="kv-key">Signals</span><span class="kv-val">Order-book depth, inventory risk, volatility regime, adverse selection</span></div>
+          <div class="algo-kv-row"><span class="kv-key">Used by</span><span class="kv-val">Virtu Financial, Citadel Securities, IMC, Jane Street</span></div>
+          <div class="algo-kv-row"><span class="kv-key">Strengths</span><span class="kv-val">Very high Sharpe ratio; consistent income from spread</span></div>
+          <div class="algo-kv-row"><span class="kv-key">Weaknesses</span><span class="kv-val">Requires co-location; toxic flow risk; technologically intensive</span></div>
+        </div>
+        <div class="algo-tags"><span class="tag red">HFT</span><span class="tag amber">Equities</span><span class="tag cyan">Options</span><span class="tag orange">Crypto</span></div>
+      </div>
+    </div>
+
+    <!-- ML / AI Momentum -->
+    <div class="algo-detail">
+      <div class="algo-detail-hdr">
+        <div class="algo-icon-lg">🤖</div>
+        <div>
+          <h3>ML Momentum (This Dashboard)</h3>
+          <p>XGBoost + ExtraTrees ensemble directional signal</p>
+        </div>
+      </div>
+      <div class="algo-detail-body">
+        <p>The algorithm in this dashboard trains a gradient-boosted model (XGBoost) and an ExtraTrees classifier on engineered features: RSI, MACD, ATR, Bollinger Band width, volume ratios, and trend indicators. The ensemble vote gives a probability of upward or downward movement for the next period.</p>
+        <div class="algo-kv">
+          <div class="algo-kv-row"><span class="kv-key">Type</span><span class="kv-val">ML / Alpha-seeking / Directional</span></div>
+          <div class="algo-kv-row"><span class="kv-key">Holding period</span><span class="kv-val">Intraday to multi-day</span></div>
+          <div class="algo-kv-row"><span class="kv-key">Features</span><span class="kv-val">RSI, MACD, ATR, Bollinger %, Volume ratio, Trend</span></div>
+          <div class="algo-kv-row"><span class="kv-key">Entry</span><span class="kv-val">prob_up ≥ 65% → LONG; prob_down ≥ 65% → SHORT</span></div>
+          <div class="algo-kv-row"><span class="kv-key">Exit</span><span class="kv-val">Stop −1.5%, Target +3%, or signal reversal</span></div>
+          <div class="algo-kv-row"><span class="kv-key">Validation</span><span class="kv-val">5-fold walk-forward cross-validation; CV accuracy tracked</span></div>
+        </div>
+        <div class="algo-tags"><span class="tag green">ML / AI</span><span class="tag cyan">Equities</span><span class="tag amber">Futures</span><span class="tag purple">Ensemble</span></div>
+      </div>
+    </div>
+
+    <!-- Options Gamma Scalping -->
+    <div class="algo-detail">
+      <div class="algo-detail-hdr">
+        <div class="algo-icon-lg">🎯</div>
+        <div>
+          <h3>Options Flow &amp; Gamma Scalping</h3>
+          <p>Trade with or against large options positioning</p>
+        </div>
+      </div>
+      <div class="algo-detail-body">
+        <p>Options flow algorithms monitor unusual call/put volume, gamma exposure at each strike, and dealer hedging flows. Gamma scalping continuously delta-hedges an options position to profit from realized volatility exceeding implied volatility (long gamma) or the reverse (short gamma / theta decay).</p>
+        <div class="algo-kv">
+          <div class="algo-kv-row"><span class="kv-key">Type</span><span class="kv-val">Options / Volatility / Directional</span></div>
+          <div class="algo-kv-row"><span class="kv-key">Holding period</span><span class="kv-val">0DTE to 21 DTE</span></div>
+          <div class="algo-kv-row"><span class="kv-key">Signals</span><span class="kv-val">Gamma wall, put/call ratio, unusual flow, IV rank, dealer GEX</span></div>
+          <div class="algo-kv-row"><span class="kv-key">Used by</span><span class="kv-val">Volatility-focused hedge funds, prop desks</span></div>
+          <div class="algo-kv-row"><span class="kv-key">Strengths</span><span class="kv-val">Defined-risk strategies; non-linear payoffs; vol edge</span></div>
+          <div class="algo-kv-row"><span class="kv-key">Weaknesses</span><span class="kv-val">Requires options chain data; complex Greeks management</span></div>
+        </div>
+        <div class="algo-tags"><span class="tag cyan">Options</span><span class="tag purple">Volatility</span><span class="tag amber">GEX / Flow</span></div>
+      </div>
+    </div>
+
+  </div><!-- end grid-2 -->
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════════════════
+     §6  PREDICTIVE MODELS IN TRADING ALGORITHMS
+══════════════════════════════════════════════════════════════════════ -->
+<div class="section" style="padding-top:0;">
+  <div class="section-header" style="margin-bottom:1rem;">
+    <div class="section-label">Predictive Intelligence</div>
+    <h2 style="font-size:1.35rem;">Predictive Models Used in Trading Algorithms</h2>
+    <p style="color:var(--muted);max-width:700px;">
+      Every trading algorithm is powered by one or more predictive models that generate signals from data.
+      Below is a complete reference of all major model families — how each is developed, validated,
+      and deployed, and which firms and strategies rely on them most.
+    </p>
+  </div>
+
+  <!-- ── Model family overview table ──────────────────────────────────── -->
+  <div class="info-card" style="margin-bottom:1.4rem;overflow-x:auto;">
+    <table class="class-table">
+      <thead>
+        <tr>
+          <th>Model Family</th><th>Task</th><th>Typical Output</th><th>Speed</th><th>Interpretability</th><th>Who Uses It</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Linear / Logistic Regression</td>
+          <td>Direction, price level</td>
+          <td>Probability, price estimate</td>
+          <td><span class="tag green">Fast</span></td>
+          <td><span class="tag green">High</span></td>
+          <td>Quant funds, retail algo traders</td>
+        </tr>
+        <tr>
+          <td>Gradient Boosting (XGBoost / LightGBM)</td>
+          <td>Classification &amp; regression</td>
+          <td>Direction probability, return forecast</td>
+          <td><span class="tag cyan">Medium</span></td>
+          <td><span class="tag cyan">Medium</span></td>
+          <td>Two Sigma, Citadel, Renaissance</td>
+        </tr>
+        <tr>
+          <td>Random Forest / ExtraTrees</td>
+          <td>Classification &amp; feature importance</td>
+          <td>Signal vote, confidence</td>
+          <td><span class="tag cyan">Medium</span></td>
+          <td><span class="tag cyan">Medium</span></td>
+          <td>Hedge funds, prop desks, this dashboard</td>
+        </tr>
+        <tr>
+          <td>LSTM / GRU (Deep Learning)</td>
+          <td>Sequence prediction</td>
+          <td>Price forecast, regime label</td>
+          <td><span class="tag amber">Slow</span></td>
+          <td><span class="tag red">Low</span></td>
+          <td>DE Shaw, WorldQuant, Voleon</td>
+        </tr>
+        <tr>
+          <td>Transformer / Attention</td>
+          <td>Multi-step forecasting, NLP</td>
+          <td>Return distribution, sentiment</td>
+          <td><span class="tag amber">Slow</span></td>
+          <td><span class="tag red">Low</span></td>
+          <td>Large quant funds, AI-native funds</td>
+        </tr>
+        <tr>
+          <td>ARIMA / GARCH</td>
+          <td>Time-series mean &amp; volatility</td>
+          <td>Price forecast, vol forecast</td>
+          <td><span class="tag green">Fast</span></td>
+          <td><span class="tag green">High</span></td>
+          <td>Macro funds, vol desks, banks</td>
+        </tr>
+        <tr>
+          <td>Hidden Markov Model (HMM)</td>
+          <td>Regime detection</td>
+          <td>Bull/Bear/Neutral state</td>
+          <td><span class="tag green">Fast</span></td>
+          <td><span class="tag cyan">Medium</span></td>
+          <td>Systematic macro, risk overlays</td>
+        </tr>
+        <tr>
+          <td>Kalman Filter</td>
+          <td>Dynamic state estimation</td>
+          <td>Hedge ratio, spread mean</td>
+          <td><span class="tag green">Fast</span></td>
+          <td><span class="tag cyan">Medium</span></td>
+          <td>Pairs trading, stat arb desks</td>
+        </tr>
+        <tr>
+          <td>Gaussian Process</td>
+          <td>Uncertainty-aware regression</td>
+          <td>Price forecast + confidence interval</td>
+          <td><span class="tag red">Very Slow</span></td>
+          <td><span class="tag cyan">Medium</span></td>
+          <td>Bayesian quant researchers</td>
+        </tr>
+        <tr>
+          <td>Reinforcement Learning (DQN / PPO)</td>
+          <td>Sequential decision-making</td>
+          <td>Action: Buy / Hold / Sell</td>
+          <td><span class="tag amber">Slow</span></td>
+          <td><span class="tag red">Low</span></td>
+          <td>AI-native funds, research labs</td>
+        </tr>
+        <tr>
+          <td>NLP / FinBERT (Transformers)</td>
+          <td>Sentiment &amp; news analysis</td>
+          <td>Positive / Negative / Neutral score</td>
+          <td><span class="tag amber">Slow</span></td>
+          <td><span class="tag amber">Low-Med</span></td>
+          <td>Bloomberg, Two Sigma, AI hedge funds</td>
+        </tr>
+        <tr>
+          <td>Copula / Cointegration</td>
+          <td>Dependency structure modeling</td>
+          <td>Spread z-score, pair entry signal</td>
+          <td><span class="tag green">Fast</span></td>
+          <td><span class="tag green">High</span></td>
+          <td>Stat arb desks, DE Shaw</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ── Individual model deep-dives ──────────────────────────────────── -->
+  <div class="grid-2">
+
+    <!-- LINEAR REGRESSION -->
+    <div class="algo-detail">
+      <div class="algo-detail-hdr">
+        <div class="algo-icon-lg">📐</div>
+        <div>
+          <h3>Linear &amp; Logistic Regression</h3>
+          <p>The foundation of quantitative finance</p>
+        </div>
+      </div>
+      <div class="algo-detail-body">
+        <p><strong style="color:var(--text);">Linear regression</strong> predicts a continuous output (e.g. next-day return) as a weighted sum of input features. <strong style="color:var(--text);">Logistic regression</strong> predicts the probability of a binary outcome (Up or Down) using the sigmoid function — making it directly usable as a trading signal.</p>
+        <p><strong style="color:var(--text);">How it is developed:</strong> Features (RSI, momentum, macro indicators) are assembled into a matrix X. The model finds coefficients via ordinary least squares (linear) or maximum-likelihood gradient descent (logistic). Regularization variants — Ridge (L2) and Lasso (L1) — prevent overfitting by penalizing large coefficients. Walk-forward validation tests generalization.</p>
+        <div class="algo-kv">
+          <div class="algo-kv-row"><span class="kv-key">Inputs</span><span class="kv-val">Technical indicators, macro factors, lagged returns</span></div>
+          <div class="algo-kv-row"><span class="kv-key">Output</span><span class="kv-val">Predicted return (linear) or Up probability (logistic)</span></div>
+          <div class="algo-kv-row"><span class="kv-key">Training</span><span class="kv-val">OLS / SGD; regularization via Ridge or Lasso; cross-validation</span></div>
+          <div class="algo-kv-row"><span class="kv-key">Strengths</span><span class="kv-val">Interpretable; fast; stable; low data requirements</span></div>
+          <div class="algo-kv-row"><span class="kv-key">Weaknesses</span><span class="kv-val">Assumes linearity; misses complex non-linear patterns</span></div>
+          <div class="algo-kv-row"><span class="kv-key">Used by</span><span class="kv-val">Factor-investing quant funds, academic researchers, retail algo traders</span></div>
+        </div>
+        <div class="algo-tags"><span class="tag green">Interpretable</span><span class="tag cyan">Low Data</span><span class="tag green">Fast Inference</span></div>
+      </div>
+    </div>
+
+    <!-- GRADIENT BOOSTING -->
+    <div class="algo-detail">
+      <div class="algo-detail-hdr">
+        <div class="algo-icon-lg">🚀</div>
+        <div>
+          <h3>Gradient Boosting — XGBoost / LightGBM / CatBoost</h3>
+          <p>The most widely used ML model in quantitative trading</p>
+        </div>
+      </div>
+      <div class="algo-detail-body">
+        <p>Gradient boosting builds an ensemble of weak decision trees sequentially — each new tree corrects the errors of the previous ones. XGBoost (Extreme Gradient Boosting) adds L1/L2 regularization, parallel tree construction, and missing-value handling, making it exceptionally powerful for tabular financial data.</p>
+        <p><strong style="color:var(--text);">How it is developed:</strong> Features are engineered (technical indicators, volatility measures, volume ratios). The dataset is split into time-based train/validation folds (never random shuffle — this causes look-ahead bias). Hyperparameters (depth, learning rate, subsample) are tuned via Bayesian optimization. Feature importance scores guide feature selection. This is the model used in the ML Trading Dashboard.</p>
+        <div class="algo-kv">
+          <div class="algo-kv-row"><span class="kv-key">Inputs</span><span class="kv-val">RSI, MACD, ATR, Bollinger %, volume ratio, trend features</span></div>
+          <div class="algo-kv-row"><span class="kv-key">Output</span><span class="kv-val">Probability of up/down move; direction signal</span></div>
+          <div class="algo-kv-row"><span class="kv-key">Training</span><span class="kv-val">Walk-forward CV; early stopping; Optuna hyperparameter search</span></div>
+          <div class="algo-kv-row"><span class="kv-key">Strengths</span><span class="kv-val">Handles non-linearity; robust to outliers; feature importance</span></div>
+          <div class="algo-kv-row"><span class="kv-key">Weaknesses</span><span class="kv-val">Can overfit with too many features; requires careful CV setup</span></div>
+          <div class="algo-kv-row"><span class="kv-key">Used by</span><span class="kv-val">Two Sigma, Citadel, Renaissance, this ML Trading Dashboard</span></div>
+        </div>
+        <div class="algo-tags"><span class="tag green">★ Used Here</span><span class="tag cyan">Non-linear</span><span class="tag purple">Ensemble</span><span class="tag amber">Feature Importance</span></div>
+      </div>
+    </div>
+
+    <!-- RANDOM FOREST / EXTRATREES -->
+    <div class="algo-detail">
+      <div class="algo-detail-hdr">
+        <div class="algo-icon-lg">🌲</div>
+        <div>
+          <h3>Random Forest &amp; ExtraTrees</h3>
+          <p>Parallel ensemble of randomized decision trees</p>
+        </div>
+      </div>
+      <div class="algo-detail-body">
+        <p><strong style="color:var(--text);">Random Forest</strong> trains hundreds of decision trees on random subsets of data and features, then aggregates their votes. <strong style="color:var(--text);">ExtraTrees</strong> (Extremely Randomized Trees) adds further randomization by also randomizing split thresholds — this reduces variance at the cost of slightly higher bias, often producing better out-of-sample performance on noisy financial data.</p>
+        <p><strong style="color:var(--text);">How it is developed:</strong> A large feature matrix is constructed. Trees are grown on bootstrapped samples. At each split, a random subset of features is considered. The forest votes on direction (classification) or averages return predictions (regression). Combined with XGBoost in an ensemble vote, this forms the core of the ML Trading Dashboard signal.</p>
+        <div class="algo-kv">
+          <div class="algo-kv-row"><span class="kv-key">Inputs</span><span class="kv-val">Same technical feature set as XGBoost</span></div>
+          <div class="algo-kv-row"><span class="kv-key">Output</span><span class="kv-val">Class probability (Up/Down) via vote aggregation</span></div>
+          <div class="algo-kv-row"><span class="kv-key">Training</span><span class="kv-val">Bagging; n_estimators=200–500; max_features=sqrt(n)</span></div>
+          <div class="algo-kv-row"><span class="kv-key">Strengths</span><span class="kv-val">Naturally resistant to overfitting; parallelizable; no scaling needed</span></div>
+          <div class="algo-kv-row"><span class="kv-key">Weaknesses</span><span class="kv-val">Large memory footprint; slower than single trees; less interpretable</span></div>
+          <div class="algo-kv-row"><span class="kv-key">Used by</span><span class="kv-val">Prop desks, systematic hedge funds, this ML Trading Dashboard</span></div>
+        </div>
+        <div class="algo-tags"><span class="tag green">★ Used Here</span><span class="tag purple">Bagging</span><span class="tag cyan">Robust</span><span class="tag green">No Scaling</span></div>
+      </div>
+    </div>
+
+    <!-- LSTM / GRU -->
+    <div class="algo-detail">
+      <div class="algo-detail-hdr">
+        <div class="algo-icon-lg">🧠</div>
+        <div>
+          <h3>LSTM &amp; GRU — Recurrent Neural Networks</h3>
+          <p>Deep learning models that remember sequences</p>
+        </div>
+      </div>
+      <div class="algo-detail-body">
+        <p><strong style="color:var(--text);">Long Short-Term Memory (LSTM)</strong> networks use gated memory cells to capture long-range dependencies in sequential data — making them well-suited for price time series where patterns span many bars. The <strong style="color:var(--text);">Gated Recurrent Unit (GRU)</strong> is a simplified version that trains faster with similar accuracy.</p>
+        <p><strong style="color:var(--text);">How it is developed:</strong> Historical OHLCV and indicator data is formatted into sliding windows (e.g. 60 bars of input → predict next bar direction). The network is trained with backpropagation through time (BPTT) using Adam optimizer. Dropout regularization prevents overfitting. GPU training (CUDA) is standard. Walk-forward validation is mandatory to avoid temporal leakage.</p>
+        <div class="algo-kv">
+          <div class="algo-kv-row"><span class="kv-key">Inputs</span><span class="kv-val">Sequential OHLCV bars + indicators (sliding window)</span></div>
+          <div class="algo-kv-row"><span class="kv-key">Output</span><span class="kv-val">Next-bar direction probability or multi-step price forecast</span></div>
+          <div class="algo-kv-row"><span class="kv-key">Training</span><span class="kv-val">BPTT; Adam optimizer; dropout; early stopping; GPU required</span></div>
+          <div class="algo-kv-row"><span class="kv-key">Strengths</span><span class="kv-val">Captures temporal patterns; handles variable-length sequences</span></div>
+          <div class="algo-kv-row"><span class="kv-key">Weaknesses</span><span class="kv-val">Data hungry; slow to train; hard to interpret; prone to overfitting</span></div>
+          <div class="algo-kv-row"><span class="kv-key">Used by</span><span class="kv-val">DE Shaw, Voleon Group, WorldQuant, large quant funds</span></div>
+        </div>
+        <div class="algo-tags"><span class="tag purple">Deep Learning</span><span class="tag amber">GPU Required</span><span class="tag red">Data Hungry</span><span class="tag cyan">Sequence</span></div>
+      </div>
+    </div>
+
+    <!-- TRANSFORMER -->
+    <div class="algo-detail">
+      <div class="algo-detail-hdr">
+        <div class="algo-icon-lg">⚡</div>
+        <div>
+          <h3>Transformer &amp; Attention Models</h3>
+          <p>State-of-the-art sequence modeling from AI research</p>
+        </div>
+      </div>
+      <div class="algo-detail-body">
+        <p>Originally developed for natural language processing (GPT, BERT), <strong style="color:var(--text);">Transformer models</strong> use self-attention to weigh the relevance of each time step against all others simultaneously — overcoming the recency bias of LSTMs. Financial transformers like <strong style="color:var(--text);">Temporal Fusion Transformer (TFT)</strong> and <strong style="color:var(--text);">PatchTST</strong> have achieved state-of-the-art results on multi-step price forecasting benchmarks.</p>
+        <p><strong style="color:var(--text);">How it is developed:</strong> Time-series patches or bars are embedded as tokens. Multi-head self-attention learns which past time steps are most predictive of the future. Pre-trained foundation models (e.g. TimeGPT) can be fine-tuned on specific assets with minimal data. Training requires significant GPU resources and careful hyperparameter tuning.</p>
+        <div class="algo-kv">
+          <div class="algo-kv-row"><span class="kv-key">Inputs</span><span class="kv-val">Tokenized time-series patches, cross-asset features, news embeddings</span></div>
+          <div class="algo-kv-row"><span class="kv-key">Output</span><span class="kv-val">Multi-step return distribution or directional probability</span></div>
+          <div class="algo-kv-row"><span class="kv-key">Training</span><span class="kv-val">Self-supervised pre-training; fine-tuning; A100/H100 GPU clusters</span></div>
+          <div class="algo-kv-row"><span class="kv-key">Strengths</span><span class="kv-val">Long-range dependencies; parallelizable; foundation model transfer</span></div>
+          <div class="algo-kv-row"><span class="kv-key">Weaknesses</span><span class="kv-val">Extremely data and compute intensive; opaque; hard to backtest</span></div>
+          <div class="algo-kv-row"><span class="kv-key">Used by</span><span class="kv-val">AI-native funds (Coatue, Tiger Global tech stack), Bloomberg AI</span></div>
+        </div>
+        <div class="algo-tags"><span class="tag purple">Foundation Model</span><span class="tag red">GPU Cluster</span><span class="tag cyan">Attention</span><span class="tag amber">Cutting-Edge</span></div>
+      </div>
+    </div>
+
+    <!-- ARIMA / GARCH -->
+    <div class="algo-detail">
+      <div class="algo-detail-hdr">
+        <div class="algo-icon-lg">📉</div>
+        <div>
+          <h3>ARIMA &amp; GARCH — Classical Time-Series Models</h3>
+          <p>Statistically rigorous mean and volatility forecasting</p>
+        </div>
+      </div>
+      <div class="algo-detail-body">
+        <p><strong style="color:var(--text);">ARIMA</strong> (AutoRegressive Integrated Moving Average) models the autocorrelation structure of a stationary time series to produce short-term price forecasts. <strong style="color:var(--text);">GARCH</strong> (Generalized AutoRegressive Conditional Heteroskedasticity) models the clustering of volatility — a defining feature of financial returns — producing dynamic volatility forecasts used in options pricing and risk management.</p>
+        <p><strong style="color:var(--text);">How it is developed:</strong> The series is stationarized (differenced). ACF/PACF plots identify ARIMA parameters (p, d, q). GARCH parameters (p, q) are fit via maximum likelihood. Both models are validated via AIC/BIC information criteria and Ljung-Box tests for residual autocorrelation. Rolling 1-step-ahead forecasts evaluate predictive accuracy.</p>
+        <div class="algo-kv">
+          <div class="algo-kv-row"><span class="kv-key">ARIMA output</span><span class="kv-val">Short-term price/return forecast with confidence intervals</span></div>
+          <div class="algo-kv-row"><span class="kv-key">GARCH output</span><span class="kv-val">Next-period volatility estimate; conditional variance</span></div>
+          <div class="algo-kv-row"><span class="kv-key">Training</span><span class="kv-val">Maximum likelihood estimation; AIC/BIC model selection</span></div>
+          <div class="algo-kv-row"><span class="kv-key">Strengths</span><span class="kv-val">Statistically rigorous; interpretable; proven in academic literature</span></div>
+          <div class="algo-kv-row"><span class="kv-key">Weaknesses</span><span class="kv-val">Assumes linear relationships; poor at long-horizon forecasts</span></div>
+          <div class="algo-kv-row"><span class="kv-key">Used by</span><span class="kv-val">Investment banks, macro funds, risk management desks, regulators</span></div>
+        </div>
+        <div class="algo-tags"><span class="tag green">Rigorous</span><span class="tag cyan">Vol Modeling</span><span class="tag green">Fast</span><span class="tag amber">Risk Mgmt</span></div>
+      </div>
+    </div>
+
+    <!-- HIDDEN MARKOV MODEL -->
+    <div class="algo-detail">
+      <div class="algo-detail-hdr">
+        <div class="algo-icon-lg">🔍</div>
+        <div>
+          <h3>Hidden Markov Model (HMM)</h3>
+          <p>Detecting hidden market regimes from observable prices</p>
+        </div>
+      </div>
+      <div class="algo-detail-body">
+        <p>A <strong style="color:var(--text);">Hidden Markov Model</strong> assumes the market switches between a small number of unobservable regimes (e.g. Bull, Bear, Sideways) that drive observed returns. At each step, the current hidden regime determines the probability distribution of the observed return. The Viterbi algorithm decodes the most likely regime sequence from price history.</p>
+        <p><strong style="color:var(--text);">How it is developed:</strong> The number of hidden states (typically 2–4) is chosen via BIC. Model parameters (transition probabilities, emission distributions) are estimated with the Baum-Welch algorithm (a form of Expectation-Maximization). Online regime classification updates in real time as new bars arrive. Strategies switch parameters (position size, stop width) based on the active regime.</p>
+        <div class="algo-kv">
+          <div class="algo-kv-row"><span class="kv-key">Inputs</span><span class="kv-val">Log returns, volatility, volume — observable market features</span></div>
+          <div class="algo-kv-row"><span class="kv-key">Output</span><span class="kv-val">Hidden state label (e.g. Bull=1, Bear=2, Chop=3) + probability</span></div>
+          <div class="algo-kv-row"><span class="kv-key">Training</span><span class="kv-val">Baum-Welch EM; BIC for state count; hmmlearn Python library</span></div>
+          <div class="algo-kv-row"><span class="kv-key">Strengths</span><span class="kv-val">Probabilistic regime labels; dynamic transition probabilities</span></div>
+          <div class="algo-kv-row"><span class="kv-key">Weaknesses</span><span class="kv-val">State count is subjective; regimes can shift unpredictably</span></div>
+          <div class="algo-kv-row"><span class="kv-key">Used by</span><span class="kv-val">Systematic macro funds, risk overlays, adaptive strategy systems</span></div>
+        </div>
+        <div class="algo-tags"><span class="tag purple">Regime Detection</span><span class="tag cyan">Probabilistic</span><span class="tag green">Adaptive</span></div>
+      </div>
+    </div>
+
+    <!-- KALMAN FILTER -->
+    <div class="algo-detail">
+      <div class="algo-detail-hdr">
+        <div class="algo-icon-lg">🛰️</div>
+        <div>
+          <h3>Kalman Filter</h3>
+          <p>Optimal dynamic state estimation for noisy data</p>
+        </div>
+      </div>
+      <div class="algo-detail-body">
+        <p>Originally developed for NASA's Apollo guidance computer, the <strong style="color:var(--text);">Kalman Filter</strong> is a recursive Bayesian algorithm that estimates a hidden state (e.g. the "true" fair price, or the time-varying hedge ratio between two assets) from noisy observations. It continuously updates its estimate as new data arrives, balancing model prediction against new measurement.</p>
+        <p><strong style="color:var(--text);">How it is developed:</strong> A state-space model is defined: a transition matrix (how the state evolves) and an observation matrix (how the state maps to prices). Process noise (Q) and measurement noise (R) covariance matrices are calibrated to the asset. The filter alternates between a <em>predict</em> step and an <em>update</em> step, producing the optimal Bayesian estimate at each bar. Used in pairs trading to track the dynamic hedge ratio and spread mean.</p>
+        <div class="algo-kv">
+          <div class="algo-kv-row"><span class="kv-key">Inputs</span><span class="kv-val">Sequential price observations, model parameters (Q, R matrices)</span></div>
+          <div class="algo-kv-row"><span class="kv-key">Output</span><span class="kv-val">Time-varying hedge ratio, spread mean, state estimate + uncertainty</span></div>
+          <div class="algo-kv-row"><span class="kv-key">Training</span><span class="kv-val">State-space parameter calibration; EM algorithm for Q/R tuning</span></div>
+          <div class="algo-kv-row"><span class="kv-key">Strengths</span><span class="kv-val">Adapts dynamically; optimal under Gaussian noise; real-time capable</span></div>
+          <div class="algo-kv-row"><span class="kv-key">Weaknesses</span><span class="kv-val">Assumes linearity and Gaussian noise; parameter-sensitive</span></div>
+          <div class="algo-kv-row"><span class="kv-key">Used by</span><span class="kv-val">Pairs trading desks, stat arb, systematic macro, DE Shaw</span></div>
+        </div>
+        <div class="algo-tags"><span class="tag cyan">Adaptive</span><span class="tag purple">Bayesian</span><span class="tag green">Real-time</span><span class="tag amber">Pairs Trading</span></div>
+      </div>
+    </div>
+
+    <!-- REINFORCEMENT LEARNING -->
+    <div class="algo-detail">
+      <div class="algo-detail-hdr">
+        <div class="algo-icon-lg">🎮</div>
+        <div>
+          <h3>Reinforcement Learning — DQN, PPO, SAC</h3>
+          <p>Teaching an agent to trade by trial and reward</p>
+        </div>
+      </div>
+      <div class="algo-detail-body">
+        <p>In <strong style="color:var(--text);">Reinforcement Learning (RL)</strong>, a trading agent learns by interacting with a simulated market environment. At each step, the agent observes market state, takes an action (Buy/Hold/Sell), receives a reward (P&L, Sharpe ratio), and updates its policy. Over millions of simulated episodes, the agent discovers strategies that maximize cumulative reward without being given explicit trading rules.</p>
+        <p><strong style="color:var(--text);">How it is developed:</strong> A custom OpenAI Gym-compatible trading environment is built using historical data. The agent architecture is defined — <strong style="color:var(--text);">DQN</strong> (Deep Q-Network) for discrete actions, <strong style="color:var(--text);">PPO</strong> (Proximal Policy Optimization) or <strong style="color:var(--text);">SAC</strong> (Soft Actor-Critic) for continuous position sizing. The reward function is critical: Sharpe ratio, risk-adjusted return, or drawdown-penalized P&L. Training runs for millions of steps using GPU-accelerated frameworks (Stable-Baselines3, RLlib).</p>
+        <div class="algo-kv">
+          <div class="algo-kv-row"><span class="kv-key">Inputs</span><span class="kv-val">Market state: prices, indicators, portfolio position, account balance</span></div>
+          <div class="algo-kv-row"><span class="kv-key">Output</span><span class="kv-val">Discrete action (Buy/Hold/Sell) or continuous position size</span></div>
+          <div class="algo-kv-row"><span class="kv-key">Training</span><span class="kv-val">Simulated market environment; PPO/DQN policy gradient; GPU required</span></div>
+          <div class="algo-kv-row"><span class="kv-key">Reward</span><span class="kv-val">Sharpe ratio, risk-adjusted P&L, drawdown penalty</span></div>
+          <div class="algo-kv-row"><span class="kv-key">Strengths</span><span class="kv-val">No explicit rules needed; discovers novel strategies; end-to-end</span></div>
+          <div class="algo-kv-row"><span class="kv-key">Weaknesses</span><span class="kv-val">Sample inefficient; hard to debug; sim-to-real gap; overfit risk</span></div>
+          <div class="algo-kv-row"><span class="kv-key">Used by</span><span class="kv-val">JPMorgan AI research, academic quant labs, AI-native startups</span></div>
+        </div>
+        <div class="algo-tags"><span class="tag purple">RL Agent</span><span class="tag red">GPU Required</span><span class="tag amber">No Rules</span><span class="tag cyan">End-to-End</span></div>
+      </div>
+    </div>
+
+    <!-- NLP / FINBERT -->
+    <div class="algo-detail">
+      <div class="algo-detail-hdr">
+        <div class="algo-icon-lg">📰</div>
+        <div>
+          <h3>NLP &amp; FinBERT — News Sentiment Models</h3>
+          <p>Extracting alpha from text data</p>
+        </div>
+      </div>
+      <div class="algo-detail-body">
+        <p><strong style="color:var(--text);">Natural Language Processing (NLP)</strong> models extract trading signals from unstructured text: earnings call transcripts, SEC filings, news headlines, analyst reports, and social media. <strong style="color:var(--text);">FinBERT</strong> is a BERT-based transformer pre-trained on financial text that classifies sentiment as Positive, Negative, or Neutral with high accuracy — producing real-time signals as news breaks.</p>
+        <p><strong style="color:var(--text);">How it is developed:</strong> A fine-tuned FinBERT model is loaded. News headlines or full articles are tokenized and fed through the transformer. The output sentiment score is aggregated across sources and time-decayed. The resulting sentiment signal is combined with price-based signals (ensemble) to generate trade recommendations. Real-time ingestion uses news APIs (Finnhub, Benzinga, Reuters). Event studies validate the signal's predictive power before deployment.</p>
+        <div class="algo-kv">
+          <div class="algo-kv-row"><span class="kv-key">Inputs</span><span class="kv-val">News headlines, earnings transcripts, SEC filings, social media text</span></div>
+          <div class="algo-kv-row"><span class="kv-key">Output</span><span class="kv-val">Sentiment score (−1 to +1); event flag (earnings beat/miss)</span></div>
+          <div class="algo-kv-row"><span class="kv-key">Training</span><span class="kv-val">FinBERT pre-trained; fine-tune on labeled financial corpus; Python HuggingFace</span></div>
+          <div class="algo-kv-row"><span class="kv-key">Strengths</span><span class="kv-val">Unstructured alpha; fast reaction to news; complements price signals</span></div>
+          <div class="algo-kv-row"><span class="kv-key">Weaknesses</span><span class="kv-val">Latency-sensitive; news API costs; sarcasm/irony challenges</span></div>
+          <div class="algo-kv-row"><span class="kv-key">Used by</span><span class="kv-val">Bloomberg Intelligence, Two Sigma, Man AHL, event-driven hedge funds</span></div>
+        </div>
+        <div class="algo-tags"><span class="tag purple">NLP</span><span class="tag cyan">FinBERT</span><span class="tag amber">Alternative Data</span><span class="tag green">Real-time</span></div>
+      </div>
+    </div>
+
+    <!-- GAUSSIAN PROCESS -->
+    <div class="algo-detail">
+      <div class="algo-detail-hdr">
+        <div class="algo-icon-lg">🔔</div>
+        <div>
+          <h3>Gaussian Process Regression</h3>
+          <p>Probabilistic forecasting with calibrated uncertainty</p>
+        </div>
+      </div>
+      <div class="algo-detail-body">
+        <p>A <strong style="color:var(--text);">Gaussian Process (GP)</strong> is a non-parametric Bayesian model that defines a probability distribution over functions. Rather than predicting a single value, it outputs a full predictive distribution — a mean forecast plus a confidence interval. This makes it uniquely valuable for trading: it not only predicts direction but quantifies how uncertain the prediction is, enabling risk-proportional position sizing.</p>
+        <p><strong style="color:var(--text);">How it is developed:</strong> A kernel function (e.g. RBF, Matérn) encodes assumptions about the smoothness and periodicity of the signal. The GP is fitted by maximizing the log marginal likelihood over the training data. Predictions at new input points come with posterior mean and variance. The main limitation is O(n³) computational complexity, making it impractical for large datasets without sparse approximations (inducing points, variational inference).</p>
+        <div class="algo-kv">
+          <div class="algo-kv-row"><span class="kv-key">Inputs</span><span class="kv-val">Technical features or raw prices (small dataset — &lt;10,000 points)</span></div>
+          <div class="algo-kv-row"><span class="kv-key">Output</span><span class="kv-val">Return forecast + full predictive uncertainty interval</span></div>
+          <div class="algo-kv-row"><span class="kv-key">Training</span><span class="kv-val">Marginal likelihood maximization; kernel selection; GPy / GPyTorch</span></div>
+          <div class="algo-kv-row"><span class="kv-key">Strengths</span><span class="kv-val">Calibrated uncertainty; flexible; works with small data</span></div>
+          <div class="algo-kv-row"><span class="kv-key">Weaknesses</span><span class="kv-val">O(n³) complexity; slow on large datasets; kernel choice is subjective</span></div>
+          <div class="algo-kv-row"><span class="kv-key">Used by</span><span class="kv-val">Bayesian quant researchers, academic groups, small systematic funds</span></div>
+        </div>
+        <div class="algo-tags"><span class="tag purple">Bayesian</span><span class="tag cyan">Uncertainty</span><span class="tag amber">Small Data</span><span class="tag green">Calibrated</span></div>
+      </div>
+    </div>
+
+    <!-- COPULA / COINTEGRATION -->
+    <div class="algo-detail">
+      <div class="algo-detail-hdr">
+        <div class="algo-icon-lg">🔗</div>
+        <div>
+          <h3>Copulas &amp; Cointegration Models</h3>
+          <p>Modeling dependency structure between assets</p>
+        </div>
+      </div>
+      <div class="algo-detail-body">
+        <p><strong style="color:var(--text);">Cointegration</strong> tests whether two non-stationary price series share a long-run equilibrium relationship — the foundation of pairs trading. <strong style="color:var(--text);">Copulas</strong> go further by modeling the full joint dependency structure between assets, separating marginal distributions from their dependency, enabling more sophisticated multi-asset correlation trading that is robust to tail events.</p>
+        <p><strong style="color:var(--text);">How it is developed:</strong> Cointegration is tested using the Engle-Granger two-step method or the Johansen test. The cointegrating vector (hedge ratio) and half-life of mean reversion are computed. For copulas, marginal distributions are estimated, then the copula family (Gaussian, Student-t, Clayton, Gumbel) is chosen and fitted via maximum likelihood. Z-scores of the spread trigger entry/exit. Ongoing monitoring checks that the cointegrating relationship remains stable.</p>
+        <div class="algo-kv">
+          <div class="algo-kv-row"><span class="kv-key">Inputs</span><span class="kv-val">Two or more correlated price series (e.g. SPY/QQQ, XOM/CVX)</span></div>
+          <div class="algo-kv-row"><span class="kv-key">Output</span><span class="kv-val">Spread z-score → entry/exit signal; hedge ratio</span></div>
+          <div class="algo-kv-row"><span class="kv-key">Training</span><span class="kv-val">Engle-Granger / Johansen tests; half-life via Ornstein-Uhlenbeck fit</span></div>
+          <div class="algo-kv-row"><span class="kv-key">Strengths</span><span class="kv-val">Market-neutral; statistically sound; robust to broad market moves</span></div>
+          <div class="algo-kv-row"><span class="kv-key">Weaknesses</span><span class="kv-val">Cointegrating relationship can break (regime change); slow convergence</span></div>
+          <div class="algo-kv-row"><span class="kv-key">Used by</span><span class="kv-val">DE Shaw, Citadel stat arb, Renaissance Technologies, academic quants</span></div>
+        </div>
+        <div class="algo-tags"><span class="tag purple">Stat Arb</span><span class="tag green">Market-Neutral</span><span class="tag cyan">Pairs</span><span class="tag amber">Multi-Asset</span></div>
+      </div>
+    </div>
+
+  </div><!-- end grid-2 -->
+
+  <!-- ── Model development pipeline summary ──────────────────────────── -->
+  <div class="info-card" style="margin-top:1.4rem;">
+    <div class="accent-bar" style="background:linear-gradient(90deg,var(--cyan2),var(--purple2),var(--green2));"></div>
+    <h3>Universal Model Development Pipeline</h3>
+    <p>Regardless of model type, every predictive model in trading follows the same rigorous development lifecycle to avoid the most common failure mode — overfitting to historical data that does not generalize to live markets:</p>
+    <div class="arch-flow" style="margin-top:1rem;">
+      <div class="arch-box">
+        <div class="arch-box-icon">🗄️</div>
+        <div class="arch-box-name">Data Collection</div>
+        <div class="arch-box-desc">Survivorship-bias-free OHLCV, fundamentals, alternative data. Adjust for splits &amp; dividends.</div>
+      </div>
+      <div class="arch-arrow">→</div>
+      <div class="arch-box">
+        <div class="arch-box-icon">🔧</div>
+        <div class="arch-box-name">Feature Engineering</div>
+        <div class="arch-box-desc">Create signals from raw data. Strict look-ahead prevention. Normalize or standardize inputs.</div>
+      </div>
+      <div class="arch-arrow">→</div>
+      <div class="arch-box">
+        <div class="arch-box-icon">🏋️</div>
+        <div class="arch-box-name">Walk-Forward Training</div>
+        <div class="arch-box-desc">Train on past, validate on future — never shuffle time series. Retrain periodically.</div>
+      </div>
+      <div class="arch-arrow">→</div>
+      <div class="arch-box">
+        <div class="arch-box-icon">🧪</div>
+        <div class="arch-box-name">Out-of-Sample Test</div>
+        <div class="arch-box-desc">Reserve final 20% of data. Never touch until all decisions are finalized.</div>
+      </div>
+      <div class="arch-arrow">→</div>
+      <div class="arch-box">
+        <div class="arch-box-icon">📋</div>
+        <div class="arch-box-name">Paper Trade</div>
+        <div class="arch-box-desc">Run live on real market data with simulated orders for 30–90 days before risking capital.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════════
+     §7  HOW TRADING BOTS ARE MADE
+══════════════════════════════════════════════════════════════════════ -->
+<div class="section" style="padding-top:0;">
+  <div class="section-header" style="margin-bottom:1rem;">
+    <div class="section-label">Bot Architecture</div>
+    <h2 style="font-size:1.35rem;">How Trading Bots Are Built</h2>
+  </div>
+
+  <div class="grid-2" style="margin-bottom:1.4rem;">
+    <div class="info-card">
+      <div class="accent-bar" style="background:var(--cyan2);"></div>
+      <h3>Core Components of a Trading Bot</h3>
+      <div class="step-list">
+        <div class="step-item">
+          <div class="step-num" style="background:var(--cyan2);">①</div>
+          <div class="step-body">
+            <h4>Data Ingestion Layer</h4>
+            <p>Connects to price feeds (yfinance, IEX Cloud, IBKR), normalizes OHLCV data, handles splits/dividends, and caches data to avoid redundant fetches. Supports real-time WebSocket streams for HFT use cases.</p>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-num" style="background:var(--purple2);">②</div>
+          <div class="step-body">
+            <h4>Feature Engineering Pipeline</h4>
+            <p>Computes technical indicators (RSI, MACD, ATR, Bollinger Bands, EMA crossovers), statistical features (z-scores, rolling correlations), and ML-ready arrays. Ensures no future-leakage (look-ahead bias).</p>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-num" style="background:var(--amber2);">③</div>
+          <div class="step-body">
+            <h4>Signal Generator</h4>
+            <p>The "brain" — applies the strategy logic or ML model to features and outputs a directional signal (BUY / SELL / HOLD) with confidence score. Recomputes on each new bar or price tick.</p>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-num" style="background:var(--green2);">④</div>
+          <div class="step-body">
+            <h4>Risk Manager</h4>
+            <p>Checks signal against portfolio rules before any order is placed: max open positions, sector limits, daily loss limit, leverage cap. If any limit is breached, the signal is blocked.</p>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-num" style="background:var(--orange2);">⑤</div>
+          <div class="step-body">
+            <h4>Order Executor</h4>
+            <p>Translates the signal into a brokerage API call (Interactive Brokers, Tradier). Handles order types (market, limit, stop), retries on rejection, confirms fill prices, and logs execution.</p>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-num" style="background:var(--red2);">⑥</div>
+          <div class="step-body">
+            <h4>Position &amp; P&L Tracker</h4>
+            <p>Maintains real-time position book: entry price, size, unrealised P&L, stop/target levels. Monitors existing positions against stop-loss and take-profit conditions every tick.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="info-card">
+      <div class="accent-bar" style="background:var(--green2);"></div>
+      <h3>Technology Stack</h3>
+      <div class="step-list" style="margin-bottom:1rem;">
+        <div class="step-item">
+          <div class="step-num" style="background:var(--cyan2);">▶</div>
+          <div class="step-body">
+            <h4>Language &amp; Framework</h4>
+            <p><strong style="color:var(--text);">Python</strong> is the industry standard: <code style="color:var(--cyan2);">pandas</code> for data, <code style="color:var(--cyan2);">scikit-learn / XGBoost</code> for ML, <code style="color:var(--cyan2);">Flask / FastAPI</code> for the bot server. JavaScript bots use Node.js for ultra-low latency.</p>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-num" style="background:var(--purple2);">▶</div>
+          <div class="step-body">
+            <h4>Broker APIs</h4>
+            <p><strong style="color:var(--text);">Interactive Brokers</strong> — professional-grade API supporting stocks, options, futures, and forex. <strong style="color:var(--text);">Tradier</strong> — options-focused REST API with commission-free options trading.</p>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-num" style="background:var(--amber2);">▶</div>
+          <div class="step-body">
+            <h4>Concurrency Model</h4>
+            <p>Each bot runs in its own background thread (Python <code style="color:var(--cyan2);">threading.Thread</code>, daemon=True). A shared lock protects state updates. Event-driven bots use <code style="color:var(--cyan2);">asyncio</code> for WebSocket streams.</p>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-num" style="background:var(--green2);">▶</div>
+          <div class="step-body">
+            <h4>State &amp; Persistence</h4>
+            <p>In-memory state for speed; SQLite or Redis for persistence across restarts. Trade logs stored as JSON or in a time-series database (InfluxDB) for analytics.</p>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-num" style="background:var(--orange2);">▶</div>
+          <div class="step-body">
+            <h4>Monitoring &amp; Alerts</h4>
+            <p>Bots emit real-time status via REST API (polled by the dashboard). Alerts sent via email or SMS when drawdown limits are breached, a circuit-breaker triggers, or an order fails.</p>
+          </div>
+        </div>
+      </div>
+      <div class="info-card" style="background:var(--surface);border:1px solid var(--border);padding:1rem;">
+        <h3 style="font-size:.85rem;margin-bottom:.5rem;">&#128274; Paper vs Live Trading</h3>
+        <p style="margin:0;"><strong style="color:var(--green2);">Paper Mode</strong> — Signals are generated and P&L is simulated with no real capital at risk. Ideal for validation and learning.<br><br><strong style="color:var(--amber2);">Live Mode</strong> — Real orders are placed through the connected broker (Interactive Brokers or Tradier). Requires a funded account and connected API keys on the <a href="brokers.html" style="color:var(--cyan2);">Brokers page</a>.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════════════════
+     §7  BOT BUILDER — SELECT & CONFIGURE
+══════════════════════════════════════════════════════════════════════ -->
+<div class="section" style="padding-top:0;">
+  <div class="section-header" style="margin-bottom:1rem;">
+    <div class="section-label">Bot Builder</div>
+    <h2 style="font-size:1.35rem;">Select a Bot Type &amp; Configure</h2>
+    <p style="color:var(--muted);max-width:640px;">
+      Choose a strategy type below. Configure the parameters, then deploy it as a paper or live bot
+      against any asset supported by the dashboard.
+    </p>
+  </div>
+
+  <!-- Bot type selection -->
+  <div class="bot-type-grid" id="bot-type-grid">
+
+    <div class="bot-type-card" data-bot="ml-momentum" onclick="selectBotType(this)">
+      <div class="bot-card-icon">🤖</div>
+      <div class="bot-card-name">ML Momentum</div>
+      <div class="bot-card-desc">Uses the XGBoost + ExtraTrees ML signal to trade direction on stocks, ETFs, and futures. Enters long or short based on probability threshold.</div>
+      <div class="bot-card-meta">
+        <span class="tag green">ML / AI</span><span class="tag cyan">Stocks &amp; ETFs</span><span class="tag amber">Futures</span>
+      </div>
+    </div>
+
+    <div class="bot-type-card" data-bot="trend-follow" onclick="selectBotType(this)">
+      <div class="bot-card-icon">📈</div>
+      <div class="bot-card-name">Trend Follower</div>
+      <div class="bot-card-desc">Enters long when price crosses above the 50-day EMA with volume confirmation, and short on the opposite. Rides medium-term trends with trailing stops.</div>
+      <div class="bot-card-meta">
+        <span class="tag cyan">Technical</span><span class="tag green">Equities</span><span class="tag amber">Futures</span>
+      </div>
+    </div>
+
+    <div class="bot-type-card" data-bot="mean-revert" onclick="selectBotType(this)">
+      <div class="bot-card-icon">🔄</div>
+      <div class="bot-card-name">Mean Reversion</div>
+      <div class="bot-card-desc">Buys when RSI &lt; 30 and price is 2+ standard deviations below its 20-day Bollinger Band. Sells when RSI &gt; 70 or price reverts to the midline.</div>
+      <div class="bot-card-meta">
+        <span class="tag cyan">Technical</span><span class="tag green">Equities</span><span class="tag amber">Intraday</span>
+      </div>
+    </div>
+
+    <div class="bot-type-card" data-bot="options-flow" onclick="selectBotType(this)">
+      <div class="bot-card-icon">🎯</div>
+      <div class="bot-card-name">Options Flow</div>
+      <div class="bot-card-desc">Monitors unusual options call/put volume and GEX levels. Buys calls or puts based on flow direction with ATM or slight OTM strikes, 7–21 DTE.</div>
+      <div class="bot-card-meta">
+        <span class="tag purple">Options</span><span class="tag cyan">Flow</span><span class="tag amber">SPY/QQQ/AAPL</span>
+      </div>
+    </div>
+
+    <div class="bot-type-card" data-bot="breakout" onclick="selectBotType(this)">
+      <div class="bot-card-icon">💥</div>
+      <div class="bot-card-name">Breakout / Range</div>
+      <div class="bot-card-desc">Identifies consolidation ranges via Average True Range compression. Enters on confirmed volume breakout above resistance or below support with 2:1 target.</div>
+      <div class="bot-card-meta">
+        <span class="tag cyan">Technical</span><span class="tag orange">Breakout</span><span class="tag green">Equities</span>
+      </div>
+    </div>
+
+    <div class="bot-type-card" data-bot="pairs" onclick="selectBotType(this)">
+      <div class="bot-card-icon">⚖️</div>
+      <div class="bot-card-name">Pairs / Stat Arb</div>
+      <div class="bot-card-desc">Calculates the z-score of the price spread between two correlated assets (e.g. SPY/QQQ). Enters when spread is &gt;2σ, exits when it reverts to mean.</div>
+      <div class="bot-card-meta">
+        <span class="tag purple">Stat Arb</span><span class="tag green">Market-Neutral</span><span class="tag cyan">ETF Pairs</span>
+      </div>
+    </div>
+
+    <div class="bot-type-card" data-bot="vol-scalp" onclick="selectBotType(this)">
+      <div class="bot-card-icon">⚡</div>
+      <div class="bot-card-name">Volatility Scalper</div>
+      <div class="bot-card-desc">Scalps mean-reversion moves around VWAP during high-volatility periods. Uses 1-minute or 5-minute bars with tight stops and small position sizes.</div>
+      <div class="bot-card-meta">
+        <span class="tag red">Scalping</span><span class="tag amber">Intraday</span><span class="tag cyan">Equities</span>
+      </div>
+    </div>
+
+    <div class="bot-type-card" data-bot="0dte" onclick="selectBotType(this)">
+      <div class="bot-card-icon">🕐</div>
+      <div class="bot-card-name">0DTE Options</div>
+      <div class="bot-card-desc">Trades zero-days-to-expiry options on SPY and QQQ using intraday ML signals. Sells credit spreads in low-volatility regimes, buys debit spreads in trending conditions.</div>
+      <div class="bot-card-meta">
+        <span class="tag purple">Options</span><span class="tag red">0DTE</span><span class="tag amber">High Risk</span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Builder form — shown after selection -->
+  <div class="builder-panel" id="builder-panel" style="display:none;">
+    <h3 id="builder-title">⚙️ Configure Bot</h3>
+    <div class="builder-grid">
+      <div class="field-group">
+        <label>Bot Name</label>
+        <input type="text" id="bot-name" placeholder="My ML Momentum Bot">
+      </div>
+      <div class="field-group">
+        <label>Asset Symbol</label>
+        <select id="bot-asset">
+          <option value="SPY">SPY — S&P 500 ETF</option>
+          <option value="QQQ">QQQ — Nasdaq-100 ETF</option>
+          <option value="DIA">DIA — Dow Jones ETF</option>
+          <option value="IWM">IWM — Russell 2000 ETF</option>
+          <option value="AAPL">AAPL — Apple</option>
+          <option value="MSFT">MSFT — Microsoft</option>
+          <option value="NVDA">NVDA — NVIDIA</option>
+          <option value="GOOGL">GOOGL — Alphabet</option>
+          <option value="AMZN">AMZN — Amazon</option>
+          <option value="META">META — Meta</option>
+          <option value="TSLA">TSLA — Tesla</option>
+          <option value="JPM">JPM — JPMorgan</option>
+          <option value="BAC">BAC — Bank of America</option>
+          <option value="V">V — Visa</option>
+          <option value="XOM">XOM — ExxonMobil</option>
+          <option value="CVX">CVX — Chevron</option>
+          <option value="JNJ">JNJ — Johnson &amp; Johnson</option>
+          <option value="UNH">UNH — UnitedHealth</option>
+          <option value="WMT">WMT — Walmart</option>
+          <option value="HD">HD — Home Depot</option>
+          <option value="BRK-B">BRK-B — Berkshire B</option>
+          <option value="ES=F">ES=F — E-mini S&P 500</option>
+        </select>
+      </div>
+      <div class="field-group">
+        <label>Capital Allocated ($)</label>
+        <input type="number" id="bot-capital" value="10000" min="1000" step="1000">
+      </div>
+      <div class="field-group">
+        <label>Risk % Per Trade</label>
+        <input type="number" id="bot-risk" value="1.0" min="0.1" max="10" step="0.1">
+      </div>
+      <div class="field-group">
+        <label>Stop Loss %</label>
+        <input type="number" id="bot-stop" value="1.5" min="0.1" max="10" step="0.1">
+      </div>
+      <div class="field-group">
+        <label>Take Profit %</label>
+        <input type="number" id="bot-tp" value="3.0" min="0.1" max="20" step="0.5">
+      </div>
+      <div class="field-group">
+        <label>Signal Threshold %</label>
+        <input type="number" id="bot-thresh" value="65" min="51" max="95" step="1">
+      </div>
+      <div class="field-group">
+        <label>Check Interval</label>
+        <select id="bot-interval">
+          <option value="30">30 seconds</option>
+          <option value="60" selected>60 seconds</option>
+          <option value="120">2 minutes</option>
+          <option value="300">5 minutes</option>
+        </select>
+      </div>
+      <div class="field-group">
+        <label>Trading Mode</label>
+        <select id="bot-mode">
+          <option value="paper" selected>📝 Paper Trading (Simulated)</option>
+          <option value="live">⚡ Live Trading (IBKR / Tradier)</option>
+        </select>
+      </div>
+      <div class="field-group" style="grid-column:1/-1;">
+        <label>Notes / Description</label>
+        <textarea id="bot-notes" placeholder="Optional notes about this bot's purpose or strategy variant…"></textarea>
+      </div>
+    </div>
+
+    <button class="btn-build" onclick="deployBot()">&#9654; Deploy Bot (Paper)</button>
+    <button class="btn-secondary" onclick="resetBuilder()">Reset</button>
+    <span id="builder-status" style="font-size:.82rem;color:var(--muted);margin-left:1rem;"></span>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════════════════
+     §8  ACTIVE BOTS
+══════════════════════════════════════════════════════════════════════ -->
+<div class="section" style="padding-top:0;padding-bottom:4rem;">
+  <div class="section-header" style="margin-bottom:1rem;">
+    <div class="section-label">Running Bots</div>
+    <h2 style="font-size:1.35rem;">Active Bot Monitor</h2>
+  </div>
+  <div class="info-card">
+    <div style="display:flex;align-items:center;gap:.8rem;margin-bottom:1rem;">
+      <h3 style="margin:0;">Deployed Bots</h3>
+      <span id="active-count" style="font-size:.8rem;color:var(--muted);">Loading…</span>
+      <button onclick="stopAllBots()" style="margin-left:auto;background:rgba(248,113,113,.12);color:var(--red2);border:1px solid rgba(248,113,113,.3);border-radius:6px;padding:.3rem .9rem;font-size:.78rem;font-weight:700;cursor:pointer;">Stop All</button>
+    </div>
+    <div class="active-bots-list" id="active-bots-list">
+      <div class="no-bots-msg">No bots deployed yet. Select a type above and click Deploy.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Notification toast ───────────────────────────────────────────────── -->
+<div class="notif" id="notif"></div>
+
+<script>
+'use strict';
+const API = 'http://localhost:5050';
+let selectedBotType = null;
+
+// ── Bot type selection ────────────────────────────────────────────────────────
+function selectBotType(card) {
+  document.querySelectorAll('.bot-type-card').forEach(c => c.classList.remove('selected'));
+  card.classList.add('selected');
+  selectedBotType = card.dataset.bot;
+  const panel = document.getElementById('builder-panel');
+  panel.style.display = 'block';
+  panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  // Update panel title
+  const titles = {
+    'ml-momentum':  '🤖 ML Momentum Bot Configuration',
+    'trend-follow': '📈 Trend Follower Bot Configuration',
+    'mean-revert':  '🔄 Mean Reversion Bot Configuration',
+    'options-flow': '🎯 Options Flow Bot Configuration',
+    'breakout':     '💥 Breakout Bot Configuration',
+    'pairs':        '⚖️ Pairs / Stat Arb Bot Configuration',
+    'vol-scalp':    '⚡ Volatility Scalper Bot Configuration',
+    '0dte':         '🕐 0DTE Options Bot Configuration',
+  };
+  document.getElementById('builder-title').textContent = titles[selectedBotType] || '⚙️ Configure Bot';
+
+  // Auto-fill reasonable defaults per type
+  const defaults = {
+    'ml-momentum':  { stop: 1.5, tp: 3.0, thresh: 65, interval: 60 },
+    'trend-follow': { stop: 2.0, tp: 6.0, thresh: 60, interval: 120 },
+    'mean-revert':  { stop: 1.0, tp: 2.0, thresh: 70, interval: 30  },
+    'options-flow': { stop: 30,  tp: 100, thresh: 65, interval: 300 },
+    'breakout':     { stop: 1.5, tp: 3.0, thresh: 60, interval: 60  },
+    'pairs':        { stop: 1.5, tp: 3.0, thresh: 65, interval: 60  },
+    'vol-scalp':    { stop: 0.5, tp: 1.0, thresh: 70, interval: 30  },
+    '0dte':         { stop: 50,  tp: 100, thresh: 65, interval: 120 },
+  };
+  const d = defaults[selectedBotType] || {};
+  if (d.stop)     document.getElementById('bot-stop').value     = d.stop;
+  if (d.tp)       document.getElementById('bot-tp').value       = d.tp;
+  if (d.thresh)   document.getElementById('bot-thresh').value   = d.thresh;
+  if (d.interval) document.getElementById('bot-interval').value = d.interval;
+
+  // Default name
+  const sym = document.getElementById('bot-asset').value;
+  document.getElementById('bot-name').value = `${card.querySelector('.bot-card-name').textContent} — ${sym}`;
+
+  // Update deploy button label
+  const mode = document.getElementById('bot-mode').value;
+  document.querySelector('.btn-build').textContent =
+    mode === 'live' ? '⚡ Deploy Bot (Live)' : '▶ Deploy Bot (Paper)';
+}
+
+document.getElementById('bot-mode').addEventListener('change', function() {
+  const btn = document.querySelector('.btn-build');
+  if (btn) btn.textContent = this.value === 'live' ? '⚡ Deploy Bot (Live)' : '▶ Deploy Bot (Paper)';
+});
+
+document.getElementById('bot-asset').addEventListener('change', function() {
+  if (!selectedBotType) return;
+  const cardName = document.querySelector('.bot-type-card.selected .bot-card-name');
+  if (cardName) {
+    document.getElementById('bot-name').value = `${cardName.textContent} — ${this.value}`;
+  }
+});
+
+// ── Deploy bot ────────────────────────────────────────────────────────────────
+async function deployBot() {
+  if (!selectedBotType) { showNotif('Select a bot type first.', false); return; }
+  const sym = document.getElementById('bot-asset').value;
+  const cfg = {
+    capital:          parseFloat(document.getElementById('bot-capital').value) || 10000,
+    risk_pct:         parseFloat(document.getElementById('bot-risk').value)    || 1.0,
+    stop_loss_pct:    parseFloat(document.getElementById('bot-stop').value)    || 1.5,
+    take_profit_pct:  parseFloat(document.getElementById('bot-tp').value)      || 3.0,
+    signal_threshold: parseInt(  document.getElementById('bot-thresh').value)  || 65,
+    interval_sec:     parseInt(  document.getElementById('bot-interval').value)|| 60,
+    mode:             document.getElementById('bot-mode').value,
+    bot_type:         selectedBotType,
+    name:             document.getElementById('bot-name').value || `${selectedBotType} — ${sym}`,
+  };
+  document.getElementById('builder-status').textContent = 'Deploying…';
+  try {
+    const r = await fetch(`${API}/api/bots/${encodeURIComponent(sym)}/start`, {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(cfg),
+    });
+    const d = await r.json();
+    if (d.ok) {
+      showNotif(`✅ Bot deployed: ${cfg.name || sym}`, true);
+      document.getElementById('builder-status').textContent = '✓ Deployed';
+      refreshActiveBots();
+    } else {
+      showNotif(`❌ ${d.error || 'Deploy failed'}`, false);
+      document.getElementById('builder-status').textContent = 'Error';
+    }
+  } catch(e) {
+    showNotif('❌ Server not reachable — is live-server.py running?', false);
+    document.getElementById('builder-status').textContent = 'Offline';
+  }
+  setTimeout(() => { document.getElementById('builder-status').textContent = ''; }, 4000);
+}
+
+function resetBuilder() {
+  selectedBotType = null;
+  document.querySelectorAll('.bot-type-card').forEach(c => c.classList.remove('selected'));
+  document.getElementById('builder-panel').style.display = 'none';
+}
+
+// ── Stop bot ──────────────────────────────────────────────────────────────────
+async function stopBot(sym) {
+  await fetch(`${API}/api/bots/${encodeURIComponent(sym)}/stop`, { method:'POST' });
+  showNotif(`⏹ Stopping ${sym} bot…`, true);
+  setTimeout(refreshActiveBots, 1000);
+}
+
+async function stopAllBots() {
+  await fetch(`${API}/api/bots/stop-all`, { method:'POST' });
+  showNotif('⏹ All bots stopping…', true);
+  setTimeout(refreshActiveBots, 1000);
+}
+
+// ── Active bots monitor ───────────────────────────────────────────────────────
+async function refreshActiveBots() {
+  try {
+    const r   = await fetch(`${API}/api/bots`);
+    const data = await r.json();
+    const list = document.getElementById('active-bots-list');
+    const running = Object.values(data).filter(b => b.running || b.status !== 'idle');
+    document.getElementById('active-count').textContent =
+      `${running.filter(b=>b.running).length} running · ${Object.keys(data).length} total slots`;
+
+    if (!running.length) {
+      list.innerHTML = '<div class="no-bots-msg">No bots deployed yet. Select a type above and click Deploy.</div>';
+      return;
+    }
+    list.innerHTML = running.map(b => {
+      const pnlClass = b.pnl >= 0 ? 'style="color:var(--green2);"' : 'style="color:var(--red2);"';
+      const pnl = (b.pnl >= 0 ? '+' : '') + '$' + (b.pnl||0).toFixed(2);
+      const pos = b.position ? ` · ${b.position.side.toUpperCase()} @ $${b.position.entry.toFixed(2)}` : '';
+      const sig = b.last_signal ? ` · ${b.last_signal.direction} ${b.last_signal.prob_up}%` : '';
+      return `<div class="active-bot-row">
+        <div class="active-bot-dot ${b.running ? 'running' : 'stopped'}"></div>
+        <div>
+          <div class="active-bot-name">${b.symbol} <span style="font-size:.72rem;color:var(--muted);">${b.asset_type}</span></div>
+          <div class="active-bot-type">${b.total_trades} trades${sig}${pos}</div>
+        </div>
+        <div class="active-bot-status ${b.running ? 'running':'stopped'}">${b.running ? '● Running':'○ Stopped'}</div>
+        <div ${pnlClass} style="font-size:.82rem;font-weight:700;">${pnl}</div>
+        <button class="btn-stop-bot" onclick="stopBot('${b.symbol}')">Stop</button>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    document.getElementById('active-count').textContent = 'Server offline';
+  }
+}
+
+// ── Notification ──────────────────────────────────────────────────────────────
+function showNotif(msg, ok=true) {
+  const el = document.getElementById('notif');
+  el.textContent = msg;
+  el.style.borderColor = ok ? 'var(--green2)' : 'var(--red2)';
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 3500);
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+refreshActiveBots();
+setInterval(refreshActiveBots, 10000);
+</script>
+</body>
+</html>

@@ -7,6 +7,7 @@ import { StockTrading, STOCK_DURATION } from "./StockTrading.jsx";
 import { OptionsTrading, OPTIONS_DURATION } from "./OptionsTrading.jsx";
 import { FuturesTrading, FUTURES_DURATION } from "./FuturesTrading.jsx";
 import { LiveTrading, LIVE_DURATION } from "./LiveTrading.jsx";
+import { DashboardTour, TOUR_DURATION } from "./DashboardTour.jsx";
 
 export const RemotionRoot = () => (
   <>
@@ -18,5 +19,6 @@ export const RemotionRoot = () => (
     <Composition id="OptionsTrading"   component={OptionsTrading} durationInFrames={OPTIONS_DURATION}  fps={30} width={1280} height={720} />
     <Composition id="FuturesTrading"   component={FuturesTrading} durationInFrames={FUTURES_DURATION}  fps={30} width={1280} height={720} />
     <Composition id="LiveTrading"      component={LiveTrading}    durationInFrames={LIVE_DURATION}     fps={30} width={1280} height={720} />
+    <Composition id="DashboardTour"    component={DashboardTour}  durationInFrames={TOUR_DURATION}     fps={30} width={1280} height={720} />
   </>
 );
