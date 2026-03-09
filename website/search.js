@@ -439,8 +439,10 @@ window.cachedFetch = (function () {
   'use strict';
   var THEME_KEY = 'ml-theme';
 
-  // Apply saved theme immediately (deferred, so DOM is parsed)
-  var _saved = localStorage.getItem(THEME_KEY) || 'dark';
+  // Apply saved theme — dark is the project default
+  // v2 key resets any stale 'light' preference from prior site conversion
+  var THEME_KEY_V2 = 'ml-theme-v2';
+  var _saved = localStorage.getItem(THEME_KEY_V2) || 'dark';
   if (_saved === 'light') document.documentElement.classList.add('theme-light');
 
   // Helper: get current chart colors matching the active theme
@@ -468,7 +470,7 @@ window.cachedFetch = (function () {
 
     btn.addEventListener('click', function () {
       var nowLight = document.documentElement.classList.toggle('theme-light');
-      localStorage.setItem(THEME_KEY, nowLight ? 'light' : 'dark');
+      localStorage.setItem(THEME_KEY_V2, nowLight ? 'light' : 'dark');
       btn.innerHTML = nowLight ? '&#127769; Dark' : '&#9728;&#65039; Light';
       // Notify charts to redraw if a page defines this global
       if (typeof window.redrawAllCharts === 'function') window.redrawAllCharts();

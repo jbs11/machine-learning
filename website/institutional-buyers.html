@@ -1527,7 +1527,7 @@ function drawGex(a, cv, H) {
   ctx.scale(dpr, dpr);
   const PAD_L=60, PAD_R=60, PAD_T=20, PAD_B=16;
   const cW = W-PAD_L-PAD_R, halfW = cW/2, zeroX = PAD_L+halfW;
-  ctx.fillStyle='#f8fafc'; ctx.fillRect(0,0,W,cH);
+  ctx.fillStyle='#0f172a'; ctx.fillRect(0,0,W,cH);
   ctx.strokeStyle='rgba(0,0,0,.07)'; ctx.lineWidth=1;
   [.25,.5,.75].forEach(f=>{const x=PAD_L+cW*f;ctx.beginPath();ctx.moveTo(x,PAD_T);ctx.lineTo(x,cH-PAD_B);ctx.stroke();});
   const maxGex = Math.max(...pairs.map(p=>Math.abs(p.g)),1e-9);
@@ -1580,7 +1580,7 @@ function drawCumGex(a, cv) {
   cv.style.width = W+'px'; cv.style.height = H+'px';
   const ctx = cv.getContext('2d');
   ctx.scale(dpr, dpr);
-  ctx.fillStyle = '#f8fafc'; ctx.fillRect(0,0,W,H);
+  ctx.fillStyle = '#0f172a'; ctx.fillRect(0,0,W,H);
   const PAD = {l:60,r:60,t:20,b:24};
   const cW = W-PAD.l-PAD.r, cH = H-PAD.t-PAD.b;
   const pairs = a.strikes.map((k,i)=>({k,g:a.gex[i]})).sort((a,b)=>a.k-b.k);
@@ -1675,7 +1675,7 @@ function drawTornado(r, cv, H) {
   const cW=W-PAD_L-PAD_R, cH=H-PAD_T-PAD_B, rowH=cH/n;
   const maxV=Math.max(1,...r.call_vol,...r.put_vol);
   const cx=PAD_L+cW/2;
-  ctx.fillStyle='#f8fafc'; ctx.fillRect(0,0,W,H);
+  ctx.fillStyle='#0f172a'; ctx.fillRect(0,0,W,H);
   ctx.strokeStyle='rgba(0,0,0,.07)'; ctx.lineWidth=1;
   [.25,.5,.75,1].forEach(f=>{
     const x1=PAD_L+(cW/2)*(1-f), x2=PAD_L+(cW/2)*(1+f);
@@ -1715,7 +1715,7 @@ function drawDHSim(cv) {
   cv.style.width = W+'px'; cv.style.height = H+'px';
   const ctx = cv.getContext('2d');
   ctx.scale(dpr, dpr);
-  ctx.fillStyle = '#f8fafc'; ctx.fillRect(0,0,W,H);
+  ctx.fillStyle = '#0f172a'; ctx.fillRect(0,0,W,H);
   const PAD = {l:50,r:20,t:20,b:30};
   const cW = W-PAD.l-PAD.r, cH = H-PAD.t-PAD.b;
 
@@ -1783,7 +1783,7 @@ function drawIVSkew(cv) {
   cv.width=W*dpr; cv.height=H*dpr;
   cv.style.width=W+'px'; cv.style.height=H+'px';
   const ctx=cv.getContext('2d'); ctx.scale(dpr,dpr);
-  ctx.fillStyle='#f8fafc'; ctx.fillRect(0,0,W,H);
+  ctx.fillStyle='#0f172a'; ctx.fillRect(0,0,W,H);
   const PAD={l:50,r:20,t:20,b:30};
   const cW=W-PAD.l-PAD.r, cH=H-PAD.t-PAD.b;
 
@@ -1798,7 +1798,7 @@ function drawIVSkew(cv) {
   const toY = v => PAD.t+(1-(v-0.10)/0.45)*cH;
 
   // Grid
-  ctx.strokeStyle='rgba(0,0,0,.08)'; ctx.lineWidth=1;
+  ctx.strokeStyle='rgba(255,255,255,.05)'; ctx.lineWidth=1;
   [0.15,0.20,0.25,0.30,0.35,0.40,0.45,0.50].forEach(v=>{
     const y=toY(v);
     if(y<PAD.t||y>H-PAD.b) return;
@@ -1865,7 +1865,7 @@ function drawVixGex(cv, gexData) {
   cv.width=W*dpr; cv.height=H*dpr;
   cv.style.width=W+'px'; cv.style.height=H+'px';
   const ctx=cv.getContext('2d'); ctx.scale(dpr,dpr);
-  ctx.fillStyle='#f8fafc'; ctx.fillRect(0,0,W,H);
+  ctx.fillStyle='#0f172a'; ctx.fillRect(0,0,W,H);
   const PAD={l:50,r:50,t:20,b:30};
   const cW=W-PAD.l-PAD.r, cH=H-PAD.t-PAD.b;
 
@@ -2097,7 +2097,7 @@ function drawDHIntraday(cv, gex, flows) {
   cv.width  = W * dpr; cv.height = H * dpr;
   cv.style.width = W + 'px'; cv.style.height = H + 'px';
   const ctx = cv.getContext('2d'); ctx.scale(dpr, dpr);
-  ctx.fillStyle = '#f8fafc'; ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = '#0f172a'; ctx.fillRect(0, 0, W, H);
   const PAD = { l: 55, r: 20, t: 20, b: 32 };
   const cW = W - PAD.l - PAD.r, cH = H - PAD.t - PAD.b;
 
@@ -2127,7 +2127,7 @@ function drawDHIntraday(cv, gex, flows) {
   const N = labels.length;
 
   // Grid lines
-  ctx.strokeStyle = 'rgba(0,0,0,.08)'; ctx.lineWidth = 1;
+  ctx.strokeStyle = 'rgba(255,255,255,.05)'; ctx.lineWidth = 1;
   [-0.5, 0, 0.5].forEach(v => {
     const y = toY(v / maxAbs * maxAbs);
     ctx.beginPath(); ctx.moveTo(PAD.l, y); ctx.lineTo(W - PAD.r, y); ctx.stroke();
@@ -2386,8 +2386,8 @@ async function loadCandlesFor(sym, containerId, gexLevels, regimeChipId) {
     layout: { background: { color: '#f8fafc' }, textColor: '#94a3b8' },
     grid:   { vertLines: { color: 'rgba(0,0,0,.07)' }, horzLines: { color: 'rgba(0,0,0,.07)' } },
     crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
-    rightPriceScale: { borderColor: 'rgba(0,0,0,.08)' },
-    timeScale: { borderColor: 'rgba(0,0,0,.08)', timeVisible: true, secondsVisible: false },
+    rightPriceScale: { borderColor: 'rgba(255,255,255,.05)' },
+    timeScale: { borderColor: 'rgba(255,255,255,.05)', timeVisible: true, secondsVisible: false },
     handleScale: { axisPressedMouseMove: true, mouseWheel: true },
     handleScroll: { mouseWheel: true, pressedMouseMove: true },
   });

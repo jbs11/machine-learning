@@ -1598,7 +1598,7 @@ function _drawSkewCanvas(a) {
   cv.style.width = W + 'px'; cv.style.height = H + 'px';
   const ctx = cv.getContext('2d');
   ctx.scale(dpr, dpr);
-  ctx.fillStyle = '#f8fafc';
+  ctx.fillStyle = '#0f172a';
   ctx.fillRect(0, 0, W, H);
 
   const COLORS = ['#22d3ee','#a78bfa','#fbbf24','#f87171'];
@@ -1675,7 +1675,7 @@ function _drawSurfaceCanvas(a) {
   cv.style.width = W + 'px'; cv.style.height = H + 'px';
   const ctx = cv.getContext('2d');
   ctx.scale(dpr, dpr);
-  ctx.fillStyle = '#f8fafc'; ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = '#0f172a'; ctx.fillRect(0, 0, W, H);
 
   const { expirations, dtes, moneyness: monos, strikes, iv_grid: ivGrid } = mx;
   const nC = expirations.length, nR = monos.length;
@@ -1734,7 +1734,7 @@ function _drawSurfaceCanvas(a) {
     ctx.fillStyle = `rgb(${r},${g},${b})`;
     ctx.fillRect(bx, pT+i, 10, 1);
   }
-  ctx.fillStyle='rgba(127,163,190,.7)'; ctx.font='8px Consolas,monospace'; ctx.textAlign='left';
+  ctx.fillStyle='rgba(148,163,184,.8)'; ctx.font='8px Consolas,monospace'; ctx.textAlign='left';
   ctx.fillText('55%', bx+12, pT+6); ctx.fillText('10%', bx+12, pT+bH-2);
 }
 

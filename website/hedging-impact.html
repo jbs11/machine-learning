@@ -679,7 +679,7 @@ function drawHIProfile(cv, gex) {
   cv.width  = W * dpr; cv.height = H * dpr;
   cv.style.width = W + 'px'; cv.style.height = H + 'px';
   const ctx = cv.getContext('2d'); ctx.scale(dpr, dpr);
-  ctx.fillStyle = '#f8fafc'; ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = '#0f172a'; ctx.fillRect(0, 0, W, H);
 
   const allPairs = gex.strikes.map((k,i) => ({ k, g: gex.gex[i] })).sort((a,b) => b.k - a.k);
   const pairs = allPairs.length > 50
@@ -752,7 +752,7 @@ function drawIntradayFlow(cv, gex, flows) {
   cv.width  = W * dpr; cv.height = H * dpr;
   cv.style.width = W + 'px'; cv.style.height = H + 'px';
   const ctx = cv.getContext('2d'); ctx.scale(dpr, dpr);
-  ctx.fillStyle = '#f8fafc'; ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = '#0f172a'; ctx.fillRect(0, 0, W, H);
   const PAD = { l: 50, r: 16, t: 18, b: 28 };
   const cW  = W - PAD.l - PAD.r, cH = H - PAD.t - PAD.b;
 
@@ -829,7 +829,7 @@ function drawGexBar(cv, gex, H) {
   const ctx = cv.getContext('2d'); ctx.scale(dpr,dpr);
   const PAD_L=58,PAD_R=16,PAD_T=18,PAD_B=14;
   const cW=W-PAD_L-PAD_R, halfW=cW/2, zeroX=PAD_L+halfW;
-  ctx.fillStyle='#f8fafc'; ctx.fillRect(0,0,W,cH);
+  ctx.fillStyle='#0f172a'; ctx.fillRect(0,0,W,cH);
   const maxGex=Math.max(...pairs.map(p=>Math.abs(p.g)),1e-9);
   pairs.forEach((p,i)=>{
     const bY=PAD_T+i*ROW_H, bH=Math.max(2,ROW_H-1);
@@ -837,10 +837,10 @@ function drawGexBar(cv, gex, H) {
     if(p.g>=0){const g=ctx.createLinearGradient(zeroX,0,zeroX+bW,0);g.addColorStop(0,'rgba(34,197,94,.9)');g.addColorStop(1,'rgba(34,197,94,.2)');ctx.fillStyle=g;ctx.fillRect(zeroX,bY+1,bW,bH-2);}
     else{const g=ctx.createLinearGradient(zeroX-bW,0,zeroX,0);g.addColorStop(0,'rgba(248,113,113,.2)');g.addColorStop(1,'rgba(248,113,113,.9)');ctx.fillStyle=g;ctx.fillRect(zeroX-bW,bY+1,bW,bH-2);}
   });
-  ctx.strokeStyle='rgba(0,0,0,.08)'; ctx.lineWidth=1;
+  ctx.strokeStyle='rgba(255,255,255,.05)'; ctx.lineWidth=1;
   ctx.beginPath();ctx.moveTo(zeroX,PAD_T);ctx.lineTo(zeroX,cH-PAD_B);ctx.stroke();
   const step=Math.max(1,Math.ceil(N/20));
-  ctx.fillStyle='rgba(127,163,190,.7)'; ctx.font='8px Consolas,monospace'; ctx.textAlign='right';
+  ctx.fillStyle='rgba(148,163,184,.8)'; ctx.font='8px Consolas,monospace'; ctx.textAlign='right';
   pairs.forEach((p,i)=>{if(i%step!==0)return;const y=PAD_T+i*ROW_H+ROW_H/2+3;ctx.fillText(p.k>=1000?p.k.toLocaleString('en-US',{maximumFractionDigits:0}):p.k.toFixed(1),PAD_L-3,y);});
   const lvl=(s,c,d,l)=>{const idx=pairs.findIndex(p=>p.k<=s);if(idx<0)return;const y=PAD_T+idx*ROW_H+ROW_H/2;ctx.save();ctx.strokeStyle=c;ctx.lineWidth=1.2;ctx.setLineDash(d);ctx.beginPath();ctx.moveTo(PAD_L,y);ctx.lineTo(W-PAD_R,y);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle=c;ctx.font='bold 8px sans-serif';ctx.textAlign='left';ctx.fillText(l,W-PAD_R+2,y+3);ctx.restore();};
   if(gex.spot)       lvl(gex.spot,'rgba(251,191,36,.9)',[5,3],'SPOT');
@@ -855,14 +855,14 @@ function drawCumGex(cv, gex) {
   const dpr=window.devicePixelRatio||1, W=cv.parentElement.clientWidth||600, H=180;
   cv.width=W*dpr; cv.height=H*dpr; cv.style.width=W+'px'; cv.style.height=H+'px';
   const ctx=cv.getContext('2d'); ctx.scale(dpr,dpr);
-  ctx.fillStyle='#f8fafc'; ctx.fillRect(0,0,W,H);
+  ctx.fillStyle='#0f172a'; ctx.fillRect(0,0,W,H);
   const PAD={l:55,r:16,t:18,b:22};
   const cW=W-PAD.l-PAD.r, cH=H-PAD.t-PAD.b;
   const pairs=gex.strikes.map((k,i)=>({k,g:gex.gex[i]})).sort((a,b)=>a.k-b.k);
   let cum=0; const cumVals=pairs.map(p=>{cum+=p.g;return cum;});
   const minV=Math.min(0,...cumVals), maxV=Math.max(0,...cumVals), range=maxV-minV||1;
   const toY=v=>PAD.t+(1-(v-minV)/range)*cH, zeroY=toY(0);
-  ctx.strokeStyle='rgba(0,0,0,.08)'; ctx.lineWidth=1;
+  ctx.strokeStyle='rgba(255,255,255,.05)'; ctx.lineWidth=1;
   [.25,.5,.75].forEach(f=>{ctx.beginPath();ctx.moveTo(PAD.l,PAD.t+cH*f);ctx.lineTo(W-PAD.r,PAD.t+cH*f);ctx.stroke();});
   ctx.strokeStyle='rgba(255,255,255,.15)'; ctx.setLineDash([4,4]);
   ctx.beginPath();ctx.moveTo(PAD.l,zeroY);ctx.lineTo(W-PAD.r,zeroY);ctx.stroke(); ctx.setLineDash([]);
@@ -899,8 +899,8 @@ async function loadMainChart(sym, gexAsset) {
     layout: { background:{color:'#f8fafc'}, textColor:'#94a3b8' },
     grid:   { vertLines:{color:'rgba(0,0,0,.07)'}, horzLines:{color:'rgba(0,0,0,.07)'} },
     crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
-    rightPriceScale: { borderColor:'rgba(0,0,0,.08)' },
-    timeScale: { borderColor:'rgba(0,0,0,.08)', timeVisible:true, secondsVisible:false },
+    rightPriceScale: { borderColor:'rgba(255,255,255,.05)' },
+    timeScale: { borderColor:'rgba(255,255,255,.05)', timeVisible:true, secondsVisible:false },
     handleScale: { axisPressedMouseMove:true, mouseWheel:true },
     handleScroll: { mouseWheel:true, pressedMouseMove:true },
   });
