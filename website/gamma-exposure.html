@@ -559,7 +559,26 @@ function generateDesc(a) {
 // ── Draw SpotGamma-style horizontal bar chart ──────────────────────────────
 function drawGexChart(a) {
   const cv = document.getElementById('cv-' + a.symbol);
-  if (!cv || !a.strikes || !a.strikes.length) return;
+  if (!cv || !a.strikes || !a.strikes.length) {
+
+  // ── No-data display ──
+  {
+    const _W = cv.parentElement ? (cv.parentElement.clientWidth || 420) : 420;
+    cv.width = _W; cv.height = 90;
+    cv.style.width = _W + 'px'; cv.style.height = '90px';
+    const _c = cv.getContext('2d');
+    _c.fillStyle = 'rgba(15,23,42,0.6)';
+    _c.fillRect(0, 0, _W, 90);
+    _c.fillStyle = '#475569';
+    _c.font = 'bold 13px sans-serif';
+    _c.textAlign = 'center';
+    _c.fillText('No options data available — market closed or delayed feed', _W/2, 38);
+    _c.font = '11px sans-serif';
+    _c.fillStyle = '#334155';
+    _c.fillText('(yfinance provides 15-20 min delayed data with limited options coverage)', _W/2, 60);
+  }
+    return;
+  }
 
   const dpr = window.devicePixelRatio || 1;
   const W   = cv.parentElement.clientWidth;

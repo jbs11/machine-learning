@@ -1707,7 +1707,7 @@ function drawTornado(r, cv, H) {
 
 // ── Delta Hedging Simulation Chart ──────────────────────────────────────────
 function drawDHSim(cv) {
-  if (!cv) return;
+  if (!cv) { return; }
   const dpr = window.devicePixelRatio || 1;
   const W = cv.parentElement.clientWidth || 600;
   const H = 180;

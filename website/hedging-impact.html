@@ -191,7 +191,7 @@
       <span style="font-weight:900;font-size:1.05rem;" id="hero-hi">Loading…</span>
     </div>
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:.45rem .9rem;font-size:.78rem;">
-      <span style="color:var(--muted);">SPY GEX Regime</span><br>
+      <span style="color:var(--muted);">Dealer GEX Regime</span><br>
       <span style="font-weight:900;font-size:1.05rem;" id="hero-regime">Loading…</span>
     </div>
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:.45rem .9rem;font-size:.78rem;">
@@ -211,7 +211,7 @@
   <div class="stat-cell"><div class="stat-val" id="st-delta-flow">—</div><div class="stat-lbl">Delta Hedge Flow</div></div>
   <div class="stat-cell"><div class="stat-val" id="st-charm-flow">—</div><div class="stat-lbl">Charm Flow (Est.)</div></div>
   <div class="stat-cell"><div class="stat-val" id="st-vanna-flow">—</div><div class="stat-lbl">Vanna Flow (Est.)</div></div>
-  <div class="stat-cell"><div class="stat-val" id="st-pcr">—</div><div class="stat-lbl">SPY Put/Call Ratio</div></div>
+  <div class="stat-cell"><div class="stat-val" id="st-pcr">—</div><div class="stat-lbl">Market Put/Call Ratio</div></div>
   <div class="stat-cell"><div class="stat-val" id="st-regime">—</div><div class="stat-lbl">GEX Regime</div></div>
   <div class="stat-cell"><div class="stat-val" id="st-mom-count">—</div><div class="stat-lbl">Momentum Setups</div></div>
   <div class="stat-cell"><div class="stat-val" id="st-rev-count">—</div><div class="stat-lbl">Reversal Setups</div></div>
@@ -238,21 +238,21 @@
   <div class="chart-card">
     <div class="sym-bar" id="sym-bar">
       <span style="font-size:.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;">Symbol:</span>
-      <button class="sym-btn active" onclick="selectSym('SPY',this)">SPY</button>
-      <button class="sym-btn" onclick="selectSym('QQQ',this)">QQQ</button>
+      <button class="sym-btn active" onclick="selectSym('DIA',this)">DIA</button>
+      <button class="sym-btn" onclick="selectSym('IWM',this)">IWM</button>
       <button class="sym-btn" onclick="selectSym('AAPL',this)">AAPL</button>
       <button class="sym-btn" onclick="selectSym('NVDA',this)">NVDA</button>
       <button class="sym-btn" onclick="selectSym('TSLA',this)">TSLA</button>
       <button class="sym-btn" onclick="selectSym('META',this)">META</button>
       <button class="sym-btn" onclick="selectSym('AMZN',this)">AMZN</button>
       <button class="sym-btn" onclick="selectSym('MSFT',this)">MSFT</button>
-      <button class="sym-btn" onclick="selectSym('AMD',this)">AMD</button>
       <button class="sym-btn" onclick="selectSym('GOOGL',this)">GOOGL</button>
-      <span style="margin-left:auto;font-size:.72rem;color:var(--muted);">Selected: <strong id="sel-sym-lbl" style="color:#f97316;">SPY</strong></span>
+      <button class="sym-btn" onclick="selectSym('JPM',this)">JPM</button>
+      <span style="margin-left:auto;font-size:.72rem;color:var(--muted);">Selected: <strong id="sel-sym-lbl" style="color:#f97316;">DIA</strong></span>
     </div>
     <div class="chart-hdr">
       <div>
-        <div class="chart-title" id="main-chart-title">SPY — 4H Candlestick with Dealer Hedging Zones</div>
+        <div class="chart-title" id="main-chart-title">DIA — 4H Candlestick with Dealer Hedging Zones</div>
         <div class="chart-sub">🟢 Gamma Wall · 🔴 Put Wall · 🟣 Flip Level · 🟡 Max Pain · Shaded zones = dealer flow direction</div>
       </div>
       <div style="display:flex;gap:.5rem;align-items:center;">
@@ -530,27 +530,27 @@ Setup = Momentum if MomentumScore > 60
   <div class="sec-hdr">
     <span class="sec-num">6</span>
     <span class="sec-title">Cross-Asset Hedging Flow Comparison</span>
-    <span class="sec-sub">— SPY vs QQQ dealer pressure · Divergence signals sector rotation</span>
+    <span class="sec-sub">— DIA vs IWM dealer pressure · Divergence signals sector rotation</span>
   </div>
 
   <div class="two-col">
     <div class="chart-card">
       <div class="chart-hdr">
         <div>
-          <div class="chart-title">SPY — GEX × Hedging Impact Profile</div>
+          <div class="chart-title">DIA — GEX × Hedging Impact Profile</div>
           <div class="chart-sub">Horizontal: dealer buy/sell flow · Vertical: price strikes · Yellow = current spot</div>
         </div>
-        <span id="spy-hi-chip" class="chip chip-neut">HI: —</span>
+        <span id="spy-hi-chip" class="chip chip-neut">DIA HI: —</span>
       </div>
       <div class="chart-body"><canvas id="cv-spy-hi" height="260"></canvas></div>
     </div>
     <div class="chart-card">
       <div class="chart-hdr">
         <div>
-          <div class="chart-title">QQQ — GEX × Hedging Impact Profile</div>
+          <div class="chart-title">IWM — GEX × Hedging Impact Profile</div>
           <div class="chart-sub">Nasdaq-100 dealer positioning · Tech-sector gamma dynamics</div>
         </div>
-        <span id="qqq-hi-chip" class="chip chip-neut">HI: —</span>
+        <span id="qqq-hi-chip" class="chip chip-neut">IWM HI: —</span>
       </div>
       <div class="chart-body"><canvas id="cv-qqq-hi" height="260"></canvas></div>
     </div>
@@ -560,7 +560,7 @@ Setup = Momentum if MomentumScore > 60
     <div class="chart-card">
       <div class="chart-hdr">
         <div>
-          <div class="chart-title">SPY — Cumulative Net GEX (Gamma Flip)</div>
+          <div class="chart-title">DIA — Cumulative Net GEX (Gamma Flip)</div>
           <div class="chart-sub">Zero-crossing = Flip Level · Positive territory = Long Gamma (stabilizing)</div>
         </div>
       </div>
@@ -569,8 +569,8 @@ Setup = Momentum if MomentumScore > 60
     <div class="chart-card">
       <div class="chart-hdr">
         <div>
-          <div class="chart-title">QQQ — Cumulative Net GEX (Gamma Flip)</div>
-          <div class="chart-sub">QQQ often flips before SPY during tech selloffs — leading indicator</div>
+          <div class="chart-title">IWM — Cumulative Net GEX (Gamma Flip)</div>
+          <div class="chart-sub">IWM often flips before DIA during risk-off events — small-cap leading indicator</div>
         </div>
       </div>
       <div class="chart-body"><canvas id="cv-qqq-cum" height="180"></canvas></div>
@@ -583,7 +583,7 @@ Setup = Momentum if MomentumScore > 60
 const API = window.location.origin;
 let _gexData   = null;
 let _flowsData = null;
-let _activeSym = 'SPY';
+let _activeSym = 'DIA';
 let _mainChart = null;
 let _chartInstances = {};
 
@@ -602,8 +602,9 @@ function setStatus(state, msg) {
 // ── HI Score algorithm ────────────────────────────────────────────────────────
 function computeHIScore(gexAsset, flowAsset) {
   if (!gexAsset) return { hi: 0, momScore: 0, revScore: 0, setup: 'neutral' };
-  const isLong   = (gexAsset.regime || '').includes('Long');
   const netGex   = gexAsset.total_gex_m || 0;
+  // API returns regime=null — derive from total_gex_m (positive = dealers long gamma)
+  const isLong   = netGex > 0;
   const flip     = gexAsset.flip_level  || 0;
   const spot     = gexAsset.spot        || 0;
   const wall     = gexAsset.gamma_wall  || 0;
@@ -636,7 +637,8 @@ function computeHIScore(gexAsset, flowAsset) {
   revScore = Math.min(100, Math.max(0, revScore));
 
   const setup = momScore > 60 ? 'momentum' : revScore > 60 ? 'reversal' : 'neutral';
-  return { hi, momScore, revScore, setup, netGex, pcr, netDD, isLong, spot, wall, flip };
+  const regime = isLong ? 'Long Gamma' : 'Short Gamma';
+  return { hi, momScore, revScore, setup, netGex, pcr, netDD, isLong, spot, wall, flip, regime };
 }
 
 // ── Charm / Vanna flow estimates ─────────────────────────────────────────────
@@ -656,7 +658,21 @@ function estimateCharmVanna(gexAsset, flowAsset) {
 
 // ── Draw HI Profile (horizontal bars, dealer flow by price) ─────────────────
 function drawHIProfile(cv, gex) {
-  if (!cv || !gex || !gex.strikes || !gex.strikes.length) return;
+  if (!cv || !gex || !gex.strikes || !gex.strikes.length) {
+    const _W = cv && cv.parentElement ? (cv.parentElement.clientWidth || 420) : 420;
+    if (cv) {
+      cv.width = _W; cv.height = 90;
+      cv.style.width = _W + 'px'; cv.style.height = '90px';
+      const _c = cv.getContext('2d');
+      _c.fillStyle = '#0f172a';
+      _c.fillRect(0, 0, _W, 90);
+      _c.fillStyle = '#475569'; _c.font = 'bold 13px sans-serif'; _c.textAlign = 'center';
+      _c.fillText('No options strike data — requires market hours + options feed', _W/2, 35);
+      _c.font = '11px sans-serif'; _c.fillStyle = '#334155';
+      _c.fillText('Charts will populate when options chain data is available', _W/2, 55);
+    }
+    return;
+  }
   const dpr = window.devicePixelRatio || 1;
   const W   = cv.parentElement.clientWidth || 600;
   const H   = parseInt(cv.getAttribute('height')) || 320;
@@ -742,7 +758,7 @@ function drawIntradayFlow(cv, gex, flows) {
 
   const spy    = gex    ? (gex.assets    || []).find(a => a.symbol === _activeSym) : null;
   const spyF   = flows  ? (flows.assets  || []).find(a => a.symbol === _activeSym) : null;
-  const isLong = spy ? (spy.regime || '').includes('Long') : true;
+  const isLong = spy ? (spy.total_gex_m || 0) > 0 : true; // API returns regime=null; derive from total_gex_m
   const netDD  = spyF ? (spyF.net_dealer_delta_m || 0) : 0;
   const sign   = netDD >= 0 ? 1 : -1;
   const mag    = Math.min(Math.abs(netDD) / 400, 1);
@@ -941,7 +957,7 @@ async function loadMainChart(sym, gexAsset) {
 function renderNamesGrid(gex, flows) {
   const el = document.getElementById('names-grid');
   if (!el) return;
-  const SYMS = ['SPY','QQQ','AAPL','NVDA','TSLA','META','AMZN','MSFT','AMD','GOOGL'];
+  const SYMS = ['DIA','IWM','AAPL','NVDA','TSLA','META','AMZN','MSFT','GOOGL','BAC'];
   const allGex  = gex   ? (gex.assets   || []) : [];
   const allFlow = flows ? (flows.assets || []) : [];
 
@@ -958,7 +974,8 @@ function renderNamesGrid(gex, flows) {
     const spot = g ? (g.spot || 0) : 0;
     const wall = g ? (g.gamma_wall || 0) : 0;
     const flip = g ? (g.flip_level || 0) : 0;
-    const regime = g ? (g.regime || '') : '';
+    const _gexM = g ? (g.total_gex_m || 0) : 0;
+    const regime = _gexM > 0 ? 'Long Gamma' : _gexM < 0 ? 'Short Gamma' : 'Neutral';
     const sent = f ? (f.flow_sentiment || 'NEUTRAL').toUpperCase() : 'NEUTRAL';
     const hiPct = Math.min(100, Math.abs(hi) / 5); // normalize for bar
     const isHIPos = hi >= 0;
@@ -1013,7 +1030,7 @@ function renderNamesGrid(gex, flows) {
 function renderScoreboard(gex, flows) {
   const tbody = document.getElementById('scoreboard-tbody');
   if (!tbody) return;
-  const SYMS = ['SPY','QQQ','AAPL','NVDA','TSLA','META','AMZN','MSFT','AMD','GOOGL','DIA','IWM'];
+  const SYMS = ['DIA','IWM','AAPL','NVDA','TSLA','META','AMZN','MSFT','GOOGL','BAC','JPM','XOM'];
   const allGex  = gex   ? (gex.assets   || []) : [];
   const allFlow = flows ? (flows.assets || []) : [];
   const rows = SYMS.map(sym => {
@@ -1080,8 +1097,8 @@ function updateGauge(gex, flows) {
 
 // ── Update stats strip ────────────────────────────────────────────────────────
 function updateStats(gex, flows) {
-  const spy  = gex   ? (gex.assets   || []).find(a => a.symbol === 'SPY') : null;
-  const spyF = flows ? (flows.assets || []).find(a => a.symbol === 'SPY') : null;
+  const spy  = gex   ? ((gex.assets   || []).find(a => a.symbol === 'DIA') || (gex.assets||[])[0]) : null;
+  const spyF = flows ? (flows.assets || []).find(a => a.symbol === 'DIA') : null;
   if (!spy) return;
   const { hi, netGex, pcr, isLong } = computeHIScore(spy, spyF);
   const { charm, vanna, delta } = estimateCharmVanna(spy, spyF);
@@ -1091,25 +1108,26 @@ function updateStats(gex, flows) {
   set('st-charm-flow', fmtM(charm), charm>=0?'#4ade80':'#f87171');
   set('st-vanna-flow', fmtM(vanna), vanna>=0?'#4ade80':'#f87171');
   set('st-pcr',        pcr!=null?pcr.toFixed(2):'—', (pcr||0)>1?'#f87171':'#4ade80');
-  set('st-regime',     spy.regime||'—', isLong?'#4ade80':'#f87171');
+  const regimeLabel = isLong ? 'Long Gamma' : 'Short Gamma';
+  set('st-regime',     regimeLabel, isLong?'#4ade80':'#f87171');
   set('hero-hi',       fmtM(hi),    hi>=0?'#4ade80':'#f87171');
-  set('hero-regime',   spy.regime||'—', isLong?'#4ade80':'#f87171');
+  set('hero-regime',   regimeLabel, isLong?'#4ade80':'#f87171');
   // main regime chip
-  const rc = document.getElementById('main-regime-chip'); if(rc){ rc.textContent=spy.regime||'—'; rc.className='chip '+(isLong?'chip-long':'chip-short'); }
+  const rc = document.getElementById('main-regime-chip'); if(rc){ rc.textContent=regimeLabel; rc.className='chip '+(isLong?'chip-long':'chip-short'); }
   const hc = document.getElementById('main-hi-chip'); if(hc){ hc.textContent='HI: '+(hi>=0?'+':'')+hi.toFixed(0); hc.style.color=hi>=0?'#4ade80':'#f87171'; }
   // spy-hi-chip / qqq-hi-chip
   const spyHC=document.getElementById('spy-hi-chip');if(spyHC){spyHC.textContent='HI: '+(hi>=0?'+':'')+hi.toFixed(0);spyHC.style.color=hi>=0?'#4ade80':'#f87171';}
-  const qqqG = gex?(gex.assets||[]).find(a=>a.symbol==='QQQ'):null;
-  const qqqF = flows?(flows.assets||[]).find(a=>a.symbol==='QQQ'):null;
+  const qqqG = gex?(gex.assets||[]).find(a=>a.symbol==='IWM'):null;
+  const qqqF = flows?(flows.assets||[]).find(a=>a.symbol==='IWM'):null;
   if(qqqG){const{hi:qhi}=computeHIScore(qqqG,qqqF);const qqc=document.getElementById('qqq-hi-chip');if(qqc){qqc.textContent='HI: '+(qhi>=0?'+':'')+qhi.toFixed(0);qqc.style.color=qhi>=0?'#4ade80':'#f87171';}}
 }
 
 // ── Render live summary ───────────────────────────────────────────────────────
 function renderHISummary(gex, flows) {
   const el = document.getElementById('hi-summary-live'); if (!el) return;
-  const spy  = gex   ? (gex.assets   || []).find(a => a.symbol === 'SPY') : null;
-  const spyF = flows ? (flows.assets || []).find(a => a.symbol === 'SPY') : null;
-  if (!spy) { el.innerHTML = '<div class="hl-warn">⚠️ Server offline</div>'; return; }
+  const spy  = gex   ? ((gex.assets   || []).find(a => a.symbol === 'DIA') || (gex.assets||[])[0]) : null;
+  const spyF = flows ? (flows.assets || []).find(a => a.symbol === 'DIA') : null;
+  if (!spy) { el.innerHTML = '<div class="hl-warn">⚠️ Server offline or no GEX data</div>'; return; }
   const { hi, momScore, revScore, setup, netGex, isLong, spot, wall, flip } = computeHIScore(spy, spyF);
   const { charm, vanna } = estimateCharmVanna(spy, spyF);
   const distWall = wall&&spot ? ((wall-spot)/spot*100).toFixed(1) : '—';
@@ -1143,6 +1161,8 @@ function selectSym(sym, btn) {
   if (btn) btn.classList.add('active');
   document.querySelectorAll('.sym-btn').forEach(b => { if(b.textContent===sym) b.classList.add('active'); });
   _activeSym = sym;
+  const lbl = document.getElementById('sel-sym-lbl'); if(lbl) lbl.textContent = sym;
+  const ct = document.getElementById('main-chart-title'); if(ct) ct.textContent = sym + ' — 4H Candlestick with Dealer Hedging Zones';
   const lbl = document.getElementById('sel-sym-lbl'); if (lbl) lbl.textContent = sym;
   const ttl = document.getElementById('main-chart-title'); if (ttl) ttl.textContent = sym + ' — 4H Candlestick with Dealer Hedging Zones';
   if (_gexData) {
@@ -1193,8 +1213,8 @@ async function loadData(nocache = false) {
 
   // Above-fold charts: draw immediately
   requestAnimationFrame(function() {
-    const spy = gexRes ? (gexRes.assets || []).find(a => a.symbol === 'SPY') : null;
-    const qqq = gexRes ? (gexRes.assets || []).find(a => a.symbol === 'QQQ') : null;
+    const spy = gexRes ? (gexRes.assets || []).find(a => a.symbol === 'DIA') : null;
+    const qqq = gexRes ? (gexRes.assets || []).find(a => a.symbol === 'IWM') : null;
     drawHIProfile(document.getElementById('cv-hi-profile'), gexActive);
     drawIntradayFlow(document.getElementById('cv-intraday-flow'), gexRes, flowsRes);
     // Below-fold charts: lazy-draw when scrolled into view

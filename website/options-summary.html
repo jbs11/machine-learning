@@ -1281,7 +1281,7 @@ function buildCard(a) {
 function drawMiniGex(a) {
   const gex = a.gex;
   const cv  = document.getElementById('gex-' + a.symbol);
-  if (!cv) return;
+  if (!cv) {
   const strikes = gex.strikes || [];
   const gexArr  = gex.gex    || [];
   if (!strikes.length || !gexArr.length) return;
@@ -1590,7 +1590,7 @@ function _drawSkewCanvas(a) {
   const skewByExp = a.skew_by_exp;
   const ts        = a.term_structure;
   const cv        = document.getElementById('vd-skew-canvas');
-  if (!cv || !skewByExp || !ts || !ts.length) return;
+  if (!cv || !skewByExp || !ts || !ts.length) {
   const dpr = window.devicePixelRatio || 1;
   const W   = Math.max(cv.parentElement.clientWidth || 0, 400);
   const H   = 280;
@@ -1667,7 +1667,7 @@ function drawSurface(a) {
 function _drawSurfaceCanvas(a) {
   const mx = a.matrix;
   const cv = document.getElementById('vd-surface-canvas');
-  if (!cv || !mx || !mx.expirations || !mx.expirations.length) return;
+  if (!cv || !mx || !mx.expirations || !mx.expirations.length) {
   const dpr = window.devicePixelRatio || 1;
   const W   = Math.max(cv.parentElement.clientWidth || 0, 400);
   const H   = 360;
