@@ -208,12 +208,12 @@
     <div id="day-verdict"></div>
     <div class="two-col">
       <div class="info-card">
-        <h3>&#127919; Key GEX Levels — SPY</h3>
+        <h3>&#127919; Key GEX Levels — QQQ (Proxy)</h3>
         <div id="day-spy-levels"><div style="color:var(--muted);font-size:.82rem;">Loading...</div></div>
         <div id="day-gex-note" style="margin-top:.7rem;"></div>
       </div>
       <div class="info-card">
-        <h3>&#128248; ES Futures Positioning</h3>
+        <h3>&#128248; NQ Futures Positioning</h3>
         <div id="day-es-levels"><div style="color:var(--muted);font-size:.82rem;">Loading...</div></div>
         <div id="day-es-note" style="margin-top:.7rem;"></div>
       </div>
@@ -528,8 +528,8 @@ function verdictClass(dir) {
   return d === 'BULLISH' ? 'verdict-bull' : d === 'BEARISH' ? 'verdict-bear' : 'verdict-neut';
 }
 
-function getSPYGex() { return (_gex && _gex.assets && _gex.assets.find(a => a.symbol === 'SPY')) || {}; }
-function getESGex()  { return (_gex && _gex.assets && _gex.assets.find(a => a.symbol === 'ES=F')) || {}; }
+function getSPYGex() { return (_gex && _gex.assets && (_gex.assets.find(a => a.symbol === 'QQQ') || _gex.assets.find(a => a.symbol === 'DIA') || _gex.assets[0])) || {}; }
+function getESGex()  { return (_gex && _gex.assets && (_gex.assets.find(a => a.symbol === 'NQ=F') || _gex.assets.find(a => a.symbol === 'CL=F'))) || {}; }
 function getSPYFlow() {
   if (!_flow || !_flow.assets) return {};
   return _flow.assets.find(a => a.symbol === 'SPY') || _flow.assets.find(a => a.flow_sentiment) || {};
@@ -633,8 +633,8 @@ function renderDayTab() {
     {val: fmtP(es.gamma_wall), lbl: 'Gamma Wall', color: '#22c55e'},
     {val: fmtP(es.flip_level), lbl: 'Gamma Flip', color: '#a78bfa'},
     {val: fmtP(es.put_wall),   lbl: 'Put Wall',   color: '#f87171'},
-    {val: fmtP(es.spot),       lbl: 'ES Spot',    color: '#fbbf24'},
-  ]) : '<div class="hl-amber">ES=F GEX data loading or unavailable — check server connection.</div>';
+    {val: fmtP(es.spot),       lbl: 'NQ Spot',    color: '#fbbf24'},
+  ]) : '<div class="hl-amber">NQ futures GEX unavailable — options data requires market hours.</div>';
   document.getElementById('day-es-note').innerHTML = es.regime ? regimeNote(es) : '';
 
   // Flows
@@ -803,14 +803,14 @@ function renderGEXSection() {
     {val: spy.pcr != null ? spy.pcr.toFixed(2) : null, lbl: 'Put/Call Ratio', color: spy.pcr > 1.2 ? '#f87171' : spy.pcr < 0.7 ? '#4ade80' : '#fbbf24'},
   ]);
   document.getElementById('gex-spy-levels').innerHTML = spyLevels;
-  document.getElementById('gex-spy-regime').innerHTML = spy.regime ? regimeNote(spy) : '<div class="hl-amber">SPY GEX data unavailable</div>';
+  document.getElementById('gex-spy-regime').innerHTML = spy.regime ? regimeNote(spy) : '<div class="hl-amber">GEX data unavailable — market may be closed</div>';
 
   const esLevels = es.spot ? levelGrid([
     {val: fmtP(es.gamma_wall), lbl: 'Gamma Wall', color: '#22c55e'},
     {val: fmtP(es.flip_level), lbl: 'Gamma Flip', color: '#a78bfa'},
     {val: fmtP(es.put_wall),   lbl: 'Put Wall',   color: '#f87171'},
-    {val: fmtP(es.spot),       lbl: 'ES Spot',    color: '#fbbf24'},
-  ]) : '<div class="hl-amber" style="font-size:.82rem;">ES=F GEX data unavailable — server may not have futures options data.</div>';
+    {val: fmtP(es.spot),       lbl: 'NQ Spot',    color: '#fbbf24'},
+  ]) : '<div class="hl-amber" style="font-size:.82rem;">NQ futures GEX unavailable — options data requires market hours.</div>';
   document.getElementById('gex-es-levels').innerHTML = esLevels;
   document.getElementById('gex-es-regime').innerHTML = es.regime ? regimeNote(es) : '';
 
@@ -819,7 +819,7 @@ function renderGEXSection() {
   const fs = spyFlow.flow_sentiment;
   document.getElementById('gex-pcr-flows').innerHTML =
     `<table class="kl-table"><tbody>
-      <tr><td><strong>SPY Flow Sentiment</strong></td><td>${sigChip(fs || '--')}</td></tr>
+      <tr><td><strong>Market Flow Sentiment</strong></td><td>${sigChip(fs || '--')}</td></tr>
       ${spy.pcr != null ? `<tr><td><strong>Put/Call Ratio</strong></td><td style="color:${spy.pcr > 1.2 ? '#f87171' : spy.pcr < 0.7 ? '#4ade80' : '#fbbf24'};font-weight:700;">${spy.pcr.toFixed(2)}</td></tr>` : ''}
       <tr><td><strong>Net GEX</strong></td><td style="color:${spy.total_gex_m > 0 ? '#4ade80' : '#f87171'};">${spy.total_gex_m != null ? '$' + spy.total_gex_m.toFixed(0) + 'M' : '--'}</td></tr>
     </tbody></table>`;
@@ -829,8 +829,8 @@ function renderGEXSection() {
 function renderInstitutional() {
   const spy = getSPYGex();
   const bull = getBullPct();
-  const buyPct = (_mkt.sentiment && _mkt.sentiment.buy && _mkt.sentiment.total) ? Math.round(_mkt.sentiment.buy / _mkt.sentiment.total * 100) : Math.round(bull);
-  const sellPct = (_mkt.sentiment && _mkt.sentiment.sell && _mkt.sentiment.total) ? Math.round(_mkt.sentiment.sell / _mkt.sentiment.total * 100) : Math.round(100 - bull);
+  const buyPct = (_mkt && _mkt.sentiment && _mkt.sentiment.buy && _mkt.sentiment.total) ? Math.round(_mkt.sentiment.buy / _mkt.sentiment.total * 100) : Math.round(bull);
+  const sellPct = (_mkt && _mkt.sentiment && _mkt.sentiment.sell && _mkt.sentiment.total) ? Math.round(_mkt.sentiment.sell / _mkt.sentiment.total * 100) : Math.round(100 - bull);
   const holdPct = 100 - buyPct - sellPct;
   const isLong = String(spy.regime || '').toLowerCase().includes('long');
   const gexAbs = Math.abs(spy.total_gex_m || 0);
@@ -960,7 +960,8 @@ async function loadAll() {
     dot.className = 'sdot on';
     msg.textContent = 'Forecast updated · auto-refresh every 8 minutes';
   } catch (e) {
-    showPageError('Connection error — ensure server is running: py live-server.py', loadAll);
+    console.error('Forecast render error:', e);
+    if (!_mkt && !_gex) showPageError('Connection error — ensure server is running: py live-server.py', loadAll);
   }
 }
 
