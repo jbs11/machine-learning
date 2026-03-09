@@ -36,7 +36,7 @@
     }
     .spinner {
       display: inline-block; width: 20px; height: 20px;
-      border: 3px solid rgba(0,0,0,.06); border-top-color: var(--accent);
+      border: 3px solid rgba(255,255,255,.1); border-top-color: var(--accent);
       border-radius: 50%; animation: spin .7s linear infinite;
       vertical-align: middle; margin-right: .5rem;
     }
@@ -59,7 +59,7 @@
     .ov-sub   { font-size: .75rem; color: var(--muted); margin-top: .3rem; }
     .dir-BULLISH          { color: #4ade80; }
     .dir-BEARISH          { color: #f87171; }
-    .dir-NEUTRAL          { color: #d97706; }
+    .dir-NEUTRAL          { color: #fbbf24; }
     .dir-SLIGHTLY\.BULLISH { color: #86efac; }
     .dir-SLIGHTLY\.BEARISH { color: #fca5a5; }
     .dir-SLIGHTLY-BULLISH { color: #86efac; }
@@ -87,7 +87,7 @@
     }
     .note-card.bullish { background: rgba(74,222,128,.07);  border-color: #4ade80; }
     .note-card.bearish { background: rgba(248,113,113,.07); border-color: #f87171; }
-    .note-card.warning { background: rgba(251,191,36,.07);  border-color: #d97706; }
+    .note-card.warning { background: rgba(251,191,36,.07);  border-color: #fbbf24; }
     .note-card.danger  { background: rgba(239,68,68,.12);   border-color: #ef4444; }
     .note-card.info    { background: rgba(148,163,184,.06); border-color: #475569; }
     .note-icon { font-size: 1.1rem; margin-right: .35rem; }
@@ -117,22 +117,22 @@
       letter-spacing: .07em; color: var(--muted);
       border-bottom: 1px solid var(--border);
     }
-    .tbl td { padding: .42rem .8rem; border-bottom: 1px solid rgba(0,0,0,.03); }
+    .tbl td { padding: .42rem .8rem; border-bottom: 1px solid rgba(255,255,255,.04); }
     .tbl tr:last-child td { border-bottom: none; }
-    .tbl tr:hover td { background: rgba(0,0,0,.02); }
+    .tbl tr:hover td { background: rgba(255,255,255,.03); }
     .sig-chip {
       display: inline-block; font-size: .68rem; font-weight: 800;
       padding: .15rem .45rem; border-radius: 4px; letter-spacing: .04em;
     }
     .sig-BUY  { background: rgba(74,222,128,.18); color:#4ade80; border:1px solid #4ade80; }
     .sig-SELL { background: rgba(248,113,113,.18); color:#f87171; border:1px solid #f87171; }
-    .sig-HOLD { background: rgba(251,191,36,.12);  color:#d97706; border:1px solid #d97706; }
+    .sig-HOLD { background: rgba(251,191,36,.12);  color:#fbbf24; border:1px solid #fbbf24; }
     .vr-chip {
       display: inline-block; font-size: .65rem; font-weight: 700;
       padding: .1rem .35rem; border-radius: 3px;
     }
     .vr-0 { background:rgba(56,189,248,.12); color:#38bdf8; }
-    .vr-1 { background:rgba(251,191,36,.1);  color:#d97706; }
+    .vr-1 { background:rgba(251,191,36,.1);  color:#fbbf24; }
     .vr-2 { background:rgba(248,113,113,.15);color:#f87171; }
     .val-up   { color: #4ade80; font-weight: 700; }
     .val-down { color: #f87171; font-weight: 700; }
@@ -193,7 +193,7 @@
       font-size: .68rem; font-weight: 700; cursor: pointer; transition: all .15s;
     }
     .fc-tf-btn:hover { color: var(--text); border-color: var(--border); }
-    .fc-tf-btn.active { background: rgba(8,145,178,.15); border-color: var(--accent); color: var(--accent); }
+    .fc-tf-btn.active { background: rgba(34,211,238,.15); border-color: var(--accent); color: var(--accent); }
     .forecast-chart { height: 180px; position: relative; }
     .forecast-table { width: 100%; border-collapse: collapse; font-size: .77rem; }
     .forecast-table th {
@@ -202,7 +202,7 @@
       letter-spacing: .07em; color: var(--muted);
       border-bottom: 1px solid var(--border);
     }
-    .forecast-table td { padding: .4rem .8rem; border-bottom: 1px solid rgba(0,0,0,.03); }
+    .forecast-table td { padding: .4rem .8rem; border-bottom: 1px solid rgba(255,255,255,.04); }
     .forecast-table tr:last-child td { border-bottom: none; }
     .horizon-label { font-size: .72rem; font-weight: 700; color: var(--muted); }
     .forecast-summary {
@@ -247,10 +247,10 @@
     }
     .impact-BULLISH { background: rgba(74,222,128,.18);  color:#4ade80; border:1px solid #4ade8055; }
     .impact-BEARISH { background: rgba(248,113,113,.18); color:#f87171; border:1px solid #f8717155; }
-    .impact-MIXED   { background: rgba(251,191,36,.15);  color:#d97706; border:1px solid #d9770655; }
+    .impact-MIXED   { background: rgba(251,191,36,.15);  color:#fbbf24; border:1px solid #fbbf2455; }
     .impact-NEUTRAL { background: rgba(148,163,184,.12); color:#94a3b8; border:1px solid #94a3b855; }
     .mag-HIGH   { color:#f87171; }
-    .mag-MEDIUM { color:#d97706; }
+    .mag-MEDIUM { color:#fbbf24; }
     .mag-LOW    { color:#94a3b8; }
     .event-body { padding: .75rem 1rem; }
     .event-signal-row {
@@ -301,7 +301,7 @@
     }
     .ml-rank-row {
       display: flex; align-items: center; gap: .7rem;
-      padding: .45rem .9rem; border-bottom: 1px solid rgba(0,0,0,.03);
+      padding: .45rem .9rem; border-bottom: 1px solid rgba(255,255,255,.04);
     }
     .ml-rank-row:last-child { border-bottom: none; }
     .ml-rank-num { font-size: .7rem; color: var(--muted); width: 16px; text-align: right; flex-shrink: 0; }
@@ -324,7 +324,7 @@
 
     /* ── Extended Forecast ── */
     .fcast-overview-banner {
-      background: linear-gradient(135deg, rgba(248,250,252,.95), rgba(8,13,26,.95));
+      background: linear-gradient(135deg, rgba(15,23,41,.95), rgba(8,13,26,.95));
       border: 1px solid var(--border); border-radius: 12px;
       padding: 1.1rem 1.4rem; margin-bottom: 1.5rem;
       display: flex; gap: 2rem; flex-wrap: wrap; align-items: center;
@@ -383,10 +383,10 @@
       border-bottom: 1px solid var(--border);
     }
     .fcast-stock-tbl td {
-      padding: .42rem .8rem; border-bottom: 1px solid rgba(0,0,0,.03);
+      padding: .42rem .8rem; border-bottom: 1px solid rgba(255,255,255,.04);
     }
     .fcast-stock-tbl tr:last-child td { border-bottom: none; }
-    .fcast-stock-tbl tr:hover td { background: rgba(0,0,0,.02); }
+    .fcast-stock-tbl tr:hover td { background: rgba(255,255,255,.03); }
 
     /* Options forecast cards */
     .fcast-opts-grid {
@@ -405,7 +405,7 @@
     .fcast-opt-body { padding: .75rem 1rem; }
     .fcast-opt-row {
       display: flex; justify-content: space-between; align-items: center;
-      padding: .28rem 0; border-bottom: 1px solid rgba(0,0,0,.03);
+      padding: .28rem 0; border-bottom: 1px solid rgba(255,255,255,.04);
       font-size: .77rem;
     }
     .fcast-opt-row:last-child { border-bottom: none; }
@@ -470,8 +470,8 @@
     .gex-lv-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
     .gex-lv.call-wall  { background:rgba(74,222,128,.1); color:#4ade80; border:1px solid rgba(74,222,128,.35); }
     .gex-lv.put-wall   { background:rgba(248,113,113,.1);color:#f87171; border:1px solid rgba(248,113,113,.35); }
-    .gex-lv.flip-lvl   { background:rgba(251,191,36,.1); color:#d97706; border:1px solid rgba(251,191,36,.35); }
-    .gex-lv.spot-lvl   { background:var(--accent-subtle); color:#0891b2; border:1px solid rgba(34,211,238,.35); }
+    .gex-lv.flip-lvl   { background:rgba(251,191,36,.1); color:#fbbf24; border:1px solid rgba(251,191,36,.35); }
+    .gex-lv.spot-lvl   { background:var(--accent-subtle); color:#22d3ee; border:1px solid rgba(34,211,238,.35); }
     .gex-lv.pcr-lvl    { background:rgba(167,139,250,.1);color:#a78bfa; border:1px solid rgba(167,139,250,.35); }
 
     /* ── Per-card chart guide ── */
@@ -526,12 +526,12 @@
       text-transform: uppercase; letter-spacing: .07em; color: var(--muted);
       border-bottom: 1px solid var(--border);
     }
-    .gex-ref-tbl td { padding: .3rem .7rem; border-bottom: 1px solid rgba(0,0,0,.03); vertical-align: top; }
+    .gex-ref-tbl td { padding: .3rem .7rem; border-bottom: 1px solid rgba(255,255,255,.04); vertical-align: top; }
     .gex-ref-tbl tr:last-child td { border-bottom: none; }
     .gex-ref-swatch { display: inline-block; width: 18px; height: 3px; border-radius: 1px; vertical-align: middle; margin-right: .3rem; }
     .trading-step { display: flex; gap: .6rem; margin: .35rem 0; }
     .trading-step-num {
-      width: 20px; height: 20px; border-radius: 50%; background: rgba(8,145,178,.15);
+      width: 20px; height: 20px; border-radius: 50%; background: rgba(34,211,238,.15);
       color: var(--accent); font-size: .68rem; font-weight: 900; flex-shrink: 0;
       display: flex; align-items: center; justify-content: center; margin-top: .1rem;
     }
@@ -543,7 +543,7 @@
 
 <!-- ── Top Navigation ────────────────────────────────────────────────────── -->
 <nav class="page-nav">
-  <a href="live-trading.html">← Live Trading</a> | <a href="brokers.html">Brokers</a> | <a href="report-ms.html" target="_blank" style="background:#0891b2;color:var(--bg);padding:.22rem .75rem;border-radius:5px;font-weight:700;text-decoration:none;font-size:.82rem;">&#128202; Report</a> | <a href="report-tg.html" target="_blank" style="background:#a78bfa;color:var(--bg);padding:.22rem .75rem;border-radius:5px;font-weight:700;text-decoration:none;font-size:.82rem;">&#128214; Guide</a>
+  <a href="live-trading.html">← Live Trading</a> | <a href="brokers.html">Brokers</a> | <a href="report-ms.html" target="_blank" style="background:#22d3ee;color:var(--bg);padding:.22rem .75rem;border-radius:5px;font-weight:700;text-decoration:none;font-size:.82rem;">&#128202; Report</a> | <a href="report-tg.html" target="_blank" style="background:#a78bfa;color:var(--bg);padding:.22rem .75rem;border-radius:5px;font-weight:700;text-decoration:none;font-size:.82rem;">&#128214; Guide</a>
   <span class="page-nav-sep">|</span>
   <a href="market-summary.html" class="active">Market Summary</a>
   <span class="page-nav-sep">|</span>
@@ -856,7 +856,7 @@
     <!-- ── Top activity ───────────────────────────────────────────────── -->
     <div class="section-title">Highest Trading Activity (Volume vs 20-bar Avg)</div>
     <div class="table-card" style="margin-bottom:1.5rem;">
-      <div class="table-card-header" style="color:#d97706;">🔥 Most Active — All Assets</div>
+      <div class="table-card-header" style="color:#fbbf24;">🔥 Most Active — All Assets</div>
       <table class="tbl">
         <thead><tr>
           <th>Symbol</th><th>Name</th><th>Type</th><th>Signal</th>
@@ -1708,7 +1708,7 @@ function drawProbCone(cv, candles, forecasts, sym, vp, hoverX, hoverY, gexLevels
   ctx.fillRect(0, 0, W, H);
 
   // Axis border
-  ctx.strokeStyle = 'rgba(0,0,0,.08)';
+  ctx.strokeStyle = 'rgba(255,255,255,.08)';
   ctx.lineWidth = 1;
   ctx.strokeRect(pad.l, pad.t, cW, cH);
 

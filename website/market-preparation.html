@@ -7,13 +7,13 @@
   <link rel="preload" href="style.css" as="style" fetchpriority="high">
   <link rel="stylesheet" href="style.css">
   <style>
-    :root { --em:#10b981; --em2:#059669; }
+    :root { --em:#10b981; --em2:#34d399; }
     .mp-wrap { max-width:1600px; margin:0 auto; padding:0 1.5rem 6rem; }
 
     /* ── Nav ── */
 /* ── Hero ── */
     .mp-hero { padding:3.5rem 1.5rem 2.5rem;text-align:center;background:radial-gradient(ellipse 80% 55% at 50% -5%,rgba(16,185,129,.13) 0%,transparent 65%),var(--bg);border-bottom:1px solid var(--border); }
-    .mp-hero h1 { font-size:clamp(1.8rem,4vw,3rem);font-weight:900;letter-spacing:-.03em;line-height:1.15;margin-bottom:.8rem;background:linear-gradient(135deg,#10b981 0%,#059669 40%,#fff 80%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text; }
+    .mp-hero h1 { font-size:clamp(1.8rem,4vw,3rem);font-weight:900;letter-spacing:-.03em;line-height:1.15;margin-bottom:.8rem;background:linear-gradient(135deg,#10b981 0%,#34d399 40%,#fff 80%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text; }
     .mp-hero p { color:var(--muted);font-size:1.05rem;max-width:780px;margin:0 auto 1.5rem;line-height:1.7; }
     .mp-badge { display:inline-flex;align-items:center;gap:.5rem;padding:.3rem 1rem;background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.28);border-radius:999px;color:#10b981;font-size:.78rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;margin-bottom:1rem; }
 
@@ -51,9 +51,9 @@
     .hl-bull   { background:rgba(34,197,94,.07);border:1px solid rgba(34,197,94,.25);color:#4ade80; }
     .hl-bear   { background:rgba(248,113,113,.07);border:1px solid rgba(248,113,113,.25);color:#f87171; }
     .hl-info   { background:rgba(16,185,129,.06);border:1px solid rgba(16,185,129,.22);color:var(--text); }
-    .hl-warn   { background:rgba(251,191,36,.07);border:1px solid rgba(251,191,36,.25);color:#d97706; }
+    .hl-warn   { background:rgba(251,191,36,.07);border:1px solid rgba(251,191,36,.25);color:#fbbf24; }
     .hl-purple { background:rgba(167,139,250,.07);border:1px solid rgba(167,139,250,.25);color:#a78bfa; }
-    .hl-cyan   { background:rgba(8,145,178,.05);border:1px solid var(--accent-border);color:#0891b2; }
+    .hl-cyan   { background:rgba(34,211,238,.05);border:1px solid var(--accent-border);color:#22d3ee; }
     .hl-orange { background:rgba(249,115,22,.07);border:1px solid rgba(249,115,22,.25);color:#f97316; }
 
     /* ── Flow diagram ── */
@@ -63,8 +63,8 @@
     .fd-green  { border-color:rgba(34,197,94,.45);color:#4ade80; }
     .fd-red    { border-color:rgba(248,113,113,.45);color:#f87171; }
     .fd-purple { border-color:rgba(167,139,250,.45);color:#a78bfa; }
-    .fd-amber  { border-color:rgba(251,191,36,.45);color:#d97706; }
-    .fd-cyan   { border-color:rgba(8,145,178,.35);color:#0891b2; }
+    .fd-amber  { border-color:rgba(251,191,36,.45);color:#fbbf24; }
+    .fd-cyan   { border-color:rgba(34,211,238,.35);color:#22d3ee; }
     .fd-em     { border-color:rgba(16,185,129,.45);color:#10b981; }
     .fd-orange { border-color:rgba(249,115,22,.45);color:#f97316; }
 
@@ -82,25 +82,25 @@
     /* ── Institution bars ── */
     .inst-bar-wrap   { background:var(--card);border:1px solid var(--border);border-radius:10px;padding:.9rem 1.1rem;margin:.6rem 0; }
     .inst-bar-label  { display:flex;justify-content:space-between;font-size:.74rem;color:var(--muted);margin-bottom:.4rem;font-weight:600; }
-    .inst-bar-track  { height:22px;background:rgba(0,0,0,.03);border-radius:5px;overflow:hidden; }
+    .inst-bar-track  { height:22px;background:rgba(255,255,255,.04);border-radius:5px;overflow:hidden; }
     .inst-bar-fill   { height:100%;border-radius:5px;display:flex;align-items:center;padding:0 .5rem;font-size:.68rem;font-weight:800;color:var(--bg); }
-    .ibf-buy  { background:linear-gradient(90deg,#10b981,#059669); }
+    .ibf-buy  { background:linear-gradient(90deg,#10b981,#34d399); }
     .ibf-sell { background:linear-gradient(90deg,#f87171,#ef4444);color:#fff; }
     .ibf-neut { background:linear-gradient(90deg,#a78bfa,#7c3aed);color:#fff; }
 
     /* ── Tables ── */
     .kl-table { width:100%;border-collapse:collapse;font-size:.8rem; }
     .kl-table th { background:var(--card);color:var(--muted);font-size:.67rem;text-transform:uppercase;letter-spacing:.06em;padding:.4rem .6rem;text-align:left;border-bottom:1px solid var(--border); }
-    .kl-table td { padding:.42rem .6rem;border-bottom:1px solid rgba(0,0,0,.02);color:var(--text); }
+    .kl-table td { padding:.42rem .6rem;border-bottom:1px solid rgba(255,255,255,.03);color:var(--text); }
     .kl-table tr:last-child td { border-bottom:none; }
     .kl-table tr:hover td { background:rgba(255,255,255,.02); }
 
     /* ── Checklist ── */
     .checklist { list-style:none;padding:0;margin:.5rem 0; }
-    .checklist li { display:flex;align-items:flex-start;gap:.65rem;padding:.45rem 0;border-bottom:1px solid rgba(0,0,0,.03);font-size:.82rem; }
+    .checklist li { display:flex;align-items:flex-start;gap:.65rem;padding:.45rem 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:.82rem; }
     .checklist li:last-child { border-bottom:none; }
     .chk-icon   { flex-shrink:0;margin-top:.05rem; }
-    .chk-green  { color:#4ade80; } .chk-red { color:#f87171; } .chk-amber { color:#d97706; }
+    .chk-green  { color:#4ade80; } .chk-red { color:#f87171; } .chk-amber { color:#fbbf24; }
     .chk-label  { font-weight:700;color:var(--text); }
     .chk-val    { color:var(--muted); }
 
@@ -124,7 +124,7 @@
     .spread-bar { height:18px;border-radius:4px;display:flex;align-items:center;padding:0 .5rem;font-size:.68rem;font-weight:700; }
     .sb-bid { background:rgba(34,197,94,.22);color:#4ade80;border:1px solid rgba(34,197,94,.35); }
     .sb-ask { background:rgba(248,113,113,.22);color:#f87171;border:1px solid rgba(248,113,113,.35); }
-    .sb-mid { background:rgba(251,191,36,.14);color:#d97706;border:1px solid rgba(251,191,36,.3); }
+    .sb-mid { background:rgba(251,191,36,.14);color:#fbbf24;border:1px solid rgba(251,191,36,.3); }
 
     /* ── Corr matrix ── */
     .corr-matrix { display:grid;gap:2px;margin:.8rem 0;font-size:.72rem; }
@@ -151,17 +151,17 @@
     .chip { display:inline-flex;align-items:center;padding:.2rem .55rem;border-radius:5px;font-size:.68rem;font-weight:800;letter-spacing:.04em; }
     .chip-green  { background:rgba(34,197,94,.15);color:#4ade80;border:1px solid rgba(34,197,94,.3); }
     .chip-red    { background:rgba(248,113,113,.15);color:#f87171;border:1px solid rgba(248,113,113,.3); }
-    .chip-amber  { background:rgba(251,191,36,.15);color:#d97706;border:1px solid rgba(251,191,36,.3); }
-    .chip-cyan   { background:var(--accent-subtle);color:#0891b2;border:1px solid var(--accent-border); }
+    .chip-amber  { background:rgba(251,191,36,.15);color:#fbbf24;border:1px solid rgba(251,191,36,.3); }
+    .chip-cyan   { background:var(--accent-subtle);color:#22d3ee;border:1px solid var(--accent-border); }
     .chip-purple { background:rgba(167,139,250,.12);color:#a78bfa;border:1px solid rgba(167,139,250,.25); }
 
     /* ── COT positioning bars ── */
-    .cot-row { display:flex;align-items:center;gap:.8rem;padding:.4rem 0;border-bottom:1px solid rgba(0,0,0,.03); }
+    .cot-row { display:flex;align-items:center;gap:.8rem;padding:.4rem 0;border-bottom:1px solid rgba(255,255,255,.04); }
     .cot-sym  { width:50px;font-weight:800;font-size:.8rem; }
-    .cot-bar-wrap { flex:1;height:14px;background:rgba(0,0,0,.03);border-radius:3px;overflow:hidden;position:relative; }
+    .cot-bar-wrap { flex:1;height:14px;background:rgba(255,255,255,.04);border-radius:3px;overflow:hidden;position:relative; }
     .cot-bar-fill { height:100%;position:absolute;top:0;border-radius:3px; }
     .cot-net { font-size:.72rem;font-weight:700;width:70px;text-align:right; }
-    .cot-bull { background:linear-gradient(90deg,#10b981,#059669); }
+    .cot-bull { background:linear-gradient(90deg,#10b981,#34d399); }
     .cot-bear { background:linear-gradient(90deg,#ef4444,#f87171); }
 
     /* ── IV surface visual ── */
@@ -169,7 +169,7 @@
     .iv-lbl { width:50px;font-size:.7rem;color:var(--muted);font-weight:600; }
     .iv-cell { flex:1;height:22px;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:.67rem;font-weight:700; }
     .iv-lo  { background:rgba(34,197,94,.15);color:#4ade80; }
-    .iv-med { background:rgba(251,191,36,.15);color:#d97706; }
+    .iv-med { background:rgba(251,191,36,.15);color:#fbbf24; }
     .iv-hi  { background:rgba(248,113,113,.15);color:#f87171; }
     .iv-vhi { background:rgba(239,68,68,.3);color:#fca5a5; }
 
@@ -182,12 +182,12 @@
     .gl-def strong { color:var(--text); }
 
     /* ── Event calendar ── */
-    .event-row { display:flex;align-items:center;gap:.8rem;padding:.45rem 0;border-bottom:1px solid rgba(0,0,0,.03);font-size:.81rem; }
+    .event-row { display:flex;align-items:center;gap:.8rem;padding:.45rem 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:.81rem; }
     .event-row:last-child { border-bottom:none; }
     .ev-time { width:90px;font-weight:700;color:var(--muted);font-size:.75rem; }
     .ev-impact { width:8px;height:8px;border-radius:50%;flex-shrink:0; }
     .ev-high   { background:#f87171; }
-    .ev-med    { background:#d97706; }
+    .ev-med    { background:#fbbf24; }
     .ev-low    { background:#4ade80; }
     .ev-name   { flex:1;font-weight:600; }
     .ev-note   { color:var(--muted);font-size:.75rem; }
@@ -215,17 +215,17 @@
     /* ── Futures roll table ── */
     .roll-table { width:100%;border-collapse:collapse;font-size:.79rem; }
     .roll-table th { background:var(--card);color:var(--muted);font-size:.65rem;text-transform:uppercase;letter-spacing:.07em;padding:.4rem .7rem;text-align:left;border-bottom:1px solid var(--border); }
-    .roll-table td { padding:.45rem .7rem;border-bottom:1px solid rgba(0,0,0,.02); }
+    .roll-table td { padding:.45rem .7rem;border-bottom:1px solid rgba(255,255,255,.03); }
     .roll-table tr:last-child td { border-bottom:none; }
 
     /* ── Dark pool visual ── */
     .dp-bar-wrap { margin:.4rem 0; }
     .dp-bar-label { display:flex;justify-content:space-between;font-size:.73rem;margin-bottom:.25rem; }
-    .dp-bar-track { height:14px;background:rgba(0,0,0,.03);border-radius:4px;overflow:hidden; }
+    .dp-bar-track { height:14px;background:rgba(255,255,255,.04);border-radius:4px;overflow:hidden; }
     .dp-bar-fill  { height:100%;border-radius:4px; }
-    .dpf-lit   { background:linear-gradient(90deg,#0891b2,#06b6d4); }
+    .dpf-lit   { background:linear-gradient(90deg,#22d3ee,#06b6d4); }
     .dpf-dark  { background:linear-gradient(90deg,#a78bfa,#7c3aed); }
-    .dpf-other { background:linear-gradient(90deg,#d97706,#d97706); }
+    .dpf-other { background:linear-gradient(90deg,#fbbf24,#fbbf24); }
 
     /* ── Quick-access jump pills ── */
     .jump-pills { display:flex;flex-wrap:wrap;gap:.5rem;padding:1rem 0;border-bottom:1px solid var(--border);margin-bottom:.5rem; }
@@ -250,7 +250,7 @@
     <a href="forecast.html" style="color:#f59e0b;font-weight:700;">&#128200; Forecast</a><span class="page-nav-sep">|</span>
     <a href="asset-details.html">Assets</a>
     <span style="flex:1"></span>
-    <a href="report-ms.html" class="nav-report-btn" style="background:var(--accent-subtle);color:#0891b2;border:1px solid var(--accent-border);">&#128202; Market Report</a>
+    <a href="report-ms.html" class="nav-report-btn" style="background:var(--accent-subtle);color:#22d3ee;border:1px solid var(--accent-border);">&#128202; Market Report</a>
     <a href="report-tg.html" class="nav-report-btn" style="background:rgba(167,139,250,.12);color:#a78bfa;border:1px solid rgba(167,139,250,.25);margin-left:.4rem;">&#128216; Trading Guide</a>
   </nav>
 
@@ -271,7 +271,7 @@
     <div class="stat-cell"><div class="stat-val" id="stat-pwall">--</div><div class="stat-lbl">Put Wall</div></div>
     <div class="stat-cell"><div class="stat-val" id="stat-flow">--</div><div class="stat-lbl">Flow Sentiment</div></div>
     <div class="stat-cell"><div class="stat-val" id="stat-ml">--</div><div class="stat-lbl">Top ML Signal</div></div>
-    <div class="stat-cell"><div class="stat-val" id="stat-vix" style="color:#d97706">--</div><div class="stat-lbl">VIX Proxy</div></div>
+    <div class="stat-cell"><div class="stat-val" id="stat-vix" style="color:#fbbf24">--</div><div class="stat-lbl">VIX Proxy</div></div>
     <div class="stat-cell"><div class="stat-val" id="stat-ts">--</div><div class="stat-lbl">Updated</div></div>
   </div>
 
@@ -311,7 +311,7 @@
     <div class="four-col">
       <div class="info-card">
         <div class="card-icon">&#128208;</div>
-        <h3 style="color:#0891b2;">Stock Market Mechanics</h3>
+        <h3 style="color:#22d3ee;">Stock Market Mechanics</h3>
         <p>Equity prices are driven by a layered ecosystem of participants:</p>
         <ul>
           <li><strong>Retail flow:</strong> Sentiment-driven, often reactive</li>
@@ -339,7 +339,7 @@
       </div>
       <div class="info-card">
         <div class="card-icon">&#9878;</div>
-        <h3 style="color:#d97706;">Futures Market Mechanics</h3>
+        <h3 style="color:#fbbf24;">Futures Market Mechanics</h3>
         <p>Futures set the opening price discovery and drive institutional execution:</p>
         <ul>
           <li><strong>ES/NQ/YM:</strong> 24hr price discovery for S&amp;P/Nasdaq/Dow</li>
@@ -438,11 +438,11 @@
             <div class="sc-sectors">Financials (XLF)<br>Consumer Disc (XLY)<br>Tech (XLK)<br>Real Estate (XLRE)</div>
           </div>
           <div class="sector-cell sc-mid">
-            <div class="sc-phase" style="color:#0891b2;">Mid Cycle</div>
+            <div class="sc-phase" style="color:#22d3ee;">Mid Cycle</div>
             <div class="sc-sectors">Tech (XLK)<br>Industrials (XLI)<br>Materials (XLB)<br>Comm Svc (XLC)</div>
           </div>
           <div class="sector-cell sc-late">
-            <div class="sc-phase" style="color:#d97706;">Late Cycle</div>
+            <div class="sc-phase" style="color:#fbbf24;">Late Cycle</div>
             <div class="sc-sectors">Energy (XLE)<br>Materials (XLB)<br>Industrials (XLI)<br>Healthcare (XLV)</div>
           </div>
           <div class="sector-cell sc-reces">
@@ -512,7 +512,7 @@
             <div class="strat-desc">Buy ATM call+put. Profits from big directional move. Best before catalysts when IV cheap.</div>
           </div>
           <div class="strat-cell">
-            <div class="strat-regime" style="color:#d97706;">Long &#947; + High IVR</div>
+            <div class="strat-regime" style="color:#fbbf24;">Long &#947; + High IVR</div>
             <div class="strat-name">Debit Spread</div>
             <div class="strat-desc">Buy ATM, sell OTM. Reduces premium cost when IV rich. Capped upside, defined risk.</div>
           </div>
@@ -522,7 +522,7 @@
             <div class="strat-desc">Sell OTM call + put spreads. Profits from range-bound price + IV crush. Max loss defined.</div>
           </div>
           <div class="strat-cell">
-            <div class="strat-regime" style="color:#0891b2;">Trend + Low IVR</div>
+            <div class="strat-regime" style="color:#22d3ee;">Trend + Low IVR</div>
             <div class="strat-name">Long Call Spread</div>
             <div class="strat-desc">Buy ATM call, sell OTM call. Directional with reduced cost. Ideal in Long Gamma grind-up.</div>
           </div>
@@ -577,9 +577,9 @@
       <div class="info-card">
         <h3>&#9878; Futures Positioning — COT Proxy</h3>
         <p style="font-size:.79rem;color:var(--muted);margin-bottom:.7rem;">Commitment of Traders: net speculative positioning as % of open interest:</p>
-        <div class="cot-row"><span class="cot-sym" style="color:#0891b2;">ES</span><div class="cot-bar-wrap"><div class="cot-bar-fill cot-bull" id="cot-es" style="left:50%;width:20%"></div></div><span class="cot-net" id="cot-es-val" style="color:#4ade80;">+Moderate</span></div>
+        <div class="cot-row"><span class="cot-sym" style="color:#22d3ee;">ES</span><div class="cot-bar-wrap"><div class="cot-bar-fill cot-bull" id="cot-es" style="left:50%;width:20%"></div></div><span class="cot-net" id="cot-es-val" style="color:#4ade80;">+Moderate</span></div>
         <div class="cot-row"><span class="cot-sym" style="color:#a78bfa;">NQ</span><div class="cot-bar-wrap"><div class="cot-bar-fill cot-bull" id="cot-nq" style="left:50%;width:25%"></div></div><span class="cot-net" id="cot-nq-val" style="color:#4ade80;">+Extended</span></div>
-        <div class="cot-row"><span class="cot-sym" style="color:#d97706;">CL</span><div class="cot-bar-wrap"><div class="cot-bar-fill cot-bear" id="cot-cl" style="right:50%;width:15%;left:auto"></div></div><span class="cot-net" id="cot-cl-val" style="color:#f87171;">-Modest</span></div>
+        <div class="cot-row"><span class="cot-sym" style="color:#fbbf24;">CL</span><div class="cot-bar-wrap"><div class="cot-bar-fill cot-bear" id="cot-cl" style="right:50%;width:15%;left:auto"></div></div><span class="cot-net" id="cot-cl-val" style="color:#f87171;">-Modest</span></div>
         <div class="cot-row"><span class="cot-sym" style="color:#f97316;">GC</span><div class="cot-bar-wrap"><div class="cot-bar-fill cot-bull" id="cot-gc" style="left:50%;width:30%"></div></div><span class="cot-net" id="cot-gc-val" style="color:#4ade80;">+Strong</span></div>
         <div class="cot-row"><span class="cot-sym" style="color:#94a3b8;">ZB</span><div class="cot-bar-wrap"><div class="cot-bar-fill cot-bear" id="cot-zb" style="right:50%;width:20%;left:auto"></div></div><span class="cot-net" id="cot-zb-val" style="color:#f87171;">-Modest</span></div>
         <div style="display:flex;justify-content:space-between;font-size:.67rem;color:var(--muted);margin-top:.5rem;"><span>&#9664; Max Short</span><span>Neutral</span><span>Max Long &#9654;</span></div>
@@ -591,8 +591,8 @@
         <table class="roll-table">
           <thead><tr><th>Contract</th><th>Roll Month</th><th>Impact</th><th>Watch For</th></tr></thead>
           <tbody>
-            <tr><td><strong style="color:#0891b2;">ES/NQ</strong></td><td>Mar/Jun/Sep/Dec</td><td><span class="chip chip-amber">Medium</span></td><td>Volume surge; basis widens; SPY vs ES divergence</td></tr>
-            <tr><td><strong style="color:#d97706;">CL (Oil)</strong></td><td>Monthly</td><td><span class="chip chip-red">High</span></td><td>Contango/backwardation roll P&amp;L for ETFs (USO)</td></tr>
+            <tr><td><strong style="color:#22d3ee;">ES/NQ</strong></td><td>Mar/Jun/Sep/Dec</td><td><span class="chip chip-amber">Medium</span></td><td>Volume surge; basis widens; SPY vs ES divergence</td></tr>
+            <tr><td><strong style="color:#fbbf24;">CL (Oil)</strong></td><td>Monthly</td><td><span class="chip chip-red">High</span></td><td>Contango/backwardation roll P&amp;L for ETFs (USO)</td></tr>
             <tr><td><strong style="color:#f97316;">GC (Gold)</strong></td><td>Feb/Apr/Jun/Aug/Oct/Dec</td><td><span class="chip chip-green">Low</span></td><td>Delivery demand; GLD premium/discount to spot</td></tr>
             <tr><td><strong style="color:#94a3b8;">ZB (Bonds)</strong></td><td>Mar/Jun/Sep/Dec</td><td><span class="chip chip-amber">Medium</span></td><td>Cheapest-to-deliver bond shifts; TLT tracking error</td></tr>
             <tr><td><strong style="color:#a78bfa;">VIX</strong></td><td>Monthly (Wed 30d prior)</td><td><span class="chip chip-red">High</span></td><td>VIX futures roll drag; UVXY/SVIX decay</td></tr>
@@ -687,8 +687,8 @@
       </div>
       <div class="info-card">
         <div class="card-icon">&#128256;</div>
-        <h3 style="color:#d97706;">CTAs / Trend Followers</h3>
-        <div style="font-size:.7rem;font-weight:700;color:#d97706;letter-spacing:.06em;margin-bottom:.4rem;">~$350 BILLION AUM</div>
+        <h3 style="color:#fbbf24;">CTAs / Trend Followers</h3>
+        <div style="font-size:.7rem;font-weight:700;color:#fbbf24;letter-spacing:.06em;margin-bottom:.4rem;">~$350 BILLION AUM</div>
         <p>Pure systematic momentum. Trigger points:</p>
         <ul>
           <li><strong>Trend signal:</strong> 20-day, 50-day, 100-day breakouts trigger add/trim</li>
@@ -704,8 +704,8 @@
       </div>
       <div class="info-card">
         <div class="card-icon">&#128204;</div>
-        <h3 style="color:#0891b2;">ETF / Index Flows</h3>
-        <div style="font-size:.7rem;font-weight:700;color:#0891b2;letter-spacing:.06em;margin-bottom:.4rem;">~$10+ TRILLION AUM</div>
+        <h3 style="color:#22d3ee;">ETF / Index Flows</h3>
+        <div style="font-size:.7rem;font-weight:700;color:#22d3ee;letter-spacing:.06em;margin-bottom:.4rem;">~$10+ TRILLION AUM</div>
         <p>Price-insensitive, rules-based flows:</p>
         <ul>
           <li><strong>Creation/Redemption:</strong> ETF arbitrage forces underlying basket trades</li>
@@ -877,7 +877,7 @@
         <div class="hl-purple" style="margin-bottom:.5rem;"><strong>Dark Pools:</strong> 30-40% of daily equity volume traded off-exchange. Large institutions use dark pools to avoid market impact. Dark pool prints hit tape with delay — watch for unusual large prints on tape.</div>
         <div style="margin:.7rem 0;">
           <div class="dp-bar-wrap">
-            <div class="dp-bar-label"><span style="color:#0891b2;">Lit Exchanges (NYSE, NASDAQ)</span><span style="color:#0891b2;">~55%</span></div>
+            <div class="dp-bar-label"><span style="color:#22d3ee;">Lit Exchanges (NYSE, NASDAQ)</span><span style="color:#22d3ee;">~55%</span></div>
             <div class="dp-bar-track"><div class="dp-bar-fill dpf-lit" style="width:55%;height:14px;border-radius:4px;"></div></div>
           </div>
           <div class="dp-bar-wrap">
@@ -885,7 +885,7 @@
             <div class="dp-bar-track"><div class="dp-bar-fill dpf-dark" style="width:35%;height:14px;border-radius:4px;"></div></div>
           </div>
           <div class="dp-bar-wrap">
-            <div class="dp-bar-label"><span style="color:#d97706;">Wholesale (PFOF, internalized)</span><span style="color:#d97706;">~10%</span></div>
+            <div class="dp-bar-label"><span style="color:#fbbf24;">Wholesale (PFOF, internalized)</span><span style="color:#fbbf24;">~10%</span></div>
             <div class="dp-bar-track"><div class="dp-bar-fill dpf-other" style="width:10%;height:14px;border-radius:4px;"></div></div>
           </div>
         </div>
@@ -940,7 +940,7 @@
         <h3>&#128279; Rolling 30-Day Correlation Matrix</h3>
         <p style="font-size:.79rem;color:var(--muted);margin-bottom:.7rem;">Typical correlations (risk-on regime). Correlations shift during crises:</p>
         <div class="corr-matrix">
-          <div class="corr-row"><div class="corr-lbl"></div><div class="corr-cell" style="color:#0891b2;font-size:.68rem;font-weight:700;">SPY</div><div class="corr-cell" style="color:#a78bfa;font-size:.68rem;font-weight:700;">QQQ</div><div class="corr-cell" style="color:#d97706;font-size:.68rem;font-weight:700;">TLT</div><div class="corr-cell" style="color:#f97316;font-size:.68rem;font-weight:700;">GLD</div><div class="corr-cell" style="color:#fb923c;font-size:.68rem;font-weight:700;">OIL</div><div class="corr-cell" style="color:#94a3b8;font-size:.68rem;font-weight:700;">DXY</div></div>
+          <div class="corr-row"><div class="corr-lbl"></div><div class="corr-cell" style="color:#22d3ee;font-size:.68rem;font-weight:700;">SPY</div><div class="corr-cell" style="color:#a78bfa;font-size:.68rem;font-weight:700;">QQQ</div><div class="corr-cell" style="color:#fbbf24;font-size:.68rem;font-weight:700;">TLT</div><div class="corr-cell" style="color:#f97316;font-size:.68rem;font-weight:700;">GLD</div><div class="corr-cell" style="color:#fb923c;font-size:.68rem;font-weight:700;">OIL</div><div class="corr-cell" style="color:#94a3b8;font-size:.68rem;font-weight:700;">DXY</div></div>
           <div class="corr-row"><div class="corr-lbl">SPY</div><div class="corr-cell cc-self">Self</div><div class="corr-cell cc-high">+0.93</div><div class="corr-cell cc-neg">-0.48</div><div class="corr-cell cc-low">+0.05</div><div class="corr-cell cc-med">+0.28</div><div class="corr-cell cc-neg">-0.32</div></div>
           <div class="corr-row"><div class="corr-lbl">QQQ</div><div class="corr-cell cc-high">+0.93</div><div class="corr-cell cc-self">Self</div><div class="corr-cell cc-neg">-0.42</div><div class="corr-cell cc-low">+0.08</div><div class="corr-cell cc-low">+0.18</div><div class="corr-cell cc-neg">-0.35</div></div>
           <div class="corr-row"><div class="corr-lbl">TLT</div><div class="corr-cell cc-neg">-0.48</div><div class="corr-cell cc-neg">-0.42</div><div class="corr-cell cc-self">Self</div><div class="corr-cell cc-med">+0.38</div><div class="corr-cell cc-neg">-0.15</div><div class="corr-cell cc-neg">-0.28</div></div>

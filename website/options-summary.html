@@ -57,7 +57,7 @@
       border-radius: var(--radius); overflow: hidden;
       transition: border-color .2s, box-shadow .2s; margin-bottom: 1.2rem;
     }
-    .os-card:hover { border-color: rgba(99,102,241,.35); box-shadow: 0 4px 24px rgba(0,0,0,.06); }
+    .os-card:hover { border-color: rgba(99,102,241,.35); box-shadow: 0 4px 24px rgba(255,255,255,.1); }
     .os-card.high-conv { border-left: 3px solid #22c55e; }
     .os-card.mid-conv  { border-left: 3px solid #f59e0b; }
     .os-card.low-conv  { border-left: 3px solid #475569; }
@@ -69,15 +69,15 @@
     .os-chips { display:flex;flex-wrap:wrap;gap:.35rem;align-items:center;margin-top:.2rem; }
     .chip { font-size:.65rem;font-weight:700;letter-spacing:.05em;padding:.18rem .55rem;border-radius:5px; }
     .chip-grp  { background:rgba(56,189,248,.1);color:#7dd3fc;border:1px solid rgba(56,189,248,.2); }
-    .chip-stock{ background:var(--accent-subtle);color:#0891b2;border:1px solid var(--accent-border); }
-    .chip-fut  { background:rgba(251,191,36,.1);color:#d97706;border:1px solid rgba(251,191,36,.2); }
+    .chip-stock{ background:var(--accent-subtle);color:#22d3ee;border:1px solid var(--accent-border); }
+    .chip-fut  { background:rgba(251,191,36,.1);color:#fbbf24;border:1px solid rgba(251,191,36,.2); }
     .chip-etf  { background:rgba(167,139,250,.1);color:#c084fc;border:1px solid rgba(167,139,250,.2); }
 
     .os-right { margin-left:auto; text-align:right; flex-shrink:0; }
     .dir-chip { font-size:.8rem; font-weight:800; padding:.28rem .85rem; border-radius:8px; display:inline-block; letter-spacing:.04em; }
     .dir-buy  { background:rgba(34,197,94,.15);  color:#22c55e; border:1px solid rgba(34,197,94,.3); }
     .dir-sell { background:rgba(248,113,113,.15); color:#f87171; border:1px solid rgba(248,113,113,.3); }
-    .dir-neut { background:rgba(251,191,36,.15);  color:#d97706; border:1px solid rgba(251,191,36,.3); }
+    .dir-neut { background:rgba(251,191,36,.15);  color:#fbbf24; border:1px solid rgba(251,191,36,.3); }
 
     /* Conviction bar */
     .conv-wrap { display:flex;align-items:center;gap:.5rem;margin-top:.4rem;justify-content:flex-end; }
@@ -100,7 +100,7 @@
     .osc-row { display:flex;justify-content:space-between;align-items:center;margin-bottom:.3rem;gap:.5rem; }
     .osc-key { font-size:.73rem;color:var(--muted); }
     .osc-val { font-size:.73rem;font-weight:700;font-family:'Consolas',monospace;text-align:right; }
-    .cv-bull { color:#22c55e; } .cv-bear { color:#f87171; } .cv-neut { color:#d97706; }
+    .cv-bull { color:#22c55e; } .cv-bear { color:#f87171; } .cv-neut { color:#fbbf24; }
     .cv-purple { color:#a78bfa; } .cv-blue { color:#38bdf8; }
     .cv-long { color:#22c55e; } .cv-short { color:#f87171; }
 
@@ -109,7 +109,7 @@
     .strat-type-chip { font-size:.63rem;font-weight:700;padding:.15rem .45rem;border-radius:4px;margin-left:.4rem; }
     .strat-debit { background:rgba(248,113,113,.12);color:#f87171;border:1px solid rgba(248,113,113,.25); }
     .strat-credit{ background:rgba(34,197,94,.12);color:#22c55e;border:1px solid rgba(34,197,94,.25); }
-    .strat-neutral{ background:rgba(251,191,36,.12);color:#d97706;border:1px solid rgba(251,191,36,.25); }
+    .strat-neutral{ background:rgba(251,191,36,.12);color:#fbbf24;border:1px solid rgba(251,191,36,.25); }
 
     /* Strategy legs table */
     .legs-wrap { border-top:1px solid var(--border); padding:.55rem 1rem .7rem; }
@@ -135,7 +135,7 @@
     .gl-item { display:flex;align-items:center;gap:.3rem;font-size:.67rem;color:var(--muted); }
     .gl-green  { width:9px;height:9px;background:rgba(34,197,94,.7);border-radius:2px;flex-shrink:0; }
     .gl-red    { width:9px;height:9px;background:rgba(248,113,113,.7);border-radius:2px;flex-shrink:0; }
-    .gl-yellow { width:10px;height:2px;background:#d97706;flex-shrink:0; }
+    .gl-yellow { width:10px;height:2px;background:#fbbf24;flex-shrink:0; }
     .gl-orange { width:10px;height:2px;background:#fb923c;flex-shrink:0;border-top:1px dashed #fb923c; }
 
     /* Explanation cards */
@@ -161,12 +161,12 @@
       display: flex; align-items: center; gap: 1rem;
       margin: 3rem 0 1.5rem;
       padding: 1rem 1.4rem;
-      background: linear-gradient(135deg, rgba(8,145,178,.05) 0%, transparent 70%);
+      background: linear-gradient(135deg, rgba(34,211,238,.05) 0%, transparent 70%);
       border: 1px solid var(--border);
-      border-left: 4px solid #0891b2;
+      border-left: 4px solid #22d3ee;
       border-radius: 0 10px 10px 0;
     }
-    .section-divider.amber { border-left-color: #d97706; background: linear-gradient(135deg, rgba(251,191,36,.06) 0%, transparent 70%); }
+    .section-divider.amber { border-left-color: #fbbf24; background: linear-gradient(135deg, rgba(251,191,36,.06) 0%, transparent 70%); }
     .section-divider.purple { border-left-color: #a78bfa; background: linear-gradient(135deg, rgba(167,139,250,.06) 0%, transparent 70%); }
     .section-num { font-size: 1.5rem; font-weight: 900; font-family: 'Consolas', monospace; color: var(--muted); flex-shrink: 0; }
     .section-title-text { font-size: 1.05rem; font-weight: 900; color: var(--text); }
@@ -267,15 +267,15 @@
       background: var(--border); border-radius: 6px; overflow: hidden;
     }
     .vfh-range-cell { background: var(--card); padding: .4rem .35rem; text-align: center; }
-    .vfh-range-cell.center { background: rgba(8,145,178,.05); }
+    .vfh-range-cell.center { background: rgba(34,211,238,.05); }
     .vfh-range-label { font-size: .55rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin-bottom: .2rem; }
     .vfh-range-val { font-size: .72rem; font-weight: 700; font-family: 'Consolas', monospace; }
     .vfh-desc { font-size: .77rem; color: var(--muted); line-height: 1.65; margin-top: .55rem; }
     .vfh-trading {
       font-size: .75rem; color: var(--muted); line-height: 1.6;
       margin-top: .5rem; padding: .55rem .7rem;
-      background: rgba(0,0,0,.02);
-      border-left: 2px solid rgba(0,0,0,.06);
+      background: rgba(255,255,255,.03);
+      border-left: 2px solid rgba(255,255,255,.1);
       border-radius: 0 6px 6px 0;
     }
     .vfh-trading strong { color: var(--text); }
@@ -351,7 +351,7 @@
       padding: .3rem .8rem; border-radius: 6px; cursor: pointer;
       font-size: .78rem; transition: border-color .2s, color .2s;
     }
-    .vd-refresh-btn:hover { border-color: #d97706; color: #d97706; }
+    .vd-refresh-btn:hover { border-color: #fbbf24; color: #fbbf24; }
 
     /* Stats row */
     .vd-stats { display: flex; gap: 0; border-bottom: 1px solid var(--border); }
@@ -377,7 +377,7 @@
       white-space: nowrap;
     }
     .vd-tab:hover { color: var(--text); }
-    .vd-tab.active { color: #d97706; border-bottom-color: #d97706; }
+    .vd-tab.active { color: #fbbf24; border-bottom-color: #fbbf24; }
 
     /* Asset selector */
     .vd-asset-bar {
@@ -392,8 +392,8 @@
       border: 1px solid var(--border); background: transparent; color: var(--muted);
       cursor: pointer; transition: all .15s;
     }
-    .vd-asset-btn:hover { border-color: #d97706; color: #d97706; }
-    .vd-asset-btn.active { background: rgba(251,191,36,.12); border-color: #d97706; color: #d97706; }
+    .vd-asset-btn:hover { border-color: #fbbf24; color: #fbbf24; }
+    .vd-asset-btn.active { background: rgba(251,191,36,.12); border-color: #fbbf24; color: #fbbf24; }
 
     /* Tab panels */
     .vd-panel { display: none; padding: 1rem 1.2rem; }
@@ -435,7 +435,7 @@
       transition: opacity .2s; white-space: nowrap;
     }
     .vd-matrix-cell:hover { opacity: .75; }
-    .vd-matrix-cell.atm-row { outline: 2px solid rgba(8,145,178,.35); outline-offset: -1px; }
+    .vd-matrix-cell.atm-row { outline: 2px solid rgba(34,211,238,.35); outline-offset: -1px; }
     .vd-matrix-legend {
       display: flex; gap: 1.2rem; flex-wrap: wrap;
       padding: .45rem .9rem; font-size: .67rem; color: var(--muted);
@@ -466,7 +466,7 @@
     .vd-loading-spinner {
       width: 28px; height: 28px; border-radius: 50%;
       border: 3px solid rgba(251,191,36,.2);
-      border-top-color: #d97706;
+      border-top-color: #fbbf24;
       animation: spin .8s linear infinite;
       margin: 0 auto .8rem;
     }
@@ -501,7 +501,7 @@
     .vd-guide { margin-top: 2.5rem; }
     .vd-guide-title {
       font-size: .72rem; font-weight: 700; text-transform: uppercase;
-      letter-spacing: .1em; color: #d97706; margin-bottom: 1rem;
+      letter-spacing: .1em; color: #fbbf24; margin-bottom: 1rem;
     }
     .vd-guide-grid {
       display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
@@ -518,8 +518,8 @@
     .vd-guide-body strong { color: var(--text); }
     .vd-guide-body .hl-green  { color: #4ade80; font-weight: 700; }
     .vd-guide-body .hl-red    { color: #f87171; font-weight: 700; }
-    .vd-guide-body .hl-amber  { color: #d97706; font-weight: 700; }
-    .vd-guide-body .hl-cyan   { color: #0891b2; font-weight: 700; }
+    .vd-guide-body .hl-amber  { color: #fbbf24; font-weight: 700; }
+    .vd-guide-body .hl-cyan   { color: #22d3ee; font-weight: 700; }
     .vd-guide-body .hl-purple { color: #a78bfa; font-weight: 700; }
 
     .vd-trade-step {
@@ -528,7 +528,7 @@
     .vd-step-num {
       min-width: 20px; height: 20px; border-radius: 50%;
       background: rgba(251,191,36,.12); border: 1px solid rgba(251,191,36,.3);
-      color: #d97706; font-size: .67rem; font-weight: 900;
+      color: #fbbf24; font-size: .67rem; font-weight: 900;
       display: flex; align-items: center; justify-content: center;
       flex-shrink: 0; margin-top: .1rem;
     }
@@ -577,7 +577,7 @@
     <li><a href="market-preparation.html">&#128204; Market Prep</a></li>
     <li><a href="forecast.html" style="color:#f59e0b;font-weight:700;">&#128200; Forecast</a></li>
     <li><a href="asset-details.html">&#128202; Asset Review</a></li>
-    <li><a href="report-ms.html" target="_blank" style="background:#0891b2;color:var(--bg);padding:.28rem .85rem;border-radius:5px;font-weight:700;letter-spacing:.02em;">&#128202; Market Report</a></li>
+    <li><a href="report-ms.html" target="_blank" style="background:#22d3ee;color:var(--bg);padding:.28rem .85rem;border-radius:5px;font-weight:700;letter-spacing:.02em;">&#128202; Market Report</a></li>
     <li><a href="report-tg.html" target="_blank" style="background:#a78bfa;color:var(--bg);padding:.28rem .85rem;border-radius:5px;font-weight:700;letter-spacing:.02em;">&#128214; Trading Guide</a></li>
   </ul>
 </nav>
@@ -630,7 +630,7 @@
   <div class="stat-cell"><div class="stat-val" id="statHigh"    style="color:#22c55e;">—</div><div class="stat-lbl">High Conviction</div></div>
   <div class="stat-cell"><div class="stat-val" id="statBull"    style="color:#22c55e;">—</div><div class="stat-lbl">Bullish</div></div>
   <div class="stat-cell"><div class="stat-val" id="statBear"    style="color:#f87171;">—</div><div class="stat-lbl">Bearish</div></div>
-  <div class="stat-cell"><div class="stat-val" id="statNeut"    style="color:#d97706;">—</div><div class="stat-lbl">Neutral</div></div>
+  <div class="stat-cell"><div class="stat-val" id="statNeut"    style="color:#fbbf24;">—</div><div class="stat-lbl">Neutral</div></div>
   <div class="stat-cell"><div class="stat-val" id="statAvgProb" style="color:#38bdf8;">—</div><div class="stat-lbl">Avg Prob Profit</div></div>
   <div class="stat-cell"><div class="stat-val" id="statTs"      style="color:var(--muted);font-size:.85rem;">—</div><div class="stat-lbl">Last Updated</div></div>
 </div>
@@ -671,7 +671,7 @@
 
     <!-- IV Stats strip -->
     <div class="vd-stats" id="vd-stats">
-      <div class="vd-stat"><div class="vd-stat-val" id="vs-atm-iv"  style="color:#d97706;">—</div><div class="vd-stat-lbl">Front ATM IV</div></div>
+      <div class="vd-stat"><div class="vd-stat-val" id="vs-atm-iv"  style="color:#fbbf24;">—</div><div class="vd-stat-lbl">Front ATM IV</div></div>
       <div class="vd-stat"><div class="vd-stat-val" id="vs-hv30"    style="color:#a78bfa;">—</div><div class="vd-stat-lbl">HV-30</div></div>
       <div class="vd-stat"><div class="vd-stat-val" id="vs-iv-rank" style="color:#38bdf8;">—</div><div class="vd-stat-lbl">IV Rank</div></div>
       <div class="vd-stat"><div class="vd-stat-val" id="vs-spread"  style="color:#f87171;">—</div><div class="vd-stat-lbl">IV − HV Spread</div></div>
@@ -709,7 +709,7 @@
           <span><span class="vd-legend-dot" style="background:#1a5c2a;"></span>Moderate (15–25%)</span>
           <span><span class="vd-legend-dot" style="background:#7a5c00;"></span>Elevated (25–35%)</span>
           <span><span class="vd-legend-dot" style="background:#6b1515;"></span>High IV (&gt;35%)</span>
-          <span><span class="vd-legend-dot" style="background:transparent;outline:2px solid rgba(8,145,178,.4);"></span>ATM Strike</span>
+          <span><span class="vd-legend-dot" style="background:transparent;outline:2px solid rgba(34,211,238,.4);"></span>ATM Strike</span>
         </div>
       </div>
 
@@ -720,7 +720,7 @@
           <div id="vd-term-chart" style="height:280px;"></div>
         </div>
         <div class="vd-skew-legend" id="vd-term-legend">
-          <span><span class="vd-legend-line" style="background:#0891b2;"></span>ATM IV</span>
+          <span><span class="vd-legend-line" style="background:#22d3ee;"></span>ATM IV</span>
           <span><span class="vd-legend-line" style="background:#4ade80;border-top:2px dashed #4ade80;height:0;"></span>Call IV</span>
           <span><span class="vd-legend-line" style="background:#f87171;border-top:2px dashed #f87171;height:0;"></span>Put IV</span>
           <span><span class="vd-legend-line" style="background:#a78bfa;border-top:2px dotted #a78bfa;height:0;"></span>HV-30</span>
@@ -775,11 +775,11 @@
 
     <!-- Stats strip (updates per asset) -->
     <div class="vf-stats-row" id="vf-stats-row">
-      <div class="vf-stat-cell"><div class="vf-stat-val" id="vfs-spot"   style="color:#0891b2;">—</div><div class="vf-stat-lbl">Spot Price</div></div>
-      <div class="vf-stat-cell"><div class="vf-stat-val" id="vfs-iv"     style="color:#d97706;">—</div><div class="vf-stat-lbl">ATM IV</div></div>
+      <div class="vf-stat-cell"><div class="vf-stat-val" id="vfs-spot"   style="color:#22d3ee;">—</div><div class="vf-stat-lbl">Spot Price</div></div>
+      <div class="vf-stat-cell"><div class="vf-stat-val" id="vfs-iv"     style="color:#fbbf24;">—</div><div class="vf-stat-lbl">ATM IV</div></div>
       <div class="vf-stat-cell"><div class="vf-stat-val" id="vfs-rank"   style="color:#38bdf8;">—</div><div class="vf-stat-lbl">IV Rank</div></div>
-      <div class="vf-stat-cell"><div class="vf-stat-val" id="vfs-1d"     style="color:#d97706;">—</div><div class="vf-stat-lbl">1D ±Move</div></div>
-      <div class="vf-stat-cell"><div class="vf-stat-val" id="vfs-1w"     style="color:#0891b2;">—</div><div class="vf-stat-lbl">1W ±Move</div></div>
+      <div class="vf-stat-cell"><div class="vf-stat-val" id="vfs-1d"     style="color:#fbbf24;">—</div><div class="vf-stat-lbl">1D ±Move</div></div>
+      <div class="vf-stat-cell"><div class="vf-stat-val" id="vfs-1w"     style="color:#22d3ee;">—</div><div class="vf-stat-lbl">1W ±Move</div></div>
       <div class="vf-stat-cell"><div class="vf-stat-val" id="vfs-1m"     style="color:#a78bfa;">—</div><div class="vf-stat-lbl">1M ±Move</div></div>
       <div class="vf-stat-cell"><div class="vf-stat-val" id="vfs-signal" style="color:#4ade80;">—</div><div class="vf-stat-lbl">Vol Signal</div></div>
     </div>
@@ -796,9 +796,9 @@
         <div id="vf-chart" class="vf-chart-inner"></div>
       </div>
       <div class="vf-chart-legend">
-        <span><span style="display:inline-block;width:22px;height:2px;background:#d97706;border-radius:1px;"></span>±1σ Range (68%)</span>
+        <span><span style="display:inline-block;width:22px;height:2px;background:#fbbf24;border-radius:1px;"></span>±1σ Range (68%)</span>
         <span><span style="display:inline-block;width:22px;height:2px;background:rgba(248,113,113,.7);border-radius:1px;"></span>±2σ Range (95%)</span>
-        <span><span style="display:inline-block;width:22px;height:2px;background:#0891b2;border-radius:1px;border-top:2px dashed #0891b2;height:0;"></span>Center Projection</span>
+        <span><span style="display:inline-block;width:22px;height:2px;background:#22d3ee;border-radius:1px;border-top:2px dashed #22d3ee;height:0;"></span>Center Projection</span>
         <span style="font-size:.65rem;margin-left:.5rem;">📐 Calculated: Spot × IV × √(t/252) · Lognormal distribution assumption</span>
       </div>
     </div>
@@ -881,7 +881,7 @@
       <div class="ex-card">
         <div class="ex-icon">🔮</div>
         <div class="ex-title">Direction + Magnitude</div>
-        <div class="ex-body">Direction (BUY / SELL / NEUTRAL) is the ML model's predicted next-period directional bias. For magnitude, use the combination of: <strong style="color:#22c55e;">net dealer delta</strong> (larger absolute $M = more structural buying/selling pressure), <strong style="color:#d97706;">distance to gamma wall</strong> (moves to the gamma wall are the most likely magnitude), and <strong style="color:#f59e0b;">squeeze potential</strong> (gamma squeeze = rapid, accelerating move). A squeeze flag combined with a BUY direction and High Conviction is the strongest signal for a large, fast upside move.</div>
+        <div class="ex-body">Direction (BUY / SELL / NEUTRAL) is the ML model's predicted next-period directional bias. For magnitude, use the combination of: <strong style="color:#22c55e;">net dealer delta</strong> (larger absolute $M = more structural buying/selling pressure), <strong style="color:#fbbf24;">distance to gamma wall</strong> (moves to the gamma wall are the most likely magnitude), and <strong style="color:#f59e0b;">squeeze potential</strong> (gamma squeeze = rapid, accelerating move). A squeeze flag combined with a BUY direction and High Conviction is the strongest signal for a large, fast upside move.</div>
       </div>
     </div>
   </div>

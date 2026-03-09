@@ -434,58 +434,13 @@ window.cachedFetch = (function () {
   };
 })();
 
-// ── Theme Toggle ──────────────────────────────────────────────────────────────
-(function () {
-  'use strict';
-  var THEME_KEY = 'ml-theme';
-
-  // Apply saved theme — dark is the project default
-  // v2 key resets any stale 'light' preference from prior site conversion
-  var THEME_KEY_V2 = 'ml-theme-v2';
-  var _saved = localStorage.getItem(THEME_KEY_V2) || 'dark';
-  if (_saved === 'light') document.documentElement.classList.add('theme-light');
-
-  // Helper: get current chart colors matching the active theme
-  window.getThemeChartColors = function () {
-    var lt = document.documentElement.classList.contains('theme-light');
-    return {
-      bg:    lt ? '#f8fafc'              : '#070d18',
-      grid:  lt ? 'rgba(0,0,0,.07)'     : 'rgba(255,255,255,.04)',
-      label: lt ? 'rgba(71,85,105,.8)'  : 'rgba(127,163,190,.85)',
-      text:  lt ? '#475569'             : '#7fa3be',
-    };
+// ── Theme: always dark ────────────────────────────────────────────────────────
+// Dark theme is permanent — no toggle. The html.theme-light class is never applied.
+window.getThemeChartColors = function () {
+  return {
+    bg:    '#070d18',
+    grid:  'rgba(255,255,255,.04)',
+    label: 'rgba(127,163,190,.85)',
+    text:  '#7fa3be',
   };
-
-  function injectToggleBtn() {
-    if (document.getElementById('theme-toggle-btn')) return;
-    var pageNav = document.querySelector('.page-nav');
-    if (!pageNav) return;
-
-    var lt = document.documentElement.classList.contains('theme-light');
-    var btn = document.createElement('button');
-    btn.id = 'theme-toggle-btn';
-    btn.className = 'theme-toggle-btn';
-    btn.title = 'Toggle light / dark theme';
-    btn.innerHTML = lt ? '&#127769; Dark' : '&#9728;&#65039; Light';
-
-    btn.addEventListener('click', function () {
-      var nowLight = document.documentElement.classList.toggle('theme-light');
-      localStorage.setItem(THEME_KEY_V2, nowLight ? 'light' : 'dark');
-      btn.innerHTML = nowLight ? '&#127769; Dark' : '&#9728;&#65039; Light';
-      // Notify charts to redraw if a page defines this global
-      if (typeof window.redrawAllCharts === 'function') window.redrawAllCharts();
-    });
-
-    var sep = document.createElement('span');
-    sep.className = 'page-nav-sep';
-    sep.textContent = '|';
-    pageNav.appendChild(sep);
-    pageNav.appendChild(btn);
-  }
-
-  if (document.readyState !== 'loading') {
-    injectToggleBtn();
-  } else {
-    document.addEventListener('DOMContentLoaded', injectToggleBtn);
-  }
-})();
+};

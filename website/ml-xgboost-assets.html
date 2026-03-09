@@ -19,7 +19,7 @@
     .xb-hero h1 {
       font-size: clamp(1.8rem, 4vw, 3rem); font-weight: 900;
       letter-spacing: -.03em; line-height: 1.15; margin-bottom: .8rem;
-      background: linear-gradient(135deg, #d97706 0%, #f59e0b 40%, #fff 80%);
+      background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 40%, #fff 80%);
       -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
     }
     .xb-hero p { color: var(--muted); font-size: 1.05rem; max-width: 720px; margin: 0 auto 1.5rem; line-height: 1.7; }
@@ -27,7 +27,7 @@
       display: inline-flex; align-items: center; gap: .5rem;
       padding: .3rem 1rem; background: rgba(251,191,36,.1);
       border: 1px solid rgba(251,191,36,.25); border-radius: 999px;
-      color: #d97706; font-size: .78rem; font-weight: 600;
+      color: #fbbf24; font-size: .78rem; font-weight: 600;
       letter-spacing: .08em; text-transform: uppercase; margin-bottom: 1rem;
     }
 
@@ -39,13 +39,13 @@
     .stat-lbl { font-size:.7rem; font-weight:600; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); }50%{opacity:.4} }
 /* ── Progress bar ── */
     .progress-wrap { height:4px;background:var(--border);border-radius:2px;overflow:hidden;margin:.3rem 0; display:none; }
-    .progress-fill { height:100%;background:linear-gradient(90deg,#d97706,#f59e0b);border-radius:2px;transition:width .4s; width:0%; }
+    .progress-fill { height:100%;background:linear-gradient(90deg,#fbbf24,#f59e0b);border-radius:2px;transition:width .4s; width:0%; }
 
     /* ── Filter bar ── */
     .filter-bar { display:flex;flex-wrap:wrap;align-items:center;gap:.6rem;margin:1.2rem 0; }
     .filter-pill { padding:.3rem .85rem;border-radius:99px;border:1px solid var(--border);
       background:transparent;color:var(--muted);font-size:.78rem;font-weight:700;cursor:pointer;transition:all .15s; }
-    .filter-pill.active { background:rgba(251,191,36,.12);border-color:#d97706;color:#d97706; }
+    .filter-pill.active { background:rgba(251,191,36,.12);border-color:#fbbf24;color:#fbbf24; }
     .filter-pill:hover:not(.active) { border-color:var(--muted);color:var(--text); }
 
     /* ── Charts grid ── */
@@ -63,16 +63,16 @@
     .card-label { font-size:.73rem; color:var(--muted); margin-top:.1rem; max-width:220px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
     .card-meta { margin-left:auto; text-align:right; }
     .card-signal { font-size:.75rem; font-weight:800; padding:.18rem .55rem; border-radius:5px; display:inline-block; }
-    .sig-buy  { background:rgba(52,211,153,.18);color:#059669;border:1px solid rgba(52,211,153,.35); }
+    .sig-buy  { background:rgba(52,211,153,.18);color:#34d399;border:1px solid rgba(52,211,153,.35); }
     .sig-sell { background:rgba(248,113,113,.18);color:#f87171;border:1px solid rgba(248,113,113,.35); }
-    .sig-hold { background:rgba(251,191,36,.12); color:#d97706;border:1px solid rgba(251,191,36,.3); }
+    .sig-hold { background:rgba(251,191,36,.12); color:#fbbf24;border:1px solid rgba(251,191,36,.3); }
     .card-acc { font-size:.68rem; color:var(--muted); margin-top:.25rem; }
     .card-acc span { color:var(--text); font-weight:700; }
     .type-chip { display:inline-block; font-size:.62rem; font-weight:700; letter-spacing:.06em;
       padding:.1rem .45rem; border-radius:4px; margin-top:.25rem; }
-    .t-etf  { background:var(--accent-subtle); color:#0891b2; }
-    .t-stock{ background:var(--accent-subtle); color:#0891b2; }
-    .t-futures{ background:rgba(251,191,36,.12); color:#d97706; }
+    .t-etf  { background:var(--accent-subtle); color:#22d3ee; }
+    .t-stock{ background:var(--accent-subtle); color:#22d3ee; }
+    .t-futures{ background:rgba(251,191,36,.12); color:#fbbf24; }
 
     /* ── Canvas chart ── */
     .chart-canvas-wrap { position:relative; background:#0a0f1a; }
@@ -96,7 +96,7 @@
     .imp-row { display:flex; align-items:center; gap:.5rem; }
     .imp-name { font-size:.67rem; color:var(--muted); min-width:70px; text-align:right; font-family:'Consolas',monospace; }
     .imp-bar-outer { flex:1; height:5px; background:var(--border); border-radius:3px; overflow:hidden; }
-    .imp-bar-fill  { height:100%; background:linear-gradient(90deg,#d97706,#f59e0b); border-radius:3px; }
+    .imp-bar-fill  { height:100%; background:linear-gradient(90deg,#fbbf24,#f59e0b); border-radius:3px; }
     .imp-val { font-size:.65rem; color:var(--muted); min-width:30px; font-family:'Consolas',monospace; }
 
     /* ── Group section header ── */
@@ -119,7 +119,7 @@
     .xgb-info p:last-child { margin-bottom:0; }
     .xgb-steps { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:.85rem; margin-top:1rem; }
     .xgb-step { background:var(--card); border:1px solid var(--border); border-radius:9px; padding:.8rem 1rem; }
-    .xgb-step-num { font-size:.7rem; font-weight:900; color:#d97706; text-transform:uppercase; letter-spacing:.08em; margin-bottom:.3rem; }
+    .xgb-step-num { font-size:.7rem; font-weight:900; color:#fbbf24; text-transform:uppercase; letter-spacing:.08em; margin-bottom:.3rem; }
     .xgb-step-txt { font-size:.82rem; color:var(--muted); line-height:1.6; }
 
     @media(max-width:800px) { .xb-hero h1{font-size:1.6rem;} }
@@ -127,7 +127,7 @@
     /* ── Zoom Control Bar ─────────────────────────────────────────────── */
     .zoom-bar {
       display:flex; align-items:center; gap:.45rem; padding:.3rem 1rem;
-      background:rgba(255,255,255,.008); border-bottom:1px solid rgba(0,0,0,.03);
+      background:rgba(255,255,255,.008); border-bottom:1px solid rgba(255,255,255,.04);
     }
     .zoom-btn {
       background:var(--card); border:1px solid var(--border); color:var(--text);
@@ -146,7 +146,7 @@
 
     /* ── Chart resize handle ───────────────────────────────────────────── */
     .chart-resize-handle {
-      height:8px; background:rgba(0,0,0,.03); border-top:1px solid var(--border);
+      height:8px; background:rgba(255,255,255,.04); border-top:1px solid var(--border);
       cursor:ns-resize; display:flex; align-items:center; justify-content:center;
       transition:background .15s; user-select:none; font-size:8px; color:var(--border);
       letter-spacing:2px;
@@ -167,7 +167,7 @@
     /* ── Timeframe Selector Bar ───────────────────────────────────────── */
     .tf-bar {
       display:flex; align-items:center; gap:.55rem; padding:.38rem 1rem;
-      border-bottom:1px solid rgba(0,0,0,.03);
+      border-bottom:1px solid rgba(255,255,255,.04);
       background:rgba(255,255,255,.012); flex-wrap:wrap;
     }
     .tf-label { font-size:.64rem; font-weight:700; text-transform:uppercase; letter-spacing:.07em; color:var(--muted); }
@@ -178,13 +178,13 @@
     }
     .tf-select:focus { outline:none; border-color:var(--accent); }
     .tf-info { font-size:.65rem; color:var(--muted); margin-left:auto; }
-    .tf-spinner { display:none; width:10px; height:10px; border:2px solid var(--border); border-top-color:#d97706; border-radius:50%; animation:spin .6s linear infinite; margin-left:auto; }
+    .tf-spinner { display:none; width:10px; height:10px; border:2px solid var(--border); border-top-color:#fbbf24; border-radius:50%; animation:spin .6s linear infinite; margin-left:auto; }
     @keyframes spin { to { transform:rotate(360deg); } }
 
     /* ── GEX Level Strip (below chart) ───────────────────────────────── */
     .gex-strip {
       display:flex; gap:.9rem; padding:.3rem 1rem; flex-wrap:wrap;
-      border-top:1px solid rgba(0,0,0,.03); font-size:.66rem; min-height:24px;
+      border-top:1px solid rgba(255,255,255,.04); font-size:.66rem; min-height:24px;
     }
     .gex-lvl { display:flex; align-items:center; gap:.28rem; color:var(--muted); }
     .gex-line { width:14px; height:0; border-top:2px dashed currentColor; flex-shrink:0; }
@@ -215,7 +215,7 @@
     .narr-para { font-size:.795rem; color:#94a3b8; line-height:1.78; margin-bottom:.65rem; }
     .narr-para:last-child { margin-bottom:0; }
     .narr-para strong { color:var(--text); font-weight:700; }
-    .narr-para em { color:#d97706; font-style:normal; }
+    .narr-para em { color:#fbbf24; font-style:normal; }
     .narr-para .hl-buy  { color:#22c55e; font-weight:700; }
     .narr-para .hl-sell { color:#f87171; font-weight:700; }
     .narr-para .hl-gex  { color:#a78bfa; font-weight:600; }
@@ -245,7 +245,7 @@
       border-radius:9px; padding:.85rem 1rem;
     }
     .deep-card-title {
-      font-size:.7rem; font-weight:900; color:#d97706;
+      font-size:.7rem; font-weight:900; color:#fbbf24;
       text-transform:uppercase; letter-spacing:.08em; margin-bottom:.35rem;
     }
     .deep-card-body { font-size:.82rem; color:var(--muted); line-height:1.65; }
@@ -256,7 +256,7 @@
       color:var(--muted); font-size:.68rem; font-weight:700;
       text-transform:uppercase; letter-spacing:.06em; border-bottom:1px solid var(--border);
     }
-    .inst-table td { padding:.32rem .6rem; border-bottom:1px solid rgba(0,0,0,.03); color:#94a3b8; }
+    .inst-table td { padding:.32rem .6rem; border-bottom:1px solid rgba(255,255,255,.04); color:#94a3b8; }
     .inst-table td:first-child { color:var(--text); font-weight:700; font-family:'Consolas',monospace; }
     .inst-table tr:last-child td { border-bottom:none; }
 
@@ -281,14 +281,14 @@
     }
     .dc-item.dc-buy  { border-left-color: #22c55e; }
     .dc-item.dc-sell { border-left-color: #f87171; }
-    .dc-item.dc-hold { border-left-color: #d97706; }
+    .dc-item.dc-hold { border-left-color: #fbbf24; }
 
     .dc-head { display:flex; align-items:center; gap:.4rem; margin-bottom:.5rem; flex-wrap:wrap; }
     .dc-date { font-size:.73rem; font-weight:800; color:var(--text); font-family:'Consolas',monospace; }
     .dc-badge { font-size:.63rem; font-weight:800; padding:.13rem .48rem; border-radius:4px; }
     .dcb-buy  { background:rgba(34,197,94,.18);  color:#22c55e; border:1px solid rgba(34,197,94,.35); }
     .dcb-sell { background:rgba(248,113,113,.18);color:#f87171; border:1px solid rgba(248,113,113,.35); }
-    .dcb-hold { background:rgba(251,191,36,.12); color:#d97706; border:1px solid rgba(251,191,36,.3); }
+    .dcb-hold { background:rgba(251,191,36,.12); color:#fbbf24; border:1px solid rgba(251,191,36,.3); }
     .dcb-flat { background:rgba(127,163,190,.1); color:var(--muted); border:1px solid var(--border); }
     .dc-arrow { font-size:.72rem; color:var(--muted); }
 
@@ -306,7 +306,7 @@
     .dc-events li::before { content:'▸'; position:absolute; left:0; color:var(--accent); font-size:.65rem; top:.1em; }
     .dc-prose { font-size:.77rem; color:#94a3b8; line-height:1.68; }
     .dc-prose strong { color:var(--text); font-weight:700; }
-    .dc-prose em { color:#d97706; font-style:normal; }
+    .dc-prose em { color:#fbbf24; font-style:normal; }
   </style>
 </head>
 <body>
@@ -336,7 +336,7 @@
     <li><a href="market-preparation.html">&#128204; Market Prep</a></li>
     <li><a href="forecast.html" style="color:#f59e0b;font-weight:700;">&#128200; Forecast</a></li>
     <li><a href="asset-details.html">&#128202; Asset Review</a></li>
-    <li><a href="report-ms.html" target="_blank" style="background:#0891b2;color:var(--bg);padding:.28rem .85rem;border-radius:5px;font-weight:700;letter-spacing:.02em;">&#128202; Market Report</a></li>
+    <li><a href="report-ms.html" target="_blank" style="background:#22d3ee;color:var(--bg);padding:.28rem .85rem;border-radius:5px;font-weight:700;letter-spacing:.02em;">&#128202; Market Report</a></li>
     <li><a href="report-tg.html" target="_blank" style="background:#a78bfa;color:var(--bg);padding:.28rem .85rem;border-radius:5px;font-weight:700;letter-spacing:.02em;">&#128214; Trading Guide</a></li>
   </ul>
 </nav>
@@ -377,7 +377,7 @@
   <p>
     <strong style="color:var(--text);">XGBoost (Extreme Gradient Boosting)</strong> trained on 2024 daily data
     for every tracked stock, ETF, and futures contract — with
-    <span style="color:#059669;font-weight:700;">BUY ▲</span> and
+    <span style="color:#34d399;font-weight:700;">BUY ▲</span> and
     <span style="color:#f87171;font-weight:700;">SELL ▼</span> signal markers plotted
     directly on each candlestick chart. Train period ends at the yellow dashed line; all signals
     to the right are <em>out-of-sample predictions</em>.
@@ -386,10 +386,10 @@
 
 <!-- ── Stats Strip ── -->
 <div class="stats-strip" id="statsStrip">
-  <div class="stat-cell"><div class="stat-val" id="statTotal" style="color:#0891b2;">—</div><div class="stat-lbl">Assets</div></div>
-  <div class="stat-cell"><div class="stat-val" id="statBuy"   style="color:#059669;">—</div><div class="stat-lbl">BUY Signal</div></div>
+  <div class="stat-cell"><div class="stat-val" id="statTotal" style="color:#22d3ee;">—</div><div class="stat-lbl">Assets</div></div>
+  <div class="stat-cell"><div class="stat-val" id="statBuy"   style="color:#34d399;">—</div><div class="stat-lbl">BUY Signal</div></div>
   <div class="stat-cell"><div class="stat-val" id="statSell"  style="color:#f87171;">—</div><div class="stat-lbl">SELL Signal</div></div>
-  <div class="stat-cell"><div class="stat-val" id="statHold"  style="color:#d97706;">—</div><div class="stat-lbl">HOLD Signal</div></div>
+  <div class="stat-cell"><div class="stat-val" id="statHold"  style="color:#fbbf24;">—</div><div class="stat-lbl">HOLD Signal</div></div>
   <div class="stat-cell"><div class="stat-val" id="statAcc"   style="color:#a78bfa;">—</div><div class="stat-lbl">Avg OOS Acc</div></div>
   <div class="stat-cell"><div class="stat-val" id="statTs"    style="color:var(--muted);font-size:.85rem;">—</div><div class="stat-lbl">Last Updated</div></div>
 </div>
@@ -416,7 +416,7 @@
     <button class="filter-pill" onclick="setFilter('Mag 7',this)">Mag 7</button>
     <button class="filter-pill" onclick="setFilter('Blue Chips',this)">Blue Chips</button>
     <button class="filter-pill" onclick="setFilter('Futures',this)">Futures</button>
-    <button class="filter-pill" onclick="setFilter('BUY',this)"  style="margin-left:.5rem;border-color:rgba(52,211,153,.35);color:#059669;">▲ BUY Only</button>
+    <button class="filter-pill" onclick="setFilter('BUY',this)"  style="margin-left:.5rem;border-color:rgba(52,211,153,.35);color:#34d399;">▲ BUY Only</button>
     <button class="filter-pill" onclick="setFilter('SELL',this)" style="border-color:rgba(248,113,113,.35);color:#f87171;">▼ SELL Only</button>
   </div>
 
@@ -514,7 +514,7 @@
   <!-- Bottom nav -->
   <div style="display:flex;justify-content:space-between;align-items:center;margin-top:3rem;flex-wrap:wrap;gap:1rem;border-top:1px solid var(--border);padding-top:1.5rem;">
     <a href="ml-key-assets.html" style="color:var(--muted);text-decoration:none;font-size:.9rem;">← ML Key Assets</a>
-    <a href="live-trading.html" class="hero-cta" style="font-size:.88rem;padding:.6rem 1.4rem;background:linear-gradient(135deg,#d97706,#f59e0b);color:#000;">Open Live Dashboard →</a>
+    <a href="live-trading.html" class="hero-cta" style="font-size:.88rem;padding:.6rem 1.4rem;background:linear-gradient(135deg,#fbbf24,#f59e0b);color:#000;">Open Live Dashboard →</a>
   </div>
 
 </div><!-- /xb-wrap -->

@@ -1,0 +1,2543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>World &amp; Economic Events — ML Trading Dashboard</title>
+  <link rel="preload" href="style.css" as="style" fetchpriority="high">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    /* ── Layout ── */
+    .we-wrap { max-width: 1320px; margin: 0 auto; padding: 2rem 1.5rem 5rem; }
+    .we-header { margin-bottom: 1.5rem; }
+    .we-title {
+      font-size: 1.9rem; font-weight: 900;
+      background: linear-gradient(135deg, var(--text) 30%, #f59e0b);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+      margin-bottom: .4rem;
+    }
+    .we-sub { color: var(--muted); font-size: .9rem; line-height: 1.6; max-width: 820px; }
+
+    /* ── Live Dashboard ── */
+    .we-dashboard {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; padding: 1.2rem 1.4rem; margin-bottom: 2rem;
+    }
+    .we-dash-header {
+      display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: .5rem; margin-bottom: 1rem;
+    }
+    .we-dash-title { font-size: 1rem; font-weight: 800; color: var(--text); }
+    .we-dash-refresh {
+      background: rgba(245,158,11,.15); border: 1px solid rgba(245,158,11,.4);
+      color: #f59e0b; font-size: .75rem; font-weight: 700; padding: .3rem .8rem;
+      border-radius: 6px; cursor: pointer; transition: all .15s;
+    }
+    .we-dash-refresh:hover { background: rgba(245,158,11,.3); }
+
+    .we-dash-row { margin-bottom: 1rem; }
+    .we-status-bar { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; }
+    .we-status-pill {
+      padding: .25rem .7rem; border-radius: 99px; font-size: .72rem; font-weight: 700;
+      letter-spacing: .04em; border: 1px solid;
+    }
+    .pill-green  { background: rgba(74,222,128,.15);  color: #4ade80; border-color: rgba(74,222,128,.4); }
+    .pill-red    { background: rgba(248,113,113,.15); color: #f87171; border-color: rgba(248,113,113,.4); }
+    .pill-yellow { background: rgba(251,191,36,.15);  color: #fbbf24; border-color: rgba(251,191,36,.4); }
+    .pill-purple { background: rgba(167,139,250,.15); color: #a78bfa; border-color: rgba(167,139,250,.4); }
+    .pill-blue   { background: rgba(34,211,238,.15);  color: #22d3ee; border-color: rgba(34,211,238,.4); }
+    .pill-gray   { background: rgba(148,163,184,.15); color: #94a3b8; border-color: rgba(148,163,184,.4); }
+    #we-last-updated { font-size: .72rem; color: var(--muted); }
+
+    .we-charts-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px,1fr)); gap: 1rem; margin-bottom: 1rem; }
+    .we-dash-chart {
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: 8px; padding: .8rem; position: relative;
+    }
+    .we-dash-chart-title { font-size: .75rem; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: .07em; margin-bottom: .5rem; }
+    .we-dash-chart canvas { display: block; width: 100% !important; height: 160px !important; }
+
+    /* Forecast table */
+    .we-range-table { width: 100%; border-collapse: collapse; font-size: .78rem; margin-top: .5rem; }
+    .we-range-table th {
+      background: var(--bg); color: var(--muted); font-size: .7rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .06em; padding: .4rem .6rem; text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    .we-range-table td { padding: .35rem .6rem; border-bottom: 1px solid rgba(255,255,255,.05); color: var(--text); }
+    .we-range-table tr:hover td { background: var(--hover-overlay); }
+    .cell-bull { color: #4ade80; font-weight: 700; }
+    .cell-bear { color: #f87171; font-weight: 700; }
+    .cell-vol  { color: #a78bfa; font-weight: 700; }
+    .cell-neu  { color: #fbbf24; font-weight: 700; }
+
+    /* Calendar */
+    .we-calendar-table { width: 100%; border-collapse: collapse; font-size: .78rem; }
+    .we-calendar-table th {
+      background: var(--bg); color: var(--muted); font-size: .7rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .06em; padding: .4rem .6rem; text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    .we-calendar-table td { padding: .35rem .6rem; border-bottom: 1px solid rgba(255,255,255,.05); color: var(--text); }
+    .imp-high   { color: #f87171; font-weight: 700; }
+    .imp-med    { color: #fbbf24; font-weight: 700; }
+    .imp-low    { color: #4ade80; font-weight: 700; }
+    .imp-vhigh  { color: #a78bfa; font-weight: 700; }
+
+    /* Forecast cards */
+    .we-forecast-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px,1fr)); gap: 1rem; margin-top: 1rem; }
+    .we-forecast-card {
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: 8px; padding: 1rem;
+    }
+    .we-fc-title { font-size: .8rem; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; margin-bottom: .6rem; }
+    .we-fc-title.fc-tomorrow { color: #22d3ee; }
+    .we-fc-title.fc-week     { color: #a78bfa; }
+    .we-fc-title.fc-month    { color: #f59e0b; }
+    .we-fc-row { display: flex; justify-content: space-between; margin-bottom: .3rem; font-size: .78rem; }
+    .we-fc-label { color: var(--muted); }
+    .we-fc-val   { color: var(--text); font-weight: 700; }
+
+    /* ── Filters / Search ── */
+    .we-filters { display: flex; flex-wrap: wrap; gap: .45rem; margin-bottom: 1.2rem; }
+    .we-pill {
+      padding: .3rem .9rem; border-radius: 99px; border: 1px solid var(--border);
+      background: transparent; color: var(--muted); font-size: .78rem; font-weight: 700;
+      cursor: pointer; transition: all .15s; letter-spacing: .03em;
+    }
+    .we-pill:hover { border-color: #f59e0b; color: var(--text); }
+    .we-pill.active { background: rgba(245,158,11,.14); border-color: #f59e0b; color: #f59e0b; }
+
+    .we-search-wrap { position: relative; max-width: 500px; margin-bottom: 1.5rem; }
+    .we-search-icon { position: absolute; left: .85rem; top: 50%; transform: translateY(-50%); color: var(--muted); pointer-events: none; }
+    #we-search {
+      width: 100%; padding: .65rem 1rem .65rem 2.4rem;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 8px; color: var(--text); font-size: .9rem; outline: none; transition: border-color .2s;
+    }
+    #we-search:focus { border-color: #f59e0b; }
+    #we-search::placeholder { color: var(--muted); }
+
+    /* ── Event Cards ── */
+    .we-events { display: flex; flex-direction: column; gap: 1.5rem; }
+    .we-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; overflow: hidden; transition: border-color .2s, box-shadow .2s;
+    }
+    .we-card:hover { border-color: rgba(245,158,11,.35); box-shadow: 0 4px 24px rgba(0,0,0,.12); }
+    .we-card-header {
+      display: flex; align-items: flex-start; gap: 1rem;
+      padding: 1.25rem 1.4rem; cursor: pointer; user-select: none;
+    }
+    .we-card-header:hover { background: var(--hover-overlay); }
+    .we-card-icon { font-size: 2rem; flex-shrink: 0; margin-top: .1rem; }
+    .we-card-htext { flex: 1; }
+    .we-card-name { font-size: 1.1rem; font-weight: 800; color: var(--text); margin-bottom: .25rem; }
+    .we-card-desc { font-size: .85rem; color: var(--muted); line-height: 1.55; }
+    .we-card-tags { display: flex; flex-wrap: wrap; gap: .3rem; margin-top: .5rem; }
+    .we-tag {
+      font-size: .65rem; font-weight: 700; padding: .1rem .45rem;
+      border-radius: 3px; letter-spacing: .05em; text-transform: uppercase;
+    }
+    .tag-macro   { background: rgba(251,191,36,.12);  color: #fbbf24; }
+    .tag-geo     { background: rgba(248,113,113,.12);  color: #f87171; }
+    .tag-fed     { background: rgba(34,211,238,.12);   color: #22d3ee; }
+    .tag-earnings{ background: rgba(74,222,128,.12);   color: #4ade80; }
+    .tag-energy  { background: rgba(167,139,250,.12);  color: #a78bfa; }
+    .tag-credit  { background: rgba(251,146,60,.12);   color: #fb923c; }
+    .tag-fx      { background: rgba(56,189,248,.12);   color: #38bdf8; }
+
+    .we-badge {
+      font-size: .7rem; font-weight: 800; padding: .2rem .55rem;
+      border-radius: 99px; letter-spacing: .04em; white-space: nowrap; align-self: flex-start; margin-top: .15rem;
+    }
+    .badge-bull  { background: rgba(74,222,128,.15);  color: #4ade80; border: 1px solid rgba(74,222,128,.3); }
+    .badge-bear  { background: rgba(248,113,113,.15); color: #f87171; border: 1px solid rgba(248,113,113,.3); }
+    .badge-mixed { background: rgba(251,191,36,.15);  color: #fbbf24; border: 1px solid rgba(251,191,36,.3); }
+    .badge-vol   { background: rgba(167,139,250,.15); color: #a78bfa; border: 1px solid rgba(167,139,250,.3); }
+
+    .we-chevron { font-size: .85rem; color: var(--muted); align-self: center; transition: transform .25s; }
+    .we-card.open .we-chevron { transform: rotate(180deg); }
+
+    .we-body { display: none; border-top: 1px solid var(--border); }
+    .we-card.open .we-body { display: block; }
+
+    /* ── Tab System ── */
+    .we-tabs { display: flex; gap: 0; border-bottom: 1px solid var(--border); background: var(--bg); }
+    .we-tab-btn {
+      padding: .65rem 1.1rem; font-size: .78rem; font-weight: 700; cursor: pointer;
+      border: none; background: transparent; color: var(--muted);
+      letter-spacing: .03em; border-bottom: 2px solid transparent;
+      transition: all .15s; white-space: nowrap;
+    }
+    .we-tab-btn:hover { color: var(--text); }
+    .we-tab-btn.active { color: #f59e0b; border-bottom-color: #f59e0b; }
+    .we-tab-content { display: none; padding: 1.4rem 1.5rem 1.6rem; }
+    .we-tab-content.active { display: block; }
+
+    /* ── Original card sections ── */
+    .we-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1rem; margin-bottom: 1.25rem;
+    }
+    .we-section {
+      background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 1rem 1.1rem;
+    }
+    .we-section-title {
+      font-size: .78rem; font-weight: 800; text-transform: uppercase;
+      letter-spacing: .08em; margin-bottom: .6rem; display: flex; align-items: center; gap: .4rem;
+    }
+    .we-section p, .we-section li { font-size: .82rem; color: var(--muted); line-height: 1.6; margin: 0; }
+    .we-section ul { padding-left: 1.1rem; margin: 0; }
+    .we-section li { margin-bottom: .2rem; }
+    .we-section strong { color: var(--text); }
+
+    .sec-inst   .we-section-title { color: #38bdf8; }
+    .sec-assets .we-section-title { color: #4ade80; }
+    .sec-retail .we-section-title { color: #fb923c; }
+    .sec-gex    .we-section-title { color: #22d3ee; }
+    .sec-delta  .we-section-title { color: #a78bfa; }
+    .sec-hedge  .we-section-title { color: #fbbf24; }
+    .sec-dir    .we-section-title { color: #f87171; }
+
+    .we-trade-box {
+      background: rgba(74,222,128,.06); border: 1px solid rgba(74,222,128,.25);
+      border-radius: 8px; padding: 1rem 1.2rem; margin-top: 1.2rem;
+    }
+    .we-trade-title {
+      font-size: .82rem; font-weight: 800; text-transform: uppercase;
+      letter-spacing: .08em; color: #4ade80; margin-bottom: .6rem;
+    }
+    .we-trade-box ul { padding-left: 1.1rem; margin: 0; }
+    .we-trade-box li { font-size: .83rem; color: var(--muted); line-height: 1.65; margin-bottom: .3rem; }
+    .we-trade-box li strong { color: var(--text); }
+
+    .we-dir-row { display: flex; align-items: center; gap: .75rem; margin-top: .5rem; flex-wrap: wrap; }
+    .we-dir-label { font-size: .75rem; font-weight: 700; color: var(--muted); min-width: 90px; }
+    .we-bar-track { flex: 1; min-width: 120px; height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; }
+    .we-bar-fill { height: 100%; border-radius: 4px; }
+    .bar-bull  { background: linear-gradient(90deg, #16a34a, #4ade80); }
+    .bar-bear  { background: linear-gradient(90deg, #b91c1c, #f87171); }
+    .bar-mixed { background: linear-gradient(90deg, #fbbf24, #fbbf24); }
+    .bar-vol   { background: linear-gradient(90deg, #7c3aed, #a78bfa); }
+    .we-bar-pct { font-size: .72rem; font-weight: 700; color: var(--text); min-width: 36px; }
+
+    /* ── Options Flow Tab ── */
+    .we-iv-table { width: 100%; border-collapse: collapse; font-size: .78rem; margin: .8rem 0; }
+    .we-iv-table th {
+      background: rgba(255,255,255,.04); color: var(--muted); font-size: .7rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .06em; padding: .4rem .7rem; text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    .we-iv-table td { padding: .35rem .7rem; border-bottom: 1px solid rgba(255,255,255,.04); color: var(--text); }
+    .iv-up    { color: #f87171; font-weight: 700; }
+    .iv-down  { color: #4ade80; font-weight: 700; }
+    .iv-peak  { color: #a78bfa; font-weight: 700; }
+
+    .we-pc-gauge { display: flex; align-items: center; gap: 1rem; margin: .8rem 0; }
+    .we-pc-label { font-size: .78rem; color: var(--muted); min-width: 90px; }
+    .we-pc-bar-wrap { flex: 1; height: 12px; background: var(--border); border-radius: 6px; overflow: hidden; position: relative; }
+    .we-pc-bar { height: 100%; border-radius: 6px; }
+    .pc-bearish { background: linear-gradient(90deg, #b91c1c, #f87171); }
+    .pc-neutral { background: linear-gradient(90deg, #fbbf24, #fbbf24); }
+    .pc-bullish { background: linear-gradient(90deg, #16a34a, #4ade80); }
+    .we-pc-val { font-size: .8rem; font-weight: 800; color: var(--text); min-width: 40px; }
+
+    .we-flow-tags { display: flex; flex-wrap: wrap; gap: .4rem; margin: .6rem 0; }
+    .we-flow-tag {
+      font-size: .7rem; font-weight: 700; padding: .2rem .55rem; border-radius: 4px;
+    }
+    .ft-sweep  { background: rgba(248,113,113,.15); color: #f87171; border: 1px solid rgba(248,113,113,.3); }
+    .ft-block  { background: rgba(167,139,250,.15); color: #a78bfa; border: 1px solid rgba(167,139,250,.3); }
+    .ft-dark   { background: rgba(34,211,238,.15);  color: #22d3ee; border: 1px solid rgba(34,211,238,.3); }
+    .ft-strad  { background: rgba(251,191,36,.15);  color: #fbbf24; border: 1px solid rgba(251,191,36,.3); }
+    .ft-skew   { background: rgba(74,222,128,.15);  color: #4ade80; border: 1px solid rgba(74,222,128,.3); }
+
+    /* ── Strategies Tab ── */
+    .we-strategy-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px,1fr)); gap: 1rem; margin-top: .5rem; }
+    .we-strategy-card {
+      background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 1rem;
+    }
+    .we-strat-name { font-size: .85rem; font-weight: 800; color: #f59e0b; margin-bottom: .5rem; }
+    .we-strat-diagram {
+      height: 60px; position: relative; margin-bottom: .6rem;
+      border-bottom: 1px solid var(--border); border-left: 1px solid var(--border);
+    }
+    .we-strat-row { display: flex; justify-content: space-between; font-size: .75rem; margin-bottom: .2rem; }
+    .we-strat-label { color: var(--muted); }
+    .we-strat-val   { color: var(--text); font-weight: 700; }
+    .we-strat-rr    { font-size: .75rem; color: #4ade80; font-weight: 700; margin-top: .4rem; }
+
+    /* P&L diagram shapes via clip-path/SVG inline */
+    .pnl-straddle   { background: linear-gradient(135deg, #f87171 0%, #fbbf24 50%, #4ade80 100%); clip-path: polygon(0% 100%, 50% 0%, 100% 100%); height: 50px; margin: 5px auto; }
+    .pnl-condor     { background: linear-gradient(90deg, #f87171 0%, #4ade80 20%, #4ade80 80%, #f87171 100%); height: 30px; margin: 15px 0; }
+    .pnl-calendar   { background: linear-gradient(90deg, #fbbf24 0%, #4ade80 40%, #4ade80 60%, #fbbf24 100%); height: 30px; margin: 15px 0; clip-path: polygon(0% 100%, 30% 20%, 50% 0%, 70% 20%, 100% 100%); }
+    .pnl-callspread { background: linear-gradient(90deg, #f87171 0%, #f87171 30%, #4ade80 60%, #4ade80 100%); height: 30px; margin: 15px 0; clip-path: polygon(0% 100%, 30% 100%, 60% 0%, 100% 0%); }
+    .pnl-putspread  { background: linear-gradient(90deg, #4ade80 0%, #4ade80 30%, #f87171 60%, #f87171 100%); height: 30px; margin: 15px 0; clip-path: polygon(0% 0%, 30% 0%, 60% 100%, 100% 100%); }
+    .pnl-ratio      { background: linear-gradient(90deg, #f87171 0%, #4ade80 40%, #f87171 100%); height: 40px; margin: 10px 0; clip-path: polygon(0% 100%, 40% 0%, 60% 0%, 100% 80%); }
+    .pnl-strangle   { background: linear-gradient(135deg, #f87171 0%, #fbbf24 40%, #4ade80 60%, #fbbf24 80%, #f87171 100%); height: 50px; margin: 5px auto; clip-path: polygon(0% 100%, 20% 30%, 40% 100%, 60% 100%, 80% 30%, 100% 100%); }
+
+    /* ── Duration Tab ── */
+    .we-duration-bars { margin: .8rem 0; }
+    .we-dur-row { display: flex; align-items: center; gap: .75rem; margin-bottom: .55rem; }
+    .we-dur-label { font-size: .75rem; font-weight: 700; color: var(--muted); min-width: 90px; }
+    .we-dur-track { flex: 1; height: 10px; background: var(--border); border-radius: 5px; overflow: hidden; }
+    .we-dur-fill { height: 100%; border-radius: 5px; }
+    .dur-intraday { background: linear-gradient(90deg, #f87171, #fb923c); }
+    .dur-3day     { background: linear-gradient(90deg, #fbbf24, #f59e0b); }
+    .dur-week     { background: linear-gradient(90deg, #4ade80, #22c55e); }
+    .dur-month    { background: linear-gradient(90deg, #22d3ee, #22d3ee); }
+    .dur-3month   { background: linear-gradient(90deg, #a78bfa, #7c3aed); }
+    .we-dur-pct { font-size: .72rem; font-weight: 700; color: var(--text); min-width: 36px; }
+
+    .we-strike-info {
+      background: rgba(245,158,11,.07); border: 1px solid rgba(245,158,11,.2);
+      border-radius: 6px; padding: .7rem 1rem; margin-top: .8rem; font-size: .8rem;
+    }
+    .we-strike-info strong { color: #f59e0b; }
+    .we-strike-info p { color: var(--muted); margin: .2rem 0; line-height: 1.5; }
+
+    #we-none { display: none; text-align: center; padding: 3rem 1rem; color: var(--muted); font-size: .9rem; }
+
+    .we-loading { text-align: center; color: var(--muted); font-size: .8rem; padding: .5rem; }
+    .we-error   { color: #f87171; font-size: .78rem; }
+
+    .sub-section-title {
+      font-size: .78rem; font-weight: 800; text-transform: uppercase;
+      letter-spacing: .07em; color: var(--muted); margin: 1rem 0 .4rem;
+    }
+
+    /* ── Dashboard Overhaul ── */
+    .we-explainer {
+      background: rgba(34,211,238,.07); border: 1px solid rgba(34,211,238,.25);
+      border-radius: 10px; padding: 1.1rem 1.4rem; margin-bottom: 1.2rem;
+    }
+    .we-explainer-title {
+      font-size: .82rem; font-weight: 800; color: #22d3ee; text-transform: uppercase;
+      letter-spacing: .08em; margin-bottom: .5rem; display:flex; align-items:center; gap:.4rem;
+    }
+    .we-explainer p { font-size: .85rem; color: var(--muted); line-height: 1.65; margin: 0 0 .35rem; }
+    .we-explainer strong { color: var(--text); }
+
+    .we-concept-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(220px,1fr));
+      gap: .7rem; margin-top: .7rem;
+    }
+    .we-concept-box {
+      background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: .8rem;
+    }
+    .we-concept-label { font-size: .7rem; font-weight: 800; text-transform: uppercase; letter-spacing: .07em; margin-bottom: .3rem; }
+    .we-concept-box p  { font-size: .78rem; color: var(--muted); line-height: 1.55; margin: 0; }
+    .we-concept-box p strong { color: var(--text); }
+    .concept-green  .we-concept-label { color: #4ade80; }
+    .concept-red    .we-concept-label { color: #f87171; }
+    .concept-yellow .we-concept-label { color: #fbbf24; }
+    .concept-purple .we-concept-label { color: #a78bfa; }
+    .concept-cyan   .we-concept-label { color: #22d3ee; }
+    .concept-orange .we-concept-label { color: #fb923c; }
+
+    .we-chart-explain {
+      background: rgba(255,255,255,.03); border-top: 1px solid var(--border);
+      padding: .8rem 1rem; font-size: .85rem; color: var(--muted); line-height: 1.65;
+      border-radius: 0 0 8px 8px;
+    }
+    .we-chart-explain strong { color: var(--text); }
+
+    .we-table-explain {
+      font-size: .8rem; color: var(--muted); line-height: 1.6;
+      background: rgba(255,255,255,.03); border: 1px solid var(--border);
+      border-radius: 8px; padding: .8rem 1rem; margin-bottom: .6rem;
+    }
+    .we-table-explain strong { color: var(--text); }
+    .we-table-explain ul { margin: .3rem 0 0; padding-left: 1.1rem; }
+    .we-table-explain li { margin-bottom: .2rem; }
+
+    /* Bigger table fonts */
+    .we-range-table th { font-size: .78rem; padding: .5rem .75rem; }
+    .we-range-table td { font-size: .82rem; padding: .45rem .75rem; }
+    .we-calendar-table th { font-size: .78rem; padding: .5rem .75rem; }
+    .we-calendar-table td { font-size: .82rem; padding: .45rem .75rem; }
+    .we-fc-label { font-size: .82rem; }
+    .we-fc-val   { font-size: .85rem; }
+    .we-fc-title { font-size: .88rem; margin-bottom: .7rem; }
+
+    .pill-tooltip { position: relative; display: inline-block; }
+    .we-status-pill { font-size: .78rem; padding: .3rem .85rem; }
+
+    .we-pill-row-explain {
+      font-size: .78rem; color: var(--muted); padding: .3rem 0 .6rem;
+      line-height: 1.5;
+    }
+    .we-pill-row-explain strong { color: var(--text); }
+
+    .we-dash-chart { display: flex; flex-direction: column; }
+    .we-dash-chart canvas { flex: 1; display: block; width: 100% !important; min-height: 340px; }
+    .we-dash-chart-title { font-size: 1rem; font-weight: 800; color: var(--text);
+      text-transform: uppercase; letter-spacing: .07em; margin-bottom: .5rem; }
+    .we-charts-row { display: flex; flex-direction: column; gap: 1.8rem; margin-bottom: 1.2rem; }
+
+    .sub-section-title { font-size: .85rem; font-weight: 800; text-transform: uppercase;
+      letter-spacing: .07em; color: var(--muted); margin: 1rem 0 .5rem; }
+  </style>
+</head>
+<body>
+
+<nav class="nav">
+  <a href="index.html" class="nav-logo">
+    <img src="images/steve.jpg" class="nav-logo-photo" alt="Stephen Borick">
+    <div class="nav-logo-text">
+      <span class="nav-company">Artificial Intelligence</span>
+      <span class="nav-name">Solutions, Inc.</span>
+    </div>
+  </a>
+  <ul class="nav-links">
+    <li><a href="index.html">Home</a></li>
+    <li><a href="neural-networks.html">Neural Networks</a></li>
+    <li><a href="machine-learning.html">Machine Learning</a></li>
+    <li><a href="ml-trading.html">ML in Trading</a></li>
+    <li><a href="stock-trading.html">Stocks</a></li>
+    <li><a href="options-trading.html">Options</a></li>
+    <li><a href="futures-trading.html">Futures</a></li>
+    <li><a href="brokers.html">Brokers</a></li>
+    <li><a href="algorithms-bots.html" style="color:#4ade80;font-weight:700;">&#129302; Algo Bots</a></li>
+    <li><a href="asset-algorithms.html" style="color:#22d3ee;font-weight:700;">&#128200; Asset Algos</a></li>
+    <li><a href="live-trading.html">Live Trading</a></li>
+    <li><a href="market-preparation.html">&#128204; Market Prep</a></li>
+    <li><a href="forecast.html" style="color:#f59e0b;font-weight:700;">&#128200; Forecast</a></li>
+    <li><a href="asset-details.html">&#128202; Asset Review</a></li>
+    <li><a href="report-ms.html" target="_blank" style="background:#22d3ee;color:var(--bg);padding:.28rem .85rem;border-radius:5px;font-weight:700;letter-spacing:.02em;">&#128202; Market Report</a></li>
+    <li><a href="report-tg.html" target="_blank" style="background:#a78bfa;color:var(--bg);padding:.28rem .85rem;border-radius:5px;font-weight:700;letter-spacing:.02em;">&#128214; Trading Guide</a></li>
+  </ul>
+</nav>
+
+<nav class="page-nav">
+  <a href="live-trading.html">&#8592; Live Trading</a>
+  <span class="page-nav-sep">|</span>
+  <a href="market-summary.html">Market Summary</a>
+  <span class="page-nav-sep">|</span>
+  <a href="world-events.html" class="active">&#127758; World Events</a>
+  <span class="page-nav-sep">|</span>
+  <a href="terminology.html">Terminology &#128218;</a>
+  <span class="page-nav-sep">|</span>
+  <a href="institutional-buyers.html">Institutional &#127970;</a>
+  <span class="page-nav-sep">|</span>
+  <a href="gamma-exposure.html">GEX Charts &#127919;</a>
+  <span class="page-nav-sep">|</span>
+  <a href="hedging-impact.html">Hedging Impact &#128737;</a>
+  <span class="page-nav-sep">|</span>
+  <a href="options-strategy.html">Options Strategy &#128200;</a>
+  <span class="page-nav-sep">|</span>
+  <a href="forecast.html">Forecast &#128200;</a>
+</nav>
+
+<div class="we-wrap">
+
+  <div class="we-header">
+    <div class="we-title">&#127758; World &amp; Economic Events</div>
+    <p class="we-sub">
+      How major macro, geopolitical, and economic events ripple through institutional desks, key assets, and retail traders —
+      including resulting shifts in GEX, delta hedging, normal hedging, market direction &amp; magnitude, and how to position in each environment.
+      Each event includes Options Flow &amp; Pricing, Strategy Playbooks, and Duration &amp; Range data.
+      Click any event to expand full analysis.
+    </p>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!--  LIVE DASHBOARD PANEL                                     -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <div class="we-dashboard">
+    <div class="we-dash-header">
+      <div class="we-dash-title">&#9881; Live Market Dashboard</div>
+      <div style="display:flex;align-items:center;gap:.6rem;">
+        <span id="we-last-updated" style="font-size:.78rem;color:var(--muted);">Loading…</span>
+        <button class="we-dash-refresh" onclick="loadDashboard()">&#8635; Refresh Now</button>
+      </div>
+    </div>
+
+    <!-- ── EXPLAINER ──────────────────────────────────────── -->
+    <div class="we-explainer">
+      <div class="we-explainer-title">&#128161; How to Read This Dashboard</div>
+      <p>This live dashboard pulls <strong>real-time market data</strong> from our ML trading server and updates every 5 minutes.
+         It shows you the current market regime, options sentiment, price forecast ranges, and an outlook for tomorrow, next week, and next month.
+         Use it alongside the event cards below to understand <em>which events are currently driving markets</em> and <em>how to position</em>.</p>
+      <div class="we-concept-grid">
+        <div class="we-concept-box concept-cyan">
+          <div class="we-concept-label">&#9679; GEX Regime</div>
+          <p>Gamma Exposure regime. <strong>Positive / Dampening</strong> = market makers absorb volatility, moves tend to be smaller and mean-revert.
+             <strong>Negative / Amplifying</strong> = market makers add fuel to moves — up trends accelerate up, down trends accelerate down.
+             Think of it as: Positive = shock absorber, Negative = turbocharger.</p>
+        </div>
+        <div class="we-concept-box concept-yellow">
+          <div class="we-concept-label">&#128200; Market Direction</div>
+          <p>The ML model's current overall read on equity market sentiment.
+             <strong>Bullish</strong> = majority of signals pointing up.
+             <strong>Bearish</strong> = majority pointing down.
+             <strong>Neutral</strong> = mixed signals, no clear edge.
+             This is derived from analyzing put/call ratios, GEX levels, and price momentum across 42+ assets.</p>
+        </div>
+        <div class="we-concept-box concept-green">
+          <div class="we-concept-label">&#128209; Bull % / Bear %</div>
+          <p>Of all assets tracked, what percentage show <strong>bullish signals</strong> (price above key levels, call flow dominant)
+             vs <strong>bearish signals</strong> (price below key levels, put flow dominant).
+             Example: <strong>Bull 50%, Bear 19%</strong> means most assets are bullish, few are bearish — a healthy bull market.</p>
+        </div>
+        <div class="we-concept-box concept-purple">
+          <div class="we-concept-label">&#128200; VIX Estimate</div>
+          <p>VIX is the market's <strong>fear gauge</strong> — it measures how much options traders expect the S&amp;P 500 to move over the next 30 days.
+             <strong>VIX below 15</strong> = calm, complacent market → sell premium strategies work.
+             <strong>VIX 15–25</strong> = normal uncertainty.
+             <strong>VIX above 25</strong> = fear elevated → buy protection, reduce risk.
+             <strong>VIX above 35</strong> = panic — historically a contrarian buy signal.</p>
+        </div>
+        <div class="we-concept-box concept-orange">
+          <div class="we-concept-label">&#128202; GEX Dampening vs Amplifying</div>
+          <p><strong>Dampening (Positive GEX)</strong>: When SPY goes up, dealers sell stock to re-hedge; when it goes down, they buy.
+             This creates a natural "rubber band" pulling prices back to center — low realized volatility.<br>
+             <strong>Amplifying (Negative GEX)</strong>: Dealers must buy when price rises and sell when it falls.
+             This feeds momentum — moves tend to be larger and sustained. Breakouts are more reliable.</p>
+        </div>
+        <div class="we-concept-box concept-red">
+          <div class="we-concept-label">&#128270; GEX Key Levels</div>
+          <p><strong>Call Wall</strong> = strong resistance — heavy call open interest pins price or creates ceiling.<br>
+             <strong>Put Wall</strong> = strong support — heavy put open interest creates floor.<br>
+             <strong>GEX Flip Level</strong> = the price where dealers shift from net-long to net-short gamma.
+             Above = dampening. Below = amplifying. Acts like a gravitational pull on price.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── ROW 1: Status Indicators ──────────────────────── -->
+    <div class="we-dash-row">
+      <div class="sub-section-title">&#128204; Live Market Status Indicators</div>
+      <div class="we-status-bar" id="we-status-bar" style="margin-bottom:.4rem;">
+        <span class="we-status-pill pill-gray" id="pill-regime">&#9679; GEX: Loading…</span>
+        <span class="we-status-pill pill-gray" id="pill-direction">Direction: —</span>
+        <span class="we-status-pill pill-gray" id="pill-bull">Bull: —</span>
+        <span class="we-status-pill pill-gray" id="pill-bear">Bear: —</span>
+        <span class="we-status-pill pill-gray" id="pill-vix">Est. VIX: —</span>
+        <span class="we-status-pill pill-gray" id="pill-gex-mode">GEX Mode: —</span>
+      </div>
+      <div class="we-pill-row-explain">
+        <strong>GEX Regime:</strong> How dealer hedging affects volatility &nbsp;|&nbsp;
+        <strong>Direction:</strong> Overall ML signal &nbsp;|&nbsp;
+        <strong>Bull/Bear %:</strong> Share of tracked assets with bullish vs bearish signals &nbsp;|&nbsp;
+        <strong>Est. VIX:</strong> Estimated fear level (below 15 = calm, above 25 = fearful) &nbsp;|&nbsp;
+        <strong>GEX Mode:</strong> Dampening (calm) or Amplifying (volatile)
+      </div>
+    </div>
+
+    <!-- ── ROW 2: Three Charts ────────────────────────────── -->
+    <div class="we-charts-row we-dash-row">
+
+      <div class="we-dash-chart">
+        <div class="we-dash-chart-title">&#128200; Chart 1 — Options Sentiment by Asset</div>
+        <canvas id="chart-flow" width="400" height="180"></canvas>
+        <div class="we-chart-explain">
+          <strong>What this shows:</strong> The ML bullish signal strength for each tracked asset (green bar) vs bearish signal strength (red bar).
+          <strong>Taller green bar</strong> = strong call-side demand, bullish momentum.
+          <strong>Taller red bar</strong> = put-side dominance, bearish pressure.
+          Assets are ranked left to right. Use this to spot which sectors are leading vs lagging.
+        </div>
+      </div>
+
+      <div class="we-dash-chart">
+        <div class="we-dash-chart-title">&#127919; Chart 2 — Price Forecast Ranges (VIX-Implied)</div>
+        <canvas id="chart-range" width="400" height="180"></canvas>
+        <div class="we-chart-explain">
+          <strong>What this shows:</strong> Expected price move ranges for each asset over 1 Day, 1 Week, and 1 Month.
+          Calculated using the VIX formula: <em>move = VIX ÷ √(trading periods)</em>, adjusted for GEX regime.
+          <strong>Green band</strong> = 1-day range. <strong>Yellow band</strong> = 1-week range. <strong>Red band</strong> = 1-month range.
+          The white vertical line is today's spot price. Wider bands = higher uncertainty. Thinner bands = calmer market.
+        </div>
+      </div>
+
+      <div class="we-dash-chart">
+        <div class="we-dash-chart-title">&#128250; Chart 3 — GEX Price Level Map</div>
+        <canvas id="chart-gex" width="400" height="180"></canvas>
+        <div class="we-chart-explain">
+          <strong>What this shows:</strong> Key price levels derived from options open interest for each asset.
+          <strong style="color:#4ade80;">Green line</strong> = Call Wall (resistance ceiling — heavy call OI here).
+          <strong style="color:#e2e8f0;">White line</strong> = Current spot price.
+          <strong style="color:#fbbf24;">Yellow line</strong> = GEX Flip Level (above = dampening, below = amplifying).
+          <strong style="color:#f87171;">Red line</strong> = Put Wall (support floor — heavy put OI here).
+          Price is magnetically attracted to these levels. Breaks above Call Wall or below Put Wall signal regime shifts.
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ── ROW 3: Forecast Table ──────────────────────────── -->
+    <div class="we-dash-row">
+      <div class="sub-section-title">&#128202; Forecast Ranges by Asset</div>
+      <div class="we-table-explain">
+        <strong>How to read this table:</strong> For each tracked asset, the table shows the <em>current price</em> and the
+        statistically expected trading range over 1 Day, 1 Week, and 1 Month — based on current implied volatility (VIX) and GEX regime.
+        <ul>
+          <li><strong>Spot:</strong> Current market price of the asset</li>
+          <li><strong>1D / 1W / 1M Range:</strong> The expected price range (low to high) within that timeframe. Calculated as: Spot ± (VIX ÷ √periods × Spot). A VIX of 20 implies ~1.26% daily move.</li>
+          <li><strong>GEX Regime:</strong> Whether the options market is currently <em>Dampening</em> moves (Positive GEX) or <em>Amplifying</em> them (Negative GEX). Negative GEX widens the range by ~30%; Positive narrows it by ~20%.</li>
+          <li><strong>ML Signal:</strong> The machine learning model's directional bias for this asset (Bullish / Bearish / Neutral)</li>
+        </ul>
+      </div>
+      <div style="overflow-x:auto;">
+        <table class="we-range-table" id="we-forecast-table">
+          <thead>
+            <tr>
+              <th>Asset</th>
+              <th>Spot Price</th>
+              <th>1-Day Range</th>
+              <th>1-Week Range</th>
+              <th>1-Month Range</th>
+              <th>GEX Regime</th>
+              <th>ML Signal</th>
+            </tr>
+          </thead>
+          <tbody id="we-forecast-body">
+            <tr><td colspan="7" class="we-loading">Loading live data from API…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ── ROW 4: Economic Calendar ───────────────────────── -->
+    <div class="we-dash-row">
+      <div class="sub-section-title">&#128197; Upcoming Economic Calendar (Typical Weekly Schedule)</div>
+      <div class="we-table-explain">
+        <strong>How to read:</strong> This calendar shows the recurring weekly schedule of major economic data releases that move markets.
+        <strong>Impact level</strong> reflects how much the release typically moves S&amp;P 500 options implied volatility:
+        <span style="color:#a78bfa;font-weight:700;">Very High</span> = buy straddles 1–2 weeks before &nbsp;|&nbsp;
+        <span style="color:#f87171;font-weight:700;">High</span> = buy straddles 1–3 days before &nbsp;|&nbsp;
+        <span style="color:#fbbf24;font-weight:700;">Medium</span> = trade after the print only &nbsp;|&nbsp;
+        <span style="color:#4ade80;font-weight:700;">Low</span> = minimal options opportunity.
+        The <strong>Options Play</strong> column shows the typical institutional options approach for each release.
+      </div>
+      <div style="overflow-x:auto;">
+        <table class="we-calendar-table">
+          <thead>
+            <tr><th>Day</th><th>Time (ET)</th><th>Event</th><th>Impact</th><th>Options Play</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Monday</td><td>9:45am</td><td>S&amp;P Global Manufacturing PMI</td><td class="imp-med">Medium</td><td>Straddle if IV rank &lt;40</td></tr>
+            <tr><td>Monday</td><td>10:00am</td><td>ISM Manufacturing Index</td><td class="imp-med">Medium</td><td>Watch for surprise vs 50 threshold (above 50 = expansion)</td></tr>
+            <tr><td>Tuesday</td><td>8:30am</td><td>Trade Balance</td><td class="imp-low">Low</td><td>FX options: EUR/USD, USD/JPY spreads</td></tr>
+            <tr><td>Tuesday</td><td>10:00am</td><td>Consumer Confidence (CB)</td><td class="imp-med">Medium</td><td>XLY call/put spread on big miss/beat</td></tr>
+            <tr><td>Wednesday</td><td>8:15am</td><td>ADP Employment Change</td><td class="imp-med">Medium</td><td>NFP preview: strangle pre-open; directional close</td></tr>
+            <tr><td>Wednesday</td><td>10:00am</td><td>ISM Services PMI</td><td class="imp-med">Medium</td><td>S&amp;P 500 directional call/put spread</td></tr>
+            <tr><td>Wednesday</td><td>10:30am</td><td>EIA Crude Oil Inventories</td><td class="imp-med">Medium</td><td>USO/XLE options straddle pre-release</td></tr>
+            <tr><td>Wednesday</td><td>2:00pm</td><td>FOMC Minutes (when applicable)</td><td class="imp-high">High</td><td>Buy straddle 1 hr before; iron condor after IV crush</td></tr>
+            <tr><td>Thursday</td><td>8:30am</td><td>Initial &amp; Continuing Jobless Claims</td><td class="imp-med">Medium</td><td>Watch for surprise; leading NFP indicator</td></tr>
+            <tr><td>Thursday</td><td>8:30am</td><td>PPI (Producer Price Index)</td><td class="imp-high">High</td><td>Similar to CPI — straddle 1 day ahead; iron condor after</td></tr>
+            <tr><td>Friday</td><td>8:30am</td><td>Non-Farm Payrolls (1st Friday)</td><td class="imp-vhigh">Very High</td><td>Sell strangles Thursday close; buy straddle 2 days before</td></tr>
+            <tr><td>Friday</td><td>8:30am</td><td>CPI (Consumer Price Index, monthly)</td><td class="imp-vhigh">Very High</td><td>ATM straddle 1 week before; iron condor post-print</td></tr>
+            <tr><td>Friday</td><td>10:00am</td><td>UoM Consumer Sentiment</td><td class="imp-med">Medium</td><td>XLY/XLP spread on extremes</td></tr>
+            <tr><td>Monthly</td><td>—</td><td>FOMC Interest Rate Decision (8×/year)</td><td class="imp-vhigh">Very High</td><td>Long straddle 2 weeks before; iron condor post-decision</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ── ROW 5: Forecast Cards ──────────────────────────── -->
+    <div class="we-dash-row">
+      <div class="sub-section-title">&#128203; Market Outlook Forecasts</div>
+      <div class="we-table-explain" style="margin-bottom:.8rem;">
+        <strong>How to read:</strong> These three cards give you the ML model's actionable forecast for each time horizon, derived from live GEX levels, sentiment data, and implied volatility.
+        <strong>SPY Range</strong> is the expected trading corridor for the S&amp;P 500 ETF.
+        <strong>Options Stance</strong> tells you whether to <em>buy volatility</em> (fear elevated, expect big move) or <em>sell premium</em> (calm market, collect time decay).
+        <strong>GEX Regime</strong> tells you if the market's shock absorbers are on (Positive = buy dips) or off (Negative = respect momentum).
+      </div>
+      <div class="we-forecast-row">
+        <div class="we-forecast-card" id="fc-tomorrow">
+          <div class="we-fc-title fc-tomorrow">&#128197; Tomorrow's Forecast</div>
+          <div class="we-fc-row"><span class="we-fc-label">Direction</span><span class="we-fc-val" id="fc-dir">Loading…</span></div>
+          <div class="we-fc-row"><span class="we-fc-label">SPY Expected Range</span><span class="we-fc-val" id="fc-spy-1d">—</span></div>
+          <div class="we-fc-row"><span class="we-fc-label">Options Stance</span><span class="we-fc-val" id="fc-opts-1d">—</span></div>
+          <div class="we-fc-row"><span class="we-fc-label">GEX Regime</span><span class="we-fc-val" id="fc-gex-1d">—</span></div>
+          <div class="we-fc-row"><span class="we-fc-label">Est. VIX</span><span class="we-fc-val" id="fc-vix-1d">—</span></div>
+        </div>
+        <div class="we-forecast-card" id="fc-week">
+          <div class="we-fc-title fc-week">&#128200; Next Week Forecast</div>
+          <div class="we-fc-row"><span class="we-fc-label">SPY Range</span><span class="we-fc-val" id="fc-spy-1w">—</span></div>
+          <div class="we-fc-row"><span class="we-fc-label">Macro Trend</span><span class="we-fc-val" id="fc-macro-1w">—</span></div>
+          <div class="we-fc-row"><span class="we-fc-label">Sector Rotation</span><span class="we-fc-val" id="fc-sector-1w">—</span></div>
+          <div class="we-fc-row"><span class="we-fc-label">Best Options Strategy</span><span class="we-fc-val" id="fc-opts-1w">—</span></div>
+          <div class="we-fc-row"><span class="we-fc-label">GEX Regime</span><span class="we-fc-val" id="fc-regime-1w">—</span></div>
+        </div>
+        <div class="we-forecast-card" id="fc-month">
+          <div class="we-fc-title fc-month">&#128336; Next Month Forecast</div>
+          <div class="we-fc-row"><span class="we-fc-label">SPY Range</span><span class="we-fc-val" id="fc-spy-1m">—</span></div>
+          <div class="we-fc-row"><span class="we-fc-label">Macro Trend</span><span class="we-fc-val" id="fc-macro-1m">—</span></div>
+          <div class="we-fc-row"><span class="we-fc-label">Sector Rotation</span><span class="we-fc-val" id="fc-sector-1m">—</span></div>
+          <div class="we-fc-row"><span class="we-fc-label">Options Strategy</span><span class="we-fc-val" id="fc-opts-1m">—</span></div>
+          <div class="we-fc-row"><span class="we-fc-label">GEX Regime</span><span class="we-fc-val" id="fc-regime-1m">—</span></div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /we-dashboard -->
+
+  <!-- Search + Filters -->
+  <div class="we-search-wrap">
+    <span class="we-search-icon">&#128269;</span>
+    <input type="text" id="we-search" placeholder="Search events… e.g. FOMC, CPI, war, earnings, oil" oninput="applyWeFilter()">
+  </div>
+
+  <div class="we-filters">
+    <button class="we-pill active" onclick="setWeFilter(\'all\',this)">All Events</button>
+    <button class="we-pill" onclick="setWeFilter(\'fed\',this)">&#127981; Fed / Rates</button>
+    <button class="we-pill" onclick="setWeFilter(\'macro\',this)">&#128200; Macro Data</button>
+    <button class="we-pill" onclick="setWeFilter(\'geo\',this)">&#128308; Geopolitical</button>
+    <button class="we-pill" onclick="setWeFilter(\'earnings\',this)">&#128181; Earnings</button>
+    <button class="we-pill" onclick="setWeFilter(\'energy\',this)">&#9981;&#65039; Energy</button>
+    <button class="we-pill" onclick="setWeFilter(\'credit\',this)">&#128176; Credit / Banking</button>
+    <button class="we-pill" onclick="setWeFilter(\'fx\',this)">&#128178; FX / Dollar</button>
+  </div>
+
+  <div class="we-events" id="we-events">
+
+  <div class="we-card" data-cat="fed fomc" data-name="FOMC Federal Reserve">
+    <div class="we-card-header" onclick="toggleCard(this)">
+      <div class="we-card-left">
+        <span class="we-card-icon">🏛️</span>
+        <div>
+          <div class="we-card-title">FOMC &amp; Fed Policy Decision</div>
+          <div class="we-card-desc">Interest rate decisions, forward guidance, and balance sheet policy from the Federal Reserve.</div>
+        </div>
+      </div>
+      <div class="we-card-right">
+        <span class="we-flow-tag tag-put">High Impact</span><span class="we-flow-tag tag-neutral">8× Yearly</span>
+        <span class="we-badge badge-red">EXTREME VOLATILITY</span>
+        <span class="we-chevron">&#9660;</span>
+      </div>
+    </div>
+    <div class="we-card-body" id="body-fomc">
+      
+    <div class="we-tabs">
+      <button class="we-tab-btn active" onclick="switchTab(this,'fomc','overview')">Overview</button>
+      <button class="we-tab-btn" onclick="switchTab(this,'fomc','flow')">Options Flow &amp; IV</button>
+      <button class="we-tab-btn" onclick="switchTab(this,'fomc','strats')">Strategies</button>
+      <button class="we-tab-btn" onclick="switchTab(this,'fomc','ranges')">Duration &amp; Ranges</button>
+    </div>
+      <div class="we-tab-content active" id="fomc-overview"><div class="we-section "><div class="we-sec-title">🏛️ Institutional Buyers</div><ul><li>Reposition bond duration ahead of decision</li><li>Rotate sector weights (XLF vs XLU) based on rate path</li><li>Short-vol if consensus is priced; buy vol if uncertainty high</li><li>Large block trades appear 2–3 days pre-FOMC</li></ul></div><div class="we-section "><div class="we-sec-title">📦 Key Assets</div><ul><li>Equities: SPY, QQQ, XLF, XLU</li><li>Fixed Income: TLT, IEF, HYG, SHY</li><li>Commodities: GLD, SLV</li><li>FX: DXY, EUR/USD</li></ul></div><div class="we-section "><div class="we-sec-title">👥 Retail Traders</div><ul><li>Buy straddles 1–2 days before; crush hits immediately post-announcement</li><li>Chase moves into press conference — high risk</li><li>Watch Powell press conference language for secondary move</li><li>Fade initial knee-jerk in first 15 min</li></ul></div><div class="we-bar-row">
+      <span class="we-bar-label">Bullish Probability</span>
+      <div class="we-bar-track"><div class="we-bar-fill bar-bull" style="width:55%"></div></div>
+      <span class="we-bar-val">Moderate</span>
+    </div><div class="we-bar-row">
+      <span class="we-bar-label">Volatility Expansion</span>
+      <div class="we-bar-track"><div class="we-bar-fill bar-vol" style="width:80%"></div></div>
+      <span class="we-bar-val">High</span>
+    </div><div class="we-bar-row">
+      <span class="we-bar-label">Magnitude</span>
+      <div class="we-bar-track"><div class="we-bar-fill bar-mag" style="width:70%"></div></div>
+      <span class="we-bar-val">±1.5–2.5%</span>
+    </div><div class="we-section "><div class="we-sec-title">⚙️ GEX & Delta Hedging</div><ul><li>Negative GEX pre-FOMC amplifies moves ×1.3–1.8</li><li>Dealers short gamma → buy strength, sell weakness</li><li>Post-decision positive GEX regime dampens follow-through</li><li>Delta hedging creates whipsaw in first 10–30 min</li></ul></div><div class="we-trade-box"><div class="we-trade-title">&#127919; How to Trade</div><ul><li>Buy straddle 2 days before, close 30 min post-decision</li><li>Sell iron condor after IV crush (next day open)</li><li>Trade XLF vs XLU spread for rate-sensitive expression</li><li>Watch 2yr yield reaction for equity direction clue</li></ul></div></div>
+      <div class="we-tab-content" id="fomc-flow"><div class="we-flow-tags"><span class="we-flow-tag tag-put">Elevated Put Buying</span><span class="we-flow-tag tag-neutral">Vol Premium Sells</span><span class="we-flow-tag tag-call">Straddle Buying</span></div><table class="we-iv-table">
+      <thead><tr><th>Phase</th><th>IV Change</th><th>Skew</th><th>Term Structure</th><th>P/C Ratio</th></tr></thead>
+      <tbody><tr><td>2 Wks Before</td><td>IV +5–15%</td><td>Slight put skew</td><td>Flat-Contango</td><td>1.4–1.8</td></tr><tr><td>Week Before</td><td>IV +15–30%</td><td>Put skew steepens</td><td>Inverted</td><td>1.6–2.2</td></tr><tr><td>Eve of FOMC</td><td>IV +30–50%</td><td>Max put skew</td><td>Max inversion</td><td>1.8–2.5</td></tr><tr><td>Post-Decision</td><td>IV –30–50% crush</td><td>Flattens</td><td>Re-steepens</td><td>0.9–1.2</td></tr><tr><td>Next Day</td><td>IV normal</td><td>Neutral</td><td>Normal contango</td><td>1.0–1.1</td></tr></tbody>
+    </table><div class="we-pc-row">
+      <span class="we-pc-label">Pre-FOMC (2 wks)</span>
+      <div class="we-pc-track"><div class="we-pc-fill" style="width:64%"></div></div>
+      <span class="we-pc-val">1.4–1.8</span>
+    </div><div class="we-pc-row">
+      <span class="we-pc-label">Pre-FOMC (eve)</span>
+      <div class="we-pc-track"><div class="we-pc-fill" style="width:85%"></div></div>
+      <span class="we-pc-val">1.8–2.5</span>
+    </div><div class="we-pc-row">
+      <span class="we-pc-label">Post-Decision</span>
+      <div class="we-pc-track"><div class="we-pc-fill" style="width:38%"></div></div>
+      <span class="we-pc-val">0.9–1.2</span>
+    </div><div class="we-section "><div class="we-sec-title">💡 Flow Signals</div><ul><li>Watch for unusual call sweeps 3 days pre → hawkish surprise likely</li><li>Put/call open-interest ratio >2.0 signals fear, not hedging</li><li>GEX flip level acts as magnet — watch SPY relative to it</li><li>Block trades in TLT reflect institutional rate expectations</li></ul></div></div>
+      <div class="we-tab-content" id="fomc-strats"><div class="we-strategy-card">
+      <div class="we-strat-name">Long Straddle (ATM)</div>
+      <div class="pnl-diagram pnl-straddle"></div>
+      <table class="we-strat-table"><tr><td>Entry</td><td>2 days before FOMC, ATM strike</td></tr><tr><td>Exit</td><td>30 min after decision</td></tr><tr><td>Max Profit</td><td>Unlimited on large move</td></tr><tr><td>Max Loss</td><td>Both premiums if flat</td></tr><tr><td>Best When</td><td>High uncertainty, IV not overpriced</td></tr></table>
+      <div class="we-strat-rr">Risk/Reward: Unlimited upside / premium at risk</div>
+    </div><div class="we-strategy-card">
+      <div class="we-strat-name">Iron Condor (Post-FOMC)</div>
+      <div class="pnl-diagram pnl-condor"></div>
+      <table class="we-strat-table"><tr><td>Entry</td><td>Day after FOMC open, sell OTM strangle + buy wings</td></tr><tr><td>Width</td><td>±2% wings</td></tr><tr><td>Max Profit</td><td>Full credit if contained</td></tr><tr><td>Max Loss</td><td>Wing width minus credit</td></tr><tr><td>Best When</td><td>Post-crush, expect range-bound</td></tr></table>
+      <div class="we-strat-rr">Risk/Reward: Defined risk, IV-crush beneficiary</div>
+    </div><div class="we-strategy-card">
+      <div class="we-strat-name">Calendar Spread</div>
+      <div class="pnl-diagram pnl-calendar"></div>
+      <table class="we-strat-table"><tr><td>Entry</td><td>Buy next-month ATM, sell current-month ATM</td></tr><tr><td>Gamma</td><td>Short near-term gamma</td></tr><tr><td>Max Profit</td><td>IV crush on front + theta decay</td></tr><tr><td>Risk</td><td>Large directional move</td></tr><tr><td>Best When</td><td>Expect small move post-FOMC</td></tr></table>
+      <div class="we-strat-rr">Risk/Reward: Limited risk, theta + vega positive</div>
+    </div><div class="we-strategy-card">
+      <div class="we-strat-name">Bull Call Spread (XLF)</div>
+      <div class="pnl-diagram pnl-callspread"></div>
+      <table class="we-strat-table"><tr><td>Entry</td><td>Pre-FOMC if dovish lean</td></tr><tr><td>Strikes</td><td>ATM / +3% OTM</td></tr><tr><td>Max Profit</td><td>Spread width minus debit</td></tr><tr><td>Max Loss</td><td>Debit paid</td></tr><tr><td>Best When</td><td>Rate cut expected, XLF bullish</td></tr></table>
+      <div class="we-strat-rr">Risk/Reward: Defined risk bullish play on financials</div>
+    </div><div class="we-strategy-card">
+      <div class="we-strat-name">Bear Put Spread (TLT)</div>
+      <div class="pnl-diagram pnl-putspread"></div>
+      <table class="we-strat-table"><tr><td>Entry</td><td>Pre-FOMC if hawkish lean</td></tr><tr><td>Strikes</td><td>ATM / −3% OTM</td></tr><tr><td>Max Profit</td><td>Spread width minus debit</td></tr><tr><td>Max Loss</td><td>Debit paid</td></tr><tr><td>Best When</td><td>Rate hike or hawkish hold</td></tr></table>
+      <div class="we-strat-rr">Risk/Reward: Defined risk bearish rate play</div>
+    </div></div>
+      <div class="we-tab-content" id="fomc-ranges"><div class="we-dur-section"><div class="we-sec-title">⏱️ Impact Duration</div><div class="we-dur-row">
+      <span class="we-dur-label">Intraday</span>
+      <div class="we-dur-track"><div class="we-dur-fill dur-high" style="width:95%"></div></div>
+      <span class="we-dur-note">Extreme — ±1.5–2.5% in 2 hrs</span>
+    </div><div class="we-dur-row">
+      <span class="we-dur-label">1–3 Days</span>
+      <div class="we-dur-track"><div class="we-dur-fill dur-med" style="width:70%"></div></div>
+      <span class="we-dur-note">Follow-through on guidance language</span>
+    </div><div class="we-dur-row">
+      <span class="we-dur-label">1 Week</span>
+      <div class="we-dur-track"><div class="we-dur-fill dur-med" style="width:50%"></div></div>
+      <span class="we-dur-note">Mean-reversion begins</span>
+    </div><div class="we-dur-row">
+      <span class="we-dur-label">1 Month</span>
+      <div class="we-dur-track"><div class="we-dur-fill dur-low" style="width:30%"></div></div>
+      <span class="we-dur-note">Only if regime change (hike→cut)</span>
+    </div><div class="we-dur-row">
+      <span class="we-dur-label">3 Months</span>
+      <div class="we-dur-track"><div class="we-dur-fill dur-low" style="width:15%"></div></div>
+      <span class="we-dur-note">Rate cycle structural shift only</span>
+    </div></div><table class="we-range-table">
+      <thead><tr><th>Instrument</th><th>Intraday</th><th>1-3 Day</th><th>1 Week</th><th>1 Month</th></tr></thead>
+      <tbody><tr><td>SPY</td><td>±1.5–2.5%</td><td>±0.8–1.5%</td><td>±0.5–1.0%</td><td>±1.5–3.0%</td></tr><tr><td>QQQ</td><td>±1.8–3.0%</td><td>±1.0–2.0%</td><td>±0.6–1.2%</td><td>±2.0–4.0%</td></tr><tr><td>ES Futures</td><td>±45–75 pts</td><td>±25–45 pts</td><td>±15–30 pts</td><td>±40–80 pts</td></tr><tr><td>NQ Futures</td><td>±80–130 pts</td><td>±45–80 pts</td><td>±25–50 pts</td><td>±70–140 pts</td></tr><tr><td>VIX</td><td>18→30+ pre</td><td>25→16 crush</td><td>14–18 settle</td><td>12–20 range</td></tr></tbody>
+    </table></div>
+    </div>
+  </div>
+  <div class="we-card" data-cat="macro cpi" data-name="CPI Inflation Data">
+    <div class="we-card-header" onclick="toggleCard(this)">
+      <div class="we-card-left">
+        <span class="we-card-icon">📊</span>
+        <div>
+          <div class="we-card-title">CPI Inflation Report</div>
+          <div class="we-card-desc">Monthly Consumer Price Index release — the key inflation metric driving Fed rate decisions.</div>
+        </div>
+      </div>
+      <div class="we-card-right">
+        <span class="we-flow-tag tag-put">High Impact</span><span class="we-flow-tag tag-neutral">Monthly</span>
+        <span class="we-badge badge-orange">HIGH VOLATILITY</span>
+        <span class="we-chevron">&#9660;</span>
+      </div>
+    </div>
+    <div class="we-card-body" id="body-cpi">
+      
+    <div class="we-tabs">
+      <button class="we-tab-btn active" onclick="switchTab(this,'cpi','overview')">Overview</button>
+      <button class="we-tab-btn" onclick="switchTab(this,'cpi','flow')">Options Flow &amp; IV</button>
+      <button class="we-tab-btn" onclick="switchTab(this,'cpi','strats')">Strategies</button>
+      <button class="we-tab-btn" onclick="switchTab(this,'cpi','ranges')">Duration &amp; Ranges</button>
+    </div>
+      <div class="we-tab-content active" id="cpi-overview"><div class="we-section "><div class="we-sec-title">🏛️ Institutional Buyers</div><ul><li>Pre-position TLT short or long 2 days before</li><li>Rotate XLY↔XLRE based on inflation expectations</li><li>Stat arb: consensus vs prior vs whisper number</li><li>High-frequency algos dominate first 60 seconds</li></ul></div><div class="we-section "><div class="we-sec-title">📦 Key Assets</div><ul><li>Equities: SPY, QQQ, XLY, XLRE, XLF</li><li>Fixed Income: TLT, TIPS, IEF</li><li>Commodities: GLD, OIL</li><li>FX: DXY</li></ul></div><div class="we-section "><div class="we-sec-title">👥 Retail Traders</div><ul><li>Straddle before 8:30 ET release; crush is fast</li><li>Watch core CPI vs headline — core drives Fed reaction</li><li>Don't hold options through 9:30 open — secondary crush</li></ul></div><div class="we-bar-row">
+      <span class="we-bar-label">Bullish Probability</span>
+      <div class="we-bar-track"><div class="we-bar-fill bar-bull" style="width:48%"></div></div>
+      <span class="we-bar-val">Neutral</span>
+    </div><div class="we-bar-row">
+      <span class="we-bar-label">Volatility Expansion</span>
+      <div class="we-bar-track"><div class="we-bar-fill bar-vol" style="width:75%"></div></div>
+      <span class="we-bar-val">High</span>
+    </div><div class="we-bar-row">
+      <span class="we-bar-label">Magnitude</span>
+      <div class="we-bar-track"><div class="we-bar-fill bar-mag" style="width:65%"></div></div>
+      <span class="we-bar-val">±1.2–2.0%</span>
+    </div><div class="we-section "><div class="we-sec-title">⚙️ GEX & Delta Hedging</div><ul><li>GEX often negative morning of CPI</li><li>Dealers force-hedge rapidly on surprise</li><li>Positive GEX after calm print → muted move</li><li>Watch gamma flip for near-term ceiling/floor</li></ul></div><div class="we-trade-box"><div class="we-trade-title">&#127919; How to Trade</div><ul><li>Buy 8:25 straddle, sell by 8:45</li><li>Rotate: hot CPI→TLT short, cool CPI→TLT long</li><li>XLY outperforms on cool; XLRE outperforms on cool</li><li>Watch real yields — GLD moves inversely</li></ul></div></div>
+      <div class="we-tab-content" id="cpi-flow"><div class="we-flow-tags"><span class="we-flow-tag tag-put">Heavy Put Buying</span><span class="we-flow-tag tag-neutral">TLT Options Active</span><span class="we-flow-tag tag-call">GLD Calls Elevated</span></div><table class="we-iv-table">
+      <thead><tr><th>Phase</th><th>IV Change</th><th>Skew</th><th>Term Structure</th><th>P/C Ratio</th></tr></thead>
+      <tbody><tr><td>Week Before</td><td>IV +8–20%</td><td>Mild put skew</td><td>Flat</td><td>1.3–1.7</td></tr><tr><td>Day Before</td><td>IV +20–40%</td><td>Put skew +5%</td><td>Inversion</td><td>1.6–2.2</td></tr><tr><td>Morning Of</td><td>IV +40–60%</td><td>Max skew</td><td>Max inversion</td><td>1.6–2.2</td></tr><tr><td>Post-Print</td><td>IV –40–55% crush</td><td>Flattens fast</td><td>Re-steepens</td><td>0.9–1.1</td></tr><tr><td>Next Session</td><td>IV normal</td><td>Neutral</td><td>Contango</td><td>1.0</td></tr></tbody>
+    </table><div class="we-pc-row">
+      <span class="we-pc-label">Pre-CPI (day before)</span>
+      <div class="we-pc-track"><div class="we-pc-fill" style="width:70%"></div></div>
+      <span class="we-pc-val">1.6–2.2</span>
+    </div><div class="we-pc-row">
+      <span class="we-pc-label">Morning of Release</span>
+      <div class="we-pc-track"><div class="we-pc-fill" style="width:72%"></div></div>
+      <span class="we-pc-val">1.6–2.2</span>
+    </div><div class="we-pc-row">
+      <span class="we-pc-label">Post-Print</span>
+      <div class="we-pc-track"><div class="we-pc-fill" style="width:36%"></div></div>
+      <span class="we-pc-val">0.9–1.1</span>
+    </div><div class="we-section "><div class="we-sec-title">💡 Flow Signals</div><ul><li>TIPS breakeven spread predicts institutional inflation view</li><li>GLD call skew = inflation surprise expectation</li><li>TLT put/call ratio inverts on hot CPI expectations</li><li>Watch S&P sector rotation into print for directional bias</li></ul></div></div>
+      <div class="we-tab-content" id="cpi-strats"><div class="we-strategy-card">
+      <div class="we-strat-name">ATM Straddle (Pre-CPI)</div>
+      <div class="pnl-diagram pnl-straddle"></div>
+      <table class="we-strat-table"><tr><td>Entry</td><td>8:25 ET on CPI morning</td></tr><tr><td>Exit</td><td>8:35–8:45 ET</td></tr><tr><td>Max Profit</td><td>Large surprise move</td></tr><tr><td>Max Loss</td><td>Both premiums</td></tr><tr><td>Best When</td><td>Whisper vs consensus divergence high</td></tr></table>
+      <div class="we-strat-rr">Risk/Reward: High reward but tight timing</div>
+    </div><div class="we-strategy-card">
+      <div class="we-strat-name">Iron Condor (Next Day)</div>
+      <div class="pnl-diagram pnl-condor"></div>
+      <table class="we-strat-table"><tr><td>Entry</td><td>Day after CPI, sell ±1.5% OTM</td></tr><tr><td>Hold</td><td>1–3 days</td></tr><tr><td>Max Profit</td><td>Full credit</td></tr><tr><td>Max Loss</td><td>Wing spread minus credit</td></tr><tr><td>Best When</td><td>Post-crush, range-bound expected</td></tr></table>
+      <div class="we-strat-rr">Risk/Reward: IV crush play</div>
+    </div><div class="we-strategy-card">
+      <div class="we-strat-name">Bull Call Spread (QQQ)</div>
+      <div class="pnl-diagram pnl-callspread"></div>
+      <table class="we-strat-table"><tr><td>Entry</td><td>Cool CPI print confirmed</td></tr><tr><td>Strikes</td><td>ATM / +2%</td></tr><tr><td>Max Profit</td><td>Spread minus debit</td></tr><tr><td>Max Loss</td><td>Debit</td></tr><tr><td>Best When</td><td>Disinflation trend intact</td></tr></table>
+      <div class="we-strat-rr">Risk/Reward: Tech-heavy beneficiary of falling rates</div>
+    </div><div class="we-strategy-card">
+      <div class="we-strat-name">Bear Put Spread (TLT)</div>
+      <div class="pnl-diagram pnl-putspread"></div>
+      <table class="we-strat-table"><tr><td>Entry</td><td>Hot CPI confirmed</td></tr><tr><td>Strikes</td><td>ATM / −3%</td></tr><tr><td>Max Profit</td><td>Spread minus debit</td></tr><tr><td>Max Loss</td><td>Debit</td></tr><tr><td>Best When</td><td>Inflation re-acceleration</td></tr></table>
+      <div class="we-strat-rr">Risk/Reward: Rate-sensitive play on hot print</div>
+    </div><div class="we-strategy-card">
+      <div class="we-strat-name">Short Strangle (Post)</div>
+      <div class="pnl-diagram pnl-strangle"></div>
+      <table class="we-strat-table"><tr><td>Entry</td><td>Day after CPI, sell OTM strangle</td></tr><tr><td>Width</td><td>±2% from spot</td></tr><tr><td>Max Profit</td><td>Both premiums</td></tr><tr><td>Max Loss</td><td>Unlimited</td></tr><tr><td>Best When</td><td>Vol crush expected, no follow-through</td></tr></table>
+      <div class="we-strat-rr">Risk/Reward: Income play on IV normalization</div>
+    </div></div>
+      <div class="we-tab-content" id="cpi-ranges"><div class="we-dur-section"><div class="we-sec-title">⏱️ Impact Duration</div><div class="we-dur-row">
+      <span class="we-dur-label">Intraday</span>
+      <div class="we-dur-track"><div class="we-dur-fill dur-high" style="width:90%"></div></div>
+      <span class="we-dur-note">±1.2–2.0% in first 30 min</span>
+    </div><div class="we-dur-row">
+      <span class="we-dur-label">1–3 Days</span>
+      <div class="we-dur-track"><div class="we-dur-fill dur-med" style="width:60%"></div></div>
+      <span class="we-dur-note">Sector rotation continues</span>
+    </div><div class="we-dur-row">
+      <span class="we-dur-label">1 Week</span>
+      <div class="we-dur-track"><div class="we-dur-fill dur-low" style="width:35%"></div></div>
+      <span class="we-dur-note">Absorbed unless trend shift</span>
+    </div><div class="we-dur-row">
+      <span class="we-dur-label">1 Month</span>
+      <div class="we-dur-track"><div class="we-dur-fill dur-low" style="width:20%"></div></div>
+      <span class="we-dur-note">Only if changes Fed narrative</span>
+    </div><div class="we-dur-row">
+      <span class="we-dur-label">3 Months</span>
+      <div class="we-dur-track"><div class="we-dur-fill dur-low" style="width:10%"></div></div>
+      <span class="we-dur-note">Minimal unless series inflects</span>
+    </div></div><table class="we-range-table">
+      <thead><tr><th>Instrument</th><th>Intraday</th><th>1-3 Day</th><th>1 Week</th><th>1 Month</th></tr></thead>
+      <tbody><tr><td>SPY</td><td>±1.2–2.0%</td><td>±0.5–1.2%</td><td>±0.3–0.8%</td><td>±1.0–2.5%</td></tr><tr><td>QQQ</td><td>±1.5–2.5%</td><td>±0.7–1.5%</td><td>±0.4–1.0%</td><td>±1.5–3.5%</td></tr><tr><td>ES Futures</td><td>±35–60 pts</td><td>±15–35 pts</td><td>±10–25 pts</td><td>±30–70 pts</td></tr><tr><td>NQ Futures</td><td>±65–105 pts</td><td>±30–65 pts</td><td>±18–45 pts</td><td>±55–125 pts</td></tr><tr><td>VIX</td><td>16→28 pre</td><td>24→15 crush</td><td>13–17 settle</td><td>11–19 range</td></tr></tbody>
+    </table></div>
+    </div>
+  </div>
+  <div class="we-card" data-cat="macro nfp" data-name="NFP Jobs Data">
+    <div class="we-card-header" onclick="toggleCard(this)">
+      <div class="we-card-left">
+        <span class="we-card-icon">💼</span>
+        <div>
+          <div class="we-card-title">Non-Farm Payrolls (NFP)</div>
+          <div class="we-card-desc">Monthly labor market data released first Friday — headline jobs and wage growth drive rate expectations.</div>
+        </div>
+      </div>
+      <div class="we-card-right">
+        <span class="we-flow-tag tag-put">High Impact</span><span class="we-flow-tag tag-neutral">Monthly</span>
+        <span class="we-badge badge-orange">HIGH VOLATILITY</span>
+        <span class="we-chevron">&#9660;</span>
+      </div>
+    </div>
+    <div class="we-card-body" id="body-nfp">
+      
+    <div class="we-tabs">
+      <button class="we-tab-btn active" onclick="switchTab(this,'nfp','overview')">Overview</button>
+      <button class="we-tab-btn" onclick="switchTab(this,'nfp','flow')">Options Flow &amp; IV</button>
+      <button class="we-tab-btn" onclick="switchTab(this,'nfp','strats')">Strategies</button>
+      <button class="we-tab-btn" onclick="switchTab(this,'nfp','ranges')">Duration &amp; Ranges</button>
+    </div>
+      <div class="we-tab-content active" id="nfp-overview"><div class="we-section "><div class="we-sec-title">🏛️ Institutional Buyers</div><ul><li>Buy XLF Thursday if jobs data likely strong</li><li>Hedge TLT long with put spreads pre-Friday</li><li>Labor market surprise changes rate path → major reposition</li><li>High OI in Friday SPY calls/puts rolls Tuesday–Thursday</li></ul></div><div class="we-section "><div class="we-sec-title">📦 Key Assets</div><ul><li>Equities: SPY, XLF, XLY, XLC</li><li>Fixed Income: TLT, 2yr Treasury</li><li>Sectors: XLI, XLU (defensive)</li><li>FX: DXY</li></ul></div><div class="we-section "><div class="we-sec-title">👥 Retail Traders</div><ul><li>Don't buy options Thursday — premium too high</li><li>Watch 8:30 ET Friday; 9:00 opening range is tradeable</li><li>Wage growth more important than headline number</li><li>ADP (Wednesday) gives directional preview</li></ul></div><div class="we-bar-row">
+      <span class="we-bar-label">Bullish Probability</span>
+      <div class="we-bar-track"><div class="we-bar-fill bar-bull" style="width:50%"></div></div>
+      <span class="we-bar-val">Neutral</span>
+    </div><div class="we-bar-row">
+      <span class="we-bar-label">Volatility Expansion</span>
+      <div class="we-bar-track"><div class="we-bar-fill bar-vol" style="width:65%"></div></div>
+      <span class="we-bar-val">Moderate-High</span>
+    </div><div class="we-bar-row">
+      <span class="we-bar-label">Magnitude</span>
+      <div class="we-bar-track"><div class="we-bar-fill bar-mag" style="width:58%"></div></div>
+      <span class="we-bar-val">±0.8–1.5%</span>
+    </div><div class="we-section "><div class="we-sec-title">⚙️ GEX & Delta Hedging</div><ul><li>Friday morning GEX often near flip</li><li>Strong jobs → rate-fear sell-off in bonds, mixed equities</li><li>Weak jobs → bonds rally, equities mixed (recession fear)</li><li>Delta hedging less extreme than FOMC/CPI</li></ul></div><div class="we-trade-box"><div class="we-trade-title">&#127919; How to Trade</div><ul><li>Sell straddle Thursday PM — collect pre-NFP premium</li><li>Long XLF call spread if ADP strong</li><li>TLT put spread for strong NFP hedge</li><li>Watch ISM services (Mon) for NFP confirmation</li></ul></div></div>
+      <div class="we-tab-content" id="nfp-flow"><div class="we-flow-tags"><span class="we-flow-tag tag-call">XLF Call Activity</span><span class="we-flow-tag tag-put">TLT Puts Elevated</span><span class="we-flow-tag tag-neutral">Friday Vol Crush</span></div><table class="we-iv-table">
+      <thead><tr><th>Phase</th><th>IV Change</th><th>Skew</th><th>Term Structure</th><th>P/C Ratio</th></tr></thead>
+      <tbody><tr><td>Wednesday</td><td>IV +5–12%</td><td>Mild skew</td><td>Flat</td><td>1.2–1.5</td></tr><tr><td>Thursday</td><td>IV +15–25%</td><td>Put skew</td><td>Mild inversion</td><td>1.4–2.0</td></tr><tr><td>Friday Pre</td><td>IV +20–35%</td><td>Max skew</td><td>Inverted</td><td>1.4–2.0</td></tr><tr><td>Post-Print</td><td>IV –25–40%</td><td>Flattens</td><td>Re-steepens</td><td>0.9–1.1</td></tr><tr><td>Monday</td><td>IV low</td><td>Neutral</td><td>Contango</td><td>1.0</td></tr></tbody>
+    </table><div class="we-pc-row">
+      <span class="we-pc-label">Thursday (pre-NFP)</span>
+      <div class="we-pc-track"><div class="we-pc-fill" style="width:60%"></div></div>
+      <span class="we-pc-val">1.4–2.0</span>
+    </div><div class="we-pc-row">
+      <span class="we-pc-label">Friday Morning</span>
+      <div class="we-pc-track"><div class="we-pc-fill" style="width:60%"></div></div>
+      <span class="we-pc-val">1.4–2.0</span>
+    </div><div class="we-pc-row">
+      <span class="we-pc-label">Post-Print</span>
+      <div class="we-pc-track"><div class="we-pc-fill" style="width:36%"></div></div>
+      <span class="we-pc-val">0.9–1.1</span>
+    </div><div class="we-section "><div class="we-sec-title">💡 Flow Signals</div><ul><li>Thursday XLF call flow signals strong jobs expectation</li><li>TLT put buying Thursday = rate-rise fear</li><li>Watch SPY 0DTE call/put ratio Friday 9:00 AM</li><li>ADP Wednesday flow predicts NFP direction</li></ul></div></div>
+      <div class="we-tab-content" id="nfp-strats"><div class="we-strategy-card">
+      <div class="we-strat-name">Pre-NFP Strangle Sell</div>
+      <div class="pnl-diagram pnl-strangle"></div>
+      <table class="we-strat-table"><tr><td>Entry</td><td>Thursday close, sell OTM strangle</td></tr><tr><td>Width</td><td>±1.5% from spot</td></tr><tr><td>Max Profit</td><td>Both premiums</td></tr><tr><td>Risk</td><td>Large Friday surprise</td></tr><tr><td>Best When</td><td>Consensus strongly priced, low whisper deviation</td></tr></table>
+      <div class="we-strat-rr">Risk/Reward: Income play Thursday → Friday crush</div>
+    </div><div class="we-strategy-card">
+      <div class="we-strat-name">Long Straddle (Thursday)</div>
+      <div class="pnl-diagram pnl-straddle"></div>
+      <table class="we-strat-table"><tr><td>Entry</td><td>Thursday 2 PM, ATM straddle</td></tr><tr><td>Exit</td><td>Friday 8:40 AM</td></tr><tr><td>Max Profit</td><td>Large surprise</td></tr><tr><td>Max Loss</td><td>Both premiums</td></tr><tr><td>Best When</td><td>ADP vs expectations diverged</td></tr></table>
+      <div class="we-strat-rr">Risk/Reward: Overnight surprise play</div>
+    </div><div class="we-strategy-card">
+      <div class="we-strat-name">XLF Bull Call Spread</div>
+      <div class="pnl-diagram pnl-callspread"></div>
+      <table class="we-strat-table"><tr><td>Entry</td><td>Wednesday post-ADP if strong</td></tr><tr><td>Strikes</td><td>ATM / +2%</td></tr><tr><td>Max Profit</td><td>Spread minus debit</td></tr><tr><td>Max Loss</td><td>Debit</td></tr><tr><td>Best When</td><td>Strong labor → rate optimism for banks</td></tr></table>
+      <div class="we-strat-rr">Risk/Reward: Financials beneficiary of strong jobs</div>
+    </div><div class="we-strategy-card">
+      <div class="we-strat-name">TLT Call Spread</div>
+      <div class="pnl-diagram pnl-callspread"></div>
+      <table class="we-strat-table"><tr><td>Entry</td><td>Pre-NFP if weak jobs expected</td></tr><tr><td>Strikes</td><td>ATM / +2%</td></tr><tr><td>Max Profit</td><td>Spread minus debit</td></tr><tr><td>Max Loss</td><td>Debit</td></tr><tr><td>Best When</td><td>Soft landing, rate cuts back on table</td></tr></table>
+      <div class="we-strat-rr">Risk/Reward: Bond bull play on weak jobs</div>
+    </div></div>
+      <div class="we-tab-content" id="nfp-ranges"><div class="we-dur-section"><div class="we-sec-title">⏱️ Impact Duration</div><div class="we-dur-row">
+      <span class="we-dur-label">Intraday</span>
+      <div class="we-dur-track"><div class="we-dur-fill dur-high" style="width:80%"></div></div>
+      <span class="we-dur-note">±0.8–1.5% opening move</span>
+    </div><div class="we-dur-row">
+      <span class="we-dur-label">1–3 Days</span>
+      <div class="we-dur-track"><div class="we-dur-fill dur-med" style="width:55%"></div></div>
+      <span class="we-dur-note">Rate market absorbs data</span>
+    </div><div class="we-dur-row">
+      <span class="we-dur-label">1 Week</span>
+      <div class="we-dur-track"><div class="we-dur-fill dur-low" style="width:30%"></div></div>
+      <span class="we-dur-note">Sector rotation fades</span>
+    </div><div class="we-dur-row">
+      <span class="we-dur-label">1 Month</span>
+      <div class="we-dur-track"><div class="we-dur-fill dur-low" style="width:20%"></div></div>
+      <span class="we-dur-note">Part of trend — not standalone catalyst</span>
+    </div><div class="we-dur-row">
+      <span class="we-dur-label">3 Months</span>
+      <div class="we-dur-track"><div class="we-dur-fill dur-low" style="width:10%"></div></div>
+      <span class="we-dur-note">Only if confirms recession/boom signal</span>
+    </div></div><table class="we-range-table">
+      <thead><tr><th>Instrument</th><th>Intraday</th><th>1-3 Day</th><th>1 Week</th><th>1 Month</th></tr></thead>
+      <tbody><tr><td>SPY</td><td>±0.8–1.5%</td><td>±0.4–0.9%</td><td>±0.2–0.6%</td><td>±0.8–2.0%</td></tr><tr><td>QQQ</td><td>±1.0–1.8%</td><td>±0.5–1.1%</td><td>±0.3–0.7%</td><td>±1.0–2.5%</td></tr><tr><td>ES Futures</td><td>±25–45 pts</td><td>±12–28 pts</td><td>±8–18 pts</td><td>±25–55 pts</td></tr><tr><td>NQ Futures</td><td>±45–75 pts</td><td>±22–48 pts</td><td>±14–32 pts</td><td>±45–95 pts</td></tr><tr><td>VIX</td><td>14→22 pre</td><td>20→13 crush</td><td>12–16 settle</td><td>11–17 range</td></tr></tbody>
+    </table></div>
+    </div>
+  </div>
+  <div class="we-card" data-cat="macro gdp" data-name="GDP Growth Data">
+    <div class="we-card-header" onclick="toggleCard(this)">
+      <div class="we-card-left">
+        <span class="we-card-icon">📈</span>
+        <div>
+          <div class="we-card-title">GDP &amp; Economic Growth</div>
+          <div class="we-card-desc">Quarterly GDP release — measures economic output and drives sector rotation between cyclicals and defensives.</div>
+        </div>
+      </div>
+      <div class="we-card-right">
+        <span class="we-flow-tag tag-neutral">Moderate Impact</span><span class="we-flow-tag tag-neutral">Quarterly</span>
+        <span class="we-badge badge-yellow">MODERATE VOLATILITY</span>
+        <span class="we-chevron">&#9660;</span>
+      </div>
+    </div>
+    <div class="we-card-body" id="body-gdp">
+      
+    <div class="we-tabs">
+      <button class="we-tab-btn active" onclick="switchTab(this,'gdp','overview')">Overview</button>
+      <button class="we-tab-btn" onclick="switchTab(this,'gdp','flow')">Options Flow &amp; IV</button>
+      <button class="we-tab-btn" onclick="switchTab(this,'gdp','strats')">Strategies</button>
+      <button class="we-tab-btn" onclick="switchTab(this,'gdp','ranges')">Duration &amp; Ranges</button>
+    </div>
+      <div class="we-tab-content active" id="gdp-overview"><div class="we-section "><div class="we-sec-title">🏛️ Institutional Buyers</div><ul><li>Rebalance cyclical vs defensive ahead of GDP</li><li>Watch QoQ growth vs consensus by 0.3%+ for major repositioning</li><li>Strong GDP → XLI, XLY, XLF outperform</li><li>Weak GDP → XLU, XLP, TLT inflows</li></ul></div><div class="we-section "><div class="we-sec-title">📦 Key Assets</div><ul><li>Equities: SPY, XLI, XLY, XLU, XLP</li><li>Fixed Income: TLT, HYG</li><li>FX: DXY</li></ul></div><div class="we-section "><div class="we-sec-title">👥 Retail Traders</div><ul><li>GDP less tradeable than CPI/FOMC — slower reaction</li><li>Focus on revisions vs first estimate</li><li>Consumer spending subcomponent most equity-relevant</li><li>Watch reaction in first 15 min, often fades</li></ul></div><div class="we-bar-row">
+      <span class="we-bar-label">Bullish Probability</span>
+      <div class="we-bar-track"><div class="we-bar-fill bar-bull" style="width:52%"></div></div>
+      <span class="we-bar-val">Slight lean</span>
+    </div><div class="we-bar-row">
+      <span class="we-bar-label">Volatility Expansion</span>
+      <div class="we-bar-track"><div class="we-bar-fill bar-vol" style="width:50%"></div></div>
+      <span class="we-bar-val">Moderate</span>
+    </div><div class="we-bar-row">
+      <span class="we-bar-label">Magnitude</span>
+      <div class="we-bar-track"><div class="we-bar-fill bar-mag" style="width:45%"></div></div>
+      <span class="we-bar-val">±0.5–1.2%</span>
+    </div><div class="we-section "><div class="we-sec-title">⚙️ GEX & Delta Hedging</div><ul><li>GDP rarely causes GEX regime change</li><li>Moderate dealer hedging vs FOMC/CPI</li><li>If GDP miss coincides with negative GEX → amplified</li><li>Positive GEX likely dampens reaction</li></ul></div><div class="we-trade-box"><div class="we-trade-title">&#127919; How to Trade</div><ul><li>XLI bull call spread for strong GDP</li><li>HYG bear put for weak GDP (recession fear)</li><li>Pairs trade: long XLI / short XLU on growth optimism</li><li>TLT long call on growth miss → rate cut expectations</li></ul></div></div>
+      <div class="we-tab-content" id="gdp-flow"><div class="we-flow-tags"><span class="we-flow-tag tag-put">Modest Put Hedging</span><span class="we-flow-tag tag-neutral">Sector Rotation Flows</span><span class="we-flow-tag tag-neutral">HYG Active</span></div><table class="we-iv-table">
+      <thead><tr><th>Phase</th><th>IV Change</th><th>Skew</th><th>Term Structure</th><th>P/C Ratio</th></tr></thead>
+      <tbody><tr><td>Week Before</td><td>IV +3–8%</td><td>Mild skew</td><td>Flat</td><td>1.1–1.4</td></tr><tr><td>Day Before</td><td>IV +8–18%</td><td>Mild put skew</td><td>Slight inversion</td><td>1.2–1.6</td></tr><tr><td>Morning Of</td><td>IV +15–30%</td><td>Moderate skew</td><td>Inverted</td><td>1.2–1.6</td></tr><tr><td>Post-Print</td><td>IV –20–35%</td><td>Flattens</td><td>Re-steepens</td><td>0.9–1.1</td></tr><tr><td>Next Day</td><td>IV low</td><td>Neutral</td><td>Contango</td><td>1.0</td></tr></tbody>
+    </table><div class="we-pc-row">
+      <span class="we-pc-label">Pre-GDP</span>
+      <div class="we-pc-track"><div class="we-pc-fill" style="width:53%"></div></div>
+      <span class="we-pc-val">1.2–1.6</span>
+    </div><div class="we-pc-row">
+      <span class="we-pc-label">Morning Of</span>
+      <div class="we-pc-track"><div class="we-pc-fill" style="width:53%"></div></div>
+      <span class="we-pc-val">1.2–1.6</span>
+    </div><div class="we-pc-row">
+      <span class="we-pc-label">Post-Print</span>
+      <div class="we-pc-track"><div class="we-pc-fill" style="width:36%"></div></div>
+      <span class="we-pc-val">0.9–1.1</span>
+    </div><div class="we-section "><div class="we-sec-title">💡 Flow Signals</div><ul><li>XLI call activity predicts growth optimism</li><li>HYG put buying signals credit risk concern</li><li>Watch ISM Manufacturing as leading GDP indicator</li><li>Treasury yield curve reaction guides equity sector allocation</li></ul></div></div>
+      <div class="we-tab-content" id="gdp-strats"><div class="we-strategy-card">
+      <div class="we-strat-name">XLI Bull Call Spread</div>
+      <div class="pnl-diagram pnl-callspread"></div>
+      <table class="we-strat-table"><tr><td>Entry</td><td>Strong GDP confirmed</td></tr><tr><td>Strikes</td><td>ATM / +2%</td></tr><tr><td>Max Profit</td><td>Spread minus debit</td></tr><tr><td>Max Loss</td><td>Debit</td></tr><tr><td>Best When</td><td>Growth acceleration, capex cycle</td></tr></table>
+      <div class="we-strat-rr">Risk/Reward: Industrials as growth proxy</div>
+    </div><div class="we-strategy-card">
+      <div class="we-strat-name">HYG Bear Put Spread</div>
+      <div class="pnl-diagram pnl-putspread"></div>
+      <table class="we-strat-table"><tr><td>Entry</td><td>Weak GDP, recession concern</td></tr><tr><td>Strikes</td><td>ATM / −2%</td></tr><tr><td>Max Profit</td><td>Spread minus debit</td></tr><tr><td>Max Loss</td><td>Debit</td></tr><tr><td>Best When</td><td>Growth miss → credit spread widening</td></tr></table>
+      <div class="we-strat-rr">Risk/Reward: Credit stress on growth miss</div>
+    </div><div class="we-strategy-card">
+      <div class="we-strat-name">TLT Long Call</div>
+      <div class="pnl-diagram pnl-callspread"></div>
+      <table class="we-strat-table"><tr><td>Entry</td><td>GDP miss confirmed</td></tr><tr><td>Expiry</td><td>30–45 DTE</td></tr><tr><td>Max Profit</td><td>Unlimited upside</td></tr><tr><td>Max Loss</td><td>Premium paid</td></tr><tr><td>Best When</td><td>Rate cut expectations re-price</td></tr></table>
+      <div class="we-strat-rr">Risk/Reward: Bond bull on growth scare</div>
+    </div><div class="we-strategy-card">
+      <div class="we-strat-name">XLU / XLY Pairs Trade</div>
+      <div class="pnl-diagram pnl-ratio"></div>
+      <table class="we-strat-table"><tr><td>Entry</td><td>Post-GDP based on direction</td></tr><tr><td>Long</td><td>XLU on miss, XLY on beat</td></tr><tr><td>Short</td><td>XLY on miss, XLU on beat</td></tr><tr><td>Hold</td><td>1–2 weeks</td></tr><tr><td>Best When</td><td>GDP significantly beats/misses</td></tr></table>
+      <div class="we-strat-rr">Risk/Reward: Sector rotation expression</div>
+    </div></div>
+      <div class="we-tab-content" id="gdp-ranges"><div class="we-dur-section"><div class="we-sec-title">⏱️ Impact Duration</div><div class="we-dur-row">
+      <span class="we-dur-label">Intraday</span>
+      <div class="we-dur-track"><div class="we-dur-fill dur-med" style="width:65%"></div></div>
+      <span class="we-dur-note">±0.5–1.2% opening reaction</span>
+    </div><div class="we-dur-row">
+      <span class="we-dur-label">1–3 Days</span>
+      <div class="we-dur-track"><div class="we-dur-fill dur-med" style="width:50%"></div></div>
+      <span class="we-dur-note">Sector positioning adjusts</span>
+    </div><div class="we-dur-row">
+      <span class="we-dur-label">1 Week</span>
+      <div class="we-dur-track"><div class="we-dur-fill dur-low" style="width:35%"></div></div>
+      <span class="we-dur-note">Fades unless trend change</span>
+    </div><div class="we-dur-row">
+      <span class="we-dur-label">1 Month</span>
+      <div class="we-dur-track"><div class="we-dur-fill dur-low" style="width:25%"></div></div>
+      <span class="we-dur-note">Part of macro mosaic</span>
+    </div><div class="we-dur-row">
+      <span class="we-dur-label">3 Months</span>
+      <div class="we-dur-track"><div class="we-dur-fill dur-low" style="width:15%"></div></div>
+      <span class="we-dur-note">Quarterly GDP trend matters</span>
+    </div></div><table class="we-range-table">
+      <thead><tr><th>Instrument</th><th>Intraday</th><th>1-3 Day</th><th>1 Week</th><th>1 Month</th></tr></thead>
+      <tbody><tr><td>SPY</td><td>±0.5–1.2%</td><td>±0.3–0.8%</td><td>±0.2–0.5%</td><td>±0.8–2.0%</td></tr><tr><td>QQQ</td><td>±0.6–1.4%</td><td>±0.4–0.9%</td><td>±0.2–0.6%</td><td>±1.0–2.5%</td></tr><tr><td>ES Futures</td><td>±15–35 pts</td><td>±10–25 pts</td><td>±6–15 pts</td><td>±22–55 pts</td></tr><tr><td>NQ Futures</td><td>±25–60 pts</td><td>±18–42 pts</td><td>±10–28 pts</td><td>±40–90 pts</td></tr><tr><td>VIX</td><td>13→20 pre</td><td>18→13 crush</td><td>12–15 settle</td><td>11–17 range</td></tr></tbody>
+    </table></div>
+    </div>
+  </div>
+  <div class="we-card" data-cat="earnings" data-name="Earnings Season">
+    <div class="we-card-header" onclick="toggleCard(this)">
+      <div class="we-card-left">
+        <span class="we-card-icon">💰</span>
+        <div>
+          <div class="we-card-title">Major Earnings Reports</div>
+          <div class="we-card-desc">Mega-cap earnings (AAPL, NVDA, MSFT, AMZN) move indices; sector sympathy plays last 2–5 days.</div>
+        </div>
+      </div>
+      <div class="we-card-right">
+        <span class="we-flow-tag tag-put">Extreme on Stock</span><span class="we-flow-tag tag-neutral">Quarterly</span>
+        <span class="we-badge badge-red">EXTREME ON STOCK</span>
+        <span class="we-chevron">&#9660;</span>
+      </div>
+    </div>
+    <div class="we-card-body" id="body-earnings">
+      
+    <div class="we-tabs">
+      <button class="we-tab-btn active" onclick="switchTab(this,'earnings','overview')">Overview</button>
+      <button class="we-tab-btn" onclick="switchTab(this,'earnings','flow')">Options Flow &amp; IV</button>
+      <button class="we-tab-btn" onclick="switchTab(this,'earnings','strats')">Strategies</button>
+      <button class="we-tab-btn" onclick="switchTab(this,'earnings','ranges')">Duration &amp; Ranges</button>
+    </div>
+      <div class="we-tab-content active" id="earnings-overview"><div class="we-section "><div class="we-sec-title">🏛️ Institutional Buyers</div><ul><li>Pre-position based on supply chain data, alt data (credit cards, satellite)</li><li>Buy vol 7–10 days before for largest names (AAPL, NVDA, MSFT)</li><li>Sector sympathy plays: beat NVDA → buy AMD, SMH</li><li>Post-earnings covered call program on long positions</li></ul></div><div class="we-section "><div class="we-sec-title">📦 Key Assets</div><ul><li>Individual stocks: AAPL, NVDA, MSFT, AMZN, GOOGL</li><li>Sector ETFs: SMH, XLF, XLE, XLY</li><li>Index level moves from mega-caps (AAPL = ~7% SPY weight)</li></ul></div><div class="we-section "><div class="we-sec-title">👥 Retail Traders</div><ul><li>Never hold short-term options through earnings — IV crush destroys value</li><li>Long-dated calls (60+ DTE) survive crush better</li><li>Sympathy moves in peers are tradeable post-earnings</li><li>Wheel strategy: sell puts before earnings, covered calls after</li></ul></div><div class="we-bar-row">
+      <span class="we-bar-label">Bullish Probability</span>
+      <div class="we-bar-track"><div class="we-bar-fill bar-bull" style="width:55%"></div></div>
+      <span class="we-bar-val">Slight edge</span>
+    </div><div class="we-bar-row">
+      <span class="we-bar-label">Volatility Expansion</span>
+      <div class="we-bar-track"><div class="we-bar-fill bar-vol" style="width:95%"></div></div>
+      <span class="we-bar-val">Extreme on single stock</span>
+    </div><div class="we-bar-row">
+      <span class="we-bar-label">Magnitude</span>
+      <div class="we-bar-track"><div class="we-bar-fill bar-mag" style="width:85%"></div></div>
+      <span class="we-bar-val">±8–15% single stock</span>
+    </div><div class="we-section "><div class="we-sec-title">⚙️ GEX & Delta Hedging</div><ul><li>Single-stock GEX inverts dramatically at ATM strike</li><li>Earnings straddle pricing implies expected move</li><li>Post-earnings: dealers unwind hedges creating initial gap then fade</li><li>Mega-cap earnings affect index-level GEX</li></ul></div><div class="we-trade-box"><div class="we-trade-title">&#127919; How to Trade</div><ul><li>Buy earnings straddle 7 days before, sell 1 day before (capture IV build)</li><li>Sell iron condor 1 day before if IV excessive (>150% normalized)</li><li>Trade sympathy moves: SMH on NVDA beat</li><li>Post-earnings covered call for income on remaining long position</li></ul></div></div>
+      <div class="we-tab-content" id="earnings-flow"><div class="we-flow-tags"><span class="we-flow-tag tag-call">Massive Straddle Buying</span><span class="we-flow-tag tag-put">OTM Put Hedges</span><span class="we-flow-tag tag-neutral">IV Skew Extremes</span></div><table class="we-iv-table">
+      <thead><tr><th>Phase</th><th>IV Change</th><th>Skew</th><th>Term Structure</th><th>P/C Ratio</th></tr></thead>
+      <tbody><tr><td>10 Days Before</td><td>IV +20–40%</td><td>Slight put skew</td><td>Flat</td><td>1.5–2.0</td></tr><tr><td>5 Days Before</td><td>IV +40–80%</td><td>Increasing put skew</td><td>Mild inversion</td><td>1.8–2.5</td></tr><tr><td>Day Before</td><td>IV +80–150%+</td><td>Heavy put skew</td><td>Max inversion</td><td>2.0–4.0</td></tr><tr><td>Post-Earnings</td><td>IV –60–80% crush</td><td>Collapses</td><td>Normalizes</td><td>0.8–1.2</td></tr><tr><td>Next Week</td><td>IV stable</td><td>Neutral</td><td>Normal</td><td>1.0–1.2</td></tr></tbody>
+    </table><div class="we-pc-row">
+      <span class="we-pc-label">7 Days Before</span>
+      <div class="we-pc-track"><div class="we-pc-fill" style="width:55%"></div></div>
+      <span class="we-pc-val">1.5–2.0</span>
+    </div><div class="we-pc-row">
+      <span class="we-pc-label">Day Before</span>
+      <div class="we-pc-track"><div class="we-pc-fill" style="width:75%"></div></div>
+      <span class="we-pc-val">2.0–4.0</span>
+    </div><div class="we-pc-row">
+      <span class="we-pc-label">Post-Earnings</span>
+      <div class="we-pc-track"><div class="we-pc-fill" style="width:38%"></div></div>
+      <span class="we-pc-val">0.8–1.2</span>
+    </div><div class="we-section "><div class="we-sec-title">💡 Flow Signals</div><ul><li>Dark pool prints in stock 3–5 days before signal institutional positioning</li><li>Unusual options activity (UOA) scan for large OTM calls → bullish lean</li><li>Put/call open interest ratio >3.0 often signals over-hedged → bounce</li><li>Check implied move vs historical move — sell vol if IV > 2× historical</li></ul></div></div>
+      <div class="we-tab-content" id="earnings-strats"><div class="we-strategy-card">
+      <div class="we-strat-name">Iron Condor (High IV)</div>
+      <div class="pnl-diagram pnl-condor"></div>
+      <table class="we-strat-table"><tr><td>Entry</td><td>1–2 days before earnings, sell ±8% OTM</td></tr><tr><td>Expiry</td><td>Weekly</td></tr><tr><td>Max Profit</td><td>Full credit if stock stays in range</td></tr><tr><td>Max Loss</td><td>Wing width minus credit</td></tr><tr><td>Best When</td><td>IV extremely elevated, expect stock to miss implied move</td></tr></table>
+      <div class="we-strat-rr">Risk/Reward: Classic earnings IV sell</div>
+    </div><div class="we-strategy-card">
+      <div class="we-strat-name">Earnings Straddle Build</div>
+      <div class="pnl-diagram pnl-straddle"></div>
+      <table class="we-strat-table"><tr><td>Entry</td><td>10 days before, ATM straddle</td></tr><tr><td>Exit</td><td>1 day before earnings</td></tr><tr><td>Profit</td><td>IV expansion profit, not direction</td></tr><tr><td>Risk</td><td>Stock moves adversely 5+ days before</td></tr><tr><td>Best When</td><td>Low IV entering, high uncertainty event</td></tr></table>
+      <div class="we-strat-rr">Risk/Reward: Capture IV build, exit before crush</div>
+    </div><div class="we-strategy-card">
+      <div class="we-strat-name">Post-Earnings Covered Call</div>
+      <div class="pnl-diagram pnl-callspread"></div>
+      <table class="we-strat-table"><tr><td>Entry</td><td>Day after earnings gap up, sell OTM call</td></tr><tr><td>Strike</td><td>5–8% OTM</td></tr><tr><td>Max Profit</td><td>Strike minus cost + premium</td></tr><tr><td>Risk</td><td>Stock runs above strike</td></tr><tr><td>Best When</td><td>Holding stock, expect sideways after gap</td></tr></table>
+      <div class="we-strat-rr">Risk/Reward: Income on post-earnings long</div>
+    </div><div class="we-strategy-card">
+      <div class="we-strat-name">Sympathy Call Spread</div>
+      <div class="pnl-diagram pnl-callspread"></div>
+      <table class="we-strat-table"><tr><td>Entry</td><td>Post peer earnings beat, buy related stock</td></tr><tr><td>Strikes</td><td>ATM / +5%</td></tr><tr><td>Hold</td><td>2–5 days</td></tr><tr><td>Max Profit</td><td>Spread minus debit</td></tr><tr><td>Best When</td><td>Sector read-through strong, peer IV still low</td></tr></table>
+      <div class="we-strat-rr">Risk/Reward: Sympathy play with defined risk</div>
+    </div><div class="we-strategy-card">
+      <div class="we-strat-name">Calendar Spread</div>
+      <div class="pnl-diagram pnl-calendar"></div>
+      <table class="we-strat-table"><tr><td>Entry</td><td>Sell front-month ATM, buy next-month ATM</td></tr><tr><td>Around</td><td>Earnings date</td></tr><tr><td>Max Profit</td><td>Front expires worthless, back holds value</td></tr><tr><td>Risk</td><td>Large gap through strike</td></tr><tr><td>Best When</td><td>Expect small move but IV crush on front</td></tr></table>
+      <div class="we-strat-rr">Risk/Reward: Theta + vega structure around earnings</div>
+    </div></div>
+      <div class="we-tab-content" id="earnings-ranges"><div class="we-dur-section"><div class="we-sec-title">⏱️ Impact Duration</div><div class="we-dur-row">
+      <span class="we-dur-label">Intraday</span>
+      <div class="we-dur-track"><div class="we-dur-fill dur-high" style="width:95%"></div></div>
+      <span class="we-dur-note">±8–15% gap on single stock</span>
+    </div><div class="we-dur-row">
+      <span class="we-dur-label">1–3 Days</span>
+      <div class="we-dur-track"><div class="we-dur-fill dur-med" style="width:70%"></div></div>
+      <span class="we-dur-note">Sympathy moves, sector rotation</span>
+    </div><div class="we-dur-row">
+      <span class="we-dur-label">1 Week</span>
+      <div class="we-dur-track"><div class="we-dur-fill dur-med" style="width:50%"></div></div>
+      <span class="we-dur-note">Analyst revisions, PT changes</span>
+    </div><div class="we-dur-row">
+      <span class="we-dur-label">1 Month</span>
+      <div class="we-dur-track"><div class="we-dur-fill dur-low" style="width:40%"></div></div>
+      <span class="we-dur-note">Earnings cycle feeds next quarter guidance</span>
+    </div><div class="we-dur-row">
+      <span class="we-dur-label">3 Months</span>
+      <div class="we-dur-track"><div class="we-dur-fill dur-low" style="width:25%"></div></div>
+      <span class="we-dur-note">Cumulative earnings season impact</span>
+    </div></div><table class="we-range-table">
+      <thead><tr><th>Instrument</th><th>Intraday</th><th>1-3 Day</th><th>1 Week</th><th>1 Month</th></tr></thead>
+      <tbody><tr><td>Single Stock</td><td>±8–15%</td><td>±3–8%</td><td>±2–5%</td><td>±5–15%</td></tr><tr><td>Sector ETF</td><td>±1.5–4.0%</td><td>±0.8–2.0%</td><td>±0.5–1.5%</td><td>±1.5–4.0%</td></tr><tr><td>ES Futures</td><td>±10–30 pts</td><td>±5–15 pts</td><td>±3–10 pts</td><td>±10–30 pts</td></tr><tr><td>NQ Futures</td><td>±20–60 pts</td><td>±10–30 pts</td><td>±6–20 pts</td><td>±20–60 pts</td></tr><tr><td>VIX</td><td>15→30+ pre</td><td>27→16 crush</td><td>14–18 settle</td><td>12–22 range</td></tr></tbody>
+    </table></div>
+    </div>
+  </div>
+  <div class="we-card" data-cat="geo" data-name="Geopolitical Event">
+    <div class="we-card-header" onclick="toggleCard(this)">
+      <div class="we-card-left">
+        <span class="we-card-icon">🚨</span>
+        <div>
+          <div class="we-card-title">Geopolitical Shock / War</div>
+          <div class="we-card-desc">Armed conflict, terrorist attack, or regime change — sudden flight to safety with extreme volatility.</div>
+        </div>
+      </div>
+      <div class="we-card-right">
+        <span class="we-flow-tag tag-put">Tail Risk</span><span class="we-flow-tag tag-neutral">Unpredictable</span>
+        <span class="we-badge badge-red">TAIL RISK EVENT</span>
+        <span class="we-chevron">&#9660;</span>
+      </div>
+    </div>
+    <div class="we-card-body" id="body-geo">
+      
+    <div class="we-tabs">
+      <button class="we-tab-btn active" onclick="switchTab(this,'geo','overview')">Overview</button>
+      <button class="we-tab-btn" onclick="switchTab(this,'geo','flow')">Options Flow &amp; IV</button>
+      <button class="we-tab-btn" onclick="switchTab(this,'geo','strats')">Strategies</button>
+      <button class="we-tab-btn" onclick="switchTab(this,'geo','ranges')">Duration &amp; Ranges</button>
+    </div>
+      <div class="we-tab-content active" id="geo-overview"><div class="we-section "><div class="we-sec-title">🏛️ Institutional Buyers</div><ul><li>Flight to safety: TLT, GLD, SHY on shock</li><li>Reduce equity exposure rapidly via futures (ES, NQ sells)</li><li>Buy defense sector (ITA, NOC, RTX) on conflict</li><li>Hedge tails with VIX calls and OTM SPY puts</li></ul></div><div class="we-section "><div class="we-sec-title">📦 Key Assets</div><ul><li>Safe havens: GLD, TLT, SHY, CHF, JPY</li><li>Defense: ITA, LMT, NOC, RTX</li><li>Energy: XLE, OIL (supply risk)</li><li>Risk-off: VIX, VIXY, UVXY</li></ul></div><div class="we-section "><div class="we-sec-title">👥 Retail Traders</div><ul><li>Don't sell panic — liquidity thins on shock</li><li>Buy GLD after confirmation (not on initial spike)</li><li>VIX call spread after spike — fade vol 3–5 days later</li><li>Defense sector has multi-week momentum post-conflict</li></ul></div><div class="we-bar-row">
+      <span class="we-bar-label">Bullish Probability</span>
+      <div class="we-bar-track"><div class="we-bar-fill bar-bear" style="width:25%"></div></div>
+      <span class="we-bar-val">Risk-off</span>
+    </div><div class="we-bar-row">
+      <span class="we-bar-label">Volatility Expansion</span>
+      <div class="we-bar-track"><div class="we-bar-fill bar-vol" style="width:90%"></div></div>
+      <span class="we-bar-val">Extreme on shock</span>
+    </div><div class="we-bar-row">
+      <span class="we-bar-label">Magnitude</span>
+      <div class="we-bar-track"><div class="we-bar-fill bar-mag" style="width:80%"></div></div>
+      <span class="we-bar-val">±1.5–4.0%</span>
+    </div><div class="we-section "><div class="we-sec-title">⚙️ GEX & Delta Hedging</div><ul><li>Sudden shock flips GEX negative instantly</li><li>Dealer short gamma amplifies move 1.5–2.5×</li><li>Put walls become magnets in risk-off</li><li>Recovery often sharp when GEX flips positive</li></ul></div><div class="we-trade-box"><div class="we-trade-title">&#127919; How to Trade</div><ul><li>Buy GLD/TLT on initial shock — not SPY puts (too late)</li><li>VIX call spread after first spike for secondary surge</li><li>Defense sector (ITA) long after 1–2 day sell-off</li><li>Short VIX 3–5 days post-shock when stabilization visible</li></ul></div></div>
+      <div class="we-tab-content" id="geo-flow"><div class="we-flow-tags"><span class="we-flow-tag tag-put">Extreme Put Buying</span><span class="we-flow-tag tag-put">VIX Calls Surge</span><span class="we-flow-tag tag-call">GLD Calls Bid</span><span class="we-flow-tag tag-call">Defense Calls</span></div><table class="we-iv-table">
+      <thead><tr><th>Phase</th><th>IV Change</th><th>Skew</th><th>Term Structure</th><th>P/C Ratio</th></tr></thead>
+      <tbody><tr><td>Normal</td><td>IV 14–18</td><td>Neutral</td><td>Contango</td><td>1.0–1.2</td></tr><tr><td>Pre-Shock</td><td>IV +15–30%</td><td>Slight put skew</td><td>Flat</td><td>1.3–1.8</td></tr><tr><td>Shock Day</td><td>IV +50–150%</td><td>Extreme put skew</td><td>Max inversion</td><td>3.0–6.0+</td></tr><tr><td>Day 2–3</td><td>IV –20–40%</td><td>Skew eases</td><td>Re-steepens</td><td>2.0–3.5</td></tr><tr><td>1 Week Post</td><td>IV normalizing</td><td>Moderate skew</td><td>Mixed</td><td>1.3–2.0</td></tr></tbody>
+    </table><div class="we-pc-row">
+      <span class="we-pc-label">Normal Environment</span>
+      <div class="we-pc-track"><div class="we-pc-fill" style="width:42%"></div></div>
+      <span class="we-pc-val">1.0–1.2</span>
+    </div><div class="we-pc-row">
+      <span class="we-pc-label">Shock Day</span>
+      <div class="we-pc-track"><div class="we-pc-fill" style="width:90%"></div></div>
+      <span class="we-pc-val">3.0–6.0+</span>
+    </div><div class="we-pc-row">
+      <span class="we-pc-label">1 Week Post</span>
+      <div class="we-pc-track"><div class="we-pc-fill" style="width:58%"></div></div>
+      <span class="we-pc-val">1.3–2.0</span>
+    </div><div class="we-section "><div class="we-sec-title">💡 Flow Signals</div><ul><li>VIXY/UVXY volume surge = institutional panic hedging</li><li>GLD call open interest building = war premium accumulation</li><li>ITA ETF unusual call buying predicts geopolitical tensions 1–2 days ahead</li><li>SPY put/call ratio >4.0 on shock = maximum fear, mean-reversion likely</li></ul></div></div>
+      <div class="we-tab-content" id="geo-strats"><div class="we-strategy-card">
+      <div class="we-strat-name">VIX Call Spread</div>
+      <div class="pnl-diagram pnl-callspread"></div>
+      <table class="we-strat-table"><tr><td>Entry</td><td>First spike — sell higher VIX call, buy lower</td></tr><tr><td>Width</td><td>10 VIX points</td></tr><tr><td>Max Profit</td><td>Full spread if VIX hits target</td></tr><tr><td>Risk</td><td>VIX doesn't reach lower strike</td></tr><tr><td>Best When</td><td>First shock, VIX <25, expect secondary move</td></tr></table>
+      <div class="we-strat-rr">Risk/Reward: Capture VIX second leg up</div>
+    </div><div class="we-strategy-card">
+      <div class="we-strat-name">SPY Bear Put Spread</div>
+      <div class="pnl-diagram pnl-putspread"></div>
+      <table class="we-strat-table"><tr><td>Entry</td><td>Confirmation of escalation</td></tr><tr><td>Strikes</td><td>ATM / −3%</td></tr><tr><td>Max Profit</td><td>Spread minus debit</td></tr><tr><td>Max Loss</td><td>Debit</td></tr><tr><td>Best When</td><td>Conflict broadens, multi-day decline expected</td></tr></table>
+      <div class="we-strat-rr">Risk/Reward: Defined risk downside play</div>
+    </div><div class="we-strategy-card">
+      <div class="we-strat-name">GLD Long Call</div>
+      <div class="pnl-diagram pnl-callspread"></div>
+      <table class="we-strat-table"><tr><td>Entry</td><td>Post-shock stability, GLD pullback</td></tr><tr><td>Expiry</td><td>45–60 DTE</td></tr><tr><td>Max Profit</td><td>Unlimited upside</td></tr><tr><td>Max Loss</td><td>Premium</td></tr><tr><td>Best When</td><td>Sustained geopolitical uncertainty, dollar weakening</td></tr></table>
+      <div class="we-strat-rr">Risk/Reward: Gold as safe haven momentum</div>
+    </div><div class="we-strategy-card">
+      <div class="we-strat-name">ITA Bull Call Spread</div>
+      <div class="pnl-diagram pnl-callspread"></div>
+      <table class="we-strat-table"><tr><td>Entry</td><td>1–2 days post initial shock</td></tr><tr><td>Strikes</td><td>ATM / +5%</td></tr><tr><td>Max Profit</td><td>Spread minus debit</td></tr><tr><td>Max Loss</td><td>Debit</td></tr><tr><td>Best When</td><td>Defense spending expected to increase</td></tr></table>
+      <div class="we-strat-rr">Risk/Reward: Defense sector structural tailwind</div>
+    </div><div class="we-strategy-card">
+      <div class="we-strat-name">Short VIX (Post-Shock)</div>
+      <div class="pnl-diagram pnl-strangle"></div>
+      <table class="we-strat-table"><tr><td>Entry</td><td>3–5 days post shock, VIX >30</td></tr><tr><td>Method</td><td>VIX put spread or short VXX calls</td></tr><tr><td>Max Profit</td><td>VIX normalization</td></tr><tr><td>Risk</td><td>Conflict re-escalates</td></tr><tr><td>Best When</td><td>Ceasefire talks, diplomatic resolution visible</td></tr></table>
+      <div class="we-strat-rr">Risk/Reward: Mean-reversion VIX trade</div>
+    </div></div>
+      <div class="we-tab-content" id="geo-ranges"><div class="we-dur-section"><div class="we-sec-title">⏱️ Impact Duration</div><div class="we-dur-row">
+      <span class="we-dur-label">Intraday</span>
+      <div class="we-dur-track"><div class="we-dur-fill dur-high" style="width:90%"></div></div>
+      <span class="we-dur-note">±1.5–4.0% on shock</span>
+    </div><div class="we-dur-row">
+      <span class="we-dur-label">1–3 Days</span>
+      <div class="we-dur-track"><div class="we-dur-fill dur-high" style="width:80%"></div></div>
+      <span class="we-dur-note">Escalation/de-escalation determines</span>
+    </div><div class="we-dur-row">
+      <span class="we-dur-label">1 Week</span>
+      <div class="we-dur-track"><div class="we-dur-fill dur-med" style="width:65%"></div></div>
+      <span class="we-dur-note">War premium in GLD, energy sustained</span>
+    </div><div class="we-dur-row">
+      <span class="we-dur-label">1 Month</span>
+      <div class="we-dur-track"><div class="we-dur-fill dur-med" style="width:55%"></div></div>
+      <span class="we-dur-note">If conflict ongoing</span>
+    </div><div class="we-dur-row">
+      <span class="we-dur-label">3 Months</span>
+      <div class="we-dur-track"><div class="we-dur-fill dur-med" style="width:45%"></div></div>
+      <span class="we-dur-note">Structural if regime change</span>
+    </div></div><table class="we-range-table">
+      <thead><tr><th>Instrument</th><th>Intraday</th><th>1-3 Day</th><th>1 Week</th><th>1 Month</th></tr></thead>
+      <tbody><tr><td>SPY</td><td>±1.5–4.0%</td><td>±1.0–3.0%</td><td>±0.8–2.5%</td><td>±2.0–6.0%</td></tr><tr><td>QQQ</td><td>±1.8–5.0%</td><td>±1.2–3.5%</td><td>±1.0–3.0%</td><td>±2.5–7.0%</td></tr><tr><td>ES Futures</td><td>±45–120 pts</td><td>±30–90 pts</td><td>±25–75 pts</td><td>±55–165 pts</td></tr><tr><td>NQ Futures</td><td>±80–215 pts</td><td>±55–150 pts</td><td>±45–130 pts</td><td>±95–285 pts</td></tr><tr><td>VIX</td><td>20→45+ shock</td><td>35→22 day 3</td><td>18–25 week 1</td><td>15–30 range</td></tr></tbody>
+    </table></div>
+    </div>
+  </div>
+  <div class="we-card" data-cat="geo trade" data-name="Trade War / Tariffs">
+    <div class="we-card-header" onclick="toggleCard(this)">
+      <div class="we-card-left">
+        <span class="we-card-icon">🏭</span>
+        <div>
+          <div class="we-card-title">Trade War &amp; Tariff Shock</div>
+          <div class="we-card-desc">Tariff announcements and trade war escalation — tech and multinationals hit hardest; domestic stocks benefit.</div>
+        </div>
+      </div>
+      <div class="we-card-right">
+        <span class="we-flow-tag tag-put">High Impact</span><span class="we-flow-tag tag-neutral">Unpredictable</span>
+        <span class="we-badge badge-orange">HIGH VOLATILITY</span>
+        <span class="we-chevron">&#9660;</span>
+      </div>
+    </div>
+    <div class="we-card-body" id="body-tw">
+      
+    <div class="we-tabs">
+      <button class="we-tab-btn active" onclick="switchTab(this,'tw','overview')">Overview</button>
+      <button class="we-tab-btn" onclick="switchTab(this,'tw','flow')">Options Flow &amp; IV</button>
+      <button class="we-tab-btn" onclick="switchTab(this,'tw','strats')">Strategies</button>
+      <button class="we-tab-btn" onclick="switchTab(this,'tw','ranges')">Duration &amp; Ranges</button>
+    </div>
+      <div class="we-tab-content active" id="tw-overview"><div class="we-section "><div class="we-sec-title">🏛️ Institutional Buyers</div><ul><li>Rotate from QQQ (tech exposed) to IWM (domestic)</li><li>Hedge supply chain ETFs (ROBO, XBI)</li><li>Buy GLD as dollar hedge</li><li>Short EEM (EM exposure) on tariff escalation</li></ul></div><div class="we-section "><div class="we-sec-title">📦 Key Assets</div><ul><li>Domestic: IWM, XLP, XLU</li><li>Vulnerable: QQQ, SMH, AAPL</li><li>Safe: GLD, TLT</li><li>International: EEM, FXI, EWJ</li></ul></div><div class="we-section "><div class="we-sec-title">👥 Retail Traders</div><ul><li>Buy IWM over QQQ — domestic revenue insulated</li><li>GLD as tail hedge</li><li>Short multinationals with high China revenue (AAPL, QCOM)</li><li>Follow announcements closely — reversal risk is high</li></ul></div><div class="we-bar-row">
+      <span class="we-bar-label">Bullish Probability</span>
+      <div class="we-bar-track"><div class="we-bar-fill bar-bear" style="width:35%"></div></div>
+      <span class="we-bar-val">Risk-off lean</span>
+    </div><div class="we-bar-row">
+      <span class="we-bar-label">Volatility Expansion</span>
+      <div class="we-bar-track"><div class="we-bar-fill bar-vol" style="width:70%"></div></div>
+      <span class="we-bar-val">High</span>
+    </div><div class="we-bar-row">
+      <span class="we-bar-label">Magnitude</span>
+      <div class="we-bar-track"><div class="we-bar-fill bar-mag" style="width:65%"></div></div>
+      <span class="we-bar-val">±1.0–2.5%</span>
+    </div><div class="we-section "><div class="we-sec-title">⚙️ GEX & Delta Hedging</div><ul><li>Trade war tweets/announcements create instant GEX stress</li><li>Tech-heavy QQQ GEX flips negative on tariff news</li><li>Domestic-heavy IWM GEX more stable</li><li>Overnight gap risk amplified — dealers can't hedge fast enough</li></ul></div><div class="we-trade-box"><div class="we-trade-title">&#127919; How to Trade</div><ul><li>QQQ bear put spread on escalation</li><li>IWM long call for domestic rotation</li><li>GLD long call as dollar/inflation hedge</li><li>IWM/QQQ pairs trade: long IWM, short QQQ</li></ul></div></div>
+      <div class="we-tab-content" id="tw-flow"><div class="we-flow-tags"><span class="we-flow-tag tag-put">QQQ Put Buying</span><span class="we-flow-tag tag-call">IWM Call Activity</span><span class="we-flow-tag tag-call">GLD Calls</span><span class="we-flow-tag tag-put">EEM Puts</span></div><table class="we-iv-table">
+      <thead><tr><th>Phase</th><th>IV Change</th><th>Skew</th><th>Term Structure</th><th>P/C Ratio</th></tr></thead>
+      <tbody><tr><td>Announcement Day</td><td>IV +20–50%</td><td>QQQ put skew</td><td>Inverted</td><td>1.8–2.8</td></tr><tr><td>Escalation Phase</td><td>IV +30–60%</td><td>Max put skew</td><td>Max inversion</td><td>1.8–2.8</td></tr><tr><td>Negotiation Phase</td><td>IV –15–30%</td><td>Eases</td><td>Re-steepens</td><td>1.2–1.8</td></tr><tr><td>Resolution</td><td>IV –30–45%</td><td>Normalizes</td><td>Contango</td><td>0.9–1.2</td></tr></tbody>
+    </table><div class="we-pc-row">
+      <span class="we-pc-label">Announcement Day</span>
+      <div class="we-pc-track"><div class="we-pc-fill" style="width:68%"></div></div>
+      <span class="we-pc-val">1.8–2.8</span>
+    </div><div class="we-pc-row">
+      <span class="we-pc-label">Escalation Peak</span>
+      <div class="we-pc-track"><div class="we-pc-fill" style="width:68%"></div></div>
+      <span class="we-pc-val">1.8–2.8</span>
+    </div><div class="we-pc-row">
+      <span class="we-pc-label">Resolution</span>
+      <div class="we-pc-track"><div class="we-pc-fill" style="width:38%"></div></div>
+      <span class="we-pc-val">0.9–1.2</span>
+    </div><div class="we-section "><div class="we-sec-title">💡 Flow Signals</div><ul><li>SMH (semiconductors) put/call ratio = China-tech exposure proxy</li><li>AAPL options skew = supply chain risk proxy</li><li>IWM vs QQQ relative flow divergence signals rotation intent</li><li>GLD call OI build signals dollar debasement expectation</li></ul></div></div>
+      <div class="we-tab-content" id="tw-strats"><div class="we-strategy-card">
+      <div class="we-strat-name">QQQ Bear Put Spread</div>
+      <div class="pnl-diagram pnl-putspread"></div>
+      <table class="we-strat-table"><tr><td>Entry</td><td>Tariff announcement confirmed</td></tr><tr><td>Strikes</td><td>ATM / −3%</td></tr><tr><td>Max Profit</td><td>Spread minus debit</td></tr><tr><td>Max Loss</td><td>Debit</td></tr><tr><td>Best When</td><td>Tech/China exposure high, escalation ongoing</td></tr></table>
+      <div class="we-strat-rr">Risk/Reward: Defined risk on tech vulnerability</div>
+    </div><div class="we-strategy-card">
+      <div class="we-strat-name">IWM Bull Call Spread</div>
+      <div class="pnl-diagram pnl-callspread"></div>
+      <table class="we-strat-table"><tr><td>Entry</td><td>Tariff announcement — domestic rotation</td></tr><tr><td>Strikes</td><td>ATM / +2%</td></tr><tr><td>Max Profit</td><td>Spread minus debit</td></tr><tr><td>Max Loss</td><td>Debit</td></tr><tr><td>Best When</td><td>Small caps insulated from tariffs</td></tr></table>
+      <div class="we-strat-rr">Risk/Reward: Domestic rotation play</div>
+    </div><div class="we-strategy-card">
+      <div class="we-strat-name">GLD Long Call</div>
+      <div class="pnl-diagram pnl-callspread"></div>
+      <table class="we-strat-table"><tr><td>Entry</td><td>Escalation — dollar weakening expected</td></tr><tr><td>Expiry</td><td>45–60 DTE</td></tr><tr><td>Max Profit</td><td>Unlimited upside</td></tr><tr><td>Max Loss</td><td>Premium</td></tr><tr><td>Best When</td><td>Trade war → inflation expectations rise</td></tr></table>
+      <div class="we-strat-rr">Risk/Reward: Gold as inflation/currency hedge</div>
+    </div><div class="we-strategy-card">
+      <div class="we-strat-name">IWM/QQQ Ratio Spread</div>
+      <div class="pnl-diagram pnl-ratio"></div>
+      <table class="we-strat-table"><tr><td>Entry</td><td>Long IWM calls, short QQQ calls</td></tr><tr><td>Dollar neutral</td><td>1:1 notional</td></tr><tr><td>Profit</td><td>IWM outperforms QQQ</td></tr><tr><td>Risk</td><td>QQQ outperforms on tech rally</td></tr><tr><td>Best When</td><td>Sustained tariff environment, not resolved quickly</td></tr></table>
+      <div class="we-strat-rr">Risk/Reward: Pure rotation expression</div>
+    </div></div>
+      <div class="we-tab-content" id="tw-ranges"><div class="we-dur-section"><div class="we-sec-title">⏱️ Impact Duration</div><div class="we-dur-row">
+      <span class="we-dur-label">Intraday</span>
+      <div class="we-dur-track"><div class="we-dur-fill dur-high" style="width:80%"></div></div>
+      <span class="we-dur-note">±1.0–2.5% on announcement</span>
+    </div><div class="we-dur-row">
+      <span class="we-dur-label">1–3 Days</span>
+      <div class="we-dur-track"><div class="we-dur-fill dur-med" style="width:70%"></div></div>
+      <span class="we-dur-note">Negotiation headlines dominate</span>
+    </div><div class="we-dur-row">
+      <span class="we-dur-label">1 Week</span>
+      <div class="we-dur-track"><div class="we-dur-fill dur-med" style="width:60%"></div></div>
+      <span class="we-dur-note">Sector rotation ongoing</span>
+    </div><div class="we-dur-row">
+      <span class="we-dur-label">1 Month</span>
+      <div class="we-dur-track"><div class="we-dur-fill dur-med" style="width:55%"></div></div>
+      <span class="we-dur-note">Supply chain repricing</span>
+    </div><div class="we-dur-row">
+      <span class="we-dur-label">3 Months</span>
+      <div class="we-dur-track"><div class="we-dur-fill dur-med" style="width:45%"></div></div>
+      <span class="we-dur-note">Structural if tariffs implemented</span>
+    </div></div><table class="we-range-table">
+      <thead><tr><th>Instrument</th><th>Intraday</th><th>1-3 Day</th><th>1 Week</th><th>1 Month</th></tr></thead>
+      <tbody><tr><td>SPY</td><td>±1.0–2.5%</td><td>±0.6–1.5%</td><td>±0.5–1.2%</td><td>±1.5–4.0%</td></tr><tr><td>QQQ</td><td>±1.5–3.5%</td><td>±0.8–2.0%</td><td>±0.6–1.5%</td><td>±2.0–5.5%</td></tr><tr><td>ES Futures</td><td>±30–75 pts</td><td>±18–45 pts</td><td>±15–35 pts</td><td>±40–110 pts</td></tr><tr><td>NQ Futures</td><td>±65–150 pts</td><td>±35–85 pts</td><td>±25–65 pts</td><td>±75–215 pts</td></tr><tr><td>VIX</td><td>14→28 escalation</td><td>24→17 ease</td><td>13–20 range</td><td>12–25 range</td></tr></tbody>
+    </table></div>
+    </div>
+  </div>
+  <div class="we-card" data-cat="energy" data-name="Energy Price Shock">
+    <div class="we-card-header" onclick="toggleCard(this)">
+      <div class="we-card-left">
+        <span class="we-card-icon">⚡</span>
+        <div>
+          <div class="we-card-title">Energy Price Shock</div>
+          <div class="we-card-desc">Sudden oil/gas supply disruption — divergent impact: energy stocks surge, airlines and consumer discretionary fall.</div>
+        </div>
+      </div>
+      <div class="we-card-right">
+        <span class="we-flow-tag tag-neutral">Sector Divergent</span><span class="we-flow-tag tag-neutral">Commodity Driven</span>
+        <span class="we-badge badge-yellow">SECTOR IMPACT</span>
+        <span class="we-chevron">&#9660;</span>
+      </div>
+    </div>
+    <div class="we-card-body" id="body-en">
+      
+    <div class="we-tabs">
+      <button class="we-tab-btn active" onclick="switchTab(this,'en','overview')">Overview</button>
+      <button class="we-tab-btn" onclick="switchTab(this,'en','flow')">Options Flow &amp; IV</button>
+      <button class="we-tab-btn" onclick="switchTab(this,'en','strats')">Strategies</button>
+      <button class="we-tab-btn" onclick="switchTab(this,'en','ranges')">Duration &amp; Ranges</button>
+    </div>
+      <div class="we-tab-content active" id="en-overview"><div class="we-section "><div class="we-sec-title">🏛️ Institutional Buyers</div><ul><li>Long XLE, MLP on supply disruption</li><li>Short JETS (airlines) on fuel cost spike</li><li>Rotate XLRE out (energy cost headwind)</li><li>Commodity hedge: long OIL futures, USO calls</li></ul></div><div class="we-section "><div class="we-sec-title">📦 Key Assets</div><ul><li>Energy: XLE, OIH, USO, OIL</li><li>Vulnerable: JETS, UPS, FDX, XLY</li><li>Safe: XLP (pass-through), TBT (inflation)</li><li>FX: CAD, NOK (petro currencies)</li></ul></div><div class="we-section "><div class="we-sec-title">👥 Retail Traders</div><ul><li>Buy XLE calls on supply shock news</li><li>Short JETS (airline ETF) for fuel cost play</li><li>GLD as inflation hedge on sustained oil spike</li><li>Avoid refiners on upstream supply shock — margin squeeze</li></ul></div><div class="we-bar-row">
+      <span class="we-bar-label">Bullish Probability</span>
+      <div class="we-bar-track"><div class="we-bar-fill bar-bear" style="width:40%"></div></div>
+      <span class="we-bar-val">Sector divergent</span>
+    </div><div class="we-bar-row">
+      <span class="we-bar-label">Volatility Expansion</span>
+      <div class="we-bar-track"><div class="we-bar-fill bar-vol" style="width:65%"></div></div>
+      <span class="we-bar-val">Moderate-High</span>
+    </div><div class="we-bar-row">
+      <span class="we-bar-label">Magnitude</span>
+      <div class="we-bar-track"><div class="we-bar-fill bar-mag" style="width:60%"></div></div>
+      <span class="we-bar-val">±0.8–2.0%</span>
+    </div><div class="we-section "><div class="we-sec-title">⚙️ GEX & Delta Hedging</div><ul><li>Energy sector GEX flips sharply on supply news</li><li>Broad market GEX less affected unless CPI implications</li><li>Airlines have very negative GEX on oil spike</li><li>Sustained $10 oil move changes inflation expectations → Fed repricing</li></ul></div><div class="we-trade-box"><div class="we-trade-title">&#127919; How to Trade</div><ul><li>XLE bull call spread on supply shock</li><li>JETS bear put spread for fuel cost impact</li><li>XLE/JETS pairs trade (long/short)</li><li>TBT call if oil sustained → inflation repricing</li></ul></div></div>
+      <div class="we-tab-content" id="en-flow"><div class="we-flow-tags"><span class="we-flow-tag tag-call">XLE Calls Surge</span><span class="we-flow-tag tag-put">JETS Puts Elevated</span><span class="we-flow-tag tag-call">OIL Futures Calls</span></div><table class="we-iv-table">
+      <thead><tr><th>Phase</th><th>IV Change</th><th>Skew</th><th>Term Structure</th><th>P/C Ratio</th></tr></thead>
+      <tbody><tr><td>Supply Shock</td><td>XLE IV +30–60%</td><td>XLE call, JETS put</td><td>XLE inverted</td><td>Divergent</td></tr><tr><td>Sustained Spike</td><td>IV +20–40%</td><td>Broader put skew</td><td>Mixed</td><td>1.4–2.2</td></tr><tr><td>OPEC Response</td><td>IV –15–30%</td><td>Eases</td><td>Re-steepens</td><td>1.1–1.5</td></tr><tr><td>Normalized</td><td>IV low</td><td>Neutral</td><td>Contango</td><td>1.0</td></tr></tbody>
+    </table><div class="we-pc-row">
+      <span class="we-pc-label">XLE (Supply Shock)</span>
+      <div class="we-pc-track"><div class="we-pc-fill" style="width:28%"></div></div>
+      <span class="we-pc-val">0.5–0.8 (call heavy)</span>
+    </div><div class="we-pc-row">
+      <span class="we-pc-label">JETS (Fuel Spike)</span>
+      <div class="we-pc-track"><div class="we-pc-fill" style="width:80%"></div></div>
+      <span class="we-pc-val">2.0–4.0 (put heavy)</span>
+    </div><div class="we-pc-row">
+      <span class="we-pc-label">Broad Market</span>
+      <div class="we-pc-track"><div class="we-pc-fill" style="width:55%"></div></div>
+      <span class="we-pc-val">1.2–1.8</span>
+    </div><div class="we-section "><div class="we-sec-title">💡 Flow Signals</div><ul><li>USO call volume surge = institutional oil bull positioning</li><li>JETS put sweep = airlines hedging fuel costs</li><li>XLE vs XOP relative flow = integrated vs exploration divergence</li><li>TBT call activity = inflation expectations repricing via energy</li></ul></div></div>
+      <div class="we-tab-content" id="en-strats"><div class="we-strategy-card">
+      <div class="we-strat-name">XLE Bull Call Spread</div>
+      <div class="pnl-diagram pnl-callspread"></div>
+      <table class="we-strat-table"><tr><td>Entry</td><td>Supply disruption confirmed</td></tr><tr><td>Strikes</td><td>ATM / +4%</td></tr><tr><td>Max Profit</td><td>Spread minus debit</td></tr><tr><td>Max Loss</td><td>Debit</td></tr><tr><td>Best When</td><td>OPEC cut or geopolitical supply risk</td></tr></table>
+      <div class="we-strat-rr">Risk/Reward: Energy sector momentum play</div>
+    </div><div class="we-strategy-card">
+      <div class="we-strat-name">JETS Bear Put Spread</div>
+      <div class="pnl-diagram pnl-putspread"></div>
+      <table class="we-strat-table"><tr><td>Entry</td><td>Oil spike confirmed, airlines vulnerable</td></tr><tr><td>Strikes</td><td>ATM / −5%</td></tr><tr><td>Max Profit</td><td>Spread minus debit</td></tr><tr><td>Max Loss</td><td>Debit</td></tr><tr><td>Best When</td><td>$10+ oil move, airline margins squeezed</td></tr></table>
+      <div class="we-strat-rr">Risk/Reward: Fuel cost headwind on airlines</div>
+    </div><div class="we-strategy-card">
+      <div class="we-strat-name">XLE / JETS Pairs Trade</div>
+      <div class="pnl-diagram pnl-ratio"></div>
+      <table class="we-strat-table"><tr><td>Entry</td><td>Long XLE calls, short JETS calls</td></tr><tr><td>Notional</td><td>Dollar neutral</td></tr><tr><td>Profit</td><td>Energy up, airlines down</td></tr><tr><td>Risk</td><td>Oil normalizes quickly</td></tr><tr><td>Best When</td><td>Sustained supply disruption, not demand shock</td></tr></table>
+      <div class="we-strat-rr">Risk/Reward: Energy vs transportation rotation</div>
+    </div><div class="we-strategy-card">
+      <div class="we-strat-name">GLD Long Call</div>
+      <div class="pnl-diagram pnl-callspread"></div>
+      <table class="we-strat-table"><tr><td>Entry</td><td>Sustained oil spike → inflation fear</td></tr><tr><td>Expiry</td><td>45 DTE</td></tr><tr><td>Max Profit</td><td>Unlimited</td></tr><tr><td>Max Loss</td><td>Premium</td></tr><tr><td>Best When</td><td>Energy-driven CPI acceleration expected</td></tr></table>
+      <div class="we-strat-rr">Risk/Reward: Inflation hedge via gold</div>
+    </div><div class="we-strategy-card">
+      <div class="we-strat-name">TBT Call Spread</div>
+      <div class="pnl-diagram pnl-callspread"></div>
+      <table class="we-strat-table"><tr><td>Entry</td><td>Oil >$20 above 200-day, Fed repricing begins</td></tr><tr><td>Strikes</td><td>ATM / +3%</td></tr><tr><td>Max Profit</td><td>Spread minus debit</td></tr><tr><td>Max Loss</td><td>Debit</td></tr><tr><td>Best When</td><td>Energy shock forces rate cut delay or hike</td></tr></table>
+      <div class="we-strat-rr">Risk/Reward: Inverse bond play on energy inflation</div>
+    </div></div>
+      <div class="we-tab-content" id="en-ranges"><div class="we-dur-section"><div class="we-sec-title">⏱️ Impact Duration</div><div class="we-dur-row">
+      <span class="we-dur-label">Intraday</span>
+      <div class="we-dur-track"><div class="we-dur-fill dur-high" style="width:70%"></div></div>
+      <span class="we-dur-note">±0.8–2.0% on shock</span>
+    </div><div class="we-dur-row">
+      <span class="we-dur-label">1–3 Days</span>
+      <div class="we-dur-track"><div class="we-dur-fill dur-med" style="width:65%"></div></div>
+      <span class="we-dur-note">Supply assessment ongoing</span>
+    </div><div class="we-dur-row">
+      <span class="we-dur-label">1 Week</span>
+      <div class="we-dur-track"><div class="we-dur-fill dur-med" style="width:55%"></div></div>
+      <span class="we-dur-note">Inflation expectations repricing</span>
+    </div><div class="we-dur-row">
+      <span class="we-dur-label">1 Month</span>
+      <div class="we-dur-track"><div class="we-dur-fill dur-med" style="width:50%"></div></div>
+      <span class="we-dur-note">Fed reaction function changes</span>
+    </div><div class="we-dur-row">
+      <span class="we-dur-label">3 Months</span>
+      <div class="we-dur-track"><div class="we-dur-fill dur-med" style="width:40%"></div></div>
+      <span class="we-dur-note">Sustained if supply structural</span>
+    </div></div><table class="we-range-table">
+      <thead><tr><th>Instrument</th><th>Intraday</th><th>1-3 Day</th><th>1 Week</th><th>1 Month</th></tr></thead>
+      <tbody><tr><td>SPY</td><td>±0.8–2.0%</td><td>±0.5–1.2%</td><td>±0.4–1.0%</td><td>±1.0–3.0%</td></tr><tr><td>XLE</td><td>±3.0–7.0%</td><td>±2.0–5.0%</td><td>±1.5–4.0%</td><td>±5.0–15.0%</td></tr><tr><td>ES Futures</td><td>±25–60 pts</td><td>±15–35 pts</td><td>±12–30 pts</td><td>±30–80 pts</td></tr><tr><td>NQ Futures</td><td>±40–90 pts</td><td>±25–55 pts</td><td>±18–45 pts</td><td>±45–120 pts</td></tr><tr><td>VIX</td><td>13→22 shock</td><td>19→14 ease</td><td>12–17 range</td><td>11–20 range</td></tr></tbody>
+    </table></div>
+    </div>
+  </div>
+  <div class="we-card" data-cat="credit banking" data-name="Banking / Credit Crisis">
+    <div class="we-card-header" onclick="toggleCard(this)">
+      <div class="we-card-left">
+        <span class="we-card-icon">🏦</span>
+        <div>
+          <div class="we-card-title">Banking &amp; Credit Crisis</div>
+          <div class="we-card-desc">Bank failure, credit contagion, or liquidity crisis — flight to safety is extreme; tail protection essential.</div>
+        </div>
+      </div>
+      <div class="we-card-right">
+        <span class="we-flow-tag tag-put">Systemic Risk</span><span class="we-flow-tag tag-neutral">Unpredictable</span>
+        <span class="we-badge badge-red">SYSTEMIC RISK</span>
+        <span class="we-chevron">&#9660;</span>
+      </div>
+    </div>
+    <div class="we-card-body" id="body-bank">
+      
+    <div class="we-tabs">
+      <button class="we-tab-btn active" onclick="switchTab(this,'bank','overview')">Overview</button>
+      <button class="we-tab-btn" onclick="switchTab(this,'bank','flow')">Options Flow &amp; IV</button>
+      <button class="we-tab-btn" onclick="switchTab(this,'bank','strats')">Strategies</button>
+      <button class="we-tab-btn" onclick="switchTab(this,'bank','ranges')">Duration &amp; Ranges</button>
+    </div>
+      <div class="we-tab-content active" id="bank-overview"><div class="we-section "><div class="we-sec-title">🏛️ Institutional Buyers</div><ul><li>Immediate flight to safety: TLT, T-bills, GLD</li><li>Sell KRE, XLF, regional banks</li><li>Buy FDIC-guaranteed alternatives</li><li>Derivatives: VIX calls, SPY deep puts</li></ul></div><div class="we-section "><div class="we-sec-title">📦 Key Assets</div><ul><li>Risk-off: TLT, GLD, SHY, FDIC insured</li><li>Vulnerable: KRE, XLF, BKX, SVB-type</li><li>Volatility: VIX, VIXY, UVXY</li><li>Credit: HYG, JNK (widening spreads)</li></ul></div><div class="we-section "><div class="we-sec-title">👥 Retail Traders</div><ul><li>Don't catch falling knives in KRE</li><li>VIX call spread after first spike</li><li>TAIL ETF for catastrophic protection</li><li>TLT long call — rate cut expectations surge</li></ul></div><div class="we-bar-row">
+      <span class="we-bar-label">Bullish Probability</span>
+      <div class="we-bar-track"><div class="we-bar-fill bar-bear" style="width:15%"></div></div>
+      <span class="we-bar-val">Crisis mode</span>
+    </div><div class="we-bar-row">
+      <span class="we-bar-label">Volatility Expansion</span>
+      <div class="we-bar-track"><div class="we-bar-fill bar-vol" style="width:95%"></div></div>
+      <span class="we-bar-val">Extreme</span>
+    </div><div class="we-bar-row">
+      <span class="we-bar-label">Magnitude</span>
+      <div class="we-bar-track"><div class="we-bar-fill bar-mag" style="width:90%"></div></div>
+      <span class="we-bar-val">±2–5% initially, ±5–15% systemic</span>
+    </div><div class="we-section "><div class="we-sec-title">⚙️ GEX & Delta Hedging</div><ul><li>Negative GEX extreme — dealers amplify every move</li><li>Put walls cascade — each support level fails</li><li>GEX flip level unreachable during extreme stress</li><li>Post-intervention: sharp reversal when Fed/FDIC acts</li></ul></div><div class="we-trade-box"><div class="we-trade-title">&#127919; How to Trade</div><ul><li>Buy TAIL ETF or deep OTM SPY puts immediately</li><li>VIX call spread 25/35 on initial spike</li><li>Post-intervention: sell VIX, buy bank stocks (intervention call spread)</li><li>TLT long for rate-cut-path trade</li></ul></div></div>
+      <div class="we-tab-content" id="bank-flow"><div class="we-flow-tags"><span class="we-flow-tag tag-put">Extreme Put Buying</span><span class="we-flow-tag tag-put">VIX Call Frenzy</span><span class="we-flow-tag tag-put">KRE Puts Surge</span><span class="we-flow-tag tag-call">TLT Calls Bid</span></div><table class="we-iv-table">
+      <thead><tr><th>Phase</th><th>IV Change</th><th>Skew</th><th>Term Structure</th><th>P/C Ratio</th></tr></thead>
+      <tbody><tr><td>Pre-Crisis</td><td>IV 14–18</td><td>Neutral</td><td>Contango</td><td>1.0–1.3</td></tr><tr><td>First Signs</td><td>IV +40–80%</td><td>Heavy put skew</td><td>Inversion</td><td>2.5–4.0</td></tr><tr><td>Full Crisis</td><td>IV +100–200%+</td><td>Extreme put skew</td><td>Max inversion</td><td>4.0–8.0+</td></tr><tr><td>Intervention</td><td>IV –40–60%</td><td>Sharp easing</td><td>Re-steepens</td><td>2.0–3.5</td></tr><tr><td>Stabilization</td><td>IV normalizing</td><td>Mild put skew</td><td>Mixed</td><td>1.3–2.0</td></tr></tbody>
+    </table><div class="we-pc-row">
+      <span class="we-pc-label">Pre-Crisis</span>
+      <div class="we-pc-track"><div class="we-pc-fill" style="width:43%"></div></div>
+      <span class="we-pc-val">1.0–1.3</span>
+    </div><div class="we-pc-row">
+      <span class="we-pc-label">Full Crisis</span>
+      <div class="we-pc-track"><div class="we-pc-fill" style="width:95%"></div></div>
+      <span class="we-pc-val">4.0–8.0+</span>
+    </div><div class="we-pc-row">
+      <span class="we-pc-label">Post-Intervention</span>
+      <div class="we-pc-track"><div class="we-pc-fill" style="width:70%"></div></div>
+      <span class="we-pc-val">2.0–3.5</span>
+    </div><div class="we-section "><div class="we-sec-title">💡 Flow Signals</div><ul><li>KRE put/call ratio >5.0 = full bank panic</li><li>CDS spreads on major banks widening = systemic risk</li><li>HYG put volume surge = credit contagion fear</li><li>TLT call sweep = rate cut capitulation expectation</li></ul></div></div>
+      <div class="we-tab-content" id="bank-strats"><div class="we-strategy-card">
+      <div class="we-strat-name">VIX Call Spread</div>
+      <div class="pnl-diagram pnl-callspread"></div>
+      <table class="we-strat-table"><tr><td>Entry</td><td>First crisis signs, VIX <20</td></tr><tr><td>Strikes</td><td>25/35 call spread</td></tr><tr><td>Max Profit</td><td>$10 VIX spread × 100</td></tr><tr><td>Max Loss</td><td>Debit paid</td></tr><tr><td>Best When</td><td>Early warning signals, not full panic yet</td></tr></table>
+      <div class="we-strat-rr">Risk/Reward: Capture VIX spike with defined risk</div>
+    </div><div class="we-strategy-card">
+      <div class="we-strat-name">KRE Bear Put Spread</div>
+      <div class="pnl-diagram pnl-putspread"></div>
+      <table class="we-strat-table"><tr><td>Entry</td><td>Confirmation of bank stress</td></tr><tr><td>Strikes</td><td>ATM / −10%</td></tr><tr><td>Max Profit</td><td>Spread minus debit</td></tr><tr><td>Max Loss</td><td>Debit</td></tr><tr><td>Best When</td><td>Regional bank contagion spreading</td></tr></table>
+      <div class="we-strat-rr">Risk/Reward: Direct bank sector short</div>
+    </div><div class="we-strategy-card">
+      <div class="we-strat-name">Post-Intervention VIX Sell</div>
+      <div class="pnl-diagram pnl-strangle"></div>
+      <table class="we-strat-table"><tr><td>Entry</td><td>Fed/FDIC intervention announced</td></tr><tr><td>Method</td><td>VIX put spread or short UVXY</td></tr><tr><td>Max Profit</td><td>VIX normalization $8–15</td></tr><tr><td>Risk</td><td>Second wave of panic</td></tr><tr><td>Best When</td><td>Government backstop clear and credible</td></tr></table>
+      <div class="we-strat-rr">Risk/Reward: Mean reversion after intervention</div>
+    </div><div class="we-strategy-card">
+      <div class="we-strat-name">TLT Long Call</div>
+      <div class="pnl-diagram pnl-callspread"></div>
+      <table class="we-strat-table"><tr><td>Entry</td><td>Crisis confirms rate cut path</td></tr><tr><td>Expiry</td><td>60–90 DTE</td></tr><tr><td>Max Profit</td><td>Unlimited upside</td></tr><tr><td>Max Loss</td><td>Premium</td></tr><tr><td>Best When</td><td>Fed pivots to emergency cuts</td></tr></table>
+      <div class="we-strat-rr">Risk/Reward: Bond bull on emergency rate cut</div>
+    </div><div class="we-strategy-card">
+      <div class="we-strat-name">TAIL ETF / OTM Put Wing</div>
+      <div class="pnl-diagram pnl-putspread"></div>
+      <table class="we-strat-table"><tr><td>Entry</td><td>Pre-crisis hedging</td></tr><tr><td>Hold</td><td>Ongoing catastrophe insurance</td></tr><tr><td>Max Profit</td><td>Crisis scenario</td></tr><tr><td>Cost</td><td>Ongoing drag ~1–3% annually</td></tr><tr><td>Best When</td><td>Tail risk elevated, credit spreads widening</td></tr></table>
+      <div class="we-strat-rr">Risk/Reward: Catastrophic downside protection</div>
+    </div></div>
+      <div class="we-tab-content" id="bank-ranges"><div class="we-dur-section"><div class="we-sec-title">⏱️ Impact Duration</div><div class="we-dur-row">
+      <span class="we-dur-label">Intraday</span>
+      <div class="we-dur-track"><div class="we-dur-fill dur-high" style="width:95%"></div></div>
+      <span class="we-dur-note">±2–5% initial shock</span>
+    </div><div class="we-dur-row">
+      <span class="we-dur-label">1–3 Days</span>
+      <div class="we-dur-track"><div class="we-dur-fill dur-high" style="width:90%"></div></div>
+      <span class="we-dur-note">Contagion assessment</span>
+    </div><div class="we-dur-row">
+      <span class="we-dur-label">1 Week</span>
+      <div class="we-dur-track"><div class="we-dur-fill dur-high" style="width:80%"></div></div>
+      <span class="we-dur-note">Policy response evaluation</span>
+    </div><div class="we-dur-row">
+      <span class="we-dur-label">1 Month</span>
+      <div class="we-dur-track"><div class="we-dur-fill dur-med" style="width:70%"></div></div>
+      <span class="we-dur-note">Credit market normalization</span>
+    </div><div class="we-dur-row">
+      <span class="we-dur-label">3 Months</span>
+      <div class="we-dur-track"><div class="we-dur-fill dur-med" style="width:60%"></div></div>
+      <span class="we-dur-note">Lending tightening economic impact</span>
+    </div></div><table class="we-range-table">
+      <thead><tr><th>Instrument</th><th>Intraday</th><th>1-3 Day</th><th>1 Week</th><th>1 Month</th></tr></thead>
+      <tbody><tr><td>SPY</td><td>±2–5%</td><td>±3–8%</td><td>±5–15%</td><td>±8–25%</td></tr><tr><td>QQQ</td><td>±2.5–6%</td><td>±3.5–9%</td><td>±6–18%</td><td>±9–28%</td></tr><tr><td>ES Futures</td><td>±60–150 pts</td><td>±90–240 pts</td><td>±150–450 pts</td><td>±225–700 pts</td></tr><tr><td>NQ Futures</td><td>±105–260 pts</td><td>±155–385 pts</td><td>±260–775 pts</td><td>±390–1200 pts</td></tr><tr><td>VIX</td><td>20→50+ crisis</td><td>40→25 day 3</td><td>20–35 week 1</td><td>15–40 range</td></tr></tbody>
+    </table></div>
+    </div>
+  </div>
+  <div class="we-card" data-cat="fx dollar" data-name="Dollar Strength">
+    <div class="we-card-header" onclick="toggleCard(this)">
+      <div class="we-card-left">
+        <span class="we-card-icon">💵</span>
+        <div>
+          <div class="we-card-title">US Dollar Strength / DXY Breakout</div>
+          <div class="we-card-desc">Dollar surge pressures gold, emerging markets, and multinational earnings — domestic small caps relatively insulated.</div>
+        </div>
+      </div>
+      <div class="we-card-right">
+        <span class="we-flow-tag tag-neutral">FX Driven</span><span class="we-flow-tag tag-neutral">Multi-Week</span>
+        <span class="we-badge badge-yellow">MODERATE-HIGH</span>
+        <span class="we-chevron">&#9660;</span>
+      </div>
+    </div>
+    <div class="we-card-body" id="body-dxy">
+      
+    <div class="we-tabs">
+      <button class="we-tab-btn active" onclick="switchTab(this,'dxy','overview')">Overview</button>
+      <button class="we-tab-btn" onclick="switchTab(this,'dxy','flow')">Options Flow &amp; IV</button>
+      <button class="we-tab-btn" onclick="switchTab(this,'dxy','strats')">Strategies</button>
+      <button class="we-tab-btn" onclick="switchTab(this,'dxy','ranges')">Duration &amp; Ranges</button>
+    </div>
+      <div class="we-tab-content active" id="dxy-overview"><div class="we-section "><div class="we-sec-title">🏛️ Institutional Buyers</div><ul><li>Reduce EM exposure (EEM, EWZ) as dollar strengthens</li><li>Long quality US domestic (IWM, XLP)</li><li>Short gold and commodities (GLD, COPX)</li><li>Hedge international equity portfolios with DXY calls</li></ul></div><div class="we-section "><div class="we-sec-title">📦 Key Assets</div><ul><li>Dollar bull: UUP, DXY, USD/EM pairs</li><li>Vulnerable: GLD, EEM, FXI, EWZ, COPX</li><li>Neutral: IWM, XLP, XLU</li><li>Fixed Income: TLT mixed (rate differential drives DXY)</li></ul></div><div class="we-section "><div class="we-sec-title">👥 Retail Traders</div><ul><li>Short GLD when DXY breaks out above 104</li><li>Long UUP for pure dollar exposure</li><li>EEM put spread on strong dollar rally</li><li>IWM outperforms QQQ in dollar strength (domestic revenue)</li></ul></div><div class="we-bar-row">
+      <span class="we-bar-label">Bullish Probability</span>
+      <div class="we-bar-track"><div class="we-bar-fill bar-neutral" style="width:45%"></div></div>
+      <span class="we-bar-val">Mixed</span>
+    </div><div class="we-bar-row">
+      <span class="we-bar-label">Volatility Expansion</span>
+      <div class="we-bar-track"><div class="we-bar-fill bar-vol" style="width:55%"></div></div>
+      <span class="we-bar-val">Moderate</span>
+    </div><div class="we-bar-row">
+      <span class="we-bar-label">Magnitude</span>
+      <div class="we-bar-track"><div class="we-bar-fill bar-mag" style="width:50%"></div></div>
+      <span class="we-bar-val">±1.5–4.0% on impacted assets</span>
+    </div><div class="we-section "><div class="we-sec-title">⚙️ GEX & Delta Hedging</div><ul><li>Dollar moves ripple through GLD and EM GEX</li><li>GLD GEX flips negative on dollar breakout</li><li>EM ETF GEX stress as hot money exits</li><li>Dollar hedging by multinationals creates options flow</li></ul></div><div class="we-trade-box"><div class="we-trade-title">&#127919; How to Trade</div><ul><li>GLD bear put spread on DXY breakout above 104</li><li>EEM bear put on EM capital outflow</li><li>IWM long call vs QQQ short — domestic rotation</li><li>UUP call spread for pure currency expression</li></ul></div></div>
+      <div class="we-tab-content" id="dxy-flow"><div class="we-flow-tags"><span class="we-flow-tag tag-put">GLD Put Buying</span><span class="we-flow-tag tag-put">EEM Puts</span><span class="we-flow-tag tag-call">UUP Calls</span><span class="we-flow-tag tag-call">IWM Calls</span></div><table class="we-iv-table">
+      <thead><tr><th>Phase</th><th>IV Change</th><th>Skew</th><th>Term Structure</th><th>P/C Ratio</th></tr></thead>
+      <tbody><tr><td>DXY Breakout</td><td>GLD IV +20–40%</td><td>GLD put skew</td><td>GLD inverted</td><td>1.6–2.5</td></tr><tr><td>Sustained Rally</td><td>IV +15–30%</td><td>Broader skew</td><td>Mixed</td><td>1.4–2.0</td></tr><tr><td>DXY Peak</td><td>IV –15–25%</td><td>Eases</td><td>Re-steepens</td><td>1.2–1.6</td></tr><tr><td>Dollar Reversal</td><td>IV low</td><td>Neutral</td><td>Contango</td><td>0.9–1.1</td></tr></tbody>
+    </table><div class="we-pc-row">
+      <span class="we-pc-label">GLD/EEM (DXY Breakout)</span>
+      <div class="we-pc-track"><div class="we-pc-fill" style="width:70%"></div></div>
+      <span class="we-pc-val">1.6–2.5</span>
+    </div><div class="we-pc-row">
+      <span class="we-pc-label">Sustained Strength</span>
+      <div class="we-pc-track"><div class="we-pc-fill" style="width:60%"></div></div>
+      <span class="we-pc-val">1.4–2.0</span>
+    </div><div class="we-pc-row">
+      <span class="we-pc-label">DXY Peak / Reversal</span>
+      <div class="we-pc-track"><div class="we-pc-fill" style="width:45%"></div></div>
+      <span class="we-pc-val">1.2–1.6</span>
+    </div><div class="we-section "><div class="we-sec-title">💡 Flow Signals</div><ul><li>GLD ETF put/call ratio spike = dollar bull consensus</li><li>EEM put sweep = EM capital flight expectations</li><li>UUP call open interest building = institutional dollar bull</li><li>Watch 2yr US–German rate differential as DXY leading indicator</li></ul></div></div>
+      <div class="we-tab-content" id="dxy-strats"><div class="we-strategy-card">
+      <div class="we-strat-name">GLD Bear Put Spread</div>
+      <div class="pnl-diagram pnl-putspread"></div>
+      <table class="we-strat-table"><tr><td>Entry</td><td>DXY break above 104</td></tr><tr><td>Strikes</td><td>ATM / −3%</td></tr><tr><td>Max Profit</td><td>Spread minus debit</td></tr><tr><td>Max Loss</td><td>Debit</td></tr><tr><td>Best When</td><td>Dollar momentum strong, real yields rising</td></tr></table>
+      <div class="we-strat-rr">Risk/Reward: Gold short on dollar strength</div>
+    </div><div class="we-strategy-card">
+      <div class="we-strat-name">EEM Bear Put Spread</div>
+      <div class="pnl-diagram pnl-putspread"></div>
+      <table class="we-strat-table"><tr><td>Entry</td><td>DXY sustained above 104</td></tr><tr><td>Strikes</td><td>ATM / −4%</td></tr><tr><td>Max Profit</td><td>Spread minus debit</td></tr><tr><td>Max Loss</td><td>Debit</td></tr><tr><td>Best When</td><td>EM debt dollar denominated, capital flight risk</td></tr></table>
+      <div class="we-strat-rr">Risk/Reward: EM vulnerability on strong dollar</div>
+    </div><div class="we-strategy-card">
+      <div class="we-strat-name">IWM / QQQ Pairs Trade</div>
+      <div class="pnl-diagram pnl-ratio"></div>
+      <table class="we-strat-table"><tr><td>Entry</td><td>Long IWM calls, short QQQ calls</td></tr><tr><td>Notional</td><td>Dollar neutral</td></tr><tr><td>Profit</td><td>IWM domestic vs QQQ international revenue divergence</td></tr><tr><td>Risk</td><td>Tech runs regardless</td></tr><tr><td>Best When</td><td>Dollar strength sustained >2 weeks</td></tr></table>
+      <div class="we-strat-rr">Risk/Reward: Revenue exposure rotation</div>
+    </div><div class="we-strategy-card">
+      <div class="we-strat-name">UUP Long Call</div>
+      <div class="pnl-diagram pnl-callspread"></div>
+      <table class="we-strat-table"><tr><td>Entry</td><td>DXY momentum breakout</td></tr><tr><td>Expiry</td><td>45 DTE</td></tr><tr><td>Max Profit</td><td>Unlimited</td></tr><tr><td>Max Loss</td><td>Premium</td></tr><tr><td>Best When</td><td>Rate differential expanding, safe haven demand</td></tr></table>
+      <div class="we-strat-rr">Risk/Reward: Pure currency bull expression</div>
+    </div></div>
+      <div class="we-tab-content" id="dxy-ranges"><div class="we-dur-section"><div class="we-sec-title">⏱️ Impact Duration</div><div class="we-dur-row">
+      <span class="we-dur-label">Intraday</span>
+      <div class="we-dur-track"><div class="we-dur-fill dur-med" style="width:55%"></div></div>
+      <span class="we-dur-note">FX moves fast, equities lag</span>
+    </div><div class="we-dur-row">
+      <span class="we-dur-label">1–3 Days</span>
+      <div class="we-dur-track"><div class="we-dur-fill dur-med" style="width:65%"></div></div>
+      <span class="we-dur-note">GLD and EM reprice</span>
+    </div><div class="we-dur-row">
+      <span class="we-dur-label">1 Week</span>
+      <div class="we-dur-track"><div class="we-dur-fill dur-med" style="width:60%"></div></div>
+      <span class="we-dur-note">Multinational earnings revisions begin</span>
+    </div><div class="we-dur-row">
+      <span class="we-dur-label">1 Month</span>
+      <div class="we-dur-track"><div class="we-dur-fill dur-med" style="width:55%"></div></div>
+      <span class="we-dur-note">Revenue FX headwind priced in</span>
+    </div><div class="we-dur-row">
+      <span class="we-dur-label">3 Months</span>
+      <div class="we-dur-track"><div class="we-dur-fill dur-med" style="width:50%"></div></div>
+      <span class="we-dur-note">Earnings cycle full impact felt</span>
+    </div></div><table class="we-range-table">
+      <thead><tr><th>Instrument</th><th>Intraday</th><th>1-3 Day</th><th>1 Week</th><th>1 Month</th></tr></thead>
+      <tbody><tr><td>SPY</td><td>±0.5–1.5%</td><td>±0.3–1.0%</td><td>±0.5–1.5%</td><td>±1.5–4.0%</td></tr><tr><td>GLD</td><td>±1.5–3.5%</td><td>±1.0–3.0%</td><td>±1.5–4.0%</td><td>±5.0–12.0%</td></tr><tr><td>EEM</td><td>±1.5–4.0%</td><td>±1.0–3.0%</td><td>±1.5–4.0%</td><td>±5.0–15.0%</td></tr><tr><td>ES Futures</td><td>±15–45 pts</td><td>±10–30 pts</td><td>±15–45 pts</td><td>±40–110 pts</td></tr><tr><td>NQ Futures</td><td>±25–75 pts</td><td>±18–50 pts</td><td>±25–75 pts</td><td>±65–185 pts</td></tr></tbody>
+    </table></div>
+    </div>
+  </div>
+  <div class="we-card" data-cat="credit flash" data-name="Flash Crash / Circuit Breaker">
+    <div class="we-card-header" onclick="toggleCard(this)">
+      <div class="we-card-left">
+        <span class="we-card-icon">💥</span>
+        <div>
+          <div class="we-card-title">Flash Crash &amp; Circuit Breakers</div>
+          <div class="we-card-desc">Sudden liquidity collapse — −7% to −20% intraday. Market makers withdraw; only pre-positioned hedges protect.</div>
+        </div>
+      </div>
+      <div class="we-card-right">
+        <span class="we-flow-tag tag-put">Black Swan</span><span class="we-flow-tag tag-put">Tail Risk</span>
+        <span class="we-badge badge-red">BLACK SWAN</span>
+        <span class="we-chevron">&#9660;</span>
+      </div>
+    </div>
+    <div class="we-card-body" id="body-fc">
+      
+    <div class="we-tabs">
+      <button class="we-tab-btn active" onclick="switchTab(this,'fc','overview')">Overview</button>
+      <button class="we-tab-btn" onclick="switchTab(this,'fc','flow')">Options Flow &amp; IV</button>
+      <button class="we-tab-btn" onclick="switchTab(this,'fc','strats')">Strategies</button>
+      <button class="we-tab-btn" onclick="switchTab(this,'fc','ranges')">Duration &amp; Ranges</button>
+    </div>
+      <div class="we-tab-content active" id="fc-overview"><div class="we-section "><div class="we-sec-title">🏛️ Institutional Buyers</div><ul><li>Circuit breakers trigger — institutions cannot trade</li><li>Post-halt: assess fundamental cause, buy dip if technical</li><li>Tail hedges (TAIL, UVXY) pay off</li><li>Immediate liquidity management: reduce leverage</li></ul></div><div class="we-section "><div class="we-sec-title">📦 Key Assets</div><ul><li>Risk-off: VIX, VIXY, TAIL ETF, GLD</li><li>Potential buys post-halt: SPY, QQQ, ES futures</li><li>Avoid: illiquid small caps during halt</li><li>MMs withdraw — wide bid/ask spreads</li></ul></div><div class="we-section "><div class="we-sec-title">👥 Retail Traders</div><ul><li>Never use market orders during flash crash — fill at extreme prices</li><li>Limit orders only</li><li>Watch for circuit breaker levels: −7%, −13%, −20%</li><li>Post-halt bounce is often tradeable if cause is technical</li></ul></div><div class="we-bar-row">
+      <span class="we-bar-label">Bullish Probability</span>
+      <div class="we-bar-track"><div class="we-bar-fill bar-bear" style="width:20%"></div></div>
+      <span class="we-bar-val">Extreme fear</span>
+    </div><div class="we-bar-row">
+      <span class="we-bar-label">Volatility Expansion</span>
+      <div class="we-bar-track"><div class="we-bar-fill bar-vol" style="width:98%"></div></div>
+      <span class="we-bar-val">Extreme — VIX 50+</span>
+    </div><div class="we-bar-row">
+      <span class="we-bar-label">Magnitude</span>
+      <div class="we-bar-track"><div class="we-bar-fill bar-mag" style="width:95%"></div></div>
+      <span class="we-bar-val">±7–20% intraday</span>
+    </div><div class="we-section "><div class="we-sec-title">⚙️ GEX & Delta Hedging</div><ul><li>GEX goes maximally negative — dealers stop hedging</li><li>Market makers pull bids — vacuum down</li><li>Algorithmic selling cascades below put walls</li><li>Recovery: short-covering and bargain hunters create V-bottom</li></ul></div><div class="we-trade-box"><div class="we-trade-title">&#127919; How to Trade</div><ul><li>Pre-position: TAIL ETF ongoing (1–3% portfolio)</li><li>Post-halt: SPY call spread if cause is technical, not fundamental</li><li>VIX bear spread after VIX >45 — mean reversion</li><li>Never try to catch exact bottom — buy 30 min after stability</li></ul></div></div>
+      <div class="we-tab-content" id="fc-flow"><div class="we-flow-tags"><span class="we-flow-tag tag-put">Extreme Put Buying</span><span class="we-flow-tag tag-put">VIX Spike to 50+</span><span class="we-flow-tag tag-put">Zero Bids on Calls</span><span class="we-flow-tag tag-call">Post-Halt Calls</span></div><table class="we-iv-table">
+      <thead><tr><th>Phase</th><th>IV Change</th><th>Skew</th><th>Term Structure</th><th>P/C Ratio</th></tr></thead>
+      <tbody><tr><td>Pre-Crash</td><td>IV 14–20</td><td>Neutral</td><td>Contango</td><td>1.0–1.3</td></tr><tr><td>During Crash</td><td>IV +200–500%+</td><td>Extreme put skew</td><td>Max inversion</td><td>5.0–10.0+</td></tr><tr><td>Halt Period</td><td>Trading suspended</td><td>N/A</td><td>N/A</td><td>N/A</td></tr><tr><td>Post-Halt</td><td>IV –50–70%</td><td>Eases rapidly</td><td>Re-steepens</td><td>2.0–4.0</td></tr><tr><td>Stabilization</td><td>IV 20–35</td><td>Moderate skew</td><td>Mixed</td><td>1.3–2.5</td></tr></tbody>
+    </table><div class="we-pc-row">
+      <span class="we-pc-label">Normal (Pre-Crash)</span>
+      <div class="we-pc-track"><div class="we-pc-fill" style="width:43%"></div></div>
+      <span class="we-pc-val">1.0–1.3</span>
+    </div><div class="we-pc-row">
+      <span class="we-pc-label">During Crash</span>
+      <div class="we-pc-track"><div class="we-pc-fill" style="width:97%"></div></div>
+      <span class="we-pc-val">5.0–10.0+</span>
+    </div><div class="we-pc-row">
+      <span class="we-pc-label">Post-Halt Recovery</span>
+      <div class="we-pc-track"><div class="we-pc-fill" style="width:78%"></div></div>
+      <span class="we-pc-val">2.0–4.0</span>
+    </div><div class="we-section "><div class="we-sec-title">💡 Flow Signals</div><ul><li>VIX futures backwardation extreme = full panic</li><li>UVXY volume 10× normal = institutional panic hedging</li><li>SPY bid/ask spread >$1.00 = market maker withdrawal</li><li>Post-halt call sweep = smart money buying the dip</li></ul></div></div>
+      <div class="we-tab-content" id="fc-strats"><div class="we-strategy-card">
+      <div class="we-strat-name">TAIL ETF / OTM Put Wing</div>
+      <div class="pnl-diagram pnl-putspread"></div>
+      <table class="we-strat-table"><tr><td>Pre-Position</td><td>Buy TAIL ETF (Cambria) or 2% OTM SPY puts</td></tr><tr><td>Cost</td><td>~1–3% annual drag</td></tr><tr><td>Payoff</td><td>200–500%+ in true crash</td></tr><tr><td>Best</td><td>Ongoing catastrophe insurance</td></tr><tr><td>Note</td><td>Must be in place BEFORE crash — cannot buy during</td></tr></table>
+      <div class="we-strat-rr">Risk/Reward: Pre-positioned tail protection</div>
+    </div><div class="we-strategy-card">
+      <div class="we-strat-name">VIX Bear Spread (Post-Spike)</div>
+      <div class="pnl-diagram pnl-putspread"></div>
+      <table class="we-strat-table"><tr><td>Entry</td><td>VIX >45, after circuit breaker</td></tr><tr><td>Method</td><td>VIX put spread 40/25</td></tr><tr><td>Max Profit</td><td>$15 spread × 100</td></tr><tr><td>Risk</td><td>VIX stays elevated / second crash</td></tr><tr><td>Best When</td><td>Crash was technical (algo/liquidity), not fundamental</td></tr></table>
+      <div class="we-strat-rr">Risk/Reward: VIX mean reversion play</div>
+    </div><div class="we-strategy-card">
+      <div class="we-strat-name">Post-Halt SPY Call Spread</div>
+      <div class="pnl-diagram pnl-callspread"></div>
+      <table class="we-strat-table"><tr><td>Entry</td><td>30–60 min after halt lifted</td></tr><tr><td>Strikes</td><td>ATM / +3%</td></tr><tr><td>Max Profit</td><td>Spread minus debit</td></tr><tr><td>Max Loss</td><td>Debit</td></tr><tr><td>Best When</td><td>V-bottom confirmed, cause was technical</td></tr></table>
+      <div class="we-strat-rr">Risk/Reward: Bounce play with defined risk</div>
+    </div><div class="we-strategy-card">
+      <div class="we-strat-name">SPY Bear Put Spread</div>
+      <div class="pnl-diagram pnl-putspread"></div>
+      <table class="we-strat-table"><tr><td>Entry</td><td>Pre-positioned before halt, or first minutes</td></tr><tr><td>Strikes</td><td>ATM / −7%</td></tr><tr><td>Max Profit</td><td>Spread minus debit</td></tr><tr><td>Max Loss</td><td>Debit</td></tr><tr><td>Note</td><td>Near-impossible to execute during crash — must pre-position</td></tr></table>
+      <div class="we-strat-rr">Risk/Reward: Pre-positioned crash play</div>
+    </div></div>
+      <div class="we-tab-content" id="fc-ranges"><div class="we-dur-section"><div class="we-sec-title">⏱️ Impact Duration</div><div class="we-dur-row">
+      <span class="we-dur-label">Intraday</span>
+      <div class="we-dur-track"><div class="we-dur-fill dur-high" style="width:99%"></div></div>
+      <span class="we-dur-note">±7–20% during event</span>
+    </div><div class="we-dur-row">
+      <span class="we-dur-label">1–3 Days</span>
+      <div class="we-dur-track"><div class="we-dur-fill dur-high" style="width:80%"></div></div>
+      <span class="we-dur-note">Recovery assessment</span>
+    </div><div class="we-dur-row">
+      <span class="we-dur-label">1 Week</span>
+      <div class="we-dur-track"><div class="we-dur-fill dur-med" style="width:60%"></div></div>
+      <span class="we-dur-note">V-bottom or secondary leg</span>
+    </div><div class="we-dur-row">
+      <span class="we-dur-label">1 Month</span>
+      <div class="we-dur-track"><div class="we-dur-fill dur-med" style="width:45%"></div></div>
+      <span class="we-dur-note">Depends on fundamental cause</span>
+    </div><div class="we-dur-row">
+      <span class="we-dur-label">3 Months</span>
+      <div class="we-dur-track"><div class="we-dur-fill dur-low" style="width:30%"></div></div>
+      <span class="we-dur-note">Memory fades if technical cause</span>
+    </div></div><table class="we-range-table">
+      <thead><tr><th>Instrument</th><th>Intraday</th><th>1-3 Day</th><th>1 Week</th><th>1 Month</th></tr></thead>
+      <tbody><tr><td>SPY</td><td>±7–20%</td><td>±3–8%</td><td>±2–6%</td><td>±5–15%</td></tr><tr><td>QQQ</td><td>±8–25%</td><td>±4–10%</td><td>±3–8%</td><td>±6–20%</td></tr><tr><td>ES Futures</td><td>±210–600 pts</td><td>±90–240 pts</td><td>±60–180 pts</td><td>±150–450 pts</td></tr><tr><td>NQ Futures</td><td>±360–1075 pts</td><td>±155–385 pts</td><td>±105–310 pts</td><td>±260–775 pts</td></tr><tr><td>VIX</td><td>20→65+ crash</td><td>50→30 day 2</td><td>25–40 week 1</td><td>18–45 range</td></tr></tbody>
+    </table></div>
+    </div>
+  </div>
+  <div class="we-card" data-cat="fed macro" data-name="QE / QT Regime Change">
+    <div class="we-card-header" onclick="toggleCard(this)">
+      <div class="we-card-left">
+        <span class="we-card-icon">🏦</span>
+        <div>
+          <div class="we-card-title">QE / QT Liquidity Regime</div>
+          <div class="we-card-desc">Fed balance sheet expansion (QE) suppresses vol and lifts all assets; QT withdraws liquidity and raises volatility.</div>
+        </div>
+      </div>
+      <div class="we-card-right">
+        <span class="we-flow-tag tag-neutral">Regime Level</span><span class="we-flow-tag tag-neutral">Months-Years</span>
+        <span class="we-badge badge-yellow">REGIME CHANGE</span>
+        <span class="we-chevron">&#9660;</span>
+      </div>
+    </div>
+    <div class="we-card-body" id="body-qt">
+      
+    <div class="we-tabs">
+      <button class="we-tab-btn active" onclick="switchTab(this,'qt','overview')">Overview</button>
+      <button class="we-tab-btn" onclick="switchTab(this,'qt','flow')">Options Flow &amp; IV</button>
+      <button class="we-tab-btn" onclick="switchTab(this,'qt','strats')">Strategies</button>
+      <button class="we-tab-btn" onclick="switchTab(this,'qt','ranges')">Duration &amp; Ranges</button>
+    </div>
+      <div class="we-tab-content active" id="qt-overview"><div class="we-section "><div class="we-sec-title">🏛️ Institutional Buyers</div><ul><li>QE: Buy equities, credit, REITs — all boats rise</li><li>QT: Reduce duration, add quality, reduce leverage</li><li>Duration management: long TLT on QE announcement</li><li>Watch Fed balance sheet weekly for pace signals</li></ul></div><div class="we-section "><div class="we-sec-title">📦 Key Assets</div><ul><li>QE beneficiaries: SPY, QQQ, ARKK, REITs, GLD</li><li>QT vulnerable: ARKK, speculative growth, XLRE</li><li>Rate sensitive: TLT (rally on QE, fall on QT)</li><li>Credit: HYG (tighter on QE, wider on QT)</li></ul></div><div class="we-section "><div class="we-sec-title">👥 Retail Traders</div><ul><li>QE = buy and hold; QT = reduce leverage and duration</li><li>ARKK as QE barometer — first to rise/fall</li><li>Don't fight Fed on either side</li><li>Retail participation surges in QE — contrarian signal near end</li></ul></div><div class="we-bar-row">
+      <span class="we-bar-label">Bullish Probability</span>
+      <div class="we-bar-track"><div class="we-bar-fill bar-bull" style="width:70%"></div></div>
+      <span class="we-bar-val">QE bullish / QT bearish</span>
+    </div><div class="we-bar-row">
+      <span class="we-bar-label">Volatility Expansion</span>
+      <div class="we-bar-track"><div class="we-bar-fill bar-vol" style="width:45%"></div></div>
+      <span class="we-bar-val">Low on QE, moderate QT</span>
+    </div><div class="we-bar-row">
+      <span class="we-bar-label">Magnitude</span>
+      <div class="we-bar-track"><div class="we-bar-fill bar-mag" style="width:60%"></div></div>
+      <span class="we-bar-val">Regime-level — months to years</span>
+    </div><div class="we-section "><div class="we-sec-title">⚙️ GEX & Delta Hedging</div><ul><li>QE: Positive GEX regime — all moves dampened</li><li>QT: Negative GEX creeps in — higher realized vol</li><li>Balance sheet expansion → dealer leverage increases</li><li>QT drawdown → forced dealer deleveraging amplifies corrections</li></ul></div><div class="we-trade-box"><div class="we-trade-title">&#127919; How to Trade</div><ul><li>QE: Short strangles, covered calls — sell vol</li><li>QT: Buy puts / VIX calls, reduce short vol</li><li>ARKK as regime indicator: rising = QE bull, falling = QT tightening</li><li>Watch Fed balance sheet vs S&P 500 correlation weekly</li></ul></div></div>
+      <div class="we-tab-content" id="qt-flow"><div class="we-flow-tags"><span class="we-flow-tag tag-call">QE: Call Buying</span><span class="we-flow-tag tag-neutral">QE: Vol Selling</span><span class="we-flow-tag tag-put">QT: Put Buying</span><span class="we-flow-tag tag-put">QT: VIX Calls</span></div><table class="we-iv-table">
+      <thead><tr><th>Phase</th><th>IV Change</th><th>Skew</th><th>Term Structure</th><th>P/C Ratio</th></tr></thead>
+      <tbody><tr><td>QE Announcement</td><td>IV –10–25%</td><td>Call skew develops</td><td>Steepens (contango)</td><td>0.6–0.8</td></tr><tr><td>QE Active</td><td>IV subdued</td><td>Call skew</td><td>Deep contango</td><td>0.6–0.9</td></tr><tr><td>Taper Signal</td><td>IV +15–30%</td><td>Skew normalizes</td><td>Flattens</td><td>1.0–1.4</td></tr><tr><td>QT Active</td><td>IV +20–40%</td><td>Put skew builds</td><td>Inversion begins</td><td>1.4–2.0</td></tr><tr><td>QT Peak</td><td>IV elevated</td><td>Heavy put skew</td><td>Inverted</td><td>1.6–2.5</td></tr></tbody>
+    </table><div class="we-pc-row">
+      <span class="we-pc-label">QE Active</span>
+      <div class="we-pc-track"><div class="we-pc-fill" style="width:28%"></div></div>
+      <span class="we-pc-val">0.6–0.9</span>
+    </div><div class="we-pc-row">
+      <span class="we-pc-label">Taper / Transition</span>
+      <div class="we-pc-track"><div class="we-pc-fill" style="width:43%"></div></div>
+      <span class="we-pc-val">1.0–1.4</span>
+    </div><div class="we-pc-row">
+      <span class="we-pc-label">QT Active</span>
+      <div class="we-pc-track"><div class="we-pc-fill" style="width:62%"></div></div>
+      <span class="we-pc-val">1.4–2.0</span>
+    </div><div class="we-section "><div class="we-sec-title">💡 Flow Signals</div><ul><li>ARKK call/put ratio = risk appetite barometer under QE</li><li>SPY call skew development = QE bull run confirmation</li><li>VIX call OI building = QT regime awareness</li><li>High-yield spread tightening = QE liquidity flowing into credit</li></ul></div></div>
+      <div class="we-tab-content" id="qt-strats"><div class="we-strategy-card">
+      <div class="we-strat-name">Short Strangle (QE)</div>
+      <div class="pnl-diagram pnl-strangle"></div>
+      <table class="we-strat-table"><tr><td>Entry</td><td>QE active, IV elevated from taper fear</td></tr><tr><td>Width</td><td>±3% from spot</td></tr><tr><td>Max Profit</td><td>Both premiums</td></tr><tr><td>Risk</td><td>Policy surprise</td></tr><tr><td>Best When</td><td>Fed committed to QE, low vol regime</td></tr></table>
+      <div class="we-strat-rr">Risk/Reward: Income in suppressed-vol QE environment</div>
+    </div><div class="we-strategy-card">
+      <div class="we-strat-name">Covered Call/Put Program (QE)</div>
+      <div class="pnl-diagram pnl-callspread"></div>
+      <table class="we-strat-table"><tr><td>Entry</td><td>QE active, own equity positions</td></tr><tr><td>Sell</td><td>Monthly OTM calls for income</td></tr><tr><td>Max Profit</td><td>Premium + capped upside</td></tr><tr><td>Risk</td><td>Large rally through strike</td></tr><tr><td>Best When</td><td>QE stable, steady grind up expected</td></tr></table>
+      <div class="we-strat-rr">Risk/Reward: QE income program on long equity</div>
+    </div><div class="we-strategy-card">
+      <div class="we-strat-name">Rolling SPY Put Spread (QT)</div>
+      <div class="pnl-diagram pnl-putspread"></div>
+      <table class="we-strat-table"><tr><td>Entry</td><td>QT active, balance sheet declining</td></tr><tr><td>Strikes</td><td>ATM / −3%, roll monthly</td></tr><tr><td>Max Profit</td><td>Spread minus debit</td></tr><tr><td>Max Loss</td><td>Debit</td></tr><tr><td>Best When</td><td>QT accelerating, liquidity withdrawing</td></tr></table>
+      <div class="we-strat-rr">Risk/Reward: Ongoing downside protection in QT</div>
+    </div><div class="we-strategy-card">
+      <div class="we-strat-name">ARKK Long-Dated Put (QT)</div>
+      <div class="pnl-diagram pnl-putspread"></div>
+      <table class="we-strat-table"><tr><td>Entry</td><td>QT confirmed, ARKK below 200-day</td></tr><tr><td>Expiry</td><td>90–120 DTE</td></tr><tr><td>Strikes</td><td>ATM / −20%</td></tr><tr><td>Max Profit</td><td>Spread minus debit</td></tr><tr><td>Best When</td><td>Speculative growth crushed by rising rates</td></tr></table>
+      <div class="we-strat-rr">Risk/Reward: Growth destruction in QT play</div>
+    </div><div class="we-strategy-card">
+      <div class="we-strat-name">VIX Call Ladder (QT)</div>
+      <div class="pnl-diagram pnl-callspread"></div>
+      <table class="we-strat-table"><tr><td>Entry</td><td>QT active, buy VIX calls at 20, 25, 30</td></tr><tr><td>Structure</td><td>Ladder across strikes</td></tr><tr><td>Max Profit</td><td>Any VIX spike >30</td></tr><tr><td>Cost</td><td>Monthly premium</td></tr><tr><td>Best When</td><td>QT causing credit stress or recession fears</td></tr></table>
+      <div class="we-strat-rr">Risk/Reward: QT volatility insurance ladder</div>
+    </div></div>
+      <div class="we-tab-content" id="qt-ranges"><div class="we-dur-section"><div class="we-sec-title">⏱️ Impact Duration</div><div class="we-dur-row">
+      <span class="we-dur-label">Intraday</span>
+      <div class="we-dur-track"><div class="we-dur-fill dur-low" style="width:20%"></div></div>
+      <span class="we-dur-note">Announcement day move only</span>
+    </div><div class="we-dur-row">
+      <span class="we-dur-label">1–3 Days</span>
+      <div class="we-dur-track"><div class="we-dur-fill dur-low" style="width:40%"></div></div>
+      <span class="we-dur-note">Initial repositioning</span>
+    </div><div class="we-dur-row">
+      <span class="we-dur-label">1 Week</span>
+      <div class="we-dur-track"><div class="we-dur-fill dur-med" style="width:55%"></div></div>
+      <span class="we-dur-note">Sector rotation adjusts</span>
+    </div><div class="we-dur-row">
+      <span class="we-dur-label">1 Month</span>
+      <div class="we-dur-track"><div class="we-dur-fill dur-high" style="width:75%"></div></div>
+      <span class="we-dur-note">Full liquidity regime priced</span>
+    </div><div class="we-dur-row">
+      <span class="we-dur-label">3 Months</span>
+      <div class="we-dur-track"><div class="we-dur-fill dur-high" style="width:90%"></div></div>
+      <span class="we-dur-note">Structural — months to years</span>
+    </div></div><table class="we-range-table">
+      <thead><tr><th>Instrument</th><th>Intraday</th><th>1-3 Day</th><th>1 Week</th><th>1 Month</th></tr></thead>
+      <tbody><tr><td>SPY</td><td>±1–2% ann. day</td><td>±0.5–1.5%</td><td>±1–3%</td><td>±3–8% QE / ±5–15% QT</td></tr><tr><td>QQQ</td><td>±1.5–3%</td><td>±0.8–2.0%</td><td>±1.5–4%</td><td>±5–12% QE / ±8–20% QT</td></tr><tr><td>ARKK</td><td>±3–6%</td><td>±2–5%</td><td>±4–10%</td><td>±15–40% either direction</td></tr><tr><td>TLT</td><td>±1–3%</td><td>±0.8–2%</td><td>±2–5%</td><td>±5–20% depending on pace</td></tr><tr><td>VIX</td><td>14→10 QE</td><td>±3–5</td><td>12–18 QE / 18–30 QT</td><td>10–18 QE / 16–35 QT</td></tr></tbody>
+    </table></div>
+    </div>
+  </div>
+
+  </div><!-- /we-events -->
+  </div><!-- /we-wrap -->
+</main>
+
+
+<script>
+'use strict';
+// ── Card toggle ───────────────────────────────────────────────────────────────
+function toggleCard(header) {
+  const body = header.nextElementSibling;
+  const chevron = header.querySelector('.we-chevron');
+  const open = body.classList.contains('open');
+  body.classList.toggle('open', !open);
+  chevron.style.transform = open ? 'rotate(0deg)' : 'rotate(180deg)';
+}
+function switchTab(btn, cardId, tabName) {
+  const body = document.getElementById('body-' + cardId);
+  body.querySelectorAll('.we-tab-btn').forEach(b => b.classList.remove('active'));
+  body.querySelectorAll('.we-tab-content').forEach(c => c.classList.remove('active'));
+  btn.classList.add('active');
+  const tc = document.getElementById(cardId + '-' + tabName);
+  if (tc) tc.classList.add('active');
+}
+let weActiveFilter = 'all';
+function setWeFilter(cat, btn) {
+  weActiveFilter = cat;
+  document.querySelectorAll('.we-pill').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  applyWeFilter();
+}
+function applyWeFilter() {
+  const q = (document.getElementById('we-search').value || '').toLowerCase();
+  document.querySelectorAll('.we-card').forEach(card => {
+    const cats = card.dataset.cat || '';
+    const name = (card.dataset.name || '').toLowerCase();
+    const catOk = weActiveFilter === 'all' || cats.includes(weActiveFilter);
+    const qOk   = !q || name.includes(q) || cats.includes(q);
+    card.style.display = (catOk && qOk) ? '' : 'none';
+  });
+}
+function asStr(v) {
+  if (v === null || v === undefined) return '';
+  if (typeof v === 'object') return '';
+  return String(v);
+}
+
+// ── Global cache ──────────────────────────────────────────────────────────────
+let g_assets = [];
+let g_gex    = [];
+let g_sum    = null;
+
+// ── Load all data ─────────────────────────────────────────────────────────────
+async function loadDashboard() {
+  try {
+    const [gexRes, sumRes] = await Promise.all([
+      fetch('/api/gamma-exposure').then(r => r.json()).catch(() => null),
+      fetch('/api/market-summary').then(r => r.json()).catch(() => null),
+    ]);
+    g_sum = sumRes;
+    if (sumRes) {
+      const seen = new Set();
+      g_assets = (sumRes.top_activity || []).concat(sumRes.top_magnitude || []).filter(a => {
+        if (!a.symbol || seen.has(a.symbol)) return false;
+        seen.add(a.symbol); return true;
+      });
+    }
+    g_gex = gexRes ? (gexRes.assets || []).filter(a => a.spot > 0) : [];
+
+    updateStatus();
+    updateForecastTable();
+    drawChart1();
+    drawChart2();
+    drawChart3();
+    updateForecastCards();
+
+    const ts = document.getElementById('we-last-updated');
+    if (ts) ts.textContent = 'Updated: ' + new Date().toLocaleTimeString();
+  } catch(e) { console.warn('Dashboard error:', e); }
+}
+
+// ── Regime from total_gex_m ───────────────────────────────────────────────────
+function computeRegime() {
+  const total = g_gex.reduce((s, a) => s + (a.total_gex_m || 0), 0);
+  return total > 0.5 ? 'Positive' : total < -0.5 ? 'Negative' : 'Neutral';
+}
+
+// ── Status pills ──────────────────────────────────────────────────────────────
+function updateStatus() {
+  const sum    = g_sum || {};
+  const dir    = asStr(sum.market_direction) || 'Neutral';
+  const senti  = typeof sum.sentiment === 'object' ? (sum.sentiment || {}) : {};
+  const bullPct = senti.bull_pct || 0;
+  const bearPct = senti.bear_pct || 0;
+  const regime  = computeRegime();
+  const isNeg   = regime === 'Negative', isPos = regime === 'Positive';
+  const avgAtr  = g_assets.length ? g_assets.slice(0,10).reduce((s,a)=>s+(a.atr_pct||0),0)/Math.min(g_assets.length,10) : 1.0;
+  const estVIX  = Math.round(avgAtr * Math.sqrt(252));
+
+  function setPill(id, text, cls) {
+    const el = document.getElementById(id);
+    if (el) { el.textContent = text; el.className = 'we-status-pill ' + cls; }
+  }
+  setPill('pill-regime',    'GEX: ' + regime,              isNeg?'pill-red':isPos?'pill-green':'pill-yellow');
+  setPill('pill-direction', 'Market: ' + dir,              dir.toUpperCase().includes('BULL')?'pill-green':dir.toUpperCase().includes('BEAR')?'pill-red':'pill-yellow');
+  setPill('pill-bull',      'Bull: '+bullPct.toFixed(0)+'%', bullPct>=50?'pill-green':bullPct>=35?'pill-yellow':'pill-red');
+  setPill('pill-bear',      'Bear: '+bearPct.toFixed(0)+'%', bearPct<=20?'pill-green':bearPct<=35?'pill-yellow':'pill-red');
+  setPill('pill-vix',       'Est. VIX: '+estVIX,          estVIX<15?'pill-green':estVIX<25?'pill-yellow':'pill-red');
+  setPill('pill-gex-mode',  'GEX: '+(isNeg?'Amplifying':isPos?'Dampening':'Neutral'), isNeg?'pill-red':isPos?'pill-green':'pill-yellow');
+}
+
+// ── Forecast Table ────────────────────────────────────────────────────────────
+function updateForecastTable() {
+  const tbody = document.getElementById('we-forecast-body');
+  if (!tbody) return;
+  const assets = g_assets.slice(0, 10);
+  if (!assets.length) {
+    tbody.innerHTML = '<tr><td colspan="7" style="color:#64748b;padding:1rem;text-align:center;">Waiting for market data…</td></tr>';
+    return;
+  }
+  tbody.innerHTML = assets.map(a => {
+    const spot   = a.close || 0;
+    const atrPct = (a.atr_pct || 1.0) / 100;
+    const d1lo = spot*(1-atrPct), d1hi = spot*(1+atrPct);
+    const d7lo = spot*(1-atrPct*Math.sqrt(5)), d7hi = spot*(1+atrPct*Math.sqrt(5));
+    const d30lo= spot*(1-atrPct*Math.sqrt(20)),d30hi= spot*(1+atrPct*Math.sqrt(20));
+    const fmt = (lo,hi) => '$'+lo.toFixed(0)+' – $'+hi.toFixed(0);
+    const regime = a.vol_regime_label || 'Normal';
+    const regimeCls = regime==='High'?'cell-bear':regime==='Low'?'cell-bull':'cell-neu';
+    const sig = asStr(a.signal||'');
+    const sigCls = sig==='BUY'?'cell-bull':sig==='SELL'?'cell-bear':'cell-neu';
+    const probUp = a.prob_up!=null?(a.prob_up*100).toFixed(0)+'% up':'—';
+    return '<tr>'+
+      '<td><strong>'+a.symbol+'</strong><br><span style="font-size:.72rem;color:#64748b;">'+(a.group||'')+'</span></td>'+
+      '<td>'+(spot>0?'$'+spot.toFixed(2):'—')+'</td>'+
+      '<td>'+(spot>0?fmt(d1lo,d1hi):'—')+'</td>'+
+      '<td>'+(spot>0?fmt(d7lo,d7hi):'—')+'</td>'+
+      '<td>'+(spot>0?fmt(d30lo,d30hi):'—')+'</td>'+
+      '<td class="'+regimeCls+'">'+regime+' Vol</td>'+
+      '<td class="'+sigCls+'">'+sig+'<br><span style="font-size:.7rem;color:#94a3b8;">'+probUp+'</span></td>'+
+      '</tr>';
+  }).join('');
+}
+
+// ── Canvas init — full width, tall ────────────────────────────────────────────
+function initCanvas(id) {
+  const canvas = document.getElementById(id);
+  if (!canvas) return null;
+  const W = Math.max(canvas.parentElement ? canvas.parentElement.clientWidth - 20 : 700, 400);
+  const H = 340;
+  canvas.width  = W;
+  canvas.height = H;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = '#0f172a';
+  ctx.fillRect(0, 0, W, H);
+  return { ctx, W, H };
+}
+
+// ── CHART 1 — ML Signal: Prob Up vs Prob Down ────────────────────────────────
+// Each bar group = one asset. Green = probability of upward move. Red = downward.
+function drawChart1() {
+  const c = initCanvas('chart-flow');
+  if (!c) return;
+  const { ctx, W, H } = c;
+
+  const assets = g_assets.filter(a => a.prob_up != null && a.close > 0).slice(0, 10);
+  if (!assets.length) {
+    ctx.fillStyle = '#64748b'; ctx.font = 'bold 16px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('Waiting for ML signal data…', W/2, H/2); return;
+  }
+
+  const PAD_L = 68, PAD_R = 20, PAD_T = 50, PAD_B = 70;
+  const chartW = W - PAD_L - PAD_R;
+  const chartH = H - PAD_T - PAD_B;
+  const yTop = PAD_T, yBot = PAD_T + chartH;
+  const n = assets.length;
+  const groupW = chartW / n;
+  const barW = Math.max(14, Math.min(38, groupW * 0.38));
+
+  // ── Y axis gridlines + labels (0–100%) ──
+  for (let v = 0; v <= 100; v += 25) {
+    const y = yBot - (v / 100) * chartH;
+    // gridline
+    ctx.strokeStyle = v === 50 ? 'rgba(251,191,36,0.35)' : 'rgba(255,255,255,0.08)';
+    ctx.lineWidth = v === 50 ? 1.5 : 1;
+    ctx.setLineDash(v === 50 ? [6,4] : []);
+    ctx.beginPath(); ctx.moveTo(PAD_L, y); ctx.lineTo(W - PAD_R, y); ctx.stroke();
+    ctx.setLineDash([]);
+    // label
+    ctx.fillStyle = v === 50 ? '#fbbf24' : '#94a3b8';
+    ctx.font = v === 50 ? 'bold 14px sans-serif' : '13px sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText(v + '%', PAD_L - 8, y + 5);
+  }
+  // 50% annotation
+  ctx.fillStyle = '#fbbf24'; ctx.font = '11px sans-serif'; ctx.textAlign = 'left';
+  ctx.fillText('← 50% Neutral line', PAD_L + 6, yBot - chartH * 0.5 - 6);
+
+  // ── Y axis line ──
+  ctx.strokeStyle = 'rgba(255,255,255,0.25)'; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(PAD_L, PAD_T - 8); ctx.lineTo(PAD_L, yBot + 4); ctx.stroke();
+
+  // ── Y axis title ──
+  ctx.save();
+  ctx.translate(18, PAD_T + chartH / 2);
+  ctx.rotate(-Math.PI / 2);
+  ctx.fillStyle = '#94a3b8'; ctx.font = 'bold 15px sans-serif'; ctx.textAlign = 'center';
+  ctx.fillText('Probability of Move (%)', 0, 0);
+  ctx.restore();
+
+  // ── Chart title area ──
+  ctx.fillStyle = '#e2e8f0'; ctx.font = 'bold 15px sans-serif'; ctx.textAlign = 'left';
+  ctx.fillText('ML Bullish vs Bearish Probability per Asset  —  Green = Prob Up  |  Red = Prob Down  |  Label = Signal', PAD_L + 4, 20);
+
+  // ── Bars ──
+  assets.forEach((a, i) => {
+    const cx = PAD_L + i * groupW + groupW / 2;
+    const probUp   = (a.prob_up   || 0) * 100;
+    const probDown = (a.prob_down || 0) * 100;
+    const upH   = (probUp   / 100) * chartH;
+    const downH = (probDown / 100) * chartH;
+    const sig = asStr(a.signal || 'HOLD');
+
+    // Green bar — prob up
+    const gx = cx - barW - 2;
+    const gg = ctx.createLinearGradient(0, yBot - upH, 0, yBot);
+    gg.addColorStop(0, '#4ade80'); gg.addColorStop(1, '#14532d');
+    ctx.fillStyle = gg;
+    ctx.beginPath();
+    ctx.roundRect ? ctx.roundRect(gx, yBot - upH, barW, upH, [4,4,0,0]) : ctx.fillRect(gx, yBot - upH, barW, upH);
+    ctx.fill();
+    // value on top
+    ctx.fillStyle = '#4ade80'; ctx.font = 'bold 13px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText(probUp.toFixed(0) + '%', gx + barW / 2, yBot - upH - 7);
+
+    // Red bar — prob down
+    const rx = cx + 2;
+    const rg = ctx.createLinearGradient(0, yBot - downH, 0, yBot);
+    rg.addColorStop(0, '#f87171'); rg.addColorStop(1, '#7f1d1d');
+    ctx.fillStyle = rg;
+    ctx.beginPath();
+    ctx.roundRect ? ctx.roundRect(rx, yBot - downH, barW, downH, [4,4,0,0]) : ctx.fillRect(rx, yBot - downH, barW, downH);
+    ctx.fill();
+    // value on top
+    ctx.fillStyle = '#f87171'; ctx.font = 'bold 13px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText(probDown.toFixed(0) + '%', rx + barW / 2, yBot - downH - 7);
+
+    // Signal badge above bars
+    const badgeCol = sig === 'BUY' ? '#4ade80' : sig === 'SELL' ? '#f87171' : '#fbbf24';
+    ctx.fillStyle = badgeCol;
+    ctx.font = 'bold 13px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText(sig, cx, PAD_T - 6);
+
+    // X axis: symbol
+    ctx.fillStyle = '#e2e8f0'; ctx.font = 'bold 13px sans-serif'; ctx.textAlign = 'center';
+    const sym = a.symbol.replace('^','');
+    ctx.fillText(sym.length > 6 ? sym.slice(0,6) : sym, cx, yBot + 22);
+    // ATR below
+    ctx.fillStyle = '#64748b'; ctx.font = '11px sans-serif';
+    ctx.fillText('ATR ' + (a.atr_pct||0).toFixed(1) + '%', cx, yBot + 40);
+    // Prob up small label
+    ctx.fillStyle = '#94a3b8'; ctx.font = '10px sans-serif';
+    ctx.fillText('$' + (a.close||0).toFixed(0), cx, yBot + 56);
+  });
+
+  // ── X axis line ──
+  ctx.strokeStyle = 'rgba(255,255,255,0.25)'; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(PAD_L, yBot); ctx.lineTo(W - PAD_R, yBot); ctx.stroke();
+
+  // ── Legend ──
+  const ly = H - 12;
+  ctx.fillStyle = '#4ade80'; ctx.fillRect(PAD_L, ly - 11, 18, 12);
+  ctx.fillStyle = '#e2e8f0'; ctx.font = '13px sans-serif'; ctx.textAlign = 'left';
+  ctx.fillText('Prob Up (Bullish)', PAD_L + 22, ly);
+  ctx.fillStyle = '#f87171'; ctx.fillRect(PAD_L + 175, ly - 11, 18, 12);
+  ctx.fillStyle = '#e2e8f0';
+  ctx.fillText('Prob Down (Bearish)', PAD_L + 197, ly);
+  ctx.fillStyle = '#fbbf24'; ctx.font = '12px sans-serif';
+  ctx.fillText('  |  ATR = daily volatility range  |  Signal label shown above bars', PAD_L + 380, ly);
+}
+
+// ── CHART 2 — Price Forecast Ranges (1D / 1W / 1M) ───────────────────────────
+// Stacked bars showing expected ± move range based on ATR. Y = % move. X = asset.
+function drawChart2() {
+  const c = initCanvas('chart-range');
+  if (!c) return;
+  const { ctx, W, H } = c;
+
+  const atrMap = {};
+  g_assets.forEach(a => { if (a.symbol) atrMap[a.symbol] = a.atr_pct || 1.0; });
+  const assets = g_gex.filter(a => a.spot > 0).slice(0, 10);
+
+  if (!assets.length) {
+    ctx.fillStyle = '#64748b'; ctx.font = 'bold 16px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('Waiting for price data…', W/2, H/2); return;
+  }
+
+  const PAD_L = 68, PAD_R = 20, PAD_T = 50, PAD_B = 70;
+  const chartW = W - PAD_L - PAD_R;
+  const chartH = H - PAD_T - PAD_B;
+  const yTop = PAD_T, yBot = PAD_T + chartH;
+  const n = assets.length;
+  const groupW = chartW / n;
+
+  // Compute ranges
+  const data = assets.map(a => {
+    const atrPct = (atrMap[a.symbol] || 1.2) / 100;
+    return { sym: a.symbol, spot: a.spot,
+      d1: atrPct * 100, d7: atrPct * Math.sqrt(5) * 100, d30: atrPct * Math.sqrt(20) * 100 };
+  });
+  const maxPct = Math.max(...data.map(r => r.d30)) * 1.12;
+
+  // ── Y axis gridlines + labels ──
+  const steps = 5;
+  for (let i = 0; i <= steps; i++) {
+    const pct = maxPct * i / steps;
+    const y = yBot - (pct / maxPct) * chartH;
+    ctx.strokeStyle = 'rgba(255,255,255,0.08)'; ctx.lineWidth = 1; ctx.setLineDash([]);
+    ctx.beginPath(); ctx.moveTo(PAD_L, y); ctx.lineTo(W - PAD_R, y); ctx.stroke();
+    ctx.fillStyle = '#94a3b8'; ctx.font = '13px sans-serif'; ctx.textAlign = 'right';
+    ctx.fillText('±' + pct.toFixed(1) + '%', PAD_L - 8, y + 5);
+  }
+
+  // Y axis line
+  ctx.strokeStyle = 'rgba(255,255,255,0.25)'; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(PAD_L, PAD_T - 8); ctx.lineTo(PAD_L, yBot + 4); ctx.stroke();
+
+  // Y axis title
+  ctx.save();
+  ctx.translate(18, PAD_T + chartH / 2);
+  ctx.rotate(-Math.PI / 2);
+  ctx.fillStyle = '#94a3b8'; ctx.font = 'bold 15px sans-serif'; ctx.textAlign = 'center';
+  ctx.fillText('Expected Price Move (± %)', 0, 0);
+  ctx.restore();
+
+  // Chart title
+  ctx.fillStyle = '#e2e8f0'; ctx.font = 'bold 15px sans-serif'; ctx.textAlign = 'left';
+  ctx.fillText('Forecast Move Range per Asset  —  Green=1 Day  |  Yellow=1 Week  |  Red=1 Month', PAD_L + 4, 20);
+
+  // ── Bars ──
+  data.forEach((r, i) => {
+    const cx = PAD_L + i * groupW + groupW / 2;
+    const bw = Math.max(16, Math.min(44, groupW * 0.55));
+
+    const y1m = yBot - (r.d30 / maxPct) * chartH;
+    const y1w = yBot - (r.d7  / maxPct) * chartH;
+    const y1d = yBot - (r.d1  / maxPct) * chartH;
+
+    // 1-month bar (widest, most transparent)
+    ctx.fillStyle = 'rgba(248,113,113,0.22)';
+    ctx.fillRect(cx - bw, y1m, bw * 2, yBot - y1m);
+    ctx.strokeStyle = 'rgba(248,113,113,0.6)'; ctx.lineWidth = 1.5;
+    ctx.strokeRect(cx - bw, y1m, bw * 2, yBot - y1m);
+
+    // 1-week bar
+    const bw7 = bw * 0.70;
+    ctx.fillStyle = 'rgba(251,191,36,0.28)';
+    ctx.fillRect(cx - bw7, y1w, bw7 * 2, yBot - y1w);
+    ctx.strokeStyle = 'rgba(251,191,36,0.65)'; ctx.lineWidth = 1.5;
+    ctx.strokeRect(cx - bw7, y1w, bw7 * 2, yBot - y1w);
+
+    // 1-day bar (solid gradient)
+    const bw1 = bw * 0.38;
+    const gg = ctx.createLinearGradient(0, y1d, 0, yBot);
+    gg.addColorStop(0, 'rgba(74,222,128,0.95)');
+    gg.addColorStop(1, 'rgba(20,83,45,0.6)');
+    ctx.fillStyle = gg;
+    ctx.fillRect(cx - bw1, y1d, bw1 * 2, yBot - y1d);
+
+    // Labels on bars
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#4ade80'; ctx.font = 'bold 13px sans-serif';
+    ctx.fillText('±' + r.d1.toFixed(1) + '%', cx, y1d - 7);
+    ctx.fillStyle = '#fbbf24'; ctx.font = '12px sans-serif';
+    ctx.fillText('±' + r.d7.toFixed(1) + '%', cx, y1w - 7);
+    ctx.fillStyle = '#f87171'; ctx.font = '12px sans-serif';
+    ctx.fillText('±' + r.d30.toFixed(1) + '%', cx, y1m - 7);
+
+    // X labels
+    ctx.fillStyle = '#e2e8f0'; ctx.font = 'bold 13px sans-serif'; ctx.textAlign = 'center';
+    const sym = r.sym.replace('^','');
+    ctx.fillText(sym.length > 6 ? sym.slice(0,6) : sym, cx, yBot + 22);
+    ctx.fillStyle = '#94a3b8'; ctx.font = '12px sans-serif';
+    ctx.fillText('$' + r.spot.toFixed(0), cx, yBot + 40);
+    // 1-day dollar move
+    const dollarMove = r.spot * r.d1 / 100;
+    ctx.fillStyle = '#64748b'; ctx.font = '10px sans-serif';
+    ctx.fillText('±$' + dollarMove.toFixed(dollarMove < 10 ? 2 : 0) + '/day', cx, yBot + 56);
+  });
+
+  // X axis line
+  ctx.strokeStyle = 'rgba(255,255,255,0.25)'; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(PAD_L, yBot); ctx.lineTo(W - PAD_R, yBot); ctx.stroke();
+
+  // Legend
+  const ly = H - 12;
+  ctx.fillStyle = 'rgba(74,222,128,0.8)'; ctx.fillRect(PAD_L, ly - 13, 20, 14);
+  ctx.fillStyle = '#e2e8f0'; ctx.font = '13px sans-serif'; ctx.textAlign = 'left';
+  ctx.fillText('1-Day Range', PAD_L + 25, ly);
+  ctx.fillStyle = 'rgba(251,191,36,0.7)'; ctx.fillRect(PAD_L + 130, ly - 13, 20, 14);
+  ctx.fillStyle = '#e2e8f0'; ctx.fillText('1-Week Range', PAD_L + 155, ly);
+  ctx.fillStyle = 'rgba(248,113,113,0.6)'; ctx.fillRect(PAD_L + 280, ly - 13, 20, 14);
+  ctx.fillStyle = '#e2e8f0'; ctx.fillText('1-Month Range', PAD_L + 305, ly);
+  ctx.fillStyle = '#64748b'; ctx.font = '12px sans-serif';
+  ctx.fillText('  |  Based on Average True Range (ATR)  |  X-axis: price below symbol', PAD_L + 440, ly);
+}
+
+// ── CHART 3 — ML Price Levels: Entry / Target / Stop per asset ────────────────
+// Shows the ML model's recommended entry, profit target, and stop-loss for each asset.
+function drawChart3() {
+  const c = initCanvas('chart-gex');
+  if (!c) return;
+  const { ctx, W, H } = c;
+
+  const assets = g_assets.filter(a =>
+    a.close > 0 && a.stop_long != null && a.target_long != null
+  ).slice(0, 8);
+
+  if (!assets.length) {
+    ctx.fillStyle = '#64748b'; ctx.font = 'bold 16px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('Waiting for ML price level data…', W/2, H/2); return;
+  }
+
+  const PAD_L = 72, PAD_R = 20, PAD_T = 50, PAD_B = 70;
+  const chartW = W - PAD_L - PAD_R;
+  const chartH = H - PAD_T - PAD_B;
+  const yBot = PAD_T + chartH;
+  const n = assets.length;
+  const groupW = chartW / n;
+
+  // Price scale from all data points
+  const allP = assets.flatMap(a =>
+    [a.close, a.stop_long, a.stop_short, a.target_long, a.target_short].filter(v => v != null && v > 0)
+  );
+  const minP = Math.min(...allP) * 0.996;
+  const maxP = Math.max(...allP) * 1.004;
+  const toY  = (p) => yBot - ((p - minP) / (maxP - minP)) * chartH;
+
+  // ── Y axis gridlines + labels ──
+  const steps = 6;
+  for (let i = 0; i <= steps; i++) {
+    const p = minP + (maxP - minP) * i / steps;
+    const y = toY(p);
+    ctx.strokeStyle = 'rgba(255,255,255,0.08)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(PAD_L, y); ctx.lineTo(W - PAD_R, y); ctx.stroke();
+    ctx.fillStyle = '#94a3b8'; ctx.font = '13px sans-serif'; ctx.textAlign = 'right';
+    ctx.fillText('$' + p.toFixed(p < 20 ? 2 : 0), PAD_L - 8, y + 5);
+  }
+
+  // Y axis line
+  ctx.strokeStyle = 'rgba(255,255,255,0.25)'; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(PAD_L, PAD_T - 8); ctx.lineTo(PAD_L, yBot + 4); ctx.stroke();
+
+  // Y axis title
+  ctx.save();
+  ctx.translate(18, PAD_T + chartH / 2);
+  ctx.rotate(-Math.PI / 2);
+  ctx.fillStyle = '#94a3b8'; ctx.font = 'bold 15px sans-serif'; ctx.textAlign = 'center';
+  ctx.fillText('Price  ($)', 0, 0);
+  ctx.restore();
+
+  // Chart title
+  ctx.fillStyle = '#e2e8f0'; ctx.font = 'bold 15px sans-serif'; ctx.textAlign = 'left';
+  ctx.fillText('ML Price Levels per Asset  —  White=Entry  |  Green=Target  |  Red=Stop Loss  |  R/R=Risk-Reward', PAD_L + 4, 20);
+
+  assets.forEach((a, i) => {
+    const cx = PAD_L + i * groupW + groupW / 2;
+    const bw = Math.max(10, Math.min(30, groupW * 0.38));
+    const sig = asStr(a.signal || 'HOLD');
+    const entry = a.close;
+    const tgL = a.target_long, stL = a.stop_long;
+    const tgS = a.target_short, stS = a.stop_short;
+
+    // Zone fill (BUY: stop→target green; SELL: target→stop red; HOLD: gray)
+    if (sig === 'BUY' && stL && tgL) {
+      const yT = toY(tgL), yS = toY(stL);
+      ctx.fillStyle = 'rgba(74,222,128,0.12)';
+      ctx.fillRect(cx - bw, yT, bw * 2, yS - yT);
+
+      // Target line (green)
+      ctx.strokeStyle = '#4ade80'; ctx.lineWidth = 2.5;
+      ctx.beginPath(); ctx.moveTo(cx - bw, yT); ctx.lineTo(cx + bw, yT); ctx.stroke();
+      ctx.fillStyle = '#4ade80'; ctx.font = 'bold 11px sans-serif'; ctx.textAlign = 'left';
+      ctx.fillText('▲ T: $' + tgL.toFixed(0), cx + bw + 4, yT + 4);
+
+      // Stop line (red)
+      ctx.strokeStyle = '#f87171'; ctx.lineWidth = 2.5;
+      ctx.beginPath(); ctx.moveTo(cx - bw, yS); ctx.lineTo(cx + bw, yS); ctx.stroke();
+      ctx.fillStyle = '#f87171'; ctx.font = 'bold 11px sans-serif'; ctx.textAlign = 'left';
+      ctx.fillText('▼ SL: $' + stL.toFixed(0), cx + bw + 4, yS + 4);
+
+    } else if (sig === 'SELL' && stS && tgS) {
+      const yT = toY(tgS), yS = toY(stS);
+      ctx.fillStyle = 'rgba(248,113,113,0.12)';
+      ctx.fillRect(cx - bw, yS, bw * 2, yT - yS);
+
+      ctx.strokeStyle = '#f87171'; ctx.lineWidth = 2.5;
+      ctx.beginPath(); ctx.moveTo(cx - bw, yT); ctx.lineTo(cx + bw, yT); ctx.stroke();
+      ctx.fillStyle = '#f87171'; ctx.font = 'bold 11px sans-serif'; ctx.textAlign = 'left';
+      ctx.fillText('▼ T: $' + tgS.toFixed(0), cx + bw + 4, yT + 4);
+
+      ctx.strokeStyle = '#4ade80'; ctx.lineWidth = 2.5;
+      ctx.beginPath(); ctx.moveTo(cx - bw, yS); ctx.lineTo(cx + bw, yS); ctx.stroke();
+      ctx.fillStyle = '#4ade80'; ctx.font = 'bold 11px sans-serif'; ctx.textAlign = 'left';
+      ctx.fillText('▲ SL: $' + stS.toFixed(0), cx + bw + 4, yS + 4);
+
+    } else {
+      // HOLD — gray zone
+      if (stL && stS) {
+        const yt = toY(Math.max(stL, stS)), yb = toY(Math.min(stL, stS));
+        ctx.fillStyle = 'rgba(148,163,184,0.1)';
+        ctx.fillRect(cx - bw, yt, bw * 2, yb - yt);
+      }
+    }
+
+    // Entry price line (white, thick)
+    if (entry) {
+      const yE = toY(entry);
+      ctx.strokeStyle = '#f1f5f9'; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.moveTo(cx - bw - 6, yE); ctx.lineTo(cx + bw + 6, yE); ctx.stroke();
+      // Price label on the line
+      ctx.fillStyle = '#f1f5f9'; ctx.font = 'bold 12px sans-serif'; ctx.textAlign = 'center';
+      ctx.fillText('$' + entry.toFixed(entry < 20 ? 2 : 0), cx, yE - 7);
+    }
+
+    // Signal badge
+    const badgeCol = sig === 'BUY' ? '#4ade80' : sig === 'SELL' ? '#f87171' : '#fbbf24';
+    ctx.fillStyle = badgeCol; ctx.font = 'bold 15px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText(sig, cx, PAD_T - 7);
+
+    // X labels
+    ctx.fillStyle = '#e2e8f0'; ctx.font = 'bold 13px sans-serif'; ctx.textAlign = 'center';
+    const sym = a.symbol.replace('^','');
+    ctx.fillText(sym.length > 6 ? sym.slice(0,6) : sym, cx, yBot + 22);
+    ctx.fillStyle = '#94a3b8'; ctx.font = '12px sans-serif';
+    ctx.fillText('R/R ' + (a.rr_ratio || 0).toFixed(2), cx, yBot + 40);
+    // Prob direction
+    const probTxt = a.prob_up != null ? (a.prob_up*100).toFixed(0)+'% up' : '';
+    ctx.fillStyle = '#64748b'; ctx.font = '10px sans-serif';
+    ctx.fillText(probTxt, cx, yBot + 56);
+  });
+
+  // X axis line
+  ctx.strokeStyle = 'rgba(255,255,255,0.25)'; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(PAD_L, yBot); ctx.lineTo(W - PAD_R, yBot); ctx.stroke();
+
+  // Legend
+  const ly = H - 12;
+  ctx.strokeStyle = '#f1f5f9'; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.moveTo(PAD_L, ly - 6); ctx.lineTo(PAD_L + 20, ly - 6); ctx.stroke();
+  ctx.fillStyle = '#e2e8f0'; ctx.font = '13px sans-serif'; ctx.textAlign = 'left';
+  ctx.fillText('Entry Price', PAD_L + 25, ly);
+  ctx.strokeStyle = '#4ade80'; ctx.lineWidth = 2.5;
+  ctx.beginPath(); ctx.moveTo(PAD_L + 115, ly - 6); ctx.lineTo(PAD_L + 135, ly - 6); ctx.stroke();
+  ctx.fillText('Target (T)', PAD_L + 140, ly);
+  ctx.strokeStyle = '#f87171';
+  ctx.beginPath(); ctx.moveTo(PAD_L + 240, ly - 6); ctx.lineTo(PAD_L + 260, ly - 6); ctx.stroke();
+  ctx.fillText('Stop Loss (SL)', PAD_L + 265, ly);
+  ctx.fillStyle = '#64748b'; ctx.font = '12px sans-serif';
+  ctx.fillText('  |  R/R = Risk/Reward  |  Signal: BUY / SELL / HOLD  |  Prob = ML confidence', PAD_L + 400, ly);
+}
+
+// ── Forecast Cards ────────────────────────────────────────────────────────────
+function updateForecastCards() {
+  const sum = g_sum || {};
+  const dir = asStr(sum.market_direction) || 'Neutral';
+  const senti = typeof sum.sentiment === 'object' ? (sum.sentiment || {}) : {};
+  const bullPct = senti.bull_pct || 0;
+  const regime = computeRegime();
+  const isNeg = regime === 'Negative', isPos = regime === 'Positive';
+  const spyA = g_gex.find(a => a.symbol === 'SPY') || g_gex[0] || null;
+  const spySpot = spyA ? spyA.spot : 0;
+  const avgAtr = g_assets.length ? g_assets.slice(0,10).reduce((s,a)=>s+(a.atr_pct||1.0),0)/Math.min(g_assets.length,10) : 1.2;
+  const d1pct  = avgAtr / 100;
+  const d7pct  = avgAtr * Math.sqrt(5) / 100;
+  const d30pct = avgAtr * Math.sqrt(20) / 100;
+  const estVIX = Math.round(avgAtr * Math.sqrt(252));
+  const fmtR = (pct) => spySpot > 0
+    ? (spyA ? spyA.symbol : 'SPY') + ' $' + (spySpot*(1-pct)).toFixed(0) + ' – $' + (spySpot*(1+pct)).toFixed(0)
+    : '± ' + (pct*100).toFixed(1) + '%';
+  const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+
+  set('fc-dir',    dir + (bullPct > 0 ? '  (' + bullPct.toFixed(0) + '% assets bullish)' : ''));
+  set('fc-spy-1d', fmtR(d1pct) + '   ±' + (d1pct*100).toFixed(1) + '%');
+  set('fc-opts-1d', isNeg ? 'Buy Volatility — expect large moves' : 'Sell Premium — iron condors, covered calls');
+  set('fc-gex-1d',  isNeg ? 'Negative — moves AMPLIFIED' : isPos ? 'Positive — moves DAMPENED' : 'Neutral');
+  set('fc-vix-1d',  estVIX + ' est.  (' + (estVIX < 15 ? 'Calm' : estVIX < 25 ? 'Normal' : 'Elevated') + ')');
+  set('fc-spy-1w',  fmtR(d7pct) + '   ±' + (d7pct*100).toFixed(1) + '%');
+  set('fc-macro-1w', dir.toUpperCase().includes('BULL') ? 'Uptrend continuation' : dir.toUpperCase().includes('BEAR') ? 'Downside pressure' : 'Range-bound');
+  set('fc-sector-1w', isNeg ? 'Favor defensives: XLU, XLP, TLT, GLD' : 'Favor cyclicals: XLF, XLI, XLY');
+  set('fc-opts-1w',   isNeg ? 'Protective puts, VIX call spreads' : 'Covered calls, short strangles');
+  set('fc-regime-1w', regime);
+  set('fc-spy-1m',  fmtR(d30pct) + '   ±' + (d30pct*100).toFixed(1) + '%');
+  set('fc-macro-1m', 'Next FOMC + CPI cycle are primary drivers');
+  set('fc-sector-1m', isNeg ? 'Defensives: Healthcare, Staples, Utilities' : 'Cyclicals: Financials, Industrials, Tech');
+  set('fc-opts-1m',  isNeg ? 'Long vol — LEAPS puts, calendar spreads' : 'Income — covered calls, cash-secured puts');
+  set('fc-regime-1m', isNeg ? 'Negative GEX — stay hedged' : isPos ? 'Positive GEX — sell premium' : 'Neutral');
+}
+
+function startAutoRefresh() { setInterval(loadDashboard, 5 * 60 * 1000); }
+
+// Use window.load (not DOMContentLoaded) so CSS flex/grid has computed
+// all element widths before we read clientWidth for canvas sizing.
+window.addEventListener('load', () => {
+  // Extra RAF to ensure paint pass has completed
+  requestAnimationFrame(() => {
+    loadDashboard();
+    startAutoRefresh();
+  });
+});
+
+// Redraw charts when window is resized
+let _weResizeTimer;
+window.addEventListener('resize', () => {
+  clearTimeout(_weResizeTimer);
+  _weResizeTimer = setTimeout(() => {
+    drawChart1(); drawChart2(); drawChart3();
+  }, 250);
+});
+</script>
+
+</body>
+</html>

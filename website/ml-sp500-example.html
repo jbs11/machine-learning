@@ -14,7 +14,7 @@
       width: 44px; height: 44px; border-radius: 50%; background: var(--primary);
       color: #000; font-weight: 900; font-size: 1.1rem;
       display: flex; align-items: center; justify-content: center;
-      flex-shrink: 0; margin-top: .15rem; box-shadow: 0 0 0 4px rgba(8,145,178,.15);
+      flex-shrink: 0; margin-top: .15rem; box-shadow: 0 0 0 4px rgba(34,211,238,.15);
     }
     .step-content { flex: 1; min-width: 0; }
     .step-title { font-size: 1.35rem; font-weight: 800; margin-bottom: .45rem; }
@@ -51,18 +51,18 @@
     /* ── Feature tags ── */
     .ftag-row { display: flex; flex-wrap: wrap; gap: .45rem; margin: .75rem 0; }
     .ftag { padding: .22rem .65rem; border-radius: 99px; font-size: .75rem; font-weight: 700; letter-spacing: .04em; border: 1px solid; }
-    .ft-trend     { background: var(--accent-subtle);  border-color: var(--accent-border);  color: #0891b2; }
+    .ft-trend     { background: var(--accent-subtle);  border-color: var(--accent-border);  color: #22d3ee; }
     .ft-momentum  { background: rgba(129,140,248,.1); border-color: rgba(129,140,248,.3); color: #818cf8; }
-    .ft-vol       { background: rgba(251,191,36,.1);  border-color: rgba(251,191,36,.3);  color: #d97706; }
-    .ft-volume    { background: rgba(52,211,153,.1);  border-color: rgba(52,211,153,.3);  color: #059669; }
+    .ft-vol       { background: rgba(251,191,36,.1);  border-color: rgba(251,191,36,.3);  color: #fbbf24; }
+    .ft-volume    { background: rgba(52,211,153,.1);  border-color: rgba(52,211,153,.3);  color: #34d399; }
 
     /* ── Metric grid ── */
     .metric-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px,1fr)); gap: .9rem; margin: 1.2rem 0; }
     .mbox { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1rem 1.1rem; }
     .mval { font-size: 1.6rem; font-weight: 900; margin-bottom: .15rem; }
     .mlbl { font-size: .72rem; font-weight: 600; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); }
-    .vgreen { color: #059669; } .vcyan { color: #0891b2; }
-    .vgold  { color: #d97706; } .vpurple { color: #818cf8; }
+    .vgreen { color: #34d399; } .vcyan { color: #22d3ee; }
+    .vgold  { color: #fbbf24; } .vpurple { color: #818cf8; }
     .vred   { color: #f87171; }
 
     /* ── Callouts ── */
@@ -73,10 +73,10 @@
       color: var(--text); line-height: 1.7;
     }
     .callout strong { color: var(--primary); }
-    .callout-gold { background: rgba(251,191,36,.07); border-color: rgba(251,191,36,.2); border-left-color: #d97706; }
-    .callout-gold strong { color: #d97706; }
-    .callout-green { background: rgba(52,211,153,.07); border-color: rgba(52,211,153,.2); border-left-color: #059669; }
-    .callout-green strong { color: #059669; }
+    .callout-gold { background: rgba(251,191,36,.07); border-color: rgba(251,191,36,.2); border-left-color: #fbbf24; }
+    .callout-gold strong { color: #fbbf24; }
+    .callout-green { background: rgba(52,211,153,.07); border-color: rgba(52,211,153,.2); border-left-color: #34d399; }
+    .callout-green strong { color: #34d399; }
     .callout-red { background: rgba(248,113,113,.07); border-color: rgba(248,113,113,.2); border-left-color: #f87171; }
     .callout-red strong { color: #f87171; }
 
@@ -90,9 +90,9 @@
     .pipe-arr { color: var(--primary); font-size: 1.4rem; padding: 0 .4rem; flex-shrink: 0; }
 
     /* ── Signal chips ── */
-    .chip-buy  { display:inline-flex;align-items:center;gap:.3rem;padding:.25rem .85rem;background:rgba(52,211,153,.15);border:1px solid rgba(52,211,153,.35);border-radius:99px;color:#059669;font-size:.8rem;font-weight:800; }
+    .chip-buy  { display:inline-flex;align-items:center;gap:.3rem;padding:.25rem .85rem;background:rgba(52,211,153,.15);border:1px solid rgba(52,211,153,.35);border-radius:99px;color:#34d399;font-size:.8rem;font-weight:800; }
     .chip-sell { display:inline-flex;align-items:center;gap:.3rem;padding:.25rem .85rem;background:rgba(248,113,113,.15);border:1px solid rgba(248,113,113,.35);border-radius:99px;color:#f87171;font-size:.8rem;font-weight:800; }
-    .chip-hold { display:inline-flex;align-items:center;gap:.3rem;padding:.25rem .85rem;background:rgba(251,191,36,.12);border:1px solid rgba(251,191,36,.3);border-radius:99px;color:#d97706;font-size:.8rem;font-weight:800; }
+    .chip-hold { display:inline-flex;align-items:center;gap:.3rem;padding:.25rem .85rem;background:rgba(251,191,36,.12);border:1px solid rgba(251,191,36,.3);border-radius:99px;color:#fbbf24;font-size:.8rem;font-weight:800; }
 
     /* ── Timeframe tabs ── */
     .tf-tabs { display:flex;gap:.5rem;margin:1.5rem 0 .5rem; }
@@ -108,7 +108,7 @@
     .pred-table td { padding:.52rem .9rem;border-bottom:1px solid rgba(226,232,240,.7);color:var(--muted); }
     .pred-table tr:last-child td { border-bottom:none; }
     .pred-table tr:hover td { background:rgba(255,255,255,.02); }
-    .pok { color:#059669;font-weight:600; } .pbad { color:#f87171;font-weight:600; }
+    .pok { color:#34d399;font-weight:600; } .pbad { color:#f87171;font-weight:600; }
     .price-cell { font-family:'Consolas',monospace; color:var(--text); }
 
     /* ── Confusion matrix ── */
@@ -116,15 +116,15 @@
     .cm-table { border-collapse:collapse;margin:0 auto; }
     .cm-table td,.cm-table th { padding:.8rem 1.3rem;text-align:center;font-size:.88rem;border:1px solid var(--border); }
     .cm-hdr { background:var(--surface);color:var(--muted);font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em; }
-    .cm-tp { background:rgba(52,211,153,.22);color:#059669;font-weight:700;font-size:1rem; }
-    .cm-tn { background:rgba(52,211,153,.22);color:#059669;font-weight:700;font-size:1rem; }
+    .cm-tp { background:rgba(52,211,153,.22);color:#34d399;font-weight:700;font-size:1rem; }
+    .cm-tn { background:rgba(52,211,153,.22);color:#34d399;font-weight:700;font-size:1rem; }
     .cm-fp { background:rgba(248,113,113,.18);color:#f87171;font-size:.95rem; }
     .cm-fn { background:rgba(248,113,113,.18);color:#f87171;font-size:.95rem; }
 
     /* ── JSON output ── */
     .json-block { background:#050b16;border:1px solid var(--border);border-radius:8px;padding:1.1rem 1.5rem;font-family:'Consolas','Courier New',monospace;font-size:.82rem;line-height:1.75;overflow-x:auto; }
     .jk { color:#7dd3fc; } .js { color:#86efac; } .jn { color:#fdba74; }
-    .jbt { color:#059669; } .jbf { color:#f87171; }
+    .jbt { color:#34d399; } .jbf { color:#f87171; }
 
     /* ── Two-column info grid ── */
     .info-grid { display:grid;grid-template-columns:1fr 1fr;gap:1.2rem;margin:1rem 0; }
@@ -139,7 +139,7 @@
     .gauge-wrap { display:flex;align-items:center;justify-content:center;gap:2.5rem;flex-wrap:wrap;margin:1rem 0; }
     .gauge-label { text-align:center; }
     .gauge-lbl-main { font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-top:.4rem; }
-    .gauge-lbl-val { font-size:1.8rem;font-weight:900;color:#059669;margin-top:.1rem; }
+    .gauge-lbl-val { font-size:1.8rem;font-weight:900;color:#34d399;margin-top:.1rem; }
     .gauge-lbl-sub { font-size:.75rem;color:var(--muted); }
 
     /* ── Full page hero for this page ── */
@@ -199,7 +199,7 @@
     <li><a href="market-preparation.html">&#128204; Market Prep</a></li>
     <li><a href="forecast.html" style="color:#f59e0b;font-weight:700;">&#128200; Forecast</a></li>
     <li><a href="asset-details.html">&#128202; Asset Review</a></li>
-    <li><a href="report-ms.html" target="_blank" style="background:#0891b2;color:var(--bg);padding:.28rem .85rem;border-radius:5px;font-weight:700;letter-spacing:.02em;">&#128202; Market Report</a></li>
+    <li><a href="report-ms.html" target="_blank" style="background:#22d3ee;color:var(--bg);padding:.28rem .85rem;border-radius:5px;font-weight:700;letter-spacing:.02em;">&#128202; Market Report</a></li>
     <li><a href="report-tg.html" target="_blank" style="background:#a78bfa;color:var(--bg);padding:.28rem .85rem;border-radius:5px;font-weight:700;letter-spacing:.02em;">&#128214; Trading Guide</a></li>
   </ul>
 </nav>
@@ -366,7 +366,7 @@
               <tr><td style="color:var(--muted);font-family:monospace">2024-01-02 12:00</td><td class="price-cell">478.12</td><td class="price-cell">478.60</td><td class="price-cell">475.90</td><td class="price-cell">476.35</td><td class="price-cell">6,180,400</td><td class="price-cell">476.35</td><td><span class="chip-sell" style="font-size:.7rem;padding:.15rem .6rem;">BEAR</span></td></tr>
               <tr><td style="color:var(--muted);font-family:monospace">2024-01-02 13:00</td><td class="price-cell">476.35</td><td class="price-cell">476.90</td><td class="price-cell">474.80</td><td class="price-cell">475.22</td><td class="price-cell">8,320,600</td><td class="price-cell">475.22</td><td><span class="chip-sell" style="font-size:.7rem;padding:.15rem .6rem;">BEAR</span></td></tr>
               <tr><td style="color:var(--muted);font-family:monospace">2024-01-02 14:00</td><td class="price-cell">475.22</td><td class="price-cell">476.45</td><td class="price-cell">474.50</td><td class="price-cell">476.18</td><td class="price-cell">10,640,300</td><td class="price-cell">476.18</td><td><span class="chip-buy" style="font-size:.7rem;padding:.15rem .6rem;">BULL</span></td></tr>
-              <tr><td style="color:var(--muted);font-family:monospace">2024-01-02 15:00</td><td class="price-cell">476.18</td><td class="price-cell">478.92</td><td class="price-cell">475.88</td><td class="price-cell">478.65</td><td class="price-cell">14,820,500</td><td class="price-cell">478.65</td><td><span style="display:inline-flex;align-items:center;gap:.3rem;padding:.15rem .6rem;background:rgba(251,191,36,.12);border:1px solid rgba(251,191,36,.3);border-radius:99px;color:#d97706;font-size:.7rem;font-weight:800;">SIGNAL</span></td></tr>
+              <tr><td style="color:var(--muted);font-family:monospace">2024-01-02 15:00</td><td class="price-cell">476.18</td><td class="price-cell">478.92</td><td class="price-cell">475.88</td><td class="price-cell">478.65</td><td class="price-cell">14,820,500</td><td class="price-cell">478.65</td><td><span style="display:inline-flex;align-items:center;gap:.3rem;padding:.15rem .6rem;background:rgba(251,191,36,.12);border:1px solid rgba(251,191,36,.3);border-radius:99px;color:#fbbf24;font-size:.7rem;font-weight:800;">SIGNAL</span></td></tr>
               <tr><td style="color:var(--muted);font-family:monospace">2024-01-02 16:00</td><td class="price-cell">478.65</td><td class="price-cell">480.10</td><td class="price-cell">478.30</td><td class="price-cell">479.88</td><td class="price-cell">18,250,100</td><td class="price-cell">479.88</td><td><span class="chip-buy" style="font-size:.7rem;padding:.15rem .6rem;">BULL</span></td></tr>
             </tbody>
           </table>
@@ -605,21 +605,21 @@ df[<span class="st">'target_dir_21'</span>] = (df[<span class="st">'Close'</span
             <div style="text-align:center;color:var(--muted);font-size:.8rem;">+<br><span style="font-size:.72rem;">soft<br>vote</span></div>
             <div style="background:var(--accent-subtle);border:1px solid var(--accent-border);border-radius:10px;padding:1rem;text-align:center;">
               <div style="font-size:1.2rem;margin-bottom:.3rem;">🌳</div>
-              <div style="font-size:.82rem;font-weight:700;color:#0891b2;">ExtraTreesClassifier</div>
+              <div style="font-size:.82rem;font-weight:700;color:#22d3ee;">ExtraTreesClassifier</div>
               <div style="font-size:.72rem;color:var(--muted);margin-top:.3rem;">n_estimators=300<br>max_depth=8<br>max_features='sqrt'<br>bootstrap=False</div>
             </div>
           </div>
           <div style="text-align:center;font-size:1.5rem;color:var(--primary);margin-bottom:.75rem;">↓</div>
           <div style="background:rgba(52,211,153,.1);border:1px solid rgba(52,211,153,.3);border-radius:10px;padding:1rem;text-align:center;max-width:400px;margin:0 auto;">
-            <div style="font-size:.85rem;font-weight:800;color:#059669;">VotingClassifier (soft)</div>
+            <div style="font-size:.85rem;font-weight:800;color:#34d399;">VotingClassifier (soft)</div>
             <div style="font-size:.75rem;color:var(--muted);margin-top:.3rem;">Outputs: P(UP) probability  [0.0 → 1.0]</div>
           </div>
           <div style="display:flex;justify-content:center;gap:1rem;margin-top:1rem;flex-wrap:wrap;">
             <div style="display:flex;align-items:center;gap:.4rem;font-size:.8rem;color:var(--muted);">
-              <span style="width:10px;height:10px;border-radius:50%;background:#059669;display:inline-block;"></span>P ≥ 0.62 → <span class="chip-buy" style="font-size:.72rem;padding:.15rem .6rem;">BUY</span>
+              <span style="width:10px;height:10px;border-radius:50%;background:#34d399;display:inline-block;"></span>P ≥ 0.62 → <span class="chip-buy" style="font-size:.72rem;padding:.15rem .6rem;">BUY</span>
             </div>
             <div style="display:flex;align-items:center;gap:.4rem;font-size:.8rem;color:var(--muted);">
-              <span style="width:10px;height:10px;border-radius:50%;background:#d97706;display:inline-block;"></span>0.38 ≤ P &lt; 0.62 → <span class="chip-hold" style="font-size:.72rem;padding:.15rem .6rem;">HOLD</span>
+              <span style="width:10px;height:10px;border-radius:50%;background:#fbbf24;display:inline-block;"></span>0.38 ≤ P &lt; 0.62 → <span class="chip-hold" style="font-size:.72rem;padding:.15rem .6rem;">HOLD</span>
             </div>
             <div style="display:flex;align-items:center;gap:.4rem;font-size:.8rem;color:var(--muted);">
               <span style="width:10px;height:10px;border-radius:50%;background:#f87171;display:inline-block;"></span>P ≤ 0.38 → <span class="chip-sell" style="font-size:.72rem;padding:.15rem .6rem;">SELL</span>
@@ -892,10 +892,10 @@ fold_scores = []
       </table>
     </div>
     <div style="color:var(--muted);font-size:.82rem;margin-top:.5rem;">
-      Accuracy: (352+300) / 1120 = <strong style="color:#059669;">58.2%</strong> &nbsp;|&nbsp;
-      Precision: 352/(352+229) = <strong style="color:#0891b2;">60.6%</strong> &nbsp;|&nbsp;
+      Accuracy: (352+300) / 1120 = <strong style="color:#34d399;">58.2%</strong> &nbsp;|&nbsp;
+      Precision: 352/(352+229) = <strong style="color:#22d3ee;">60.6%</strong> &nbsp;|&nbsp;
       Recall: 352/(352+239) = <strong style="color:#818cf8;">59.6%</strong> &nbsp;|&nbsp;
-      F1: <strong style="color:#d97706;">0.601</strong>
+      F1: <strong style="color:#fbbf24;">0.601</strong>
     </div>
   </div>
 
@@ -991,10 +991,10 @@ fold_scores = []
       </table>
     </div>
     <div style="color:var(--muted);font-size:.82rem;margin-top:.5rem;">
-      Accuracy: (385+322) / 1120 = <strong style="color:#059669;">63.1%</strong> &nbsp;|&nbsp;
-      Precision: 385/(385+175) = <strong style="color:#0891b2;">68.8%</strong> &nbsp;|&nbsp;
+      Accuracy: (385+322) / 1120 = <strong style="color:#34d399;">63.1%</strong> &nbsp;|&nbsp;
+      Precision: 385/(385+175) = <strong style="color:#22d3ee;">68.8%</strong> &nbsp;|&nbsp;
       Recall: 385/(385+238) = <strong style="color:#818cf8;">61.8%</strong> &nbsp;|&nbsp;
-      F1: <strong style="color:#d97706;">0.651</strong>
+      F1: <strong style="color:#fbbf24;">0.651</strong>
     </div>
   </div>
 
@@ -1043,15 +1043,15 @@ fold_scores = []
             </tr>
             <tr style="border-bottom:1px solid var(--border);">
               <td style="padding:.5rem .6rem;color:var(--muted);">Predicted Return</td>
-              <td style="padding:.5rem .6rem;font-family:monospace;color:#059669;font-weight:700;">+2.8% to +4.2%</td>
+              <td style="padding:.5rem .6rem;font-family:monospace;color:#34d399;font-weight:700;">+2.8% to +4.2%</td>
             </tr>
             <tr style="border-bottom:1px solid var(--border);">
               <td style="padding:.5rem .6rem;color:var(--muted);">Target Range</td>
-              <td style="padding:.5rem .6rem;font-family:monospace;color:#0891b2;font-weight:700;">$609 – $618</td>
+              <td style="padding:.5rem .6rem;font-family:monospace;color:#22d3ee;font-weight:700;">$609 – $618</td>
             </tr>
             <tr style="border-bottom:1px solid var(--border);">
               <td style="padding:.5rem .6rem;color:var(--muted);">Bull Case (P=72%)</td>
-              <td style="padding:.5rem .6rem;font-family:monospace;color:#059669;">$618+ (close above SMA20)</td>
+              <td style="padding:.5rem .6rem;font-family:monospace;color:#34d399;">$618+ (close above SMA20)</td>
             </tr>
             <tr style="border-bottom:1px solid var(--border);">
               <td style="padding:.5rem .6rem;color:var(--muted);">Bear Case (P=28%)</td>
@@ -1059,7 +1059,7 @@ fold_scores = []
             </tr>
             <tr>
               <td style="padding:.5rem .6rem;color:var(--muted);">Regime</td>
-              <td style="padding:.5rem .6rem;"><span style="background:rgba(52,211,153,.15);border:1px solid rgba(52,211,153,.3);border-radius:5px;padding:.15rem .6rem;color:#059669;font-size:.78rem;font-weight:700;">LOW VOLATILITY · TRENDING</span></td>
+              <td style="padding:.5rem .6rem;"><span style="background:rgba(52,211,153,.15);border:1px solid rgba(52,211,153,.3);border-radius:5px;padding:.15rem .6rem;color:#34d399;font-size:.78rem;font-weight:700;">LOW VOLATILITY · TRENDING</span></td>
             </tr>
           </table>
         </div>
@@ -1163,7 +1163,7 @@ fold_scores = []
 
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.2rem;margin-bottom:1.5rem;">
     <a href="live-trading.html" style="text-decoration:none;">
-      <div class="info-card" style="border-color:var(--accent-border);background:rgba(8,145,178,.04);cursor:pointer;transition:border-color .2s;" onmouseover="this.style.borderColor='var(--primary)'" onmouseout="this.style.borderColor='var(--accent-border)'">
+      <div class="info-card" style="border-color:var(--accent-border);background:rgba(34,211,238,.04);cursor:pointer;transition:border-color .2s;" onmouseover="this.style.borderColor='var(--primary)'" onmouseout="this.style.borderColor='var(--accent-border)'">
         <h4>📡 Live Trading Dashboard</h4>
         <ul>
           <li>Real-time BUY/SELL markers on candlestick charts</li>

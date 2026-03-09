@@ -66,8 +66,8 @@
     .hl-box { border-radius:9px;padding:.85rem 1.1rem;margin:.6rem 0;font-size:.82rem;line-height:1.65; }
     .hl-bull { background:rgba(34,197,94,.07);border:1px solid rgba(34,197,94,.25);color:#4ade80; }
     .hl-bear { background:rgba(248,113,113,.07);border:1px solid rgba(248,113,113,.25);color:#f87171; }
-    .hl-info { background:rgba(8,145,178,.05);border:1px solid var(--accent-border);color:var(--text); }
-    .hl-warn { background:rgba(251,191,36,.07);border:1px solid rgba(251,191,36,.25);color:#d97706; }
+    .hl-info { background:rgba(34,211,238,.05);border:1px solid var(--accent-border);color:var(--text); }
+    .hl-warn { background:rgba(251,191,36,.07);border:1px solid rgba(251,191,36,.25);color:#fbbf24; }
     .hl-orange { background:rgba(249,115,22,.07);border:1px solid rgba(249,115,22,.25);color:#f97316; }
 
     /* ── Top names grid ── */
@@ -112,9 +112,9 @@
     /* ── Flow decomposition ── */
     .decomp-grid { display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:.8rem;margin-bottom:1.1rem; }
     .decomp-card { background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:.9rem 1rem;border-top:3px solid var(--border); }
-    .decomp-card.delta  { border-top-color:#0891b2; }
+    .decomp-card.delta  { border-top-color:#22d3ee; }
     .decomp-card.gamma  { border-top-color:#a78bfa; }
-    .decomp-card.charm  { border-top-color:#d97706; }
+    .decomp-card.charm  { border-top-color:#fbbf24; }
     .decomp-card.vanna  { border-top-color:#f87171; }
     .decomp-card.vol    { border-top-color:#4ade80; }
     .dc-icon { font-size:1.4rem;margin-bottom:.3rem; }
@@ -146,7 +146,7 @@
 
 <!-- ── Site Nav ── -->
 <nav style="background:var(--surface);border-bottom:1px solid var(--border);padding:.5rem 1.5rem;font-size:.83rem;display:flex;align-items:center;gap:.75rem;flex-wrap:wrap;">
-  <a href="live-trading.html" style="font-weight:800;color:#f97316;text-decoration:none;">📈 ML Trading</a> | <a href="report-ms.html" target="_blank" style="background:#0891b2;color:var(--bg);padding:.22rem .75rem;border-radius:5px;font-weight:700;text-decoration:none;font-size:.82rem;">&#128202; Report</a> | <a href="report-tg.html" target="_blank" style="background:#a78bfa;color:var(--bg);padding:.22rem .75rem;border-radius:5px;font-weight:700;text-decoration:none;font-size:.82rem;">&#128214; Guide</a>
+  <a href="live-trading.html" style="font-weight:800;color:#f97316;text-decoration:none;">📈 ML Trading</a> | <a href="report-ms.html" target="_blank" style="background:#22d3ee;color:var(--bg);padding:.22rem .75rem;border-radius:5px;font-weight:700;text-decoration:none;font-size:.82rem;">&#128202; Report</a> | <a href="report-tg.html" target="_blank" style="background:#a78bfa;color:var(--bg);padding:.22rem .75rem;border-radius:5px;font-weight:700;text-decoration:none;font-size:.82rem;">&#128214; Guide</a>
   <span style="color:var(--border)">|</span>
   <a href="market-summary.html" style="color:var(--muted);text-decoration:none;">Market Summary</a>
   <span style="color:var(--border)">|</span>
@@ -316,11 +316,11 @@
     <p>The classifier combines four signals to determine whether a name is in a <strong style="color:#f97316;">Momentum</strong> setup (dealer flows amplify moves — follow the trend) or a <strong style="color:#a78bfa;">Reversal</strong> setup (dealer flows dampen moves — fade extremes):</p>
     <div class="four-col" style="margin-top:.7rem;">
       <div style="background:var(--card);border-radius:8px;padding:.65rem .8rem;font-size:.77rem;border:1px solid var(--border);">
-        <div style="font-weight:800;color:#0891b2;margin-bottom:.2rem;">① GEX Regime</div>
+        <div style="font-weight:800;color:#22d3ee;margin-bottom:.2rem;">① GEX Regime</div>
         <div style="color:var(--muted);">Short Gamma → momentum · Long Gamma → reversal · Distance from flip level = confidence</div>
       </div>
       <div style="background:var(--card);border-radius:8px;padding:.65rem .8rem;font-size:.77rem;border:1px solid var(--border);">
-        <div style="font-weight:800;color:#d97706;margin-bottom:.2rem;">② Net Dealer Delta</div>
+        <div style="font-weight:800;color:#fbbf24;margin-bottom:.2rem;">② Net Dealer Delta</div>
         <div style="color:var(--muted);">Negative dealer delta (short shares) = structural buyer on dips → reversal support · Positive = overhead supply</div>
       </div>
       <div style="background:var(--card);border-radius:8px;padding:.65rem .8rem;font-size:.77rem;border:1px solid var(--border);">
@@ -351,7 +351,7 @@
       <div class="dc-name">Delta Hedge Flow</div>
       <div class="dc-val" id="dc-delta">—</div>
       <div class="dc-body">Shares dealers must buy/sell right now to remain delta-neutral at current spot price. Largest component — driven by calls/puts near ATM.</div>
-      <div class="dc-bar" style="background:rgba(8,145,178,.15);"><div id="dc-delta-bar" style="height:100%;background:#0891b2;border-radius:3px;width:0%;transition:width .5s;"></div></div>
+      <div class="dc-bar" style="background:rgba(34,211,238,.15);"><div id="dc-delta-bar" style="height:100%;background:#22d3ee;border-radius:3px;width:0%;transition:width .5s;"></div></div>
     </div>
     <div class="decomp-card gamma">
       <div class="dc-icon">Γ</div>
@@ -365,7 +365,7 @@
       <div class="dc-name">Charm Flow (Time Decay)</div>
       <div class="dc-val" id="dc-charm">—</div>
       <div class="dc-body">As time passes, OTM option deltas migrate toward 0 — even without price movement. Dealers must unwind hedges daily (OPEX charm is extreme).</div>
-      <div class="dc-bar" style="background:rgba(251,191,36,.15);"><div id="dc-charm-bar" style="height:100%;background:#d97706;border-radius:3px;width:0%;transition:width .5s;"></div></div>
+      <div class="dc-bar" style="background:rgba(251,191,36,.15);"><div id="dc-charm-bar" style="height:100%;background:#fbbf24;border-radius:3px;width:0%;transition:width .5s;"></div></div>
     </div>
     <div class="decomp-card vanna">
       <div class="dc-icon">∂Δ/∂σ</div>
