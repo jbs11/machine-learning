@@ -798,17 +798,13 @@ def cache_set(key, val):
 
 @app.after_request
 def add_cache_headers(response):
-    """Smart caching: no-cache for HTML/APIs; 1-day cache for static JS/CSS/images."""
+    """No-cache for all HTML, JS, CSS, and API responses so changes appear immediately."""
     path = request.path
-    ct = response.content_type or ''
-    # Static local JS and CSS — allow 1-day browser cache
-    if (path.endswith('.js') or path.endswith('.css')) and not path.startswith('/api'):
+    # Images and fonts only — safe to cache
+    if path.endswith(('.png', '.jpg', '.jpeg', '.ico', '.svg', '.woff', '.woff2')):
         response.headers['Cache-Control'] = 'public, max-age=86400'
-    # Images and fonts — allow 1-day browser cache
-    elif path.endswith(('.png', '.jpg', '.jpeg', '.ico', '.svg', '.woff', '.woff2')):
-        response.headers['Cache-Control'] = 'public, max-age=86400'
-    # HTML pages and API endpoints — always fresh
-    elif 'html' in ct or path.startswith('/api') or path == '/':
+    else:
+        # HTML, JS, CSS, API — always serve fresh
         response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
         response.headers['Pragma'] = 'no-cache'
         response.headers['Expires'] = '0'
