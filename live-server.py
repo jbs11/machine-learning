@@ -67,7 +67,7 @@ compress = Compress(app)
 CORS(app)
 
 # ── Finnhub Auto-Init ─────────────────────────────────────────────────────────
-_FINNHUB_API_KEY = 'd6m2tlpr01ql7984n450d6m2tlpr01ql7984n45g'
+_FINNHUB_API_KEY = ''  # Set via brokers page — enter new key at localhost:3000/brokers.html
 _finnhub_client = None
 try:
     import finnhub as _fh_mod

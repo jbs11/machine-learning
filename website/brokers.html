@@ -208,9 +208,6 @@ async function connectBroker(broker){
     body = {key};
     saveCreds(broker, body);
   }
-    body = {key, secret, paper};
-    saveCreds(broker, body);
-  }
 
   try {
     const r = await fetch(API + '/api/broker-connect/' + broker, {
