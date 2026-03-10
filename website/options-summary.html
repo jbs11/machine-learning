@@ -1283,7 +1283,7 @@ function buildCard(a) {
 function drawMiniGex(a) {
   const gex = a.gex;
   const cv  = document.getElementById('gex-' + a.symbol);
-  if (!cv) {
+  if (!cv) return;
   const strikes = gex.strikes || [];
   const gexArr  = gex.gex    || [];
   if (!strikes.length || !gexArr.length) return;
@@ -1519,7 +1519,7 @@ function drawTermStructure(a) {
   const LW = LightweightCharts;
   const chart = LW.createChart(el, {
     autoSize: true,
-    layout: { background: { type: 'solid', color: '#f8fafc' }, textColor: '#94a3b8' },
+    layout: { background: { type: 'solid', color: '#070d18' }, textColor: 'rgba(127,163,190,.9)' },
     grid: { vertLines: { color: '#1e293b' }, horzLines: { color: '#1e293b' } },
     timeScale: { borderColor: '#1e293b', timeVisible: false },
     rightPriceScale: { borderColor: '#1e293b', autoScale: true },
@@ -1890,7 +1890,7 @@ function drawForecastChart(a, daily) {
   const LW    = LightweightCharts;
   const chart = LW.createChart(el, {
     autoSize: true,
-    layout: { background: { type: 'solid', color: '#f8fafc' }, textColor: '#94a3b8' },
+    layout: { background: { type: 'solid', color: '#070d18' }, textColor: 'rgba(127,163,190,.9)' },
     grid: { vertLines: { color: '#1e293b' }, horzLines: { color: '#1e293b' } },
     timeScale: { borderColor: '#1e293b', timeVisible: false, rightOffset: 12 },
     rightPriceScale: { borderColor: '#1e293b', autoScale: true },

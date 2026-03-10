@@ -563,12 +563,14 @@ function renderCards() {
   // Lazy-draw each flow chart as it scrolls into view
   filtered.forEach(function(r) {
     if (!r.no_options && r.strikes && r.strikes.length) {
-      var card = document.querySelector('[data-symbol="' + r.symbol + '"]') ||
-                 document.getElementById('chartsContainer');
+      var card = document.querySelector('[data-sym="' + r.symbol + '"]') ||
+                 document.getElementById('cardsContainer');
       lazyLoad(card, function() {
-        drawTornado(r);
-        drawNetPrem(r);
-        drawDealerDelta(r);
+        requestAnimationFrame(function() {
+          drawTornado(r);
+          drawNetPrem(r);
+          drawDealerDelta(r);
+        });
       });
     }
   });
@@ -775,23 +777,7 @@ function fmtMillions(m) {
 /* ── Tornado chart (horizontal bar) ── */
 function drawTornado(r) {
   const cv = document.getElementById('tornado-' + r.symbol);
-  if (!cv) {
-
-  // ── No-data message ──
-  {
-    const _nd_W = cv.offsetWidth || (cv.parentElement ? cv.parentElement.clientWidth : 0) || 420;
-    cv.width = _nd_W; cv.height = 80;
-    cv.style.width = _nd_W + 'px'; cv.style.height = '80px';
-    const _nd = cv.getContext('2d');
-    _nd.fillStyle = 'rgba(15,23,42,0.7)';
-    _nd.fillRect(0,0,_nd_W,80);
-    _nd.fillStyle = '#475569'; _nd.font = 'bold 13px sans-serif'; _nd.textAlign = 'center';
-    _nd.fillText('No options data — market closed or limited coverage for this symbol', _nd_W/2, 32);
-    _nd.font = '11px sans-serif'; _nd.fillStyle = '#334155';
-    _nd.fillText('(Real-time options chain requires market hours + IBKR connection)', _nd_W/2, 52);
-  }
-    return;
-  }
+  if (!cv) return;
   const dpr = window.devicePixelRatio || 1;
   const W = cv.offsetWidth || cv.parentElement.clientWidth || 520;
   const H = 280;
@@ -916,23 +902,7 @@ function drawTornado(r) {
 /* ── Net premium chart (vertical bar) ── */
 function drawNetPrem(r) {
   const cv = document.getElementById('netprem-' + r.symbol);
-  if (!cv) {
-
-  // ── No-data message ──
-  {
-    const _nd_W = cv.offsetWidth || (cv.parentElement ? cv.parentElement.clientWidth : 0) || 420;
-    cv.width = _nd_W; cv.height = 80;
-    cv.style.width = _nd_W + 'px'; cv.style.height = '80px';
-    const _nd = cv.getContext('2d');
-    _nd.fillStyle = 'rgba(15,23,42,0.7)';
-    _nd.fillRect(0,0,_nd_W,80);
-    _nd.fillStyle = '#475569'; _nd.font = 'bold 13px sans-serif'; _nd.textAlign = 'center';
-    _nd.fillText('No options data — market closed or limited coverage for this symbol', _nd_W/2, 32);
-    _nd.font = '11px sans-serif'; _nd.fillStyle = '#334155';
-    _nd.fillText('(Real-time options chain requires market hours + IBKR connection)', _nd_W/2, 52);
-  }
-    return;
-  }
+  if (!cv) return;
   const dpr = window.devicePixelRatio || 1;
   const W = cv.offsetWidth || cv.parentElement.clientWidth || 520;
   const H = 120;
@@ -1075,23 +1045,7 @@ function buildInstPressure(r) {
 /* ── Dealer Delta Hedge Pressure chart ── */
 function drawDealerDelta(r) {
   const cv = document.getElementById('ddhp-' + r.symbol);
-  if (!cv) {
-
-  // ── No-data message ──
-  {
-    const _nd_W = cv.offsetWidth || (cv.parentElement ? cv.parentElement.clientWidth : 0) || 420;
-    cv.width = _nd_W; cv.height = 80;
-    cv.style.width = _nd_W + 'px'; cv.style.height = '80px';
-    const _nd = cv.getContext('2d');
-    _nd.fillStyle = 'rgba(15,23,42,0.7)';
-    _nd.fillRect(0,0,_nd_W,80);
-    _nd.fillStyle = '#475569'; _nd.font = 'bold 13px sans-serif'; _nd.textAlign = 'center';
-    _nd.fillText('No options data — market closed or limited coverage for this symbol', _nd_W/2, 32);
-    _nd.font = '11px sans-serif'; _nd.fillStyle = '#334155';
-    _nd.fillText('(Real-time options chain requires market hours + IBKR connection)', _nd_W/2, 52);
-  }
-    return;
-  }
+  if (!cv) return;
   const dealerDelta = r.dealer_delta_k;
   if (!dealerDelta || !dealerDelta.length) return;
 

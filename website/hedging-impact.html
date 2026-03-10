@@ -898,7 +898,7 @@ async function loadMainChart(sym, gexAsset) {
 
   const chart = LightweightCharts.createChart(el, {
     width: el.clientWidth, height: el.clientHeight || 340,
-    layout: { background:{color:'#f8fafc'}, textColor:'#94a3b8' },
+    layout: { background:{color:'#070d18'}, textColor:'rgba(127,163,190,.9)' },
     grid:   { vertLines:{color:'rgba(0,0,0,.07)'}, horzLines:{color:'rgba(0,0,0,.07)'} },
     crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
     rightPriceScale: { borderColor:'rgba(255,255,255,.05)' },
@@ -1163,10 +1163,8 @@ function selectSym(sym, btn) {
   if (btn) btn.classList.add('active');
   document.querySelectorAll('.sym-btn').forEach(b => { if(b.textContent===sym) b.classList.add('active'); });
   _activeSym = sym;
-  const lbl = document.getElementById('sel-sym-lbl'); if(lbl) lbl.textContent = sym;
-  const ct = document.getElementById('main-chart-title'); if(ct) ct.textContent = sym + ' — 4H Candlestick with Dealer Hedging Zones';
   const lbl = document.getElementById('sel-sym-lbl'); if (lbl) lbl.textContent = sym;
-  const ttl = document.getElementById('main-chart-title'); if (ttl) ttl.textContent = sym + ' — 4H Candlestick with Dealer Hedging Zones';
+  const ct = document.getElementById('main-chart-title'); if (ct) ct.textContent = sym + ' — 4H Candlestick with Dealer Hedging Zones';
   if (_gexData) {
     const gexAsset = (_gexData.assets || []).find(a => a.symbol === sym);
     loadMainChart(sym, gexAsset);
@@ -1229,9 +1227,11 @@ async function loadData(nocache = false) {
   });
 }
 
-loadData();
-setInterval(function() { if (document.hidden) return; loadData(); }, 5 * 60 * 1000);
-document.addEventListener('visibilitychange', function() { if (!document.hidden) loadData(); });
+window.addEventListener('load', function() {
+  loadData();
+  setInterval(function() { if (document.hidden) return; loadData(); }, 5 * 60 * 1000);
+  document.addEventListener('visibilitychange', function() { if (!document.hidden) loadData(); });
+});
 </script>
 <script src="search.js" defer></script>
 </body>

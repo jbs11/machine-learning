@@ -1709,9 +1709,9 @@ function drawTornado(r, cv, H) {
 
 // ── Delta Hedging Simulation Chart ──────────────────────────────────────────
 function drawDHSim(cv) {
-  if (!cv) { return; }
+  if (!cv) return;
   const dpr = window.devicePixelRatio || 1;
-  const W = cv.parentElement.clientWidth || 600;
+  const W = cv.getBoundingClientRect().width || cv.parentElement.clientWidth || cv.parentElement.offsetWidth || 580;
   const H = 180;
   cv.width = W*dpr; cv.height = H*dpr;
   cv.style.width = W+'px'; cv.style.height = H+'px';
@@ -2385,7 +2385,7 @@ async function loadCandlesFor(sym, containerId, gexLevels, regimeChipId) {
   }
   const chart = LightweightCharts.createChart(el, {
     width: el.clientWidth, height: el.clientHeight || 260,
-    layout: { background: { color: '#f8fafc' }, textColor: '#94a3b8' },
+    layout: { background: { color: '#070d18' }, textColor: 'rgba(127,163,190,.9)' },
     grid:   { vertLines: { color: 'rgba(0,0,0,.07)' }, horzLines: { color: 'rgba(0,0,0,.07)' } },
     crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
     rightPriceScale: { borderColor: 'rgba(255,255,255,.05)' },
@@ -2432,15 +2432,10 @@ async function loadData() {
     cachedFetch(API+'/api/option-flows').catch(()=>null),
   ]);
 
-  // Static educational charts (no API needed)
-  // Static educational charts — lazy-render as user scrolls to them
+  // API-dependent charts — lazy-render as user scrolls to them
   (function() {
-    var cvDhSim    = document.getElementById('cv-dh-sim');
-    var cvIvSkew   = document.getElementById('cv-iv-skew');
-    var cvVixGex   = document.getElementById('cv-vix-gex');
-    var cvDhIntra  = document.getElementById('cv-dh-intraday');
-    lazyLoad(cvDhSim,   function() { drawDHSim(cvDhSim); });
-    lazyLoad(cvIvSkew,  function() { drawIVSkew(cvIvSkew); });
+    var cvVixGex  = document.getElementById('cv-vix-gex');
+    var cvDhIntra = document.getElementById('cv-dh-intraday');
     lazyLoad(cvVixGex,  function() { drawVixGex(cvVixGex, gexRes); });
     lazyLoad(cvDhIntra, function() { drawDHIntraday(cvDhIntra, gexRes, flowsRes); });
   })();
@@ -2526,8 +2521,19 @@ async function loadData() {
   </div>
 </div>
 
-loadData();
-setInterval(function() { if (document.hidden) return; loadData(); }, 5*60*1000);
+// Draw static educational charts independently of API calls
+window.addEventListener('load', function() {
+  setTimeout(function() {
+    var cvDhSim  = document.getElementById('cv-dh-sim');
+    var cvIvSkew = document.getElementById('cv-iv-skew');
+    if (cvDhSim)  drawDHSim(cvDhSim);
+    if (cvIvSkew) drawIVSkew(cvIvSkew);
+  }, 100);
+});
+window.addEventListener('load', function() {
+  loadData();
+  setInterval(function() { if (document.hidden) return; loadData(); }, 5*60*1000);
+});
 </script>
 <script src="search.js" defer></script>
 </body>

@@ -811,8 +811,37 @@ def add_cache_headers(response):
     return response
 
 
-# ── Broker credentials store (in-memory, set via /api/broker-connect/*) ──────
-_broker_creds = {}
+# ── Broker credentials store (persisted to disk so key survives restarts) ─────
+import json as _json
+_CREDS_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'broker_creds.json')
+
+def _load_broker_creds():
+    try:
+        if os.path.exists(_CREDS_FILE):
+            with open(_CREDS_FILE, 'r') as _f:
+                return _json.load(_f)
+    except Exception:
+        pass
+    return {}
+
+def _save_broker_creds(creds):
+    try:
+        with open(_CREDS_FILE, 'w') as _f:
+            _json.dump(creds, _f)
+    except Exception as e:
+        print(f"[Broker] Failed to save creds: {e}")
+
+_broker_creds = _load_broker_creds()
+
+# Auto-reconnect Finnhub if key was saved from a previous session
+if 'finnhub' in _broker_creds:
+    try:
+        import finnhub as _fh_startup
+        _fh_startup_client = _fh_startup.Client(api_key=_broker_creds['finnhub']['key'])
+        _fh_startup_client.quote('SPY')  # verify key still works
+        print(f"[Startup] Finnhub auto-reconnected with saved key.")
+    except Exception as _e:
+        print(f"[Startup] Saved Finnhub key failed ({_e}) — will need manual reconnect.")
 
 @app.route('/api/broker-connect/tradier', methods=['POST'])
 def broker_connect_tradier():
@@ -833,6 +862,7 @@ def broker_connect_tradier():
         spot  = quote.get('last', '—')
         env   = 'sandbox' if sandbox else 'live'
         _broker_creds['tradier'] = {'token': token, 'sandbox': sandbox}
+        _save_broker_creds(_broker_creds)
         return jsonify({'ok': True, 'message': f'Tradier {env} connected — SPY ${spot}'})
     except Exception as e:
         return jsonify({'ok': False, 'error': str(e)[:200]})
@@ -840,6 +870,7 @@ def broker_connect_tradier():
 @app.route('/api/broker-disconnect/tradier', methods=['POST'])
 def broker_disconnect_tradier():
     _broker_creds.pop('tradier', None)
+    _save_broker_creds(_broker_creds)
     return jsonify({'ok': True})
 
 # ── Broker: Finnhub ───────────────────────────────────────────────────────────
@@ -855,6 +886,7 @@ def broker_connect_finnhub():
         quote  = client.quote('SPY')
         spot   = quote.get('c', '—')
         _broker_creds['finnhub'] = {'key': key}
+        _save_broker_creds(_broker_creds)
         return jsonify({'ok': True, 'message': f'Finnhub connected — SPY ${spot}'})
     except Exception as e:
         return jsonify({'ok': False, 'error': str(e)[:200]})
@@ -862,6 +894,7 @@ def broker_connect_finnhub():
 @app.route('/api/broker-disconnect/finnhub', methods=['POST'])
 def broker_disconnect_finnhub():
     _broker_creds.pop('finnhub', None)
+    _save_broker_creds(_broker_creds)
     return jsonify({'ok': True})
 
 # ── Broker: IBKR (re-use existing ibkr-connect) ──────────────────────────────

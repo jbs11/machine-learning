@@ -689,9 +689,8 @@ async function loadData(nocache = false) {
 
   try {
     const url = 'http://localhost:3000/api/fundamentals' + (nocache ? '?nocache=1' : '');
-    const res = await cachedFetch(url);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
+    const data = await cachedFetch(url);
+    if (!data || !data.assets) throw new Error('Invalid response from server');
 
     allAssets = data.assets || [];
     dot.className = 'sdot on';
@@ -715,7 +714,7 @@ async function loadData(nocache = false) {
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────────
-loadData();
+window.addEventListener('load', loadData);
 </script>
 <script src="search.js" defer></script>
 </body>
