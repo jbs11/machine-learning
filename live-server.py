@@ -4851,10 +4851,16 @@ def volatility_surface_endpoint():
     rows = []
     with ThreadPoolExecutor(max_workers=3) as pool:
         futs = {pool.submit(_vol_row, sym): sym for sym in _VOL_SYMBOLS}
-        for fut in as_completed(futs):
-            r = fut.result()
-            if r:
-                rows.append(r)
+        try:
+            for fut in as_completed(futs, timeout=70):
+                try:
+                    r = fut.result(timeout=5)
+                    if r:
+                        rows.append(r)
+                except Exception:
+                    pass
+        except TimeoutError:
+            print('[vol-surface] Timed out waiting for futures — returning partial results')
 
     rows.sort(key=lambda r: _VOL_SYMBOLS.index(r['symbol'])
               if r['symbol'] in _VOL_SYMBOLS else 99)

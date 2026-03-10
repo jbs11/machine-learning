@@ -1369,7 +1369,7 @@ const _vdCharts  = {};   // { term: LW instance }
 async function loadVolSurface(nocache = false) {
   const qs = nocache ? '?nocache=1' : '';
   try {
-    const r = await fetch(`${API}/api/volatility-surface${qs}`, { signal: AbortSignal.timeout(90000) });
+    const r = await fetch(`${API}/api/volatility-surface${qs}`, { signal: AbortSignal.timeout(75000) });
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
     const j = await r.json();
     _volData   = j;
@@ -1592,7 +1592,7 @@ function _drawSkewCanvas(a) {
   const skewByExp = a.skew_by_exp;
   const ts        = a.term_structure;
   const cv        = document.getElementById('vd-skew-canvas');
-  if (!cv || !skewByExp || !ts || !ts.length) {
+  if (!cv || !skewByExp || !ts || !ts.length) return;
   const dpr = window.devicePixelRatio || 1;
   const W   = Math.max(cv.parentElement.clientWidth || 0, 400);
   const H   = 280;
@@ -1669,7 +1669,7 @@ function drawSurface(a) {
 function _drawSurfaceCanvas(a) {
   const mx = a.matrix;
   const cv = document.getElementById('vd-surface-canvas');
-  if (!cv || !mx || !mx.expirations || !mx.expirations.length) {
+  if (!cv || !mx || !mx.expirations || !mx.expirations.length) return;
   const dpr = window.devicePixelRatio || 1;
   const W   = Math.max(cv.parentElement.clientWidth || 0, 400);
   const H   = 360;
