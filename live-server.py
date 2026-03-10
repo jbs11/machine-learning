@@ -896,6 +896,138 @@ def broker_disconnect_finnhub():
     _broker_creds.pop('finnhub', None)
     _save_broker_creds(_broker_creds)
     return jsonify({'ok': True})
+# ── Broker: Schwab (Charles Schwab Individual Trader API) ────────────────────
+SCHWAB_AUTH_URL  = 'https://api.schwabapi.com/v1/oauth/authorize'
+SCHWAB_TOKEN_URL = 'https://api.schwabapi.com/v1/oauth/token'
+SCHWAB_QUOTES_URL = 'https://api.schwabapi.com/marketdata/v1/quotes'
+
+def _schwab_refresh_token():
+    """Exchange refresh_token for new access_token. Updates _broker_creds in-place."""
+    import requests as _req
+    import base64, time
+    sc = _broker_creds.get('schwab', {})
+    rt = sc.get('token', {}).get('refresh_token', '')
+    client_id = sc.get('client_id', '')
+    client_secret = sc.get('client_secret', '')
+    if not (rt and client_id and client_secret):
+        return None
+    try:
+        creds_b64 = base64.b64encode(f'{client_id}:{client_secret}'.encode()).decode()
+        r = _req.post(SCHWAB_TOKEN_URL,
+            headers={'Authorization': f'Basic {creds_b64}',
+                     'Content-Type': 'application/x-www-form-urlencoded'},
+            data={'grant_type': 'refresh_token', 'refresh_token': rt},
+            timeout=15)
+        if r.status_code == 200:
+            td = r.json()
+            td['expires_at'] = time.time() + td.get('expires_in', 1800) - 60
+            _broker_creds['schwab']['token'] = td
+            _save_broker_creds(_broker_creds)
+            print('[Schwab] Token refreshed')
+            return td
+        print(f'[Schwab] Token refresh failed: {r.status_code} {r.text[:100]}')
+    except Exception as e:
+        print(f'[Schwab] Refresh error: {e}')
+    return None
+
+def _schwab_quote(symbol):
+    """Get real-time quote from Schwab API. Returns dict with lastPrice etc."""
+    import requests as _req
+    import time
+    sc = _broker_creds.get('schwab', {})
+    token = sc.get('token', {})
+    if not token.get('access_token'):
+        return {}
+    # Refresh if expired
+    if time.time() > token.get('expires_at', 0):
+        token = _schwab_refresh_token()
+        if not token:
+            return {}
+    try:
+        r = _req.get(f'{SCHWAB_QUOTES_URL}?symbols={symbol}&fields=quote',
+            headers={'Authorization': f'Bearer {token["access_token"]}'},
+            timeout=10)
+        if r.status_code == 200:
+            return r.json().get(symbol, {}).get('quote', {})
+    except Exception as e:
+        print(f'[Schwab] Quote error ({symbol}): {e}')
+    return {}
+
+@app.route('/api/broker-connect/schwab/auth-url', methods=['POST'])
+def schwab_auth_url():
+    """Step 1: Store credentials and return the OAuth authorization URL."""
+    import urllib.parse
+    data = request.get_json(force=True)
+    client_id     = data.get('client_id', '').strip()
+    client_secret = data.get('client_secret', '').strip()
+    callback_url  = data.get('callback_url', '').strip()
+    if not client_id or not client_secret:
+        return jsonify({'ok': False, 'error': 'App Key and App Secret are required'})
+    if not callback_url:
+        callback_url = 'https://127.0.0.1'
+    # Save credentials (no token yet)
+    _broker_creds['schwab'] = {
+        'client_id': client_id,
+        'client_secret': client_secret,
+        'callback_url': callback_url,
+    }
+    _save_broker_creds(_broker_creds)
+    auth_url = (f"{SCHWAB_AUTH_URL}?response_type=code"
+                f"&client_id={urllib.parse.quote(client_id)}"
+                f"&redirect_uri={urllib.parse.quote(callback_url)}")
+    return jsonify({'ok': True, 'auth_url': auth_url})
+
+@app.route('/api/broker-connect/schwab/token', methods=['POST'])
+def schwab_exchange_token():
+    """Step 2: Exchange the authorization code (from redirect URL) for tokens."""
+    import requests as _req
+    import base64, time, urllib.parse
+    data = request.get_json(force=True)
+    redirect_response = data.get('redirect_response', '').strip()
+    sc = _broker_creds.get('schwab', {})
+    client_id     = sc.get('client_id', '')
+    client_secret = sc.get('client_secret', '')
+    callback_url  = sc.get('callback_url', '')
+    if not (redirect_response and client_id and client_secret and callback_url):
+        return jsonify({'ok': False, 'error': 'Complete Step 1 first, then paste the redirect URL'})
+    # Extract authorization code from redirect URL
+    try:
+        parsed = urllib.parse.urlparse(redirect_response)
+        params = urllib.parse.parse_qs(parsed.query)
+        code = params.get('code', [None])[0]
+        if not code:
+            return jsonify({'ok': False, 'error': 'No authorization code found in the URL — paste the full redirect URL'})
+    except Exception as e:
+        return jsonify({'ok': False, 'error': f'Could not parse URL: {e}'})
+    # Exchange code for tokens
+    try:
+        creds_b64 = base64.b64encode(f'{client_id}:{client_secret}'.encode()).decode()
+        r = _req.post(SCHWAB_TOKEN_URL,
+            headers={'Authorization': f'Basic {creds_b64}',
+                     'Content-Type': 'application/x-www-form-urlencoded'},
+            data={'grant_type': 'authorization_code', 'code': code,
+                  'redirect_uri': callback_url},
+            timeout=15)
+        if r.status_code != 200:
+            return jsonify({'ok': False, 'error': f'Token exchange failed ({r.status_code}): {r.text[:200]}'})
+        td = r.json()
+        td['expires_at'] = time.time() + td.get('expires_in', 1800) - 60
+        _broker_creds['schwab']['token'] = td
+        _save_broker_creds(_broker_creds)
+    except Exception as e:
+        return jsonify({'ok': False, 'error': f'Request error: {e}'})
+    # Confirm with a live quote
+    q = _schwab_quote('SPY')
+    spot = q.get('lastPrice', '—')
+    return jsonify({'ok': True, 'message': f'Schwab connected ✓ — SPY ${spot}'})
+
+@app.route('/api/broker-disconnect/schwab', methods=['POST'])
+def schwab_disconnect():
+    _broker_creds.pop('schwab', None)
+    _save_broker_creds(_broker_creds)
+    return jsonify({'ok': True})
+
+
 
 # ── Broker: IBKR (re-use existing ibkr-connect) ──────────────────────────────
 @app.route('/api/broker-connect/ibkr', methods=['POST'])
@@ -3867,7 +3999,7 @@ def fundamentals_endpoint():
 
 @app.route('/api/quote/<symbol>')
 def quote_endpoint(symbol):
-    """Real-time quote: Finnhub → yfinance fallback."""
+    """Real-time quote: Finnhub → Schwab → yfinance fallback."""
     symbol = symbol.upper().strip()
     q = _fh_quote(symbol)
     if q and q.get('c'):
@@ -3881,6 +4013,23 @@ def quote_endpoint(symbol):
             'change': round(q.get('c', 0) - q.get('pc', 0), 4) if q.get('pc') else None,
             'change_pct': round((q.get('c', 0) - q.get('pc', 0)) / q.get('pc', 1) * 100, 3) if q.get('pc') else None,
             'source': 'finnhub',
+            'timestamp': datetime.now().isoformat(),
+        })
+    # Try Schwab real-time quote
+    sq = _schwab_quote(symbol)
+    if sq and sq.get('lastPrice'):
+        lp = sq.get('lastPrice', 0)
+        pc = sq.get('closePrice', 0)
+        return jsonify({
+            'symbol': symbol,
+            'price':  lp,
+            'open':   sq.get('openPrice'),
+            'high':   sq.get('highPrice'),
+            'low':    sq.get('lowPrice'),
+            'prev_close': pc,
+            'change': round(lp - pc, 4) if pc else None,
+            'change_pct': round((lp - pc) / pc * 100, 3) if pc else None,
+            'source': 'schwab',
             'timestamp': datetime.now().isoformat(),
         })
     # Fallback to yfinance
