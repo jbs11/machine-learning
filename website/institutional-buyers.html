@@ -2434,14 +2434,6 @@ async function loadData() {
     cachedFetch(API+'/api/option-flows').catch(()=>null),
   ]);
 
-  // API-dependent charts — lazy-render as user scrolls to them
-  (function() {
-    var cvVixGex  = document.getElementById('cv-vix-gex');
-    var cvDhIntra = document.getElementById('cv-dh-intraday');
-    lazyLoad(cvVixGex,  function() { drawVixGex(cvVixGex, gexRes); });
-    lazyLoad(cvDhIntra, function() { drawDHIntraday(cvDhIntra, gexRes, flowsRes); });
-  })();
-
   if (gexRes) {
     renderGEXStats(gexRes);
     renderDHMetrics(gexRes, flowsRes);
@@ -2453,26 +2445,30 @@ async function loadData() {
     const es  = (gexRes.assets||[]).find(a=>a.symbol==='ES=F');
     const nq  = (gexRes.assets||[]).find(a=>a.symbol==='NQ=F');
 
-    // GEX charts — lazy per symbol
-  (function() {
-    var pairs = [
-      [spy, 'cv-spy-gex', 260, true],
-      [qqq, 'cv-qqq-gex', 220, false],
-      [dia, 'cv-dia-gex', 220, false],
-      [iwm, 'cv-iwm-gex', 220, false],
-      [es,  'cv-es-gex',  230, false],
-      [nq,  'cv-nq-gex',  230, false],
-    ];
-    pairs.forEach(function(p) {
-      var asset = p[0], cvId = p[1], h = p[2], withCum = p[3];
-      if (!asset) return;
-      var cv = document.getElementById(cvId);
-      lazyLoad(cv, function() {
+    // GEX charts — draw after short delay to ensure layout is settled
+    setTimeout(function() {
+      var pairs = [
+        [spy, 'cv-spy-gex', 260, true],
+        [qqq, 'cv-qqq-gex', 220, false],
+        [dia, 'cv-dia-gex', 220, false],
+        [iwm, 'cv-iwm-gex', 220, false],
+        [es,  'cv-es-gex',  230, false],
+        [nq,  'cv-nq-gex',  230, false],
+      ];
+      pairs.forEach(function(p) {
+        var asset = p[0], cvId = p[1], h = p[2], withCum = p[3];
+        if (!asset) return;
+        var cv = document.getElementById(cvId);
+        if (!cv) return;
         drawGex(asset, cv, h);
         if (withCum) drawCumGex(asset, document.getElementById('cv-spy-cumgex'));
       });
-    });
-  })();
+      // VIX GEX and DH Intraday
+      var cvVixGex  = document.getElementById('cv-vix-gex');
+      var cvDhIntra = document.getElementById('cv-dh-intraday');
+      if (cvVixGex)  drawVixGex(cvVixGex, gexRes);
+      if (cvDhIntra) drawDHIntraday(cvDhIntra, gexRes, flowsRes);
+    }, 200);
 
     // Candlestick charts — SPY/QQQ
     loadCandlesFor('SPY', 'spy-candle-chart', spy, 'spy-regime-chip');
@@ -2495,15 +2491,15 @@ async function loadData() {
   if (flowsRes) {
     renderFlows(flowsRes);
     renderUnusual(flowsRes);
-    // Flow tornado charts — lazy
-    (function() {
+    // Flow tornado charts — draw after short delay
+    setTimeout(function() {
       var flowSpy = (flowsRes.assets||[]).find(function(a){return a.symbol==='SPY'&&a.strikes&&a.strikes.length;});
       var flowQqq = (flowsRes.assets||[]).find(function(a){return a.symbol==='QQQ'&&a.strikes&&a.strikes.length;});
       var cvSpyFlow = document.getElementById('cv-spy-flow');
       var cvQqqFlow = document.getElementById('cv-qqq-flow');
-      if (flowSpy) lazyLoad(cvSpyFlow, function() { drawTornado(flowSpy, cvSpyFlow, 280); });
-      if (flowQqq) lazyLoad(cvQqqFlow, function() { drawTornado(flowQqq, cvQqqFlow, 260); });
-    })();
+      if (flowSpy && cvSpyFlow) drawTornado(flowSpy, cvSpyFlow, 280);
+      if (flowQqq && cvQqqFlow) drawTornado(flowQqq, cvQqqFlow, 260);
+    }, 200);
   }
 
   if (gexRes && flowsRes) {
