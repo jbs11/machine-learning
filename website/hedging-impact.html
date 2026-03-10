@@ -676,7 +676,7 @@ function drawHIProfile(cv, gex) {
     return;
   }
   const dpr = window.devicePixelRatio || 1;
-  const W   = cv.parentElement.clientWidth || 600;
+  const W   = cv.getBoundingClientRect().width || cv.parentElement.clientWidth || cv.parentElement.offsetWidth || 600;
   const H   = parseInt(cv.getAttribute('height')) || 320;
   cv.width  = W * dpr; cv.height = H * dpr;
   cv.style.width = W + 'px'; cv.style.height = H + 'px';
@@ -1211,20 +1211,19 @@ async function loadData(nocache = false) {
   renderHISummary(gexRes, flowsRes);
   updateGauge(gexRes, flowsRes);
 
-  // Above-fold charts: draw immediately
-  requestAnimationFrame(function() {
-    const spy = gexRes ? (gexRes.assets || []).find(a => a.symbol === 'DIA') : null;
-    const qqq = gexRes ? (gexRes.assets || []).find(a => a.symbol === 'IWM') : null;
+  // Draw all charts after brief delay to ensure layout is fully settled
+  setTimeout(function() {
+    var spy = gexRes ? (gexRes.assets || []).find(a => a.symbol === 'DIA') : null;
+    var qqq = gexRes ? (gexRes.assets || []).find(a => a.symbol === 'IWM') : null;
     drawHIProfile(document.getElementById('cv-hi-profile'), gexActive);
     drawIntradayFlow(document.getElementById('cv-intraday-flow'), gexRes, flowsRes);
-    // Below-fold charts: lazy-draw when scrolled into view
     var cvSpyHi  = document.getElementById('cv-spy-hi');
     var cvQqqHi  = document.getElementById('cv-qqq-hi');
     var cvGexPro = document.getElementById('cv-gex-profile');
-    if (spy) lazyLoad(cvSpyHi,  function() { drawGexBar(cvSpyHi, spy, 260); drawCumGex(document.getElementById('cv-spy-cum'), spy); });
-    if (qqq) lazyLoad(cvQqqHi,  function() { drawGexBar(cvQqqHi, qqq, 260); drawCumGex(document.getElementById('cv-qqq-cum'), qqq); });
-    if (gexActive) lazyLoad(cvGexPro, function() { drawGexBar(cvGexPro, gexActive, 240); });
-  });
+    if (spy && cvSpyHi)  { drawGexBar(cvSpyHi, spy, 260); drawCumGex(document.getElementById('cv-spy-cum'), spy); }
+    if (qqq && cvQqqHi)  { drawGexBar(cvQqqHi, qqq, 260); drawCumGex(document.getElementById('cv-qqq-cum'), qqq); }
+    if (gexActive && cvGexPro) { drawGexBar(cvGexPro, gexActive, 240); }
+  }, 200);
 }
 
 window.addEventListener('load', function() {
