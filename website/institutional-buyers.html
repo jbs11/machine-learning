@@ -1534,7 +1534,7 @@ function drawGex(a, cv, H) {
   [.25,.5,.75].forEach(f=>{const x=PAD_L+cW*f;ctx.beginPath();ctx.moveTo(x,PAD_T);ctx.lineTo(x,cH-PAD_B);ctx.stroke();});
   const maxGex = Math.max(...pairs.map(p=>Math.abs(p.g)),1e-9);
   const scaleStr = maxGex>=1000?(maxGex/1000).toFixed(1)+'B':maxGex.toFixed(1)+'M';
-  ctx.fillStyle='rgba(127,163,190,.55)'; ctx.font='9px sans-serif';
+  ctx.fillStyle='rgba(148,163,184,.95)'; ctx.font='11px sans-serif';
   ctx.textAlign='left';   ctx.fillText('−$'+scaleStr,PAD_L,PAD_T-4);
   ctx.textAlign='center'; ctx.fillText('$0',zeroX,PAD_T-4);
   ctx.textAlign='right';  ctx.fillText('+$'+scaleStr,W-PAD_R,PAD_T-4);
@@ -1552,7 +1552,7 @@ function drawGex(a, cv, H) {
     }
   });
   const step=Math.max(1,Math.ceil(N/22));
-  ctx.fillStyle='rgba(71,85,105,.8)'; ctx.font='9px Consolas,monospace'; ctx.textAlign='right';
+  ctx.fillStyle='rgba(148,163,184,.95)'; ctx.font='11px Consolas,monospace'; ctx.textAlign='right';
   pairs.forEach((p,i)=>{
     if(i%step!==0) return;
     const y=PAD_T+i*ROW_H+ROW_H/2+3;
@@ -1563,7 +1563,7 @@ function drawGex(a, cv, H) {
     const y=PAD_T+idx*ROW_H+ROW_H/2;
     ctx.save();ctx.strokeStyle=color;ctx.lineWidth=1.2;ctx.setLineDash(dash);
     ctx.beginPath();ctx.moveTo(PAD_L,y);ctx.lineTo(W-PAD_R,y);ctx.stroke();
-    ctx.setLineDash([]);ctx.font='8px sans-serif';ctx.fillStyle=color;
+    ctx.setLineDash([]);ctx.font='11px sans-serif';ctx.fillStyle=color;
     ctx.textAlign='left';ctx.fillText(lbl,W-PAD_R+3,y-2);ctx.restore();
   }
   lvl(a.spot,'rgba(251,191,36,.9)',[4,3],'SPOT');
@@ -1601,7 +1601,7 @@ function drawCumGex(a, cv) {
   ctx.strokeStyle='rgba(255,255,255,.15)'; ctx.lineWidth=1; ctx.setLineDash([4,4]);
   ctx.beginPath();ctx.moveTo(PAD.l,zeroY);ctx.lineTo(W-PAD.r,zeroY);ctx.stroke();
   ctx.setLineDash([]);
-  ctx.fillStyle='rgba(127,163,190,.5)'; ctx.font='8px sans-serif';
+  ctx.fillStyle='rgba(148,163,184,.95)'; ctx.font='11px sans-serif';
   ctx.textAlign='right'; ctx.fillText('0',PAD.l-3,zeroY+3);
   ctx.fillText(maxV>=1000?(maxV/1000).toFixed(1)+'B':maxV.toFixed(0)+'M',PAD.l-3,PAD.t+8);
   // Filled area
@@ -1640,7 +1640,7 @@ function drawCumGex(a, cv) {
     ctx.strokeStyle='rgba(167,139,250,.7)'; ctx.lineWidth=1; ctx.setLineDash([3,3]);
     ctx.beginPath();ctx.moveTo(fx,PAD.t);ctx.lineTo(fx,H-PAD.b);ctx.stroke();
     ctx.setLineDash([]);
-    ctx.fillStyle='#a78bfa'; ctx.font='bold 8px sans-serif'; ctx.textAlign='center';
+    ctx.fillStyle='#a78bfa'; ctx.font='bold 11px sans-serif'; ctx.textAlign='center';
     ctx.fillText('FLIP $'+pairs[flipIdx].k.toFixed(0),fx,PAD.t-5);
   }
   // Spot marker
@@ -1651,13 +1651,13 @@ function drawCumGex(a, cv) {
       ctx.strokeStyle='rgba(251,191,36,.8)'; ctx.lineWidth=1; ctx.setLineDash([4,3]);
       ctx.beginPath();ctx.moveTo(sx,PAD.t);ctx.lineTo(sx,H-PAD.b);ctx.stroke();
       ctx.setLineDash([]);
-      ctx.fillStyle='#fbbf24'; ctx.textAlign='center'; ctx.font='bold 8px sans-serif';
+      ctx.fillStyle='#fbbf24'; ctx.textAlign='center'; ctx.font='bold 11px sans-serif';
       ctx.fillText('SPOT',sx,H-PAD.b+12);
     }
   }
   // Labels
   const step=Math.max(1,Math.floor(pairs.length/8));
-  ctx.fillStyle='rgba(71,85,105,.7)'; ctx.font='8px Consolas,monospace'; ctx.textAlign='center';
+  ctx.fillStyle='rgba(148,163,184,.95)'; ctx.font='11px Consolas,monospace'; ctx.textAlign='center';
   pairs.forEach((p,i)=>{
     if(i%step!==0) return;
     const x=PAD.l+(i/Math.max(pairs.length-1,1))*cW;
@@ -1688,7 +1688,7 @@ function drawTornado(r, cv, H) {
     const dRow=n-1-i, y=PAD_T+dRow*rowH, bh=Math.max(1,rowH-2);
     ctx.fillStyle='rgba(34,197,94,.65)';  ctx.fillRect(cx,y+1,(r.call_vol[i]/maxV)*(cW/2),bh);
     ctx.fillStyle='rgba(248,113,113,.65)'; ctx.fillRect(cx-(r.put_vol[i]/maxV)*(cW/2),y+1,(r.put_vol[i]/maxV)*(cW/2),bh);
-    ctx.fillStyle='rgba(148,163,184,.8)'; ctx.font=`${Math.min(10,rowH-2)}px Consolas,monospace`;
+    ctx.fillStyle='rgba(148,163,184,.8)'; ctx.font=`${Math.max(11,Math.min(13,rowH-1))}px Consolas,monospace`;
     ctx.textAlign='right';
     ctx.fillText(r.strikes[i]>100?'$'+r.strikes[i].toFixed(0):'$'+r.strikes[i].toFixed(2),PAD_L-3,y+rowH*.65);
   }
@@ -1698,12 +1698,12 @@ function drawTornado(r, cv, H) {
     ctx.strokeStyle='#fbbf24'; ctx.lineWidth=1.5; ctx.setLineDash([5,4]);
     ctx.beginPath();ctx.moveTo(PAD_L,sy);ctx.lineTo(W-PAD_R,sy);ctx.stroke();
     ctx.setLineDash([]);
-    ctx.fillStyle='#fbbf24'; ctx.font='bold 9px Consolas,monospace';
+    ctx.fillStyle='#fbbf24'; ctx.font='bold 11px Consolas,monospace';
     ctx.textAlign='left'; ctx.fillText('SPOT',W-PAD_R-30,sy-3);
   }
   ctx.strokeStyle='rgba(255,255,255,.15)'; ctx.lineWidth=1;
   ctx.beginPath();ctx.moveTo(cx,PAD_T);ctx.lineTo(cx,H-PAD_B);ctx.stroke();
-  ctx.fillStyle='rgba(148,163,184,.5)'; ctx.font='9px Consolas,monospace'; ctx.textAlign='center';
+  ctx.fillStyle='rgba(148,163,184,.9)'; ctx.font='11px Consolas,monospace'; ctx.textAlign='center';
   ctx.fillText('← PUTS',PAD_L+cW/4,H-2); ctx.fillText('CALLS →',PAD_L+cW*3/4,H-2);
 }
 
@@ -1764,17 +1764,17 @@ function drawDHSim(cv) {
   ctx.setLineDash([]);
 
   // Labels
-  ctx.fillStyle='#22c55e'; ctx.font='bold 9px sans-serif'; ctx.textAlign='left';
+  ctx.fillStyle='#22c55e'; ctx.font='bold 11px sans-serif'; ctx.textAlign='left';
   ctx.fillText('Long Gamma: Dealers BUY on dips →', PAD.l+4, PAD.t+14);
   ctx.fillStyle='#f87171'; ctx.textAlign='left';
   ctx.fillText('Short Gamma: Dealers SELL on dips →', PAD.l+4, PAD.t+26);
 
   // X axis labels
-  ctx.fillStyle='rgba(71,85,105,.7)'; ctx.font='8px Consolas,monospace'; ctx.textAlign='center';
+  ctx.fillStyle='rgba(148,163,184,.95)'; ctx.font='11px Consolas,monospace'; ctx.textAlign='center';
   ctx.fillText('← Price Falls', PAD.l+cW*.15, H-PAD.b+10);
   ctx.fillText('ATM', cx, H-PAD.b+10);
   ctx.fillText('Price Rises →', PAD.l+cW*.85, H-PAD.b+10);
-  ctx.fillStyle='rgba(251,191,36,.7)'; ctx.font='8px sans-serif';
+  ctx.fillStyle='rgba(251,191,36,.95)'; ctx.font='11px sans-serif';
   ctx.fillText('SPOT / ATM', cx, PAD.t-5);
 }
 
@@ -1807,7 +1807,7 @@ function drawIVSkew(cv) {
     const y=toY(v);
     if(y<PAD.t||y>H-PAD.b) return;
     ctx.beginPath();ctx.moveTo(PAD.l,y);ctx.lineTo(W-PAD.r,y);ctx.stroke();
-    ctx.fillStyle='rgba(127,163,190,.5)'; ctx.font='8px Consolas,monospace';
+    ctx.fillStyle='rgba(148,163,184,.95)'; ctx.font='11px Consolas,monospace';
     ctx.textAlign='right'; ctx.fillText((v*100).toFixed(0)+'%',PAD.l-3,y+3);
   });
 
@@ -1816,7 +1816,7 @@ function drawIVSkew(cv) {
   ctx.strokeStyle='rgba(251,191,36,.3)'; ctx.lineWidth=1; ctx.setLineDash([4,4]);
   ctx.beginPath();ctx.moveTo(atmX,PAD.t);ctx.lineTo(atmX,H-PAD.b);ctx.stroke();
   ctx.setLineDash([]);
-  ctx.fillStyle='rgba(251,191,36,.7)'; ctx.font='8px sans-serif'; ctx.textAlign='center';
+  ctx.fillStyle='rgba(251,191,36,.95)'; ctx.font='11px sans-serif'; ctx.textAlign='center';
   ctx.fillText('ATM', atmX, PAD.t-5);
 
   // Shade the skew premium area (put IV above call IV)
@@ -1847,16 +1847,16 @@ function drawIVSkew(cv) {
   ctx.strokeStyle='#22d3ee'; ctx.lineWidth=2; ctx.stroke();
 
   // Strike labels
-  ctx.fillStyle='rgba(71,85,105,.7)'; ctx.font='8px Consolas,monospace'; ctx.textAlign='center';
+  ctx.fillStyle='rgba(148,163,184,.95)'; ctx.font='11px Consolas,monospace'; ctx.textAlign='center';
   ['-15%','-10%','-5%','ATM','+5%','+10%','+15%'].forEach((lbl,i)=>{
     const s=[-0.15,-0.10,-0.05,0,0.05,0.10,0.15][i];
     ctx.fillText(lbl,toX(s),H-PAD.b+12);
   });
 
   // Annotation
-  ctx.fillStyle='rgba(167,139,250,.7)'; ctx.font='bold 8px sans-serif'; ctx.textAlign='left';
+  ctx.fillStyle='rgba(167,139,250,.95)'; ctx.font='bold 11px sans-serif'; ctx.textAlign='left';
   ctx.fillText('Put IV Premium (Crash Insurance)', PAD.l+4, PAD.t+14);
-  ctx.fillStyle='rgba(34,211,238,.7)';
+  ctx.fillStyle='rgba(34,211,238,.95)';
   ctx.fillText('Call IV (Lower Demand)', PAD.l+4, PAD.t+26);
 }
 
@@ -1883,7 +1883,7 @@ function drawVixGex(cv, gexData) {
   zones.forEach(z=>{
     ctx.fillStyle=z.color;
     ctx.fillRect(PAD.l+z.min*cW,PAD.t,(z.max-z.min)*cW,cH);
-    ctx.fillStyle='rgba(148,163,184,.35)'; ctx.font='8px sans-serif'; ctx.textAlign='center';
+    ctx.fillStyle='rgba(148,163,184,.9)'; ctx.font='11px sans-serif'; ctx.textAlign='center';
     ctx.fillText(z.vix,PAD.l+(z.min+z.max)/2*cW,PAD.t+12);
     ctx.fillText(z.label,PAD.l+(z.min+z.max)/2*cW,PAD.t+23);
   });
@@ -1902,7 +1902,7 @@ function drawVixGex(cv, gexData) {
   ctx.strokeStyle='rgba(255,255,255,.15)'; ctx.lineWidth=1; ctx.setLineDash([4,4]);
   ctx.beginPath();ctx.moveTo(PAD.l,toY2(0));ctx.lineTo(W-PAD.r,toY2(0));ctx.stroke();
   ctx.setLineDash([]);
-  ctx.fillStyle='rgba(127,163,190,.5)'; ctx.font='8px sans-serif';
+  ctx.fillStyle='rgba(148,163,184,.95)'; ctx.font='11px sans-serif';
   ctx.textAlign='right'; ctx.fillText('GEX=0 (Flip)',PAD.l-2,toY2(0)+3);
 
   // Gradient line
@@ -1933,13 +1933,13 @@ function drawVixGex(cv, gexData) {
       ctx.beginPath();ctx.arc(dotX,dotY,5,0,Math.PI*2);
       ctx.fillStyle=normGex>=0?'#22c55e':'#f87171'; ctx.fill();
       ctx.strokeStyle='white'; ctx.lineWidth=1.5; ctx.stroke();
-      ctx.fillStyle='white'; ctx.font='bold 8px sans-serif'; ctx.textAlign='left';
+      ctx.fillStyle='white'; ctx.font='bold 11px sans-serif'; ctx.textAlign='left';
       ctx.fillText('NOW',dotX+7,dotY+3);
     }
   }
 
   // X axis labels
-  ctx.fillStyle='rgba(71,85,105,.7)'; ctx.font='8px Consolas,monospace'; ctx.textAlign='center';
+  ctx.fillStyle='rgba(148,163,184,.95)'; ctx.font='11px Consolas,monospace'; ctx.textAlign='center';
   [12,15,20,25,30,40,50].forEach(v=>{ if(v>=minVix&&v<=maxVix) ctx.fillText('VIX '+v,toX2(v),H-PAD.b+12); });
   ctx.textAlign='right'; ctx.fillText('Long Gamma ▲',PAD.l-2,toY2(0.8));
   ctx.textAlign='right'; ctx.fillText('Short Gamma ▼',PAD.l-2,toY2(-0.8));
@@ -2169,7 +2169,7 @@ function drawDHIntraday(cv, gex, flows) {
   ctx.strokeStyle = 'rgba(34,211,238,.5)'; ctx.lineWidth = 1.5; ctx.stroke();
 
   // X labels
-  ctx.fillStyle = 'rgba(71,85,105,.7)'; ctx.font = '8px Consolas,monospace'; ctx.textAlign = 'center';
+  ctx.fillStyle = 'rgba(148,163,184,.95)'; ctx.font = '11px Consolas,monospace'; ctx.textAlign = 'center';
   labels.forEach((lbl, i) => {
     if (i % 2 !== 0) return;
     const x = PAD.l + (i / (N - 1)) * cW;
@@ -2183,7 +2183,7 @@ function drawDHIntraday(cv, gex, flows) {
 
   // Regime label
   ctx.fillStyle = isLong ? '#4ade80' : '#f87171';
-  ctx.font = 'bold 8px sans-serif'; ctx.textAlign = 'left';
+  ctx.font = 'bold 11px sans-serif'; ctx.textAlign = 'left';
   ctx.fillText(isLong ? '▲ Long Gamma — Dealers absorb moves' : '▼ Short Gamma — Dealers amplify moves', PAD.l + 4, PAD.t - 5);
 }
 
