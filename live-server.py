@@ -1452,12 +1452,8 @@ _WEBSITE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'website
 def index():
     return send_from_directory(_WEBSITE_DIR, 'live-trading.html')
 
-@app.route('/<path:filename>')
-def serve_static(filename):
-    return send_from_directory(_WEBSITE_DIR, filename)
 
-
-# ── Routes ────────────────────────────────────────────────────────────────────
+# ── Broker status (must be before catch-all static route) ────────────────────
 @app.route('/api/broker-status')
 def broker_status():
     """Return connection status for all brokers."""
@@ -1493,6 +1489,12 @@ def broker_status():
         'ibkr':      {'connected': bool(_ib_connection_info)},
         'timestamp': datetime.now().isoformat(),
     })
+
+
+@app.route('/<path:filename>')
+def serve_static(filename):
+    return send_from_directory(_WEBSITE_DIR, filename)
+
 
 @app.route('/api/health')
 def health():
@@ -3780,8 +3782,8 @@ def _flow_row(symbol: str, group: str, nocache: bool = False) -> dict | None:
 
             for _, r in calls.iterrows():
                 k   = round(float(r['strike']), 2)
-                vol = float(r.get('volume', 0) or 0)
-                oi  = float(r.get('openInterest', 0) or 0)
+                _v  = r.get('volume', 0); vol = 0.0 if (_v != _v or _v is None) else float(_v or 0)
+                _o  = r.get('openInterest', 0); oi = 0.0 if (_o != _o or _o is None) else float(_o or 0)
                 prm = vol * _mid(r) * 100
                 sd  = strike_data.setdefault(k, dict(call_vol=0, put_vol=0, call_prem=0,
                                                       put_prem=0, call_oi=0, put_oi=0))
@@ -3795,8 +3797,8 @@ def _flow_row(symbol: str, group: str, nocache: bool = False) -> dict | None:
 
             for _, r in puts.iterrows():
                 k   = round(float(r['strike']), 2)
-                vol = float(r.get('volume', 0) or 0)
-                oi  = float(r.get('openInterest', 0) or 0)
+                _v  = r.get('volume', 0); vol = 0.0 if (_v != _v or _v is None) else float(_v or 0)
+                _o  = r.get('openInterest', 0); oi = 0.0 if (_o != _o or _o is None) else float(_o or 0)
                 prm = vol * _mid(r) * 100
                 sd  = strike_data.setdefault(k, dict(call_vol=0, put_vol=0, call_prem=0,
                                                       put_prem=0, call_oi=0, put_oi=0))
