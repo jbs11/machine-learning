@@ -231,11 +231,48 @@ h1{font-size:1.7rem;font-weight:800;color:var(--accent);margin-bottom:.3rem;}
 'use strict';
 const API = window.location.origin;
 
-window.addEventListener('load', () => {
+window.addEventListener('load', async () => {
+  // Restore locally saved fields (App Key, callback URL)
   ['finnhub', 'schwab'].forEach(b => {
     const saved = loadCreds(b);
     if(saved) restoreFields(b, saved);
   });
+  // Check live server status
+  try {
+    const r = await fetch(API + '/api/broker-status');
+    const d = await r.json();
+    // Finnhub
+    if(d.finnhub && d.finnhub.connected){
+      setStatus('finnhub','ok','Finnhub connected ✓');
+    }
+    // Schwab
+    if(d.schwab){
+      const sw = d.schwab;
+      if(sw.connected){
+        document.getElementById('schwab-step2').style.display = '';
+        document.getElementById('disc-schwab').style.display = '';
+        setStatus('schwab','ok', sw.msg);
+      } else if(sw.status === 'refresh'){
+        // Token expired but refresh token exists — try auto-refresh then recheck
+        setStatus('schwab','loading', sw.msg);
+        setTimeout(async ()=>{
+          try {
+            const r2 = await fetch(API + '/api/broker-status');
+            const d2 = await r2.json();
+            if(d2.schwab && d2.schwab.connected){
+              document.getElementById('schwab-step2').style.display = '';
+              document.getElementById('disc-schwab').style.display = '';
+              setStatus('schwab','ok', d2.schwab.msg);
+            } else {
+              setStatus('schwab','err','Token refresh failed — use Step 1 to re-authorize');
+            }
+          } catch(e){}
+        }, 4000);
+      } else if(sw.status === 'needs_auth'){
+        setStatus('schwab','err', sw.msg + ' — click “Get Auth URL” below');
+      }
+    }
+  } catch(e){ /* server not running — ignore */ }
 });
 
 function loadCreds(broker){

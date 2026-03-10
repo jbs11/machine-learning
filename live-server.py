@@ -851,6 +851,39 @@ if 'finnhub' in _broker_creds:
     except Exception as _e:
         print(f"[Startup] Saved Finnhub key failed ({_e}) — will need manual reconnect.")
 
+# Auto-refresh Schwab token on startup if credentials are saved
+if 'schwab' in _broker_creds:
+    import time as _time_startup
+    _sc = _broker_creds['schwab']
+    _sc_token = _sc.get('token', {})
+    _has_refresh = bool(_sc_token.get('refresh_token'))
+    _token_ok = bool(_sc_token.get('access_token')) and _time_startup.time() < _sc_token.get('expires_at', 0)
+    if _token_ok:
+        print(f"[Startup] Schwab token still valid.")
+    elif _has_refresh:
+        print(f"[Startup] Schwab access token expired — refreshing...")
+        # _schwab_refresh_token() not defined yet at this point; do it inline
+        try:
+            import requests as _req_s, base64 as _b64_s
+            _creds_b64 = _b64_s.b64encode(f"{_sc['client_id']}:{_sc['client_secret']}".encode()).decode()
+            _r = _req_s.post('https://api.schwabapi.com/v1/oauth/token',
+                headers={'Authorization': f'Basic {_creds_b64}',
+                         'Content-Type': 'application/x-www-form-urlencoded'},
+                data={'grant_type': 'refresh_token', 'refresh_token': _sc_token['refresh_token']},
+                timeout=15)
+            if _r.status_code == 200:
+                _td = _r.json()
+                _td['expires_at'] = _time_startup.time() + _td.get('expires_in', 1800) - 60
+                _broker_creds['schwab']['token'] = _td
+                _save_broker_creds(_broker_creds)
+                print(f"[Startup] Schwab token refreshed successfully.")
+            else:
+                print(f"[Startup] Schwab token refresh failed ({_r.status_code}) — reconnect on Brokers page.")
+        except Exception as _e_s:
+            print(f"[Startup] Schwab refresh error: {_e_s}")
+    else:
+        print(f"[Startup] Schwab credentials saved but no valid token — reconnect on Brokers page.")
+
 @app.route('/api/broker-connect/tradier', methods=['POST'])
 def broker_connect_tradier():
     data    = request.get_json(force=True)
@@ -1425,6 +1458,42 @@ def serve_static(filename):
 
 
 # ── Routes ────────────────────────────────────────────────────────────────────
+@app.route('/api/broker-status')
+def broker_status():
+    """Return connection status for all brokers."""
+    import time
+    sc = _broker_creds.get('schwab', {})
+    sc_token = sc.get('token', {})
+    sc_has_token = bool(sc_token.get('access_token'))
+    sc_expired = time.time() > sc_token.get('expires_at', 0)
+    sc_has_refresh = bool(sc_token.get('refresh_token'))
+
+    # Determine effective Schwab status
+    if sc_has_token and not sc_expired:
+        sc_status = 'connected'
+        sc_msg = 'Schwab connected ✓ (token valid)'
+    elif sc_has_refresh:
+        sc_status = 'refresh'
+        sc_msg = 'Schwab token expired — auto-refreshing...'
+    elif sc.get('client_id'):
+        sc_status = 'needs_auth'
+        sc_msg = 'Schwab credentials saved — re-authorize to connect'
+    else:
+        sc_status = 'disconnected'
+        sc_msg = 'Schwab not connected'
+
+    return jsonify({
+        'finnhub':   {'connected': bool(_finnhub_client),
+                      'msg': 'Finnhub connected' if _finnhub_client else 'Not connected'},
+        'schwab':    {'connected': sc_status == 'connected',
+                      'status': sc_status,
+                      'msg': sc_msg,
+                      'has_credentials': bool(sc.get('client_id')),
+                      'has_refresh': sc_has_refresh},
+        'ibkr':      {'connected': bool(_ib_connection_info)},
+        'timestamp': datetime.now().isoformat(),
+    })
+
 @app.route('/api/health')
 def health():
     return jsonify({'status': 'ok', 'time': datetime.now().isoformat()})
