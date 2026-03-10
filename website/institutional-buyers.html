@@ -1711,7 +1711,9 @@ function drawTornado(r, cv, H) {
 function drawDHSim(cv) {
   if (!cv) return;
   const dpr = window.devicePixelRatio || 1;
-  const W = cv.getBoundingClientRect().width || cv.parentElement.clientWidth || cv.parentElement.offsetWidth || 580;
+  // Measure parent — more reliable than canvas own rect before first draw
+  const par = cv.parentElement;
+  const W = Math.round(par.getBoundingClientRect().width || par.clientWidth || par.offsetWidth || 580);
   const H = 180;
   cv.width = W*dpr; cv.height = H*dpr;
   cv.style.width = W+'px'; cv.style.height = H+'px';
@@ -2512,6 +2514,23 @@ async function loadData() {
   }
 }
 
+// Draw static educational charts independently of API calls
+function drawStaticCharts() {
+  var cvDhSim  = document.getElementById('cv-dh-sim');
+  var cvIvSkew = document.getElementById('cv-iv-skew');
+  if (cvDhSim)  drawDHSim(cvDhSim);
+  if (cvIvSkew) drawIVSkew(cvIvSkew);
+}
+window.addEventListener('load', function() {
+  setTimeout(drawStaticCharts, 300);
+  setTimeout(drawStaticCharts, 1500);
+});
+window.addEventListener('load', function() {
+  loadData();
+  setInterval(function() { if (document.hidden) return; loadData(); }, 5*60*1000);
+});
+</script>
+
 <div style="max-width:1600px;margin:0 auto;padding:0 1.5rem;">
   <div class="server-bar">
     <div class="sdot loading" id="sdot"></div>
@@ -2520,21 +2539,6 @@ async function loadData() {
     <button class="rbtn" onclick="loadData()">&#8635; Refresh</button>
   </div>
 </div>
-
-// Draw static educational charts independently of API calls
-window.addEventListener('load', function() {
-  setTimeout(function() {
-    var cvDhSim  = document.getElementById('cv-dh-sim');
-    var cvIvSkew = document.getElementById('cv-iv-skew');
-    if (cvDhSim)  drawDHSim(cvDhSim);
-    if (cvIvSkew) drawIVSkew(cvIvSkew);
-  }, 100);
-});
-window.addEventListener('load', function() {
-  loadData();
-  setInterval(function() { if (document.hidden) return; loadData(); }, 5*60*1000);
-});
-</script>
 <script src="search.js" defer></script>
 </body>
 </html>
