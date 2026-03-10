@@ -408,6 +408,14 @@ def get_candles(symbol: str, interval: str = '1h', period: str | None = None) ->
                 return df_1h.resample(resample).agg(_RESAMPLE_AGG).dropna()
             return df_1h
 
+    # Schwab: real-time 1H bars (equity/ETF symbols only, not futures or indices)
+    if interval in ('1h', '4h') and symbol not in INDEX_SYMBOLS and not symbol.endswith('=F'):
+        df_schwab = _schwab_price_history(symbol, period_days)
+        if not df_schwab.empty:
+            if resample:
+                return df_schwab.resample(resample).agg(_RESAMPLE_AGG).dropna()
+            return df_schwab
+
     # yfinance fallback (all intervals)
     try:
         with _yf_lock:
@@ -952,6 +960,371 @@ def _schwab_quote(symbol):
     except Exception as e:
         print(f'[Schwab] Quote error ({symbol}): {e}')
     return {}
+
+
+SCHWAB_CHAIN_URL   = 'https://api.schwabapi.com/marketdata/v1/chains'
+SCHWAB_HISTORY_URL = 'https://api.schwabapi.com/marketdata/v1/pricehistory'
+
+def _schwab_access_token():
+    """Return a valid Schwab access_token, auto-refreshing if expired."""
+    import time
+    sc = _broker_creds.get('schwab', {})
+    token = sc.get('token', {})
+    if not token.get('access_token'):
+        return None
+    if time.time() > token.get('expires_at', 0):
+        token = _schwab_refresh_token()
+        if not token:
+            return None
+    return token['access_token']
+
+def _schwab_price_history(symbol, period_days=90):
+    """Fetch 1-hour OHLCV bars from Schwab. Returns pd.DataFrame or empty."""
+    import requests as _req
+    tok = _schwab_access_token()
+    if not tok:
+        return pd.DataFrame()
+    if symbol.endswith('=F'):
+        return pd.DataFrame()   # futures not in Individual Trader API
+    try:
+        months = max(1, min(6, round(period_days / 30)))
+        params = {
+            'symbol':                symbol,
+            'periodType':            'month',
+            'period':                str(months),
+            'frequencyType':         'minute',
+            'frequency':             '60',
+            'needExtendedHoursData': 'false',
+        }
+        r = _req.get(SCHWAB_HISTORY_URL, params=params,
+                     headers={'Authorization': f'Bearer {tok}'}, timeout=20)
+        if r.status_code == 401:
+            tok = _schwab_access_token()
+            if not tok:
+                return pd.DataFrame()
+            r = _req.get(SCHWAB_HISTORY_URL, params=params,
+                         headers={'Authorization': f'Bearer {tok}'}, timeout=20)
+        if r.status_code != 200:
+            print(f'[Schwab History] {symbol}: HTTP {r.status_code}')
+            return pd.DataFrame()
+        data = r.json()
+        if data.get('empty', True) or not data.get('candles'):
+            return pd.DataFrame()
+        df = pd.DataFrame(data['candles'])
+        df['datetime'] = pd.to_datetime(df['datetime'], unit='ms', utc=True).dt.tz_convert('America/New_York')
+        df = df.set_index('datetime').rename(columns={
+            'open': 'Open', 'high': 'High', 'low': 'Low',
+            'close': 'Close', 'volume': 'Volume'
+        })[['Open', 'High', 'Low', 'Close', 'Volume']]
+        print(f'[Schwab] {symbol}: {len(df)} 1H bars')
+        return df
+    except Exception as e:
+        print(f'[Schwab History] {symbol}: {e}')
+        return pd.DataFrame()
+
+def _schwab_chain_raw(symbol, strike_count=60):
+    """Fetch full option chain from Schwab. Returns JSON dict or None."""
+    import requests as _req
+    if symbol.endswith('=F'):
+        return None   # futures options not in Individual Trader API
+    tok = _schwab_access_token()
+    if not tok:
+        return None
+    try:
+        params = {
+            'symbol':                symbol,
+            'contractType':          'ALL',
+            'strikeCount':           str(strike_count),
+            'includeUnderlyingQuote':'true',
+            'strategy':              'SINGLE',
+        }
+        r = _req.get(SCHWAB_CHAIN_URL, params=params,
+                     headers={'Authorization': f'Bearer {tok}'}, timeout=25)
+        if r.status_code == 401:
+            tok = _schwab_access_token()
+            if not tok:
+                return None
+            r = _req.get(SCHWAB_CHAIN_URL, params=params,
+                         headers={'Authorization': f'Bearer {tok}'}, timeout=25)
+        if r.status_code != 200:
+            print(f'[Schwab Chain] {symbol}: HTTP {r.status_code}')
+            return None
+        data = r.json()
+        if data.get('status') != 'SUCCESS':
+            print(f'[Schwab Chain] {symbol}: status={data.get("status")}')
+            return None
+        return data
+    except Exception as e:
+        print(f'[Schwab Chain] {symbol}: {e}')
+        return None
+
+def _schwab_gex_from_chain(chain, symbol, group, spot):
+    """Compute GEX row from Schwab option chain JSON (uses Schwab gamma directly)."""
+    today = datetime.now().date()
+    R = 0.05
+    gex_by_k, coi_by_k, poi_by_k = {}, {}, {}
+    lo, hi = spot * 0.85, spot * 1.15
+    target_expiries = set()
+
+    for side, sign in [('callExpDateMap', +1), ('putExpDateMap', -1)]:
+        for exp_key, strikes_dict in chain.get(side, {}).items():
+            exp_str = exp_key.split(':')[0]
+            try:
+                dte = (datetime.strptime(exp_str, '%Y-%m-%d').date() - today).days
+            except Exception:
+                continue
+            if dte < 0 or dte > 60:
+                continue
+            target_expiries.add(exp_str)
+            T = max(dte, 1) / 365.0
+            for strike_str, contracts in strikes_dict.items():
+                for c in contracts:
+                    K = float(c.get('strikePrice') or strike_str)
+                    if not (lo <= K <= hi):
+                        continue
+                    OI = int(c.get('openInterest') or 0)
+                    if OI <= 0:
+                        continue
+                    # Prefer Schwab's pre-computed gamma; fall back to Black-Scholes
+                    gamma = float(c.get('gamma') or 0)
+                    if gamma <= 0:
+                        iv = float(c.get('volatility') or 0)
+                        if iv > 2: iv /= 100.0   # Schwab sometimes returns percent
+                        gamma = _bs_gamma(spot, K, T, R, iv) if iv > 0 else 0.0
+                    gex_val = gamma * OI * 100 * spot * sign
+                    gex_by_k[K] = gex_by_k.get(K, 0.0) + gex_val
+                    if sign > 0:
+                        coi_by_k[K] = coi_by_k.get(K, 0) + OI
+                    else:
+                        poi_by_k[K] = poi_by_k.get(K, 0) + OI
+
+    if not gex_by_k:
+        return None
+
+    strikes  = sorted(gex_by_k)
+    gex_vals = [gex_by_k[k] for k in strikes]
+    call_oi  = [coi_by_k.get(k, 0) for k in strikes]
+    put_oi   = [poi_by_k.get(k, 0) for k in strikes]
+    total_gex = sum(gex_vals)
+
+    pos_items = [(k, v) for k, v in zip(strikes, gex_vals) if v > 0]
+    neg_items = [(k, v) for k, v in zip(strikes, gex_vals) if v < 0]
+    gamma_wall  = max(pos_items, key=lambda x: x[1])[0] if pos_items else None
+    put_wall    = min(neg_items, key=lambda x: x[1])[0] if neg_items else None
+    cwall_i     = max(range(len(strikes)), key=lambda i: call_oi[i]) if strikes else 0
+    call_wall   = strikes[cwall_i] if strikes else None
+
+    cum, flip_level = 0.0, None
+    for k, g in zip(strikes, gex_vals):
+        prev = cum; cum += g
+        if prev != 0 and prev * cum <= 0 and flip_level is None:
+            flip_level = k
+    if flip_level is None:
+        flip_level = min(strikes, key=lambda k: abs(k - spot))
+
+    tot_c = sum(call_oi); tot_p = sum(put_oi)
+    pcr = round(tot_p / max(tot_c, 1), 2)
+
+    row = {
+        'symbol':      symbol,
+        'label':       SYMBOL_LABELS.get(symbol, symbol),
+        'group':       group,
+        'asset_type':  _asset_type_for(symbol),
+        'spot':        round(spot, 4),
+        'strikes':     [round(k, 2) for k in strikes],
+        'gex':         [round(v / 1e6, 3) for v in gex_vals],
+        'call_oi':     call_oi,
+        'put_oi':      put_oi,
+        'total_gex_m': round(total_gex / 1e6, 2),
+        'gamma_wall':  round(gamma_wall, 2) if gamma_wall else None,
+        'put_wall':    round(put_wall,   2) if put_wall   else None,
+        'call_wall':   round(call_wall,  2) if call_wall  else None,
+        'flip_level':  round(flip_level, 2) if flip_level else None,
+        'regime':      'Long Gamma' if total_gex >= 0 else 'Short Gamma',
+        'pcr':         pcr,
+        'expiries':    sorted(target_expiries),
+        'no_options':  False,
+        'source':      'schwab',
+    }
+    print(f'[Schwab GEX] {symbol}: {len(strikes)} strikes, net={round(total_gex/1e6,1)}M, regime={row["regime"]}')
+    return row
+
+def _schwab_flows_from_chain(chain, symbol, group, spot):
+    """Compute option flows row from Schwab option chain JSON."""
+    today = datetime.now().date()
+    strike_data = {}
+    flow_expiries = []
+    has_0dte = False
+    lo, hi = spot * 0.85, spot * 1.15
+    dte0_call_vol = 0; dte0_put_vol = 0
+    unusual = []
+
+    # Identify which expiries to include (0DTE + next 7 days)
+    all_exp = {}
+    for exp_key in chain.get('callExpDateMap', {}):
+        exp_str = exp_key.split(':')[0]
+        try:
+            dte = (datetime.strptime(exp_str, '%Y-%m-%d').date() - today).days
+            all_exp[exp_str] = dte
+        except Exception:
+            pass
+
+    target_exps = set()
+    for exp_str, dte in sorted(all_exp.items(), key=lambda x: x[1]):
+        if dte == 0:
+            has_0dte = True; target_exps.add(exp_str); flow_expiries.append((exp_str, 0))
+        elif 1 <= dte <= 7:
+            target_exps.add(exp_str); flow_expiries.append((exp_str, dte))
+    if not target_exps:
+        for exp_str, dte in sorted(all_exp.items(), key=lambda x: x[1])[:2]:
+            if dte >= 0:
+                target_exps.add(exp_str); flow_expiries.append((exp_str, dte))
+
+    def _ensure(K):
+        if K not in strike_data:
+            strike_data[K] = {'call_vol':0,'put_vol':0,'call_oi':0,'put_oi':0,
+                               'call_prem':0.0,'put_prem':0.0}
+
+    for side, is_call in [('callExpDateMap', True), ('putExpDateMap', False)]:
+        for exp_key, strikes_dict in chain.get(side, {}).items():
+            exp_str = exp_key.split(':')[0]
+            if exp_str not in target_exps:
+                continue
+            dte = all_exp.get(exp_str, 7)
+            is_0dte = (dte == 0)
+            for strike_str, contracts in strikes_dict.items():
+                for c in contracts:
+                    K = float(c.get('strikePrice') or strike_str)
+                    if not (lo <= K <= hi):
+                        continue
+                    _ensure(K)
+                    vol = int(c.get('totalVolume') or 0)
+                    oi  = int(c.get('openInterest') or 0)
+                    bid = float(c.get('bid') or 0)
+                    ask = float(c.get('ask') or 0)
+                    mark = (bid + ask) / 2 if bid > 0 and ask > 0 else float(c.get('mark') or 0)
+                    prem = vol * mark * 100
+                    if is_call:
+                        strike_data[K]['call_vol']  += vol
+                        strike_data[K]['call_oi']   += oi
+                        strike_data[K]['call_prem'] += prem
+                        if is_0dte: dte0_call_vol += vol
+                    else:
+                        strike_data[K]['put_vol']  += vol
+                        strike_data[K]['put_oi']   += oi
+                        strike_data[K]['put_prem'] += prem
+                        if is_0dte: dte0_put_vol += vol
+                    if oi > 0 and vol > oi * 2 and vol > 500:
+                        unusual.append({'type': 'CALL' if is_call else 'PUT',
+                                        'strike': K, 'expiry': exp_str,
+                                        'vol': vol, 'ratio': round(vol / max(oi, 1), 1),
+                                        'premium_k': round(prem / 1000, 2)})
+
+    if not strike_data:
+        return None
+
+    skeys = sorted(strike_data)
+    call_vol_a  = [strike_data[k]['call_vol']  for k in skeys]
+    put_vol_a   = [strike_data[k]['put_vol']   for k in skeys]
+    call_prem_k = [round(strike_data[k]['call_prem'] / 1000, 2) for k in skeys]
+    put_prem_k  = [round(strike_data[k]['put_prem']  / 1000, 2) for k in skeys]
+    net_prem_k  = [round((strike_data[k]['call_prem'] - strike_data[k]['put_prem']) / 1000, 2) for k in skeys]
+
+    total_call_vol  = sum(call_vol_a);  total_put_vol  = sum(put_vol_a)
+    total_call_prem = sum(strike_data[k]['call_prem'] for k in skeys)
+    total_put_prem  = sum(strike_data[k]['put_prem']  for k in skeys)
+
+    pcr_vol  = round(total_put_vol  / (total_call_vol  + 1e-9), 3)
+    pcr_prem = round(total_put_prem / (total_call_prem + 1e-9), 3)
+    if   total_call_prem > total_put_prem * 1.25: sentiment = 'BULLISH'
+    elif total_put_prem  > total_call_prem * 1.25: sentiment = 'BEARISH'
+    else:                                           sentiment = 'NEUTRAL'
+
+    avg_dte = (sum(d for _, d in flow_expiries) / len(flow_expiries)) if flow_expiries else 7
+    avg_T   = max(avg_dte, 1) / 365.0
+    sigma   = 0.25
+    dealer_delta_k = []
+    for k in skeys:
+        cd   = _bs_delta(spot, k, avg_T, 0.0, sigma, 'call')
+        pd_a = abs(_bs_delta(spot, k, avg_T, 0.0, sigma, 'put'))
+        buy  = strike_data[k]['call_vol'] * cd   * 100 * spot / 1000
+        sell = strike_data[k]['put_vol']  * pd_a * 100 * spot / 1000
+        dealer_delta_k.append(round(buy - sell, 2))
+    net_dealer_delta_m = round(sum(dealer_delta_k) / 1000, 3)
+
+    max_pain_strike = _compute_max_pain(strike_data, skeys)
+    total_oi_by_k   = {k: strike_data[k]['call_oi'] + strike_data[k]['put_oi'] for k in skeys}
+    pin_risk_strike = max(skeys, key=lambda k: total_oi_by_k[k]) if skeys else 0.0
+
+    above = [k for k in skeys if k > spot * 1.005]
+    below = [k for k in skeys if k < spot * 0.995]
+    squeeze_potential = False; squeeze_strike = 0.0
+    crash_potential   = False; crash_strike   = 0.0
+    if above:
+        sc = max(above, key=lambda k: strike_data[k]['call_oi'])
+        if strike_data[sc]['call_oi'] > 2000:
+            squeeze_potential = True; squeeze_strike = sc
+    if below:
+        sp = max(below, key=lambda k: strike_data[k]['put_oi'])
+        if strike_data[sp]['put_oi'] > 2000:
+            crash_potential = True; crash_strike = sp
+
+    cm, pm = total_call_prem / 1e6, total_put_prem / 1e6
+    parts = []
+    if sentiment == 'BULLISH':
+        parts.append(f'Call premium dominates: ${cm:.2f}M calls vs ${pm:.2f}M puts (P/C {pcr_prem:.2f}).')
+    elif sentiment == 'BEARISH':
+        parts.append(f'Put premium dominates: ${pm:.2f}M puts vs ${cm:.2f}M calls (P/C {pcr_prem:.2f}).')
+    else:
+        parts.append(f'Mixed flow: ${cm:.2f}M calls vs ${pm:.2f}M puts (P/C {pcr_prem:.2f}).')
+    top_c = max(strike_data, key=lambda k: strike_data[k]['call_vol'], default=None)
+    top_p = max(strike_data, key=lambda k: strike_data[k]['put_vol'],  default=None)
+    if top_c: parts.append(f'Highest call volume at ${top_c:.0f}.')
+    if top_p: parts.append(f'Highest put volume at ${top_p:.0f}.')
+    if has_0dte: parts.append(f'0DTE: {int(dte0_call_vol):,} calls / {int(dte0_put_vol):,} puts.')
+    if unusual:
+        top_u = sorted(unusual, key=lambda x: x['ratio'], reverse=True)[:3]
+        parts.append('Unusual: ' + ', '.join(f"${u['strike']:.0f} {u['type']} {u['ratio']}x OI" for u in top_u) + '.')
+    dir_word = 'BUY' if net_dealer_delta_m >= 0 else 'SELL'
+    parts.append(f'Dealer delta hedging requires ~${abs(net_dealer_delta_m):.2f}M in {dir_word} orders.')
+
+    print(f'[Schwab Flows] {symbol}: {sentiment}, call_vol={total_call_vol:,}, put_vol={total_put_vol:,}')
+    return {
+        'symbol':             symbol,
+        'label':              SYMBOL_LABELS.get(symbol, symbol),
+        'group':              group,
+        'asset_type':         _asset_type_for(symbol),
+        'spot':               round(spot, 4),
+        'no_options':         False,
+        'has_0dte':           has_0dte,
+        'flow_expiries':      [[e, d] for e, d in flow_expiries],
+        'strikes':            [round(k, 2) for k in skeys],
+        'call_vol':           call_vol_a,
+        'put_vol':            put_vol_a,
+        'call_prem_k':        call_prem_k,
+        'put_prem_k':         put_prem_k,
+        'net_prem_k':         net_prem_k,
+        'dealer_delta_k':     dealer_delta_k,
+        'net_dealer_delta_m': net_dealer_delta_m,
+        'max_pain_strike':    round(max_pain_strike, 2),
+        'pin_risk_strike':    round(pin_risk_strike, 2),
+        'squeeze_potential':  squeeze_potential,
+        'squeeze_strike':     round(squeeze_strike, 2),
+        'crash_potential':    crash_potential,
+        'crash_strike':       round(crash_strike, 2),
+        'total_call_vol':     int(total_call_vol),
+        'total_put_vol':      int(total_put_vol),
+        'total_call_prem_m':  round(total_call_prem / 1e6, 3),
+        'total_put_prem_m':   round(total_put_prem / 1e6, 3),
+        'pcr_vol':            pcr_vol,
+        'pcr_prem':           pcr_prem,
+        'flow_sentiment':     sentiment,
+        'unusual':            unusual[:20],
+        'dte0_call_vol':      int(dte0_call_vol),
+        'dte0_put_vol':       int(dte0_put_vol),
+        'description':        ' '.join(parts),
+        'source':             'schwab',
+    }
 
 @app.route('/api/broker-connect/schwab/auth-url', methods=['POST'])
 def schwab_auth_url():
@@ -2578,6 +2951,18 @@ def _gex_row(symbol: str, group: str, nocache: bool = False) -> dict | None:
         cache_set(ck, row)
         return row
 
+    # ── Try Schwab option chain first (real gamma, live OI, live volume) ──────
+    if not _is_futures:
+        _sc_chain = _schwab_chain_raw(symbol)
+        if _sc_chain:
+            _underlying = _sc_chain.get('underlying', {})
+            _spot = float(_underlying.get('last') or _underlying.get('mark') or 0)
+            if _spot > 0:
+                _result = _schwab_gex_from_chain(_sc_chain, symbol, group, _spot)
+                if _result:
+                    cache_set(ck, _result)
+                    return _result
+
     try:
         ticker = yf.Ticker(symbol)
 
@@ -3234,6 +3619,17 @@ def _flow_row(symbol: str, group: str, nocache: bool = False) -> dict | None:
         cached = cache_get(ck)
         if cached:
             return cached
+    # ── Try Schwab option chain first (real volume, premium, OI) ─────────────
+    _sc_chain2 = _schwab_chain_raw(symbol)
+    if _sc_chain2:
+        _underlying2 = _sc_chain2.get('underlying', {})
+        _spot2 = float(_underlying2.get('last') or _underlying2.get('mark') or 0)
+        if _spot2 > 0:
+            _result2 = _schwab_flows_from_chain(_sc_chain2, symbol, group, _spot2)
+            if _result2:
+                cache_set(ck, _result2)
+                return _result2
+
     try:
         # ── Spot price ─────────────────────────────────────────────────────────
         ticker = yf.Ticker(symbol)  # object creation only — no lock needed
