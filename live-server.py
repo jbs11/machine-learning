@@ -2720,6 +2720,12 @@ def market_summary_endpoint():
             sym_map[key] = (sym, 'options', 'options')
 
     nocache = request.args.get('nocache', '0') == '1'
+    ck = cache_key('all', 'market-summary')
+    if not nocache:
+        cached = cache_get(ck)
+        if cached:
+            return jsonify(cached)
+
     results: dict[str, dict] = {}
 
     def fetch_one(key: str) -> tuple[str, dict | None]:
@@ -2819,7 +2825,7 @@ def market_summary_endpoint():
             f"— {'safe-haven demand' if gc_r.get('signal')=='BUY' else 'risk-on rotation' if gc_r.get('signal')=='SELL' else 'consolidating'}. ")
     market_commentary = ''.join(commentary_parts)
 
-    return jsonify({
+    result = {
         'market_direction':   direction,
         'sentiment':          {'buy': buy_c, 'sell': sel_c, 'hold': hld_c,
                                'bull_pct': round(bull_pct, 1), 'bear_pct': round(bear_pct, 1),
@@ -2835,7 +2841,9 @@ def market_summary_endpoint():
         'market_commentary':  market_commentary,
         'symbols_computed':   len(results),
         'timestamp':          datetime.now().isoformat(),
-    })
+    }
+    cache_set(ck, result)
+    return jsonify(result)
 
 
 # ── Feature Table endpoint ────────────────────────────────────────────────────

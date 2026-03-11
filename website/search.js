@@ -407,7 +407,7 @@ window.cachedFetch = (function () {
   }
 
   async function fetchFresh(url, opts) {
-    var resp = await fetch(url, Object.assign({ signal: AbortSignal.timeout(15000) }, opts || {}));
+    var resp = await fetch(url, Object.assign({ signal: AbortSignal.timeout(60000) }, opts || {}));
     var data = await resp.json();
     writeCache(url, data);
     return data;
