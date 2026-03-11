@@ -588,6 +588,8 @@ let _flowsData = null;
 let _activeSym = 'DIA';
 let _mainChart = null;
 let _chartInstances = {};
+const _mainChartRanges = {}; // sym -> saved visible range
+let _hiSuppressSave = false;
 
 // ── Utilities ────────────────────────────────────────────────────────────────
 function fmtM(v) { if (v == null) return '—'; const a = Math.abs(v); return (v < 0 ? '-' : '+') + '$' + (a >= 1000 ? (a/1000).toFixed(1) + 'B' : a.toFixed(0) + 'M'); }
@@ -950,7 +952,18 @@ async function loadMainChart(sym, gexAsset) {
     });
   }
 
-  chart.timeScale().fitContent();
+  (function(s){
+    chart.timeScale().subscribeVisibleLogicalRangeChange(function(r){
+      if (!_hiSuppressSave) _mainChartRanges[s] = r;
+    });
+  })(sym);
+  _hiSuppressSave = true;
+  if (_mainChartRanges[sym]) {
+    chart.timeScale().setVisibleLogicalRange(_mainChartRanges[sym]);
+  } else {
+    chart.timeScale().fitContent();
+  }
+  setTimeout(function(){ _hiSuppressSave = false; }, 100);
   new ResizeObserver(entries => entries.forEach(e => chart.applyOptions({width:e.contentRect.width}))).observe(el);
   _mainChart = chart;
 }

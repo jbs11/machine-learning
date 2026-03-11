@@ -348,6 +348,8 @@ var flowMap = {};
 var sigMap  = {};
 var canMap  = {};
 var chartInst = {};  // sym -> LW Charts instance
+var _savedRange    = {};  // sym -> saved visible logical range
+var _suppressSave  = {};  // sym -> bool flag
 var roMap   = {};    // sym -> ResizeObserver
 var seriesMap = {};  // sym -> { cs, sma20s, sma50s, bbUS, bbLS }
 var tfMap   = {};    // sym -> active interval
@@ -585,7 +587,13 @@ function updateChartData(sym) {
     sm.cs.setMarkers(markers);
   }
 
-  sm.chart.timeScale().fitContent();
+  _suppressSave[sym] = true;
+  if (_savedRange[sym] !== null && _savedRange[sym] !== undefined) {
+    sm.chart.timeScale().setVisibleLogicalRange(_savedRange[sym]);
+  } else {
+    sm.chart.timeScale().fitContent();
+  }
+  setTimeout(function(){ _suppressSave[sym] = false; }, 100);
 }
 
 // ── changeTF — switches timeframe for one asset ───────────────────────────────
@@ -601,6 +609,7 @@ function changeTF(sym, interval, btn) {
   // Show spinner
   if(ldEl) ldEl.style.display = 'inline';
 
+  _savedRange[sym] = null; // reset zoom on timeframe change
   tfMap[sym] = interval;
   var base = window.location.origin;
   fetch(base+'/api/candles/'+encodeURIComponent(sym)+'?interval='+interval)
@@ -721,6 +730,11 @@ function initChart(a) {
     if(ol) ol.textContent = Number(d.low).toFixed(2);
     if(oc) oc.textContent = Number(d.close).toFixed(2);
   });
+
+  // ── Persist zoom/pan across refreshes
+  (function(s){ chart.timeScale().subscribeVisibleLogicalRangeChange(function(r){
+    if (!_suppressSave[s]) _savedRange[s] = r;
+  }); })(sym);
 
   // ── Responsive resize ─────────────────────────────────────────────
   if(window.ResizeObserver){

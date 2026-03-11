@@ -2365,6 +2365,8 @@ function renderDHMetrics(gex, flows) {
 
 // ── Candlestick chart loader (shared helper) ─────────────────────────────────
 let _chartInstances = {};
+const _instChartRanges = {}; // containerId -> saved visible range
+let _instSuppressSave = false;
 async function loadCandlesFor(sym, containerId, gexLevels, regimeChipId) {
   const el = document.getElementById(containerId);
   if (!el) return;
@@ -2417,7 +2419,18 @@ async function loadCandlesFor(sym, containerId, gexLevels, regimeChipId) {
       cs.createPriceLine({ price: v, color, lineWidth: 1, lineStyle: style, axisLabelVisible: true, title });
     });
   }
-  chart.timeScale().fitContent();
+  (function(cid){
+    chart.timeScale().subscribeVisibleLogicalRangeChange(function(r){
+      if (!_instSuppressSave) _instChartRanges[cid] = r;
+    });
+  })(containerId);
+  _instSuppressSave = true;
+  if (_instChartRanges[containerId]) {
+    chart.timeScale().setVisibleLogicalRange(_instChartRanges[containerId]);
+  } else {
+    chart.timeScale().fitContent();
+  }
+  setTimeout(function(){ _instSuppressSave = false; }, 100);
   const ro = new ResizeObserver(entries => entries.forEach(e => chart.applyOptions({ width: e.contentRect.width })));
   ro.observe(el);
   _chartInstances[containerId] = chart;

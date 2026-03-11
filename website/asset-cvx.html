@@ -342,6 +342,8 @@ var chartInst = null;
 var chartCS = null;
 var chartGexLines = [];
 var currentTF = '1h';
+var _savedLogRange = null; // persist user zoom/pan across refreshes
+var _suppressSave  = false;
 var TF_LABELS = { '1d':'1D', '4h':'4H', '1h':'1H', '30m':'30m', '15m':'15m', '5m':'5m' };
 
 function setStatus(s, msg) {
@@ -400,11 +402,20 @@ async function loadChart() {
         document.getElementById('ohlc-low').textContent   = 'L ' + d.low.toFixed(2);
         document.getElementById('ohlc-close').textContent = 'C ' + d.close.toFixed(2);
       });
+      chartInst.timeScale().subscribeVisibleLogicalRangeChange(function(r) {
+        if (!_suppressSave) _savedLogRange = r;
+      });
       window.addEventListener('resize', function() { chartInst.applyOptions({width: container.clientWidth}); });
     }
 
     chartCS.setData(mapped);
-    chartInst.timeScale().fitContent();
+    _suppressSave = true;
+    if (_savedLogRange !== null) {
+      chartInst.timeScale().setVisibleLogicalRange(_savedLogRange);
+    } else {
+      chartInst.timeScale().fitContent();
+    }
+    setTimeout(function() { _suppressSave = false; }, 100);
 
     if (mapped.length) {
       var last = mapped[mapped.length-1];
@@ -452,6 +463,7 @@ async function loadChart() {
 }
 
 async function changeTF(interval, btn) {
+  _savedLogRange = null; // reset zoom on timeframe change
   currentTF = interval;
   document.querySelectorAll('.tf-btn').forEach(function(b) { b.classList.remove('active'); });
   btn.classList.add('active');

@@ -858,6 +858,8 @@ let currentType    = 'stock';
 let currentTF      = '1h';
 let autoRefreshTimer = null;
 let gexCache      = {};   // sym -> { call_wall, put_wall, flip_level, spot }
+let _savedLogRange = null; // persist user zoom/pan across refreshes
+let _suppressSave  = false;
 let activeGexLines = [];  // price line refs; cleared on each applyGexLines() call
 
 const TF_LABELS = {
@@ -866,6 +868,7 @@ const TF_LABELS = {
 };
 
 function setTF(tf) {
+  _savedLogRange = null; // reset zoom on timeframe change
   currentTF = tf;
   // Update active button
   document.querySelectorAll('.tf-btn').forEach(b => {
@@ -920,6 +923,7 @@ function initChart() {
   const container = document.getElementById('chart-container');
   // Destroy previous instance if any
   if (chartInstance) {
+    _savedLogRange = null; // symbol change — reset zoom
     try { chartInstance.remove(); } catch(e) {}
     chartInstance = null;
     candleSeries  = null;
@@ -961,6 +965,9 @@ function initChart() {
       document.getElementById('chart-ohlc-display').textContent =
         `O: ${d.open.toFixed(2)}  H: ${d.high.toFixed(2)}  L: ${d.low.toFixed(2)}  C: ${d.close.toFixed(2)}`;
     }
+  });
+  chartInstance.timeScale().subscribeVisibleLogicalRangeChange(function(r) {
+    if (!_suppressSave) _savedLogRange = r;
   });
 }
 
@@ -1044,7 +1051,13 @@ async function loadCandles(symbol, nocache = false) {
       time: c.time, value: c.volume,
       color: c.close >= c.open ? 'rgba(74,222,128,.25)' : 'rgba(248,113,113,.25)'
     })));
-    chartInstance.timeScale().fitContent();
+    _suppressSave = true;
+    if (_savedLogRange !== null) {
+      chartInstance.timeScale().setVisibleLogicalRange(_savedLogRange);
+    } else {
+      chartInstance.timeScale().fitContent();
+    }
+    setTimeout(function() { _suppressSave = false; }, 100);
     document.getElementById('chart-candle-count').textContent =
       `${clean.length} × ${TF_LABELS[tf]} bars`;
     document.getElementById('chart-symbol-title').textContent =

@@ -528,6 +528,8 @@ let _activeFilter = 'all';
 let _gexMap    = {};  // symbol → GEX data
 let _tfCandles = {};  // symbol → raw candles [{time,open,high,low,close}]
 let _lwCharts  = {};  // symbol → { chart, cs, vs, bgSeries, priceLines, height, isResizing, resizeStartY, resizeStartH }
+const _xgSavedRanges = {}; // sym -> saved visible range
+let _xgSuppressSave = false;
 const DEFAULT_H = 320;
 const MIN_H = 180, MAX_H = 800;
 
@@ -1589,6 +1591,11 @@ function renderLWChart(a, opts = {}) {
       }
     });
 
+    (function(s){
+      chart.timeScale().subscribeVisibleLogicalRangeChange(function(r){
+        if (!_xgSuppressSave) _xgSavedRanges[s] = r;
+      });
+    })(a.symbol);
     inst = { chart, cs, vs, bgSeries, priceLines: [], height: DEFAULT_H,
               isResizing: false, resizeStartY: 0, resizeStartH: DEFAULT_H };
     _lwCharts[a.symbol] = inst;
@@ -1676,7 +1683,13 @@ function renderLWChart(a, opts = {}) {
     });
   }
 
-  inst.chart.timeScale().fitContent();
+  _xgSuppressSave = true;
+  if (_xgSavedRanges[a.symbol]) {
+    inst.chart.timeScale().setVisibleLogicalRange(_xgSavedRanges[a.symbol]);
+  } else {
+    inst.chart.timeScale().fitContent();
+  }
+  setTimeout(function(){ _xgSuppressSave = false; }, 100);
 }
 
 // ── Error state ────────────────────────────────────────────────────────────
