@@ -497,7 +497,7 @@ for asset in assets:
 
 # Enumerate when you need index too
 for i, strike in enumerate(strikes):
-    print(f"Strike {i}: ${strike}")</code></pre>
+    print(f"Strike {i}: \${strike}")</code></pre>
 
 <h3>Functions</h3>
 <pre><code class="language-python">def calculate_pcr(call_vol: float, put_vol: float) -&gt; float:
@@ -987,7 +987,7 @@ if __name__ == '__main__':
     SYMBOLS = ['SPY', 'QQQ', 'IWM', 'AAPL', 'NVDA', 'MSFT']
     for sym in SYMBOLS:
         df = load_pipeline(sym, force=True)
-        print(f'  {sym}: {len(df)} bars, last ${df["close"].iloc[-1]:.2f}')</code></pre>
+        print(f'  {sym}: {len(df)} bars, last \${df["close"].iloc[-1]:.2f}')</code></pre>
 
 <h3>Test It</h3>
 <pre><code class="language-python">from market_data import load_pipeline
