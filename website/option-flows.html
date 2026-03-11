@@ -745,12 +745,12 @@ function buildUnusualTable(unusual) {
     const typeClass = u.type === 'CALL' ? 'u-call' : 'u-put';
     return `<tr>
       <td><span class="${typeClass}">${u.type}</span> @$${u.strike}</td>
-      <td>${u.vol.toLocaleString()}</td>
-      <td>${u.oi.toLocaleString()}</td>
-      <td class="u-ratio">${u.ratio}×</td>
-      <td>$${u.premium_k}K</td>
-      <td>${u.expiry}</td>
-      <td>${u.dte === 0 ? '<span style="color:#c084fc;font-weight:700;">0DTE</span>' : u.dte + 'd'}</td>
+      <td>${(u.vol||0).toLocaleString()}</td>
+      <td>${(u.oi||0).toLocaleString()}</td>
+      <td class="u-ratio">${u.ratio||'—'}×</td>
+      <td>$${u.premium_k||0}K</td>
+      <td>${u.expiry||'—'}</td>
+      <td>${u.dte === 0 ? '<span style="color:#c084fc;font-weight:700;">0DTE</span>' : (u.dte||'?') + 'd'}</td>
     </tr>`;
   }).join('');
   return `
