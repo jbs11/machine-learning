@@ -441,7 +441,7 @@
       try {
         const r = await fetch(PC_API + '/api/candles/' + encodeURIComponent(sym) + '?interval=' + interval, { signal: AbortSignal.timeout(15000) });
         const data = await r.json();
-        const candles = (data.candles||data||[]).filter(c=>c.time&&c.open);
+        const candles = (data.candles||data||[]).filter(c=>c.time&&c.open!=null);
         const vol = candles.map(c=>({time:c.time, value:c.volume||0, color: c.close>=c.open?'rgba(74,222,128,.35)':'rgba(248,113,113,.35)'}));
         _pcCandleSeries.setData(candles);
         _pcVolSeries.setData(vol);
@@ -560,20 +560,25 @@ function renderCards() {
     <div class="cards-grid">${g.rows.map(r => buildCard(r)).join('')}</div>
   `).join('');
 
-  // Lazy-draw each flow chart as it scrolls into view
-  filtered.forEach(function(r) {
-    if (!r.no_options && r.strikes && r.strikes.length) {
-      var card = document.querySelector('[data-sym="' + r.symbol + '"]') ||
-                 document.getElementById('cardsContainer');
-      lazyLoad(card, function() {
-        requestAnimationFrame(function() {
-          drawTornado(r);
-          drawNetPrem(r);
-          drawDealerDelta(r);
-        });
+  // Draw visible charts immediately, defer off-screen charts via IntersectionObserver
+  var _drawnSyms = {};
+  function _drawCard(r) {
+    if (_drawnSyms[r.symbol]) return;
+    _drawnSyms[r.symbol] = true;
+    drawTornado(r);
+    drawNetPrem(r);
+    drawDealerDelta(r);
+  }
+  // Use a single rAF after a short delay to ensure layout is computed
+  setTimeout(function() {
+    requestAnimationFrame(function() {
+      filtered.forEach(function(r) {
+        if (!r.no_options && r.strikes && r.strikes.length) {
+          _drawCard(r);
+        }
       });
-    }
-  });
+    });
+  }, 50);
 }
 
 /* ── Build card HTML ── */
