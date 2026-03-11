@@ -13,6 +13,60 @@
       overflow:hidden;
     }
 
+    /* ── Media panel ───────────────────────────────────────── */
+    .cs-media {
+      background:var(--card); border-bottom:1px solid var(--border);
+    }
+    .cs-media-tabs {
+      display:flex; gap:0; border-bottom:1px solid var(--border);
+      padding:0 1.2rem;
+    }
+    .cs-media-tab {
+      padding:.5rem 1rem; font-size:.78rem; font-weight:700;
+      cursor:pointer; border-bottom:2px solid transparent;
+      color:var(--muted); background:none; border-top:none;
+      border-left:none; border-right:none; transition:all .15s;
+    }
+    .cs-media-tab.active { color:var(--accent); border-bottom-color:var(--accent); }
+    .cs-media-tab:hover  { color:var(--text); }
+
+    .cs-media-panel { display:none; }
+    .cs-media-panel.active { display:block; }
+
+    /* Video */
+    .cs-video-wrap {
+      position:relative; padding-bottom:42%; height:0; overflow:hidden;
+      background:#000; max-height:380px;
+    }
+    .cs-video-wrap iframe {
+      position:absolute; top:0; left:0; width:100%; height:100%;
+      border:none;
+    }
+    .cs-video-placeholder {
+      display:flex; flex-direction:column; align-items:center;
+      justify-content:center; height:200px; gap:.6rem;
+      color:var(--muted); font-size:.88rem;
+    }
+    .cs-video-placeholder .ph-icon { font-size:2.5rem; }
+
+    /* Audio */
+    .cs-audio-wrap {
+      padding:.9rem 1.2rem; display:flex; align-items:center; gap:1rem;
+      flex-wrap:wrap;
+    }
+    .cs-audio-label {
+      font-size:.78rem; font-weight:700; color:var(--muted);
+      white-space:nowrap;
+    }
+    .cs-audio-wrap audio {
+      flex:1; min-width:240px; height:36px;
+      accent-color:var(--accent);
+    }
+    .cs-audio-placeholder {
+      padding:.9rem 1.2rem; font-size:.82rem; color:var(--muted);
+      font-style:italic;
+    }
+
     /* ── Sidebar ──────────────────────────────────────────── */
     .cs-sidebar {
       width:296px; min-width:260px; max-width:296px;
@@ -401,6 +455,73 @@ function toggleMod(id, hdr) {
   setOpenMods(mods);
 }
 
+// ── Media panel helpers ────────────────────────────────────────────
+function buildMediaPanel(lesson) {
+  var hasVideo = !!lesson.video;
+  var hasAudio = !!lesson.audio;
+  if (!hasVideo && !hasAudio) return '';
+
+  // Decide which tab is default
+  var defaultTab = hasVideo ? 'video' : 'audio';
+
+  // Video panel content
+  var videoContent = '';
+  if (hasVideo) {
+    // Support bare YouTube ID or full URL
+    var ytId = lesson.video.replace(/.*(?:youtu\.be\/|v=|embed\/)([^&?]+).*/,'$1');
+    videoContent =
+      '<div class="cs-video-wrap">'
+      + '<iframe src="https://www.youtube.com/embed/' + ytId
+      + '?rel=0&modestbranding=1" allowfullscreen allow="accelerometer; autoplay;'
+      + ' clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe>'
+      + '</div>';
+  } else {
+    videoContent =
+      '<div class="cs-video-placeholder">'
+      + '<div class="ph-icon">&#127909;</div>'
+      + '<div>Video coming soon for this lesson</div>'
+      + '</div>';
+  }
+
+  // Audio panel content
+  var audioContent = '';
+  if (hasAudio) {
+    audioContent =
+      '<div class="cs-audio-wrap">'
+      + '<span class="cs-audio-label">&#127911; Lesson Audio</span>'
+      + '<audio controls preload="metadata" src="' + lesson.audio + '">'
+      + 'Your browser does not support audio.</audio>'
+      + '</div>';
+  } else {
+    audioContent = '<div class="cs-audio-placeholder">Audio narration coming soon.</div>';
+  }
+
+  return '<div class="cs-media">'
+    + '<div class="cs-media-tabs">'
+    + '<button class="cs-media-tab' + (defaultTab==='video' ? ' active' : '') + '"'
+    + ' onclick="switchTab(\'video\',this)">&#127909; Video</button>'
+    + '<button class="cs-media-tab' + (defaultTab==='audio' ? ' active' : '') + '"'
+    + ' onclick="switchTab(\'audio\',this)">&#127911; Audio</button>'
+    + '</div>'
+    + '<div class="cs-media-panel' + (defaultTab==='video' ? ' active' : '') + '" id="mediaPanelVideo">'
+    + videoContent + '</div>'
+    + '<div class="cs-media-panel' + (defaultTab==='audio' ? ' active' : '') + '" id="mediaPanelAudio">'
+    + audioContent + '</div>'
+    + '</div>';
+}
+
+function switchTab(tab, btn) {
+  // Update tab buttons
+  var tabs = btn.parentElement.querySelectorAll('.cs-media-tab');
+  tabs.forEach(function(t){ t.classList.remove('active'); });
+  btn.classList.add('active');
+  // Update panels
+  ['video','audio'].forEach(function(t) {
+    var panel = document.getElementById('mediaPanel' + t.charAt(0).toUpperCase() + t.slice(1));
+    if (panel) panel.classList.toggle('active', t === tab);
+  });
+}
+
 // ── Content rendering ──────────────────────────────────────────────
 function loadLesson(id) {
   if (!window.COURSE_LESSONS) return;
@@ -437,6 +558,7 @@ function loadLesson(id) {
     + (done ? '&#10003; Completed' : 'Mark Complete')
     + '</button>'
     + '</div>'
+    + buildMediaPanel(lesson)
     + '<div class="cs-body">'
     + '<div class="cs-lesson-content">' + lesson.content + '</div>'
     + '<div class="cs-footer">' + prevBtn + nextBtn + '</div>'

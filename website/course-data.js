@@ -21,6 +21,7 @@ window.COURSE_LESSONS = [
 {
   id:"1.1", module:1, tier:"basic", duration:35,
   title:"How Financial Markets Work",
+  audio:"/audio/tour-01.mp3", video:null,
   content:`
 <h2>How Financial Markets Work</h2>
 <p class="lesson-intro">Before writing a single line of code, you need to understand the arena you're trading in. Financial markets are complex adaptive systems — but their core mechanics are surprisingly simple once you break them down.</p>
@@ -70,6 +71,7 @@ window.COURSE_LESSONS = [
 {
   id:"1.2", module:1, tier:"basic", duration:40,
   title:"Market Participants — Who You're Trading Against",
+  audio:"/audio/tour-02.mp3", video:null,
   content:`
 <h2>Market Participants — Who You're Trading Against</h2>
 <p class="lesson-intro">Every trade has a counterparty. Understanding who else is in the market — their goals, constraints, and behaviors — gives you a critical edge in designing models that can actually profit.</p>
@@ -111,6 +113,7 @@ window.COURSE_LESSONS = [
 {
   id:"1.3", module:1, tier:"basic", duration:30,
   title:"Order Types and Order Flow",
+  audio:"/audio/tour-03.mp3", video:null,
   content:`
 <h2>Order Types and Order Flow</h2>
 <p class="lesson-intro">The type of order you use determines your execution price, certainty of fill, and market impact. For ML-based systems, choosing the right order type is as important as the signal itself.</p>
@@ -150,6 +153,7 @@ Sell limit @ $186.00 → fills only if SPY trades at $186.00 or higher</code></p
 {
   id:"1.4", module:1, tier:"basic", duration:35,
   title:"Reading Price Charts — OHLCV and Candlesticks",
+  audio:"/audio/tour-04.mp3", video:null,
   content:`
 <h2>Reading Price Charts — OHLCV and Candlesticks</h2>
 <p class="lesson-intro">All ML trading models are built on price and volume data. Understanding exactly what OHLCV means and how to read candlestick charts is the foundation for every feature you'll engineer.</p>
@@ -211,6 +215,7 @@ df['lower_wick'] = (df[['open','close']].min(axis=1) - df['low']) / df['close']<
 {
   id:"1.5", module:1, tier:"basic", duration:45,
   title:"Understanding Options — Calls, Puts, and the Greeks",
+  audio:"/audio/tour-05.mp3", video:null,
   content:`
 <h2>Understanding Options — Calls, Puts, and the Greeks</h2>
 <p class="lesson-intro">Options are the most information-rich instruments in the market. Learning to read options data unlocks leading indicators that pure price analysis can't provide — which is why this dashboard devotes four pages to options analysis.</p>
@@ -266,6 +271,7 @@ df['lower_wick'] = (df[['open','close']].min(axis=1) - df['low']) / df['close']<
 {
   id:"1.6", module:1, tier:"basic", duration:25,
   title:"Key Market Times and Calendar Events",
+  audio:"/audio/tour-06.mp3", video:null,
   content:`
 <h2>Key Market Times and Calendar Events</h2>
 <p class="lesson-intro">Markets are not uniform across time. Certain times of day, week, month, and year have statistically reliable behavioral patterns — making calendar features some of the most powerful inputs in any ML trading model.</p>
@@ -319,6 +325,7 @@ df['dow_cos']  = np.cos(2 * np.pi * df['day_of_week'] / 5)</code></pre>
 {
   id:"1.7", module:1, tier:"basic", duration:40,
   title:"Risk Management Fundamentals",
+  audio:"/audio/tour-07.mp3", video:null,
   content:`
 <h2>Risk Management Fundamentals</h2>
 <p class="lesson-intro">The best ML signal in the world is worthless without proper risk management. More trading accounts are blown by poor position sizing and drawdown management than by bad signals. This lesson covers the math and rules that keep you in the game.</p>
@@ -379,6 +386,7 @@ Sharpe of:
 {
   id:"2.1", module:2, tier:"basic", duration:45,
   title:"Environment Setup — Python, Jupyter, VS Code",
+  audio:"/audio/tour-08.mp3", video:null,
   content:`
 <h2>Environment Setup — Python, Jupyter, VS Code</h2>
 <p class="lesson-intro">A proper development environment is the foundation of everything. This lesson walks you through the exact setup used to build this dashboard — reproducible, portable, and production-ready.</p>
@@ -448,6 +456,7 @@ pip install -r requirements.txt</code></pre>
 {
   id:"2.2", module:2, tier:"basic", duration:60,
   title:"Python Basics for Traders",
+  audio:"/audio/tour-09.mp3", video:null,
   content:`
 <h2>Python Basics for Traders</h2>
 <p class="lesson-intro">This lesson covers the Python fundamentals you'll actually use when working with market data. We skip theoretical computer science and focus on the patterns that appear constantly in trading code.</p>
@@ -543,6 +552,7 @@ def fetch_with_retry(url: str, max_retries: int = 3) -&gt; dict:
 {
   id:"2.3", module:2, tier:"basic", duration:70,
   title:"Pandas — The Trader's Data Engine",
+  audio:"/audio/tour-10.mp3", video:null,
   content:`
 <h2>Pandas — The Trader's Data Engine</h2>
 <p class="lesson-intro">Pandas is the single most important library for financial data analysis. Every piece of market data you'll work with lives in a Pandas DataFrame. Mastering it is non-negotiable.</p>
@@ -617,6 +627,7 @@ df.dropna(inplace=True)</code></pre>
 {
   id:"2.4", module:2, tier:"basic", duration:50,
   title:"Fetching Live Market Data with yfinance",
+  audio:"/audio/tour-11.mp3", video:null,
   content:`
 <h2>Fetching Live Market Data with yfinance</h2>
 <p class="lesson-intro">yfinance is the most accessible source of market data for retail quants. It wraps Yahoo Finance's API and delivers clean OHLCV data, options chains, and fundamental data — free, no API key required.</p>
@@ -691,6 +702,7 @@ spy = load_ohlcv('SPY', period='5y')</code></pre>
 {
   id:"2.5", module:2, tier:"basic", duration:40,
   title:"NumPy for Numerical Finance",
+  audio:"/audio/tour-12.mp3", video:null,
   content:`
 <h2>NumPy for Numerical Finance</h2>
 <p class="lesson-intro">NumPy is the mathematical backbone of the Python data science stack. While Pandas handles labeled data, NumPy handles the raw array math underneath — making your financial calculations 10-100x faster than pure Python.</p>
@@ -763,6 +775,7 @@ def max_drawdown(returns):
 {
   id:"2.6", module:2, tier:"basic", duration:50,
   title:"Data Cleaning and Preprocessing",
+  audio:"/audio/tour-13.mp3", video:null,
   content:`
 <h2>Data Cleaning and Preprocessing</h2>
 <p class="lesson-intro">Real market data is messy. Gaps, errors, corporate actions, and timezone issues are common. Clean data is the difference between a reliable ML model and one that fails in production.</p>
@@ -838,6 +851,7 @@ assert (df['close'] &lt;= df['high']).all(), 'Close above High!'</code></pre>
 {
   id:"2.7", module:2, tier:"basic", duration:45,
   title:"Visualization — Charting Market Data",
+  audio:"/audio/tour-14.mp3", video:null,
   content:`
 <h2>Visualization — Charting Market Data</h2>
 <p class="lesson-intro">Visualization is how you understand data, validate signals, debug models, and communicate results. This lesson covers the charting tools used throughout this dashboard and in professional quant research.</p>
@@ -919,6 +933,7 @@ plt.show()</code></pre>
 {
   id:"2.8", module:2, tier:"basic", duration:60,
   title:"Project — Build a Market Data Pipeline",
+  audio:"/audio/tour-15.mp3", video:null,
   content:`
 <h2>Project — Build a Market Data Pipeline</h2>
 <p class="lesson-intro">This project ties together everything in Module 2. You'll build a complete, production-ready pipeline that fetches, cleans, stores, and serves market data for any symbol — the foundation every ML model in this course will use.</p>
@@ -1014,6 +1029,7 @@ print(spy.isnull().sum().sum())  # Should be 0</code></pre>
 {
   id:"3.1", module:3, tier:"basic", duration:45,
   title:"Moving Averages — SMA, EMA, and VWAP",
+  audio:"/audio/tour-16.mp3", video:null,
   content:`
 <h2>Moving Averages — SMA, EMA, and VWAP</h2>
 <p class="lesson-intro">Moving averages smooth price noise to reveal trends, generate crossover signals, and define dynamic support and resistance. For ML models, moving average ratios and crossovers are among the most predictive features available.</p>
@@ -1072,6 +1088,7 @@ df['ema_cross_change'] = df['ema_cross'].diff()  # 2=bullish cross, -2=bearish</
 {
   id:"3.2", module:3, tier:"basic", duration:50,
   title:"Momentum Indicators — RSI and MACD",
+  audio:"/audio/tour-17.mp3", video:null,
   content:`
 <h2>Momentum Indicators — RSI and MACD</h2>
 <p class="lesson-intro">Momentum measures the speed and direction of price change. RSI and MACD are the two most widely used momentum indicators — and both have strong predictive value as ML features when properly constructed.</p>
@@ -1132,6 +1149,7 @@ df['momentum_score'] = (
 {
   id:"3.3", module:3, tier:"basic", duration:40,
   title:"Volatility — Bollinger Bands and ATR",
+  audio:"/audio/tour-18.mp3", video:null,
   content:`
 <h2>Volatility — Bollinger Bands and ATR</h2>
 <p class="lesson-intro">Volatility is the most important risk dimension in markets. ML models that incorporate volatility features adapt their predictions to the current market regime — performing better than models that treat all market conditions the same.</p>
@@ -1195,6 +1213,7 @@ df['vol_regime'] = pd.cut(vol_pct, bins=[0, 0.33, 0.67, 1.0],
 {
   id:"3.4", module:3, tier:"basic", duration:40,
   title:"Volume Analysis",
+  audio:"/audio/tour-19.mp3", video:null,
   content:`
 <h2>Volume Analysis</h2>
 <p class="lesson-intro">Price moves with volume behind them are real; price moves without volume are suspect. Volume analysis adds the "conviction" dimension that pure price indicators miss.</p>
@@ -1249,6 +1268,7 @@ df['vol_ratio']   = df['up_volume'].rolling(10).sum() / (
 {
   id:"3.5", module:3, tier:"basic", duration:55,
   title:"Building the Full Feature Matrix",
+  audio:"/audio/tour-20.mp3", video:null,
   content:`
 <h2>Building the Full Feature Matrix</h2>
 <p class="lesson-intro">Feature engineering is where domain knowledge meets machine learning. This lesson combines all previous indicators into a structured feature matrix ready for any scikit-learn or XGBoost model.</p>
@@ -1326,6 +1346,7 @@ def build_features(df: pd.DataFrame) -&gt; pd.DataFrame:
 {
   id:"3.6", module:3, tier:"basic", duration:35,
   title:"Normalization, Scaling, and Stationarity",
+  audio:"/audio/tour-21.mp3", video:null,
   content:`
 <h2>Normalization, Scaling, and Stationarity</h2>
 <p class="lesson-intro">ML models don't understand "price in dollars." They understand numbers in a consistent range. Proper scaling prevents dominant features from drowning out subtle but important signals.</p>
@@ -1383,6 +1404,7 @@ for col in feature_cols:
 {
   id:"3.7", module:3, tier:"basic", duration:40,
   title:"Target Engineering — What Are You Predicting?",
+  audio:"/audio/tour-22.mp3", video:null,
   content:`
 <h2>Target Engineering — What Are You Predicting?</h2>
 <p class="lesson-intro">The target variable defines your model's job. The choice of <em>what</em> to predict has a larger impact on trading performance than any model architecture or hyperparameter choice.</p>
@@ -1442,6 +1464,7 @@ df['target_5d'] = (df['close'].shift(-5) &gt; df['close']).astype(int)</code></p
 {
   id:"3.8", module:3, tier:"basic", duration:35,
   title:"Avoiding Lookahead Bias",
+  audio:null, video:null,
   content:`
 <h2>Avoiding Lookahead Bias</h2>
 <p class="lesson-intro">Lookahead bias is the #1 cause of backtests that look great but fail in live trading. It occurs when your model uses information that wouldn't have been available at the time of the trade.</p>
@@ -1510,6 +1533,7 @@ for fold, (tr_idx, te_idx) in enumerate(tscv.split(X)):
 {
   id:"4.1", module:4, tier:"basic", duration:35,
   title:"Machine Learning Overview",
+  audio:"/audio/tour-23.mp3", video:null,
   content:`
 <h2>Machine Learning Overview</h2>
 <p class="lesson-intro">ML has become a buzzword. This lesson cuts through the hype and gives you a precise, practical understanding of what ML can and cannot do for trading.</p>
@@ -1559,6 +1583,7 @@ for fold, (tr_idx, te_idx) in enumerate(tscv.split(X)):
 {
   id:"4.2", module:4, tier:"basic", duration:50,
   title:"Linear and Logistic Regression",
+  audio:"/audio/tour-24.mp3", video:null,
   content:`
 <h2>Linear and Logistic Regression</h2>
 <p class="lesson-intro">Regression models are the simplest ML tools — and often surprisingly competitive against complex models. They're always your first baseline before trying XGBoost or neural nets.</p>
@@ -1638,6 +1663,7 @@ print(coefs.nsmallest(10))</code></pre>
 {
   id:"4.3", module:4, tier:"basic", duration:55,
   title:"Decision Trees and Random Forests",
+  audio:null, video:null,
   content:`
 <h2>Decision Trees and Random Forests</h2>
 <p class="lesson-intro">Decision trees learn non-linear rules — capturing interactions between features that linear models miss. Random Forests — ensembles of hundreds of trees — are the most robust general-purpose ML model for tabular financial data.</p>
@@ -1706,6 +1732,7 @@ plt.show()
 {
   id:"4.4", module:4, tier:"basic", duration:60,
   title:"XGBoost — The Trader's Model",
+  audio:null, video:null,
   content:`
 <h2>XGBoost — The Trader's Model</h2>
 <p class="lesson-intro">XGBoost wins more Kaggle competitions than any other algorithm. For tabular financial data, it's typically the best-performing model — handling missing data, mixed feature types, and non-linear relationships with minimal preprocessing.</p>
@@ -1782,6 +1809,7 @@ shap.force_plot(explainer.expected_value,
 {
   id:"4.5", module:4, tier:"basic", duration:45,
   title:"Walk-Forward Validation",
+  audio:null, video:null,
   content:`
 <h2>Walk-Forward Validation</h2>
 <p class="lesson-intro">How you validate your model determines whether your backtest reflects reality. The wrong validation approach creates the illusion of performance that evaporates in live trading.</p>
@@ -1856,6 +1884,7 @@ print(f'Walk-Forward Sharpe: {sharpe:.2f}')</code></pre>
 {
   id:"4.6", module:4, tier:"basic", duration:40,
   title:"Model Evaluation Metrics for Trading",
+  audio:null, video:null,
   content:`
 <h2>Model Evaluation Metrics for Trading</h2>
 <p class="lesson-intro">Accuracy alone is misleading for trading models. A model that correctly predicts 80% of days may still lose money if it misses the big down days. This lesson covers the metrics that actually predict real-world trading performance.</p>
@@ -1921,6 +1950,7 @@ print(f'IC: {ic:.4f}  (p={pvalue:.4f})')
 {
   id:"4.7", module:4, tier:"basic", duration:45,
   title:"Hyperparameter Tuning",
+  audio:null, video:null,
   content:`
 <h2>Hyperparameter Tuning</h2>
 <p class="lesson-intro">Hyperparameters are settings you choose before training. Tuning them can meaningfully improve performance, but naive tuning creates overfitting to the validation set. This lesson shows you how to tune correctly.</p>
@@ -1981,6 +2011,7 @@ print(f'Best params: {study.best_params}')</code></pre>
 {
   id:"4.8", module:4, tier:"basic", duration:50,
   title:"Saving, Loading, and Retraining Models",
+  audio:null, video:null,
   content:`
 <h2>Saving, Loading, and Retraining Models</h2>
 <p class="lesson-intro">A trained model is only useful if you can save it, reload it for daily predictions, and retrain it on schedule as new data arrives. This lesson covers the model lifecycle management that separates prototype from production.</p>
@@ -2075,6 +2106,7 @@ if should_retrain('SPY', max_days_old=30):
 {
   id:"4.9", module:4, tier:"basic", duration:55,
   title:"Backtesting Your ML Strategy",
+  audio:null, video:null,
   content:`
 <h2>Backtesting Your ML Strategy</h2>
 <p class="lesson-intro">A backtest simulates how your strategy would have performed historically. It's the critical step between model training and live deployment — and the step where most mistakes are made.</p>
@@ -2155,6 +2187,7 @@ plt.show()</code></pre>
 {
   id:"4.10", module:4, tier:"basic", duration:90,
   title:"Capstone — End-to-End ML Trading Signal",
+  audio:null, video:null,
   content:`
 <h2>Capstone — End-to-End ML Trading Signal</h2>
 <p class="lesson-intro">This is the capstone project for Module 4 — and the most important lesson in the Basic tier. You'll build a complete, production-ready ML trading signal for SPY: from raw data to daily live predictions.</p>

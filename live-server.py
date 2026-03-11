@@ -1491,6 +1491,11 @@ def broker_status():
     })
 
 
+@app.route('/audio/<path:filename>')
+def serve_audio(filename):
+    audio_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'public', 'audio')
+    return send_from_directory(audio_dir, filename)
+
 @app.route('/<path:filename>')
 def serve_static(filename):
     return send_from_directory(_WEBSITE_DIR, filename)
