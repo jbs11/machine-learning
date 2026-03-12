@@ -202,6 +202,7 @@
     <li><a href="forecast.html" style="color:#f59e0b;font-weight:700;">&#128200; Forecast</a></li>
     <li><a href="trade-journal.html" style="color:#4ade80;font-weight:700;">&#128221; Journal</a></li>
     <li><a href="asset-details.html">&#128202; Asset Review</a></li>
+    <li><a href="course.html" style="background:#f59e0b;color:#0a0f1e;padding:.28rem .85rem;border-radius:5px;font-weight:700;letter-spacing:.02em;">&#128218; ML Course</a></li>
     <li><a href="report-ms.html" target="_blank" style="background:#22d3ee;color:var(--bg);padding:.28rem .85rem;border-radius:5px;font-weight:700;letter-spacing:.02em;">&#128202; Market Report</a></li>
     <li><a href="report-tg.html" target="_blank" style="background:#a78bfa;color:var(--bg);padding:.28rem .85rem;border-radius:5px;font-weight:700;letter-spacing:.02em;">&#128214; Trading Guide</a></li>
   </ul>
@@ -682,7 +683,7 @@ function buildCard(r) {
     <!-- Tornado chart -->
     <div class="chart-title">Volume per Strike — Tornado</div>
     <div class="fc-chart-wrap">
-      <canvas class="fc-cv" id="tornado-${r.symbol}" height="280"></canvas>
+      <canvas class="fc-cv" id="tornado-${r.symbol}" height="320"></canvas>
     </div>
     <div class="fc-legend">
       <div class="fl-item"><div class="fl-green"></div>Call Volume</div>
@@ -783,112 +784,127 @@ function fmtMillions(m) {
 function drawTornado(r) {
   const cv = document.getElementById('tornado-' + r.symbol);
   if (!cv) return;
-  const dpr = window.devicePixelRatio || 1;
-  const W = cv.offsetWidth || cv.parentElement.clientWidth || 520;
-  const H = 280;
-  cv.width  = W * dpr;
-  cv.height = H * dpr;
+
+  // Use parent width for reliable sizing
+  const W = cv.parentElement ? (cv.parentElement.clientWidth || cv.parentElement.offsetWidth || 520) : 520;
+  const H = 320;
+  cv.width  = W;
+  cv.height = H;
   cv.style.width  = W + 'px';
   cv.style.height = H + 'px';
   const ctx = cv.getContext('2d');
-  ctx.scale(dpr, dpr);
 
-  const strikes   = r.strikes;
-  const callVol   = r.call_vol;
-  const putVol    = r.put_vol;
-  const spot      = r.spot;
-  const n = strikes.length;
-  if (!n) {
+  const allStrikes = r.strikes   || [];
+  const allCallVol = r.call_vol  || [];
+  const allPutVol  = r.put_vol   || [];
+  const spot       = r.spot || 0;
 
-  // ── No-data message ──
-  {
-    const _nd_W = cv.offsetWidth || (cv.parentElement ? cv.parentElement.clientWidth : 0) || 420;
-    cv.width = _nd_W; cv.height = 80;
-    cv.style.width = _nd_W + 'px'; cv.style.height = '80px';
-    const _nd = cv.getContext('2d');
-    _nd.fillStyle = 'rgba(15,23,42,0.7)';
-    _nd.fillRect(0,0,_nd_W,80);
-    _nd.fillStyle = '#475569'; _nd.font = 'bold 13px sans-serif'; _nd.textAlign = 'center';
-    _nd.fillText('No options data — market closed or limited coverage for this symbol', _nd_W/2, 32);
-    _nd.font = '11px sans-serif'; _nd.fillStyle = '#334155';
-    _nd.fillText('(Real-time options chain requires market hours + IBKR connection)', _nd_W/2, 52);
-  }
+  if (!allStrikes.length) {
+    ctx.fillStyle = '#070d18';
+    ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = '#475569';
+    ctx.font = 'bold 13px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('No options data available', W / 2, H / 2);
     return;
   }
 
-  const PAD_L = 52, PAD_R = 12, PAD_T = 12, PAD_B = 12;
+  // Filter to strikes within 10% of spot, max 40, sorted low->high
+  const pct = spot > 0 ? 0.10 : 1;
+  const lo = spot * (1 - pct), hi = spot * (1 + pct);
+  let idxArr = [];
+  for (let i = 0; i < allStrikes.length; i++) {
+    if (allStrikes[i] >= lo && allStrikes[i] <= hi) idxArr.push(i);
+  }
+  if (idxArr.length === 0) idxArr = allStrikes.map(function(_, i) { return i; });
+  if (idxArr.length > 40) {
+    idxArr.sort(function(a, b) { return Math.abs(allStrikes[a] - spot) - Math.abs(allStrikes[b] - spot); });
+    idxArr = idxArr.slice(0, 40);
+    idxArr.sort(function(a, b) { return allStrikes[a] - allStrikes[b]; });
+  }
+
+  const strikes = idxArr.map(function(i) { return allStrikes[i]; });
+  const callVol = idxArr.map(function(i) { return allCallVol[i] || 0; });
+  const putVol  = idxArr.map(function(i) { return allPutVol[i]  || 0; });
+  const n = strikes.length;
+
+  const maxVol = Math.max.apply(null, [1].concat(callVol).concat(putVol));
+
+  const PAD_L = 56, PAD_R = 14, PAD_T = 14, PAD_B = 18;
   const chartW = W - PAD_L - PAD_R;
   const chartH = H - PAD_T - PAD_B;
   const rowH   = chartH / n;
-
-  // Max volume for symmetric x-scale
-  const maxVol = Math.max(1, ...callVol, ...putVol);
+  const bh     = Math.max(3, rowH - 2);
+  const cx     = PAD_L + chartW / 2;
 
   // Background
-  ctx.fillStyle = window.getThemeChartColors ? window.getThemeChartColors().bg : '#f8fafc';
+  ctx.fillStyle = '#070d18';
   ctx.fillRect(0, 0, W, H);
 
-  // Center line (x=0)
-  const cx = PAD_L + chartW / 2;
-
-  // Grid lines
-  ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+  // Subtle grid lines
+  ctx.strokeStyle = 'rgba(255,255,255,0.06)';
   ctx.lineWidth = 1;
-  [0.25, 0.5, 0.75, 1].forEach(f => {
+  [0.25, 0.5, 0.75, 1].forEach(function(f) {
     const x1 = PAD_L + (chartW / 2) * (1 - f);
     const x2 = PAD_L + (chartW / 2) * (1 + f);
     ctx.beginPath(); ctx.moveTo(x1, PAD_T); ctx.lineTo(x1, H - PAD_B); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(x2, PAD_T); ctx.lineTo(x2, H - PAD_B); ctx.stroke();
   });
 
-  // Bars — strikes sorted low→high in array, display high→low on screen
+  // Bars — display high->low (highest strike at top)
   for (let i = 0; i < n; i++) {
-    const displayRow = n - 1 - i; // flip: highest strike at top
+    const displayRow = n - 1 - i;
     const y = PAD_T + displayRow * rowH;
-    const bh = Math.max(1, rowH - 2);
 
     const cw = (callVol[i] / maxVol) * (chartW / 2);
     const pw = (putVol[i]  / maxVol) * (chartW / 2);
 
-    // Call bar (right)
-    ctx.fillStyle = 'rgba(34,197,94,0.65)';
-    ctx.fillRect(cx, y + 1, cw, bh);
+    // Call bar (right, green)
+    if (cw >= 1) {
+      ctx.fillStyle = '#16a34a';
+      ctx.fillRect(cx, y + 1, cw, bh);
+      ctx.fillStyle = 'rgba(74,222,128,0.4)';
+      ctx.fillRect(cx, y + 1, cw, bh);
+    }
 
-    // Put bar (left)
-    ctx.fillStyle = 'rgba(248,113,113,0.65)';
-    ctx.fillRect(cx - pw, y + 1, pw, bh);
+    // Put bar (left, red)
+    if (pw >= 1) {
+      ctx.fillStyle = '#dc2626';
+      ctx.fillRect(cx - pw, y + 1, pw, bh);
+      ctx.fillStyle = 'rgba(252,165,165,0.4)';
+      ctx.fillRect(cx - pw, y + 1, pw, bh);
+    }
 
     // Strike label
-    ctx.fillStyle = 'rgba(148,163,184,0.8)';
-    ctx.font = `${Math.min(10, rowH - 2)}px Consolas, monospace`;
+    const fontSize = Math.min(13, Math.max(10, rowH - 1));
+    ctx.fillStyle = '#e2e8f0';
+    ctx.font = 'bold ' + fontSize + 'px Consolas, monospace';
     ctx.textAlign = 'right';
-    const lbl = strikes[i] > 100 ? '$' + strikes[i].toFixed(0) : '$' + strikes[i].toFixed(2);
-    ctx.fillText(lbl, PAD_L - 3, y + rowH * 0.65);
+    const lbl = strikes[i] >= 100 ? '$' + strikes[i].toFixed(0) : '$' + strikes[i].toFixed(2);
+    ctx.fillText(lbl, PAD_L - 4, y + rowH * 0.7);
   }
 
-  // Spot price horizontal line
-  if (spot > 0 && spot >= strikes[0] && spot <= strikes[n - 1]) {
-    const spotFrac = (spot - strikes[0]) / (strikes[n - 1] - strikes[0]);
-    // spot at the bottom of chart = index 0 (low strikes), top = index n-1 (high strikes)
-    // display is flipped: row 0 is highest strike at top, row n-1 is lowest at bottom
+  // Spot price line
+  if (spot > 0 && strikes.length > 1) {
+    const minK = strikes[0], maxK = strikes[n - 1];
+    const spotFrac = Math.min(1, Math.max(0, (spot - minK) / (maxK - minK)));
     const sy = PAD_T + (1 - spotFrac) * chartH;
     ctx.strokeStyle = '#fbbf24';
-    ctx.lineWidth = 1.5;
-    ctx.setLineDash([5, 4]);
+    ctx.lineWidth = 2;
+    ctx.setLineDash([6, 4]);
     ctx.beginPath();
     ctx.moveTo(PAD_L, sy);
     ctx.lineTo(W - PAD_R, sy);
     ctx.stroke();
     ctx.setLineDash([]);
-    // Label
     ctx.fillStyle = '#fbbf24';
-    ctx.font = 'bold 9px Consolas, monospace';
-    ctx.textAlign = 'left';
-    ctx.fillText('SPOT', W - PAD_R - 30, sy - 3);
+    ctx.font = 'bold 10px Consolas, monospace';
+    ctx.textAlign = 'right';
+    ctx.fillText('SPOT $' + spot.toFixed(2), W - PAD_R - 2, sy - 4);
   }
 
-  // Center axis line
-  ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+  // Center axis
+  ctx.strokeStyle = 'rgba(255,255,255,0.2)';
   ctx.lineWidth = 1;
   ctx.setLineDash([]);
   ctx.beginPath();
@@ -897,11 +913,11 @@ function drawTornado(r) {
   ctx.stroke();
 
   // Axis labels
-  ctx.fillStyle = 'rgba(148,163,184,0.5)';
-  ctx.font = '9px Consolas, monospace';
+  ctx.fillStyle = '#94a3b8';
+  ctx.font = 'bold 11px Consolas, monospace';
   ctx.textAlign = 'center';
-  ctx.fillText('← PUTS', PAD_L + chartW / 4, H - 2);
-  ctx.fillText('CALLS →', PAD_L + chartW * 3 / 4, H - 2);
+  ctx.fillText('<- PUTS', PAD_L + chartW / 4, H - 4);
+  ctx.fillText('CALLS ->', PAD_L + chartW * 3 / 4, H - 4);
 }
 
 /* ── Net premium chart (vertical bar) ── */
@@ -933,7 +949,7 @@ function drawNetPrem(r) {
   const cy     = PAD_T + chartH / 2; // zero line
 
   // Background
-  ctx.fillStyle = window.getThemeChartColors ? window.getThemeChartColors().bg : '#f8fafc';
+  ctx.fillStyle = '#070d18';
   ctx.fillRect(0, 0, W, H);
 
   // Zero line
@@ -1078,7 +1094,7 @@ function drawDealerDelta(r) {
   const cy     = PAD_T + chartH / 2;
 
   // Background
-  ctx.fillStyle = window.getThemeChartColors ? window.getThemeChartColors().bg : '#f8fafc';
+  ctx.fillStyle = '#070d18';
   ctx.fillRect(0, 0, W, H);
 
   // Zero line

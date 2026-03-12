@@ -1494,7 +1494,14 @@ def broker_status():
 @app.route('/audio/<path:filename>')
 def serve_audio(filename):
     audio_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'public', 'audio')
-    return send_from_directory(audio_dir, filename)
+    resp = send_from_directory(audio_dir, filename)
+    resp.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    return resp
+
+@app.route('/video/<path:filename>')
+def serve_video(filename):
+    video_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'public', 'video')
+    return send_from_directory(video_dir, filename)
 
 @app.route('/<path:filename>')
 def serve_static(filename):

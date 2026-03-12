@@ -1,22 +1,42 @@
-# Dependencies
+# Credentials & secrets
+broker_creds.json
+*.env
+.env*
+secrets.json
+credentials.json
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Test / debug audio
+public/audio/debug-*.mp3
+public/audio/debug*.mp3
+public/audio/test*.mp3
+public/audio/test*.wav
+public/audio/edge-test-*.mp3
+
+# Raw WAV files (keep only MP3s)
+public/audio/*.wav
+
+# Large video files
+website/videos/
+*.mp4
+*.mov
+*.avi
+
+# Node
 node_modules/
-
-# Remotion build cache
-.remotion/
-
-# OS files
-.DS_Store
-Thumbs.db
-
-# Editor directories
-.vscode/
-.idea/
 
 # Logs
 *.log
-npm-debug.log*
+server.log
 
-# Environment files
-.env
-.env.local
-website/videos/dashboard-tour.mp4
+# Temp / scratch
+_ul
+
+# OS
+.DS_Store
+Thumbs.db
