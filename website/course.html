@@ -38,7 +38,8 @@
       position:relative; padding-bottom:42%; height:0; overflow:hidden;
       background:#000; max-height:380px;
     }
-    .cs-video-wrap iframe {
+    .cs-video-wrap iframe,
+    .cs-video-wrap video {
       position:absolute; top:0; left:0; width:100%; height:100%;
       border:none;
     }
@@ -141,9 +142,49 @@
     .cs-lesson-lock { font-size:.68rem; color:var(--muted); }
 
     /* ── Content area ─────────────────────────────────────── */
-    .cs-content { flex:1; overflow-y:auto; }
+    .cs-content { flex:1; overflow:hidden; display:flex; flex-direction:column; }
     .cs-content::-webkit-scrollbar { width:5px; }
     .cs-content::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
+
+    /* ── Split layout ─────────────────────────────────────────── */
+    #csMain { flex:1; display:flex; flex-direction:column; overflow:hidden; min-height:0; }
+
+    .cs-lesson-split {
+      flex:1; display:flex; overflow:hidden; min-height:0;
+    }
+    .cs-lesson-text {
+      flex:1; min-width:0; overflow-y:auto; padding:1.3rem 1.6rem;
+    }
+    .cs-lesson-text::-webkit-scrollbar { width:4px; }
+    .cs-lesson-text::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
+
+    .cs-lesson-media {
+      width:390px; min-width:320px; max-width:420px; flex-shrink:0;
+      border-left:1px solid var(--border);
+      display:flex; flex-direction:column;
+      background:var(--surface); overflow-y:auto;
+    }
+    .cs-lesson-media::-webkit-scrollbar { width:4px; }
+    .cs-lesson-media::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
+
+    /* Audio in side panel */
+    .cs-audio-side {
+      padding:.8rem 1rem; border-top:1px solid var(--border);
+      display:flex; flex-direction:column; gap:.4rem;
+    }
+    .cs-audio-side .cs-audio-label {
+      font-size:.72rem; font-weight:700; color:var(--muted);
+    }
+    .cs-audio-side audio {
+      width:100%; height:34px; accent-color:var(--accent);
+    }
+
+    /* Side placeholder */
+    .cs-side-placeholder {
+      flex:1; display:flex; flex-direction:column; align-items:center;
+      justify-content:center; gap:.5rem; color:var(--muted);
+      font-size:.82rem; text-align:center; padding:1.5rem; min-height:160px;
+    }
 
     /* Lesson top bar */
     .cs-topbar {
@@ -259,7 +300,106 @@
     .cs-pro-gate .gate-icon { font-size:2.8rem; margin-bottom:1rem; }
     .cs-pro-gate h2 { font-size:1.25rem; font-weight:900; color:#a78bfa; }
     .cs-pro-gate p { color:var(--muted); max-width:380px; margin:.4rem auto; font-size:.9rem; }
+
+    /* ── Animated Slide Player ────────────────────────────────── */
+    .csp-wrap {
+      --csp-c: #22d3ee;
+      display:flex; flex-direction:column;
+      background:#0a0a0a;
+    }
+    .csp-stage {
+      height:282px; overflow:hidden; position:relative;
+      display:flex; align-items:stretch;
+    }
+    .csp-ctrl {
+      display:flex; align-items:center; gap:.45rem;
+      padding:.35rem .8rem; background:var(--surface);
+      border-top:1px solid var(--border); flex-shrink:0;
+      min-height:42px;
+    }
+    .csp-btn {
+      background:none; border:1px solid var(--border); color:var(--muted);
+      font-size:.7rem; padding:.22rem .48rem; border-radius:3px;
+      cursor:pointer; flex-shrink:0; transition:all .15s;
+      line-height:1;
+    }
+    .csp-btn:hover:not(:disabled) { color:var(--csp-c); border-color:var(--csp-c); }
+    .csp-btn:disabled { opacity:.35; cursor:default; }
+    .csp-dots { display:flex; gap:.28rem; flex-shrink:0; }
+    .csp-dot {
+      width:7px; height:7px; border-radius:50%;
+      background:var(--border); cursor:pointer; transition:background .2s;
+      flex-shrink:0;
+    }
+    .csp-dot.csp-dot-active { background:var(--csp-c); }
+    .csp-timer { flex:1; height:3px; background:var(--border); border-radius:2px; min-width:30px; overflow:hidden; }
+    .csp-timer-fill { height:100%; background:var(--csp-c); border-radius:2px; width:0%; }
+    .csp-num { font-size:.62rem; color:var(--muted); flex-shrink:0; white-space:nowrap; }
+
+    /* Slide layouts */
+    .csp-title-slide {
+      display:flex; flex-direction:column; align-items:center; justify-content:center;
+      width:100%; padding:1.4rem; text-align:center;
+      background:linear-gradient(135deg,#0a0a0a 0%,#111 100%);
+      animation:cspFade .4s ease;
+    }
+    .csp-mod-badge {
+      font-size:.63rem; font-weight:900; letter-spacing:.08em;
+      border:1px solid; border-radius:3px; padding:.14rem .48rem;
+      margin-bottom:.7rem; text-transform:uppercase;
+    }
+    .csp-title-icon { font-size:2rem; margin-bottom:.45rem; }
+    .csp-title-main { font-size:1.18rem; font-weight:900; line-height:1.2; margin-bottom:.45rem; color:var(--text); }
+    .csp-title-sub  { font-size:.73rem; color:var(--muted); margin-bottom:.35rem; }
+    .csp-title-note { font-size:.7rem; color:var(--muted); font-style:italic; margin-top:.25rem; }
+
+    .csp-bullets-slide, .csp-code-slide,
+    .csp-visual-slide,  .csp-summary-slide {
+      width:100%; padding:.9rem 1.2rem; overflow:auto;
+      animation:cspFade .3s ease;
+    }
+    .csp-slide-head {
+      font-size:.84rem; font-weight:800; margin-bottom:.65rem;
+      display:flex; align-items:center; gap:.4rem; color:var(--csp-c);
+    }
+    .csp-slide-icon { font-size:.9rem; flex-shrink:0; }
+    .csp-item-list  { list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:.38rem; }
+    .csp-item {
+      display:flex; align-items:flex-start; gap:.4rem;
+      font-size:.77rem; line-height:1.45; color:var(--text);
+      opacity:0; animation:cspUp .4s ease forwards;
+    }
+    .csp-bullet { flex-shrink:0; font-size:.7rem; margin-top:.15rem; }
+    .csp-check  { flex-shrink:0; font-size:.75rem; color:#4ade80; margin-top:.05rem; }
+    .csp-summary-list .csp-item { font-size:.78rem; }
+
+    .csp-code-wrap {
+      background:#0d1117; border:1px solid #30363d; border-radius:5px;
+      overflow:auto; max-height:206px;
+    }
+    .csp-pre {
+      margin:0; padding:.7rem .9rem; font-size:.71rem; line-height:1.6;
+      font-family:'Courier New',Consolas,monospace; color:#e6edf3; white-space:pre;
+    }
+    .csp-visual-content { font-size:.77rem; color:var(--text); }
+    .csp-vbox {
+      background:var(--card); border:1px solid var(--border); border-radius:5px;
+      padding:.35rem .65rem; font-size:.74rem; text-align:center;
+    }
+    .csp-slide-note {
+      font-size:.69rem; color:var(--muted); font-style:italic;
+      margin-top:.5rem; padding-top:.45rem; border-top:1px solid var(--border);
+    }
+
+    .csp-audio-icon { font-size:.8rem; flex-shrink:0; opacity:.7; }
+    .csp-audio-time { font-size:.64rem; color:var(--muted); flex-shrink:0; white-space:nowrap; font-family:monospace; }
+
+    @keyframes cspFade { from{opacity:0} to{opacity:1} }
+    @keyframes cspUp   { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+
   </style>
+  <script src="slides-data.js"></script>
+  <script src="slide-player.js"></script>
 </head>
 <body>
 
@@ -409,19 +549,11 @@ function renderSidebar() {
                  + (isAct  ? ' active'    : '')
                  + (isDone ? ' completed' : '');
 
-      if (isPro) {
-        lessonsHtml += '<div class="' + cls + '" style="opacity:.45">'
-          + '<span class="cs-lesson-lock">🔒</span>'
-          + '<span class="cs-lesson-lbl">' + l.title + '</span>'
-          + '<span class="cs-lesson-dur">' + l.duration + 'm</span>'
-          + '</div>';
-      } else {
-        lessonsHtml += '<div class="' + cls + '" onclick="loadLesson(\'' + l.id + '\')">'
-          + '<span class="cs-lesson-chk">' + chk + '</span>'
-          + '<span class="cs-lesson-lbl">' + l.title + '</span>'
-          + '<span class="cs-lesson-dur">' + l.duration + 'm</span>'
-          + '</div>';
-      }
+      lessonsHtml += '<div class="' + cls + '" onclick="loadLesson(\'' + l.id + '\')">'
+        + '<span class="cs-lesson-chk">' + chk + '</span>'
+        + '<span class="cs-lesson-lbl">' + l.title + (isPro ? ' <span style="font-size:.55rem;color:#a78bfa;vertical-align:middle">PRO</span>' : '') + '</span>'
+        + '<span class="cs-lesson-dur">' + l.duration + 'm</span>'
+        + '</div>';
     });
 
     html += '<div class="cs-module">'
@@ -455,26 +587,78 @@ function toggleMod(id, hdr) {
   setOpenMods(mods);
 }
 
+// ── Side panel (split view) ────────────────────────────────────────
+function buildSidePanel(lesson) {
+  var html = '';
+  var hasVideo  = !!lesson.video;
+  var hasSlides = !hasVideo && !!(window.SLIDE_DATA && window.SLIDE_DATA[lesson.id]);
+
+  // Slides or video
+  if (hasVideo) {
+    var v = lesson.video;
+    if (/\.(mp4|webm|ogg)$/i.test(v) || v.charAt(0) === '/') {
+      html += '<video controls preload="metadata"'
+        + ' style="width:100%;display:block;background:#000;max-height:240px;">'
+        + '<source src="' + v + '" type="video/mp4">'
+        + '</video>';
+    } else {
+      var ytId = v.replace(/.*(?:youtu\.be\/|v=|embed\/)([^&?]+).*/,'$1');
+      html += '<div style="position:relative;padding-bottom:56.25%;height:0;background:#000;">'
+        + '<iframe style="position:absolute;top:0;left:0;width:100%;height:100%;border:none"'
+        + ' src="https://www.youtube.com/embed/' + ytId + '?rel=0&modestbranding=1"'
+        + ' allowfullscreen></iframe>'
+        + '</div>';
+    }
+  } else if (hasSlides) {
+    html += '<div id="csp-' + lesson.id.replace('.','_') + '"></div>';
+  } else {
+    html += '<div class="cs-side-placeholder">'
+      + '<div style="font-size:2rem">&#128202;</div>'
+      + '<div>Slides coming soon<br>for this lesson</div>'
+      + '</div>';
+  }
+
+  // Audio is handled inside the slide player (synced) — no separate player needed
+
+  return html;
+}
+
 // ── Media panel helpers ────────────────────────────────────────────
 function buildMediaPanel(lesson) {
-  var hasVideo = !!lesson.video;
-  var hasAudio = !!lesson.audio;
-  if (!hasVideo && !hasAudio) return '';
+  var hasVideo  = !!lesson.video;
+  var hasAudio  = !!lesson.audio;
+  var hasSlides = !hasVideo && !!(window.SLIDE_DATA && window.SLIDE_DATA[lesson.id]);
+  if (!hasVideo && !hasAudio && !hasSlides) return '';
 
   // Decide which tab is default
-  var defaultTab = hasVideo ? 'video' : 'audio';
+  var defaultTab = (hasVideo || hasSlides) ? 'video' : 'audio';
 
   // Video panel content
   var videoContent = '';
   if (hasVideo) {
-    // Support bare YouTube ID or full URL
-    var ytId = lesson.video.replace(/.*(?:youtu\.be\/|v=|embed\/)([^&?]+).*/,'$1');
-    videoContent =
-      '<div class="cs-video-wrap">'
-      + '<iframe src="https://www.youtube.com/embed/' + ytId
-      + '?rel=0&modestbranding=1" allowfullscreen allow="accelerometer; autoplay;'
-      + ' clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe>'
-      + '</div>';
+    var v = lesson.video;
+    // Local MP4/WebM file (e.g. /video/lesson-1-1.mp4) — use HTML5 <video>
+    if (/\.(mp4|webm|ogg)$/i.test(v) || v.charAt(0) === '/') {
+      videoContent =
+        '<div class="cs-video-wrap">'
+        + '<video controls preload="metadata" style="position:absolute;top:0;left:0;width:100%;height:100%;background:#000;">'
+        + '<source src="' + v + '" type="video/mp4">'
+        + 'Your browser does not support video playback.'
+        + '</video>'
+        + '</div>';
+    } else {
+      // YouTube ID or URL
+      var ytId = v.replace(/.*(?:youtu\.be\/|v=|embed\/)([^&?]+).*/,'$1');
+      videoContent =
+        '<div class="cs-video-wrap">'
+        + '<iframe src="https://www.youtube.com/embed/' + ytId
+        + '?rel=0&modestbranding=1" allowfullscreen allow="accelerometer; autoplay;'
+        + ' clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe>'
+        + '</div>';
+    }
+  } else if (hasSlides) {
+    var cspId = 'csp-' + lesson.id.replace('.', '_');
+    videoContent = '<div id="' + cspId + '" style="min-height:50px"></div>';
   } else {
     videoContent =
       '<div class="cs-video-placeholder">'
@@ -534,12 +718,12 @@ function loadLesson(id) {
   currentId = id;
   var done  = isComplete(id);
 
-  // Prev / Next among basic lessons
-  var basics = window.COURSE_LESSONS.filter(function(l){ return l.tier === 'basic'; });
-  var idx    = basics.findIndex ? basics.findIndex(function(l){ return l.id === id; }) : -1;
-  if (idx === -1) for (var j = 0; j < basics.length; j++) { if (basics[j].id === id) { idx = j; break; } }
-  var prev = idx > 0              ? basics[idx - 1] : null;
-  var next = idx < basics.length-1 ? basics[idx + 1] : null;
+  // Prev / Next across all lessons
+  var allL = window.COURSE_LESSONS;
+  var idx  = allL.findIndex ? allL.findIndex(function(l){ return l.id === id; }) : -1;
+  if (idx === -1) for (var j = 0; j < allL.length; j++) { if (allL[j].id === id) { idx = j; break; } }
+  var prev = idx > 0           ? allL[idx - 1] : null;
+  var next = idx < allL.length-1 ? allL[idx + 1] : null;
 
   var prevBtn = prev
     ? '<button class="cs-nav-btn" onclick="loadLesson(\'' + prev.id + '\')">&#8592; ' + escHtml(prev.title) + '</button>'
@@ -558,15 +742,24 @@ function loadLesson(id) {
     + (done ? '&#10003; Completed' : 'Mark Complete')
     + '</button>'
     + '</div>'
-    + buildMediaPanel(lesson)
-    + '<div class="cs-body">'
+    + '<div class="cs-lesson-split">'
+    + '<div class="cs-lesson-text">'
     + '<div class="cs-lesson-content">' + lesson.content + '</div>'
     + '<div class="cs-footer">' + prevBtn + nextBtn + '</div>'
+    + '</div>'
+    + '<div class="cs-lesson-media">' + buildSidePanel(lesson) + '</div>'
     + '</div>';
 
   renderSidebar();
-  document.getElementById('csContent').scrollTop = 0;
+  var textPanel = document.querySelector('.cs-lesson-text');
+  if (textPanel) textPanel.scrollTop = 0;
   sessionStorage.setItem('lastLesson', id);
+
+  // Init slide player — pass audio src so play button controls both together
+  if (!lesson.video && window.CSP && window.SLIDE_DATA && window.SLIDE_DATA[lesson.id]) {
+    var cspEl = document.getElementById('csp-' + lesson.id.replace('.', '_'));
+    if (cspEl) window.CSP.init(lesson.id, cspEl, lesson.audio || null);
+  }
 }
 
 function escHtml(s) {
@@ -609,6 +802,5 @@ window.addEventListener('DOMContentLoaded', function() {
   showWelcome();
 });
 </script>
-<script src="search.js" defer></script>
 </body>
 </html>
