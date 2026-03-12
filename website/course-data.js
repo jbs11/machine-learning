@@ -21,7 +21,7 @@ window.COURSE_LESSONS = [
 {
   id:"1.1", module:1, tier:"basic", duration:35,
   title:"How Financial Markets Work",
-  audio:"/audio/tour-01.mp3", video:null,
+  audio:"/audio/course-1-1.mp3", video:null,
   content:`
 <h2>How Financial Markets Work</h2>
 <p class="lesson-intro">Before writing a single line of code, you need to understand the arena you're trading in. Financial markets are complex adaptive systems — but their core mechanics are surprisingly simple once you break them down.</p>
@@ -71,7 +71,7 @@ window.COURSE_LESSONS = [
 {
   id:"1.2", module:1, tier:"basic", duration:40,
   title:"Market Participants — Who You're Trading Against",
-  audio:"/audio/tour-02.mp3", video:null,
+  audio:"/audio/course-1-2.mp3", video:null,
   content:`
 <h2>Market Participants — Who You're Trading Against</h2>
 <p class="lesson-intro">Every trade has a counterparty. Understanding who else is in the market — their goals, constraints, and behaviors — gives you a critical edge in designing models that can actually profit.</p>
@@ -113,7 +113,7 @@ window.COURSE_LESSONS = [
 {
   id:"1.3", module:1, tier:"basic", duration:30,
   title:"Order Types and Order Flow",
-  audio:"/audio/tour-03.mp3", video:null,
+  audio:"/audio/course-1-3.mp3", video:null,
   content:`
 <h2>Order Types and Order Flow</h2>
 <p class="lesson-intro">The type of order you use determines your execution price, certainty of fill, and market impact. For ML-based systems, choosing the right order type is as important as the signal itself.</p>
@@ -153,7 +153,7 @@ Sell limit @ $186.00 → fills only if SPY trades at $186.00 or higher</code></p
 {
   id:"1.4", module:1, tier:"basic", duration:35,
   title:"Reading Price Charts — OHLCV and Candlesticks",
-  audio:"/audio/tour-04.mp3", video:null,
+  audio:"/audio/course-1-4.mp3", video:null,
   content:`
 <h2>Reading Price Charts — OHLCV and Candlesticks</h2>
 <p class="lesson-intro">All ML trading models are built on price and volume data. Understanding exactly what OHLCV means and how to read candlestick charts is the foundation for every feature you'll engineer.</p>
@@ -215,7 +215,7 @@ df['lower_wick'] = (df[['open','close']].min(axis=1) - df['low']) / df['close']<
 {
   id:"1.5", module:1, tier:"basic", duration:45,
   title:"Understanding Options — Calls, Puts, and the Greeks",
-  audio:"/audio/tour-05.mp3", video:null,
+  audio:"/audio/course-1-5.mp3", video:null,
   content:`
 <h2>Understanding Options — Calls, Puts, and the Greeks</h2>
 <p class="lesson-intro">Options are the most information-rich instruments in the market. Learning to read options data unlocks leading indicators that pure price analysis can't provide — which is why this dashboard devotes four pages to options analysis.</p>
@@ -271,7 +271,7 @@ df['lower_wick'] = (df[['open','close']].min(axis=1) - df['low']) / df['close']<
 {
   id:"1.6", module:1, tier:"basic", duration:25,
   title:"Key Market Times and Calendar Events",
-  audio:"/audio/tour-06.mp3", video:null,
+  audio:"/audio/course-1-6.mp3", video:null,
   content:`
 <h2>Key Market Times and Calendar Events</h2>
 <p class="lesson-intro">Markets are not uniform across time. Certain times of day, week, month, and year have statistically reliable behavioral patterns — making calendar features some of the most powerful inputs in any ML trading model.</p>
@@ -325,7 +325,7 @@ df['dow_cos']  = np.cos(2 * np.pi * df['day_of_week'] / 5)</code></pre>
 {
   id:"1.7", module:1, tier:"basic", duration:40,
   title:"Risk Management Fundamentals",
-  audio:"/audio/tour-07.mp3", video:null,
+  audio:"/audio/course-1-7.mp3", video:null,
   content:`
 <h2>Risk Management Fundamentals</h2>
 <p class="lesson-intro">The best ML signal in the world is worthless without proper risk management. More trading accounts are blown by poor position sizing and drawdown management than by bad signals. This lesson covers the math and rules that keep you in the game.</p>
@@ -386,7 +386,7 @@ Sharpe of:
 {
   id:"2.1", module:2, tier:"basic", duration:45,
   title:"Environment Setup — Python, Jupyter, VS Code",
-  audio:"/audio/tour-08.mp3", video:null,
+  audio:"/audio/course-2-1.mp3", video:null,
   content:`
 <h2>Environment Setup — Python, Jupyter, VS Code</h2>
 <p class="lesson-intro">A proper development environment is the foundation of everything. This lesson walks you through the exact setup used to build this dashboard — reproducible, portable, and production-ready.</p>
@@ -456,7 +456,7 @@ pip install -r requirements.txt</code></pre>
 {
   id:"2.2", module:2, tier:"basic", duration:60,
   title:"Python Basics for Traders",
-  audio:"/audio/tour-09.mp3", video:null,
+  audio:"/audio/course-2-2.mp3", video:null,
   content:`
 <h2>Python Basics for Traders</h2>
 <p class="lesson-intro">This lesson covers the Python fundamentals you'll actually use when working with market data. We skip theoretical computer science and focus on the patterns that appear constantly in trading code.</p>
@@ -552,7 +552,7 @@ def fetch_with_retry(url: str, max_retries: int = 3) -&gt; dict:
 {
   id:"2.3", module:2, tier:"basic", duration:70,
   title:"Pandas — The Trader's Data Engine",
-  audio:"/audio/tour-10.mp3", video:null,
+  audio:"/audio/course-2-3.mp3", video:null,
   content:`
 <h2>Pandas — The Trader's Data Engine</h2>
 <p class="lesson-intro">Pandas is the single most important library for financial data analysis. Every piece of market data you'll work with lives in a Pandas DataFrame. Mastering it is non-negotiable.</p>
@@ -627,7 +627,7 @@ df.dropna(inplace=True)</code></pre>
 {
   id:"2.4", module:2, tier:"basic", duration:50,
   title:"Fetching Live Market Data with yfinance",
-  audio:"/audio/tour-11.mp3", video:null,
+  audio:"/audio/course-2-4.mp3", video:null,
   content:`
 <h2>Fetching Live Market Data with yfinance</h2>
 <p class="lesson-intro">yfinance is the most accessible source of market data for retail quants. It wraps Yahoo Finance's API and delivers clean OHLCV data, options chains, and fundamental data — free, no API key required.</p>
@@ -702,7 +702,7 @@ spy = load_ohlcv('SPY', period='5y')</code></pre>
 {
   id:"2.5", module:2, tier:"basic", duration:40,
   title:"NumPy for Numerical Finance",
-  audio:"/audio/tour-12.mp3", video:null,
+  audio:"/audio/course-2-5.mp3", video:null,
   content:`
 <h2>NumPy for Numerical Finance</h2>
 <p class="lesson-intro">NumPy is the mathematical backbone of the Python data science stack. While Pandas handles labeled data, NumPy handles the raw array math underneath — making your financial calculations 10-100x faster than pure Python.</p>
@@ -775,7 +775,7 @@ def max_drawdown(returns):
 {
   id:"2.6", module:2, tier:"basic", duration:50,
   title:"Data Cleaning and Preprocessing",
-  audio:"/audio/tour-13.mp3", video:null,
+  audio:"/audio/course-2-6.mp3", video:null,
   content:`
 <h2>Data Cleaning and Preprocessing</h2>
 <p class="lesson-intro">Real market data is messy. Gaps, errors, corporate actions, and timezone issues are common. Clean data is the difference between a reliable ML model and one that fails in production.</p>
@@ -851,7 +851,7 @@ assert (df['close'] &lt;= df['high']).all(), 'Close above High!'</code></pre>
 {
   id:"2.7", module:2, tier:"basic", duration:45,
   title:"Visualization — Charting Market Data",
-  audio:"/audio/tour-14.mp3", video:null,
+  audio:"/audio/course-2-7.mp3", video:null,
   content:`
 <h2>Visualization — Charting Market Data</h2>
 <p class="lesson-intro">Visualization is how you understand data, validate signals, debug models, and communicate results. This lesson covers the charting tools used throughout this dashboard and in professional quant research.</p>
@@ -933,7 +933,7 @@ plt.show()</code></pre>
 {
   id:"2.8", module:2, tier:"basic", duration:60,
   title:"Project — Build a Market Data Pipeline",
-  audio:"/audio/tour-15.mp3", video:null,
+  audio:"/audio/course-2-8.mp3", video:null,
   content:`
 <h2>Project — Build a Market Data Pipeline</h2>
 <p class="lesson-intro">This project ties together everything in Module 2. You'll build a complete, production-ready pipeline that fetches, cleans, stores, and serves market data for any symbol — the foundation every ML model in this course will use.</p>
@@ -1029,7 +1029,7 @@ print(spy.isnull().sum().sum())  # Should be 0</code></pre>
 {
   id:"3.1", module:3, tier:"basic", duration:45,
   title:"Moving Averages — SMA, EMA, and VWAP",
-  audio:"/audio/tour-16.mp3", video:null,
+  audio:"/audio/course-3-1.mp3", video:null,
   content:`
 <h2>Moving Averages — SMA, EMA, and VWAP</h2>
 <p class="lesson-intro">Moving averages smooth price noise to reveal trends, generate crossover signals, and define dynamic support and resistance. For ML models, moving average ratios and crossovers are among the most predictive features available.</p>
@@ -1088,7 +1088,7 @@ df['ema_cross_change'] = df['ema_cross'].diff()  # 2=bullish cross, -2=bearish</
 {
   id:"3.2", module:3, tier:"basic", duration:50,
   title:"Momentum Indicators — RSI and MACD",
-  audio:"/audio/tour-17.mp3", video:null,
+  audio:"/audio/course-3-2.mp3", video:null,
   content:`
 <h2>Momentum Indicators — RSI and MACD</h2>
 <p class="lesson-intro">Momentum measures the speed and direction of price change. RSI and MACD are the two most widely used momentum indicators — and both have strong predictive value as ML features when properly constructed.</p>
@@ -1149,7 +1149,7 @@ df['momentum_score'] = (
 {
   id:"3.3", module:3, tier:"basic", duration:40,
   title:"Volatility — Bollinger Bands and ATR",
-  audio:"/audio/tour-18.mp3", video:null,
+  audio:"/audio/course-3-3.mp3", video:null,
   content:`
 <h2>Volatility — Bollinger Bands and ATR</h2>
 <p class="lesson-intro">Volatility is the most important risk dimension in markets. ML models that incorporate volatility features adapt their predictions to the current market regime — performing better than models that treat all market conditions the same.</p>
@@ -1213,7 +1213,7 @@ df['vol_regime'] = pd.cut(vol_pct, bins=[0, 0.33, 0.67, 1.0],
 {
   id:"3.4", module:3, tier:"basic", duration:40,
   title:"Volume Analysis",
-  audio:"/audio/tour-19.mp3", video:null,
+  audio:"/audio/course-3-4.mp3", video:null,
   content:`
 <h2>Volume Analysis</h2>
 <p class="lesson-intro">Price moves with volume behind them are real; price moves without volume are suspect. Volume analysis adds the "conviction" dimension that pure price indicators miss.</p>
@@ -1268,7 +1268,7 @@ df['vol_ratio']   = df['up_volume'].rolling(10).sum() / (
 {
   id:"3.5", module:3, tier:"basic", duration:55,
   title:"Building the Full Feature Matrix",
-  audio:"/audio/tour-20.mp3", video:null,
+  audio:"/audio/course-3-5.mp3", video:null,
   content:`
 <h2>Building the Full Feature Matrix</h2>
 <p class="lesson-intro">Feature engineering is where domain knowledge meets machine learning. This lesson combines all previous indicators into a structured feature matrix ready for any scikit-learn or XGBoost model.</p>
@@ -1346,7 +1346,7 @@ def build_features(df: pd.DataFrame) -&gt; pd.DataFrame:
 {
   id:"3.6", module:3, tier:"basic", duration:35,
   title:"Normalization, Scaling, and Stationarity",
-  audio:"/audio/tour-21.mp3", video:null,
+  audio:"/audio/course-3-6.mp3", video:null,
   content:`
 <h2>Normalization, Scaling, and Stationarity</h2>
 <p class="lesson-intro">ML models don't understand "price in dollars." They understand numbers in a consistent range. Proper scaling prevents dominant features from drowning out subtle but important signals.</p>
@@ -1404,7 +1404,7 @@ for col in feature_cols:
 {
   id:"3.7", module:3, tier:"basic", duration:40,
   title:"Target Engineering — What Are You Predicting?",
-  audio:"/audio/tour-22.mp3", video:null,
+  audio:"/audio/course-3-7.mp3", video:null,
   content:`
 <h2>Target Engineering — What Are You Predicting?</h2>
 <p class="lesson-intro">The target variable defines your model's job. The choice of <em>what</em> to predict has a larger impact on trading performance than any model architecture or hyperparameter choice.</p>
@@ -1464,7 +1464,7 @@ df['target_5d'] = (df['close'].shift(-5) &gt; df['close']).astype(int)</code></p
 {
   id:"3.8", module:3, tier:"basic", duration:35,
   title:"Avoiding Lookahead Bias",
-  audio:null, video:null,
+  audio:"/audio/course-3-8.mp3", video:null,
   content:`
 <h2>Avoiding Lookahead Bias</h2>
 <p class="lesson-intro">Lookahead bias is the #1 cause of backtests that look great but fail in live trading. It occurs when your model uses information that wouldn't have been available at the time of the trade.</p>
@@ -1533,7 +1533,7 @@ for fold, (tr_idx, te_idx) in enumerate(tscv.split(X)):
 {
   id:"4.1", module:4, tier:"basic", duration:35,
   title:"Machine Learning Overview",
-  audio:"/audio/tour-23.mp3", video:null,
+  audio:"/audio/course-4-1.mp3", video:null,
   content:`
 <h2>Machine Learning Overview</h2>
 <p class="lesson-intro">ML has become a buzzword. This lesson cuts through the hype and gives you a precise, practical understanding of what ML can and cannot do for trading.</p>
@@ -1583,7 +1583,7 @@ for fold, (tr_idx, te_idx) in enumerate(tscv.split(X)):
 {
   id:"4.2", module:4, tier:"basic", duration:50,
   title:"Linear and Logistic Regression",
-  audio:"/audio/tour-24.mp3", video:null,
+  audio:"/audio/course-4-2.mp3", video:null,
   content:`
 <h2>Linear and Logistic Regression</h2>
 <p class="lesson-intro">Regression models are the simplest ML tools — and often surprisingly competitive against complex models. They're always your first baseline before trying XGBoost or neural nets.</p>
@@ -1663,7 +1663,7 @@ print(coefs.nsmallest(10))</code></pre>
 {
   id:"4.3", module:4, tier:"basic", duration:55,
   title:"Decision Trees and Random Forests",
-  audio:null, video:null,
+  audio:"/audio/course-4-3.mp3", video:null,
   content:`
 <h2>Decision Trees and Random Forests</h2>
 <p class="lesson-intro">Decision trees learn non-linear rules — capturing interactions between features that linear models miss. Random Forests — ensembles of hundreds of trees — are the most robust general-purpose ML model for tabular financial data.</p>
@@ -1732,7 +1732,7 @@ plt.show()
 {
   id:"4.4", module:4, tier:"basic", duration:60,
   title:"XGBoost — The Trader's Model",
-  audio:null, video:null,
+  audio:"/audio/course-4-4.mp3", video:null,
   content:`
 <h2>XGBoost — The Trader's Model</h2>
 <p class="lesson-intro">XGBoost wins more Kaggle competitions than any other algorithm. For tabular financial data, it's typically the best-performing model — handling missing data, mixed feature types, and non-linear relationships with minimal preprocessing.</p>
@@ -1809,7 +1809,7 @@ shap.force_plot(explainer.expected_value,
 {
   id:"4.5", module:4, tier:"basic", duration:45,
   title:"Walk-Forward Validation",
-  audio:null, video:null,
+  audio:"/audio/course-4-5.mp3", video:null,
   content:`
 <h2>Walk-Forward Validation</h2>
 <p class="lesson-intro">How you validate your model determines whether your backtest reflects reality. The wrong validation approach creates the illusion of performance that evaporates in live trading.</p>
@@ -1884,7 +1884,7 @@ print(f'Walk-Forward Sharpe: {sharpe:.2f}')</code></pre>
 {
   id:"4.6", module:4, tier:"basic", duration:40,
   title:"Model Evaluation Metrics for Trading",
-  audio:null, video:null,
+  audio:"/audio/course-4-6.mp3", video:null,
   content:`
 <h2>Model Evaluation Metrics for Trading</h2>
 <p class="lesson-intro">Accuracy alone is misleading for trading models. A model that correctly predicts 80% of days may still lose money if it misses the big down days. This lesson covers the metrics that actually predict real-world trading performance.</p>
@@ -1950,7 +1950,7 @@ print(f'IC: {ic:.4f}  (p={pvalue:.4f})')
 {
   id:"4.7", module:4, tier:"basic", duration:45,
   title:"Hyperparameter Tuning",
-  audio:null, video:null,
+  audio:"/audio/course-4-7.mp3", video:null,
   content:`
 <h2>Hyperparameter Tuning</h2>
 <p class="lesson-intro">Hyperparameters are settings you choose before training. Tuning them can meaningfully improve performance, but naive tuning creates overfitting to the validation set. This lesson shows you how to tune correctly.</p>
@@ -2011,7 +2011,7 @@ print(f'Best params: {study.best_params}')</code></pre>
 {
   id:"4.8", module:4, tier:"basic", duration:50,
   title:"Saving, Loading, and Retraining Models",
-  audio:null, video:null,
+  audio:"/audio/course-4-8.mp3", video:null,
   content:`
 <h2>Saving, Loading, and Retraining Models</h2>
 <p class="lesson-intro">A trained model is only useful if you can save it, reload it for daily predictions, and retrain it on schedule as new data arrives. This lesson covers the model lifecycle management that separates prototype from production.</p>
@@ -2106,7 +2106,7 @@ if should_retrain('SPY', max_days_old=30):
 {
   id:"4.9", module:4, tier:"basic", duration:55,
   title:"Backtesting Your ML Strategy",
-  audio:null, video:null,
+  audio:"/audio/course-4-9.mp3", video:null,
   content:`
 <h2>Backtesting Your ML Strategy</h2>
 <p class="lesson-intro">A backtest simulates how your strategy would have performed historically. It's the critical step between model training and live deployment — and the step where most mistakes are made.</p>
@@ -2187,7 +2187,7 @@ plt.show()</code></pre>
 {
   id:"4.10", module:4, tier:"basic", duration:90,
   title:"Capstone — End-to-End ML Trading Signal",
-  audio:null, video:null,
+  audio:"/audio/course-4-10.mp3", video:null,
   content:`
 <h2>Capstone — End-to-End ML Trading Signal</h2>
 <p class="lesson-intro">This is the capstone project for Module 4 — and the most important lesson in the Basic tier. You'll build a complete, production-ready ML trading signal for SPY: from raw data to daily live predictions.</p>
@@ -2302,6 +2302,1845 @@ if __name__ == '__main__':
     <li>Save model + scaler + feature list together — all three are required for inference</li>
     <li>Only trade LONG/SHORT when confidence &gt; 55% — FLAT when uncertain is better than forced trades</li>
     <li>Paper trade for 3+ months before committing real capital — live performance must confirm backtest quality</li>
+  </ul>
+</div>`
+}
+,
+{
+  id:"5.1", module:5, tier:"pro", duration:50,
+  title:"Introduction to Neural Networks for Trading",
+  audio:"/audio/course-5-1.mp3", video:null,
+  content:`<h2>Introduction to Neural Networks for Trading</h2>
+<p class="lesson-intro">Neural networks are the engine behind modern AI. For trading, they excel at learning non-linear patterns across many features simultaneously, and at sequence modeling for time series price data.</p>
+
+<h3>How Neural Networks Learn</h3>
+<p>A neural network is a stack of layers. Each layer applies a linear transformation followed by a non-linear activation. During training, backpropagation computes gradients and gradient descent adjusts weights to minimize loss.</p>
+<pre><code class="language-python">import torch
+import torch.nn as nn
+
+class TradingMLP(nn.Module):
+    def __init__(self, n_features, hidden=128):
+        super().__init__()
+        self.net = nn.Sequential(
+            nn.Linear(n_features, hidden),
+            nn.ReLU(),
+            nn.Dropout(0.3),
+            nn.Linear(hidden, hidden // 2),
+            nn.ReLU(),
+            nn.Dropout(0.3),
+            nn.Linear(hidden // 2, 1),
+            nn.Sigmoid()
+        )
+    def forward(self, x):
+        return self.net(x)
+
+model = TradingMLP(n_features=40)
+print(model)</code></pre>
+
+<h3>Why Neural Nets for Trading?</h3>
+<p>Classical ML models like XGBoost treat each day independently. Neural networks can learn feature interactions automatically and, with sequence architectures like LSTM, can model temporal dependencies that classical models miss.</p>
+
+<h3>When to Use Neural Networks</h3>
+<p>Neural networks require more data and tuning than classical models. Use them when you have 5+ years of daily data or intraday data, when incorporating raw price sequences, or combining text sentiment with price features. For small datasets, XGBoost typically outperforms neural networks.</p>
+
+<div class="lesson-key">
+  <h4>Key Takeaways</h4>
+  <ul>
+    <li>Neural networks learn non-linear feature interactions automatically through backpropagation</li>
+    <li>PyTorch is the standard for research-grade trading models — flexible, debuggable, fast</li>
+    <li>Start with a simple MLP on your existing features before moving to LSTM or Transformers</li>
+    <li>Neural networks need more data than classical ML — minimum 3-5 years of daily data</li>
+  </ul>
+</div>`
+}
+,{
+  id:"5.2", module:5, tier:"pro", duration:60,
+  title:"LSTM Networks for Time Series",
+  audio:"/audio/course-5-2.mp3", video:null,
+  content:`<h2>LSTM Networks for Time Series</h2>
+<p class="lesson-intro">Long Short-Term Memory networks are designed for sequential data. Unlike standard neural networks that process each day independently, LSTMs maintain a hidden state that carries information across time steps — ideal for modeling price momentum, trend, and regime.</p>
+
+<h3>The LSTM Architecture</h3>
+<p>An LSTM cell has three gates: forget (what to discard from memory), input (what new information to store), and output (what to pass forward). This gating mechanism lets the network learn which historical patterns matter and how far back to look.</p>
+<pre><code class="language-python">import torch.nn as nn
+
+class LSTMTrader(nn.Module):
+    def __init__(self, n_features, hidden=64, n_layers=2, dropout=0.3):
+        super().__init__()
+        self.lstm = nn.LSTM(
+            input_size=n_features, hidden_size=hidden,
+            num_layers=n_layers, dropout=dropout, batch_first=True
+        )
+        self.head = nn.Sequential(
+            nn.Linear(hidden, 32), nn.ReLU(),
+            nn.Linear(32, 1), nn.Sigmoid()
+        )
+    def forward(self, x):
+        out, _ = self.lstm(x)
+        return self.head(out[:, -1, :])  # last timestep</code></pre>
+
+<h3>Preparing Sequence Data</h3>
+<pre><code class="language-python">def make_sequences(df, feature_cols, seq_len=20):
+    X, y = [], []
+    arr = df[feature_cols].values
+    tgt = df['target'].values
+    for i in range(seq_len, len(arr)):
+        X.append(arr[i-seq_len:i])
+        y.append(tgt[i])
+    return np.array(X), np.array(y)
+
+X, y = make_sequences(df, feature_cols, seq_len=20)
+# X shape: (n_samples, 20, n_features)</code></pre>
+
+<h3>Training the LSTM</h3>
+<pre><code class="language-python">from torch.utils.data import TensorDataset, DataLoader
+
+loader = DataLoader(
+    TensorDataset(torch.FloatTensor(X_train), torch.FloatTensor(y_train).unsqueeze(1)),
+    batch_size=32, shuffle=False  # Never shuffle time series!
+)
+optimizer = torch.optim.Adam(model.parameters(), lr=1e-3, weight_decay=1e-4)
+criterion = nn.BCELoss()
+
+for epoch in range(50):
+    model.train()
+    for xb, yb in loader:
+        pred = model(xb)
+        loss = criterion(pred, yb)
+        optimizer.zero_grad(); loss.backward(); optimizer.step()
+    if epoch % 10 == 0:
+        print(f'Epoch {epoch}: loss={loss.item():.4f}')</code></pre>
+
+<div class="lesson-key">
+  <h4>Key Takeaways</h4>
+  <ul>
+    <li>LSTMs process sequences of past days, letting the model learn temporal patterns</li>
+    <li>Sequence length 10-30 days works well for daily price prediction</li>
+    <li>Use the last hidden state (out[:, -1, :]) for classification tasks</li>
+    <li>Always shuffle=False in your DataLoader — respect chronological order</li>
+  </ul>
+</div>`
+}
+,{
+  id:"5.3", module:5, tier:"pro", duration:55,
+  title:"CNNs for Chart Pattern Recognition",
+  audio:"/audio/course-5-3.mp3", video:null,
+  content:`<h2>CNNs for Chart Pattern Recognition</h2>
+<p class="lesson-intro">Convolutional Neural Networks excel at detecting local patterns in sequential data. Applied to price sequences, 1D CNNs can automatically learn chart patterns — head and shoulders, double tops, flag formations — without you hand-coding them.</p>
+
+<h3>1D Convolution on Price Data</h3>
+<p>A 1D convolutional layer slides a learned filter across the time dimension, detecting patterns at each position. Multiple filters learn different patterns simultaneously. Stacked conv layers detect increasingly complex patterns.</p>
+<pre><code class="language-python">class CNNTrader(nn.Module):
+    def __init__(self, n_features):
+        super().__init__()
+        self.conv = nn.Sequential(
+            nn.Conv1d(n_features, 64, kernel_size=3, padding=1),
+            nn.ReLU(),
+            nn.Conv1d(64, 128, kernel_size=5, padding=2),
+            nn.ReLU(),
+            nn.AdaptiveAvgPool1d(1)
+        )
+        self.head = nn.Sequential(
+            nn.Linear(128, 64), nn.ReLU(),
+            nn.Dropout(0.3),
+            nn.Linear(64, 1), nn.Sigmoid()
+        )
+    def forward(self, x):
+        x = x.permute(0, 2, 1)   # (batch, features, seq_len)
+        return self.head(self.conv(x).squeeze(-1))</code></pre>
+
+<h3>CNN + LSTM Hybrid</h3>
+<p>Combining CNN (local pattern detection) with LSTM (long-range dependencies) often outperforms either alone. The CNN extracts local features, the LSTM models how those features evolve over time.</p>
+<pre><code class="language-python">class CNNLSTMTrader(nn.Module):
+    def __init__(self, n_features, hidden=64):
+        super().__init__()
+        self.cnn  = nn.Sequential(
+            nn.Conv1d(n_features, 64, kernel_size=3, padding=1), nn.ReLU())
+        self.lstm = nn.LSTM(64, hidden, batch_first=True)
+        self.head = nn.Linear(hidden, 1)
+    def forward(self, x):
+        x = self.cnn(x.permute(0,2,1)).permute(0,2,1)
+        _, (h, _) = self.lstm(x)
+        return torch.sigmoid(self.head(h[-1]))</code></pre>
+
+<div class="lesson-key">
+  <h4>Key Takeaways</h4>
+  <ul>
+    <li>1D CNNs detect local temporal patterns — momentum bursts, consolidations, breakouts</li>
+    <li>Kernel sizes 3-7 work well for daily data; larger kernels detect longer patterns</li>
+    <li>CNN+LSTM hybrids combine local pattern detection with long-range memory</li>
+    <li>AdaptiveAvgPool1d makes the model input-length agnostic</li>
+  </ul>
+</div>`
+}
+,{
+  id:"5.4", module:5, tier:"pro", duration:60,
+  title:"Attention & Transformer Models",
+  audio:"/audio/course-5-4.mp3", video:null,
+  content:`<h2>Attention &amp; Transformer Models</h2>
+<p class="lesson-intro">The Transformer architecture has revolutionized sequence modeling. For trading, attention mechanisms let the model selectively focus on the most relevant past time steps, rather than compressing all history into a single hidden state like LSTM.</p>
+
+<h3>Self-Attention for Time Series</h3>
+<p>Attention computes, for each position in the sequence, how much to attend to every other position. Unlike LSTM, it processes all time steps in parallel and has no vanishing gradient problem over long sequences.</p>
+<pre><code class="language-python">class TradingTransformer(nn.Module):
+    def __init__(self, n_features, d_model=64, nhead=4, n_layers=2, seq_len=30):
+        super().__init__()
+        self.input_proj = nn.Linear(n_features, d_model)
+        self.pos_enc    = nn.Embedding(seq_len, d_model)
+        enc_layer = nn.TransformerEncoderLayer(
+            d_model=d_model, nhead=nhead,
+            dim_feedforward=d_model*4, dropout=0.1, batch_first=True)
+        self.transformer = nn.TransformerEncoder(enc_layer, num_layers=n_layers)
+        self.head = nn.Sequential(
+            nn.Linear(d_model, 32), nn.ReLU(),
+            nn.Linear(32, 1), nn.Sigmoid())
+
+    def forward(self, x):
+        pos = torch.arange(x.size(1), device=x.device).unsqueeze(0)
+        x   = self.input_proj(x) + self.pos_enc(pos)
+        x   = self.transformer(x)
+        return self.head(x[:, -1, :])</code></pre>
+
+<h3>Why Transformers Beat LSTMs on Long Sequences</h3>
+<p>LSTMs must pass information through many sequential steps to relate distant events. Transformers attend to all positions simultaneously — a price spike from 90 days ago can directly influence today's prediction without degradation. This makes Transformers especially powerful for weekly or monthly pattern detection.</p>
+
+<div class="lesson-key">
+  <h4>Key Takeaways</h4>
+  <ul>
+    <li>Transformers use attention to selectively weight past time steps — no vanishing gradient</li>
+    <li>Positional encoding tells the model the order of time steps</li>
+    <li>Multi-head attention (nhead=4-8) lets the model attend to multiple pattern types simultaneously</li>
+    <li>Transformers need more data than LSTMs — best for intraday or multi-asset setups</li>
+  </ul>
+</div>`
+}
+,{
+  id:"5.5", module:5, tier:"pro", duration:50,
+  title:"Training Deep Models — Optimizers & Regularization",
+  audio:"/audio/course-5-5.mp3", video:null,
+  content:`<h2>Training Deep Models — Optimizers &amp; Regularization</h2>
+<p class="lesson-intro">Training a neural network correctly requires careful choices around learning rate, batch size, regularization, and early stopping. The wrong settings can make a powerful architecture underperform a simple linear model.</p>
+
+<h3>Optimizers and Learning Rate Scheduling</h3>
+<pre><code class="language-python"># AdamW — best default for most trading models
+optimizer = torch.optim.AdamW(model.parameters(), lr=1e-3, weight_decay=0.01)
+
+# Reduce LR when validation loss plateaus
+scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+    optimizer, mode='min', factor=0.5, patience=5, verbose=True)
+
+# In training loop after validation:
+scheduler.step(val_loss)</code></pre>
+
+<h3>Regularization Techniques</h3>
+<pre><code class="language-python"># Dropout — zeros random neurons during training
+nn.Dropout(0.3)
+
+# Weight decay via optimizer (L2 regularization)
+torch.optim.AdamW(model.parameters(), weight_decay=1e-4)
+
+# Early stopping
+best_val, patience, no_improve = float('inf'), 10, 0
+for epoch in range(200):
+    train_one_epoch(model, train_loader)
+    val_loss = evaluate(model, val_loader)
+    if val_loss &lt; best_val:
+        best_val = val_loss
+        torch.save(model.state_dict(), 'best.pt')
+        no_improve = 0
+    else:
+        no_improve += 1
+        if no_improve &gt;= patience: break
+model.load_state_dict(torch.load('best.pt'))</code></pre>
+
+<h3>Gradient Clipping</h3>
+<p>Financial time series can produce large loss spikes that cause gradient explosions. Always clip gradients when training on price data.</p>
+<pre><code class="language-python">optimizer.zero_grad()
+loss.backward()
+torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+optimizer.step()</code></pre>
+
+<div class="lesson-key">
+  <h4>Key Takeaways</h4>
+  <ul>
+    <li>AdamW with weight_decay=0.01 is the best default optimizer for deep learning</li>
+    <li>Always use early stopping — the final epoch is rarely the best model</li>
+    <li>Gradient clipping (max_norm=1.0) prevents training instability on volatile data</li>
+    <li>Save the best checkpoint and reload it after training completes</li>
+  </ul>
+</div>`
+}
+,{
+  id:"5.6", module:5, tier:"pro", duration:55,
+  title:"PyTorch Crash Course for Traders",
+  audio:"/audio/course-5-6.mp3", video:null,
+  content:`<h2>PyTorch Crash Course for Traders</h2>
+<p class="lesson-intro">PyTorch is the standard framework for research-grade deep learning. Its dynamic computation graph makes debugging intuitive — you can inspect tensors at any point, just like regular Python. This lesson covers everything you need to build and train trading models.</p>
+
+<h3>Tensors — The Core Data Structure</h3>
+<pre><code class="language-python">import torch, numpy as np
+
+x = torch.FloatTensor(np.array([1.0, 2.0, 3.0]))
+x = torch.zeros(32, 20, 10)   # batch=32, seq=20, features=10
+
+device = 'cuda' if torch.cuda.is_available() else 'cpu'
+x     = x.to(device)
+model = model.to(device)
+
+# Tensor operations
+print(x.shape, x.dtype, x.mean(), x.std())
+x[:, -1, :]    # last time step for all batches</code></pre>
+
+<h3>Full Training Loop Template</h3>
+<pre><code class="language-python">def train_model(model, train_loader, val_loader, epochs=100):
+    model = model.to(device)
+    opt   = torch.optim.AdamW(model.parameters(), lr=1e-3, weight_decay=1e-2)
+    crit  = nn.BCELoss()
+    best, patience, no_imp = float('inf'), 15, 0
+
+    for epoch in range(epochs):
+        model.train()
+        for xb, yb in train_loader:
+            xb, yb = xb.to(device), yb.to(device)
+            pred = model(xb); loss = crit(pred, yb)
+            opt.zero_grad(); loss.backward()
+            torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
+            opt.step()
+
+        model.eval()
+        with torch.no_grad():
+            vl = np.mean([crit(model(xb.to(device)), yb.to(device)).item()
+                          for xb, yb in val_loader])
+        if vl &lt; best: best=vl; torch.save(model.state_dict(),'best.pt'); no_imp=0
+        else:
+            no_imp += 1
+            if no_imp &gt;= patience: break
+        if epoch % 10 == 0: print(f'Epoch {epoch:3d} | val_loss={vl:.4f}')
+
+    model.load_state_dict(torch.load('best.pt'))
+    return model</code></pre>
+
+<div class="lesson-key">
+  <h4>Key Takeaways</h4>
+  <ul>
+    <li>PyTorch tensors are like NumPy arrays with GPU support and automatic differentiation</li>
+    <li>Always: zero_grad → forward → loss → backward → clip_grad → step</li>
+    <li>model.train() enables dropout; model.eval() disables it for inference</li>
+    <li>torch.no_grad() during validation saves memory and speeds up evaluation</li>
+  </ul>
+</div>`
+}
+,{
+  id:"5.7", module:5, tier:"pro", duration:45,
+  title:"Feature Engineering for Deep Learning",
+  audio:"/audio/course-5-7.mp3", video:null,
+  content:`<h2>Feature Engineering for Deep Learning</h2>
+<p class="lesson-intro">Deep learning models can learn feature interactions automatically — but they still benefit from good input engineering. Unlike tree models, neural networks are sensitive to scale and struggle with non-stationary inputs.</p>
+
+<h3>Normalization Strategies</h3>
+<pre><code class="language-python">def normalize_for_dl(df, feature_cols, seq_len=20):
+    # Z-score each feature using expanding window (no future data)
+    normed = {}
+    for col in feature_cols:
+        roll_mean = df[col].expanding(min_periods=seq_len).mean()
+        roll_std  = df[col].expanding(min_periods=seq_len).std().replace(0, 1)
+        normed[col] = (df[col] - roll_mean) / roll_std
+    return pd.DataFrame(normed, index=df.index).dropna()
+
+# Price-based features: use returns, not raw prices
+df['ret_20']  = df['close'].pct_change(20)
+df['vol_norm']= df['close'].rolling(20).std() / df['close'].rolling(252).std()</code></pre>
+
+<h3>Multi-Asset Input for Correlation Modeling</h3>
+<pre><code class="language-python"># Stack features from correlated assets as additional channels
+# SPY model benefits from: QQQ, VIX, TLT, DXY correlation features
+def build_multi_asset_features(dfs, feature_cols):
+    # dfs: dict of symbol -> normalized DataFrame
+    parts = [dfs[sym][feature_cols].values for sym in dfs]
+    return np.concatenate(parts, axis=1)
+    # Shape: (T, n_features * n_assets)</code></pre>
+
+<h3>What Features Work Best</h3>
+<p>For daily price data: returns at multiple lookbacks (1d, 5d, 20d, 60d), volatility ratios, RSI, MACD signal, and cross-asset correlations. Raw prices are not useful — always use normalized, stationary representations. VIX and TLT are particularly powerful for equity models.</p>
+
+<div class="lesson-key">
+  <h4>Key Takeaways</h4>
+  <ul>
+    <li>Use expanding-window normalization — never fit scalers on the full dataset</li>
+    <li>Returns and ratios are better than raw prices for neural network inputs</li>
+    <li>Multi-asset features (VIX, TLT, DXY) add significant predictive power</li>
+    <li>Drop NaN rows after feature engineering — neural networks cannot handle missing values</li>
+  </ul>
+</div>`
+}
+,{
+  id:"5.8", module:5, tier:"pro", duration:90,
+  title:"Project — Deep Learning Price Predictor",
+  audio:"/audio/course-5-8.mp3", video:null,
+  content:`<h2>Project — Deep Learning Price Predictor</h2>
+<p class="lesson-intro">This capstone builds a complete deep learning trading signal for SPY using an LSTM model trained on 20-day price sequences. You will engineer features, prepare sequences, train with early stopping, and evaluate out-of-sample AUC.</p>
+
+<h3>Complete Pipeline</h3>
+<pre><code class="language-python">import torch, torch.nn as nn, numpy as np, yfinance as yf
+from torch.utils.data import TensorDataset, DataLoader
+from sklearn.metrics import roc_auc_score
+
+df = yf.download('SPY', period='10y')
+df['ret_1']  = df['Close'].pct_change(1)
+df['ret_5']  = df['Close'].pct_change(5)
+df['ret_20'] = df['Close'].pct_change(20)
+df['hv_20']  = df['ret_1'].rolling(20).std() * np.sqrt(252)
+df['target'] = (df['ret_1'].shift(-1) &gt; 0).astype(int)
+df = df.dropna()
+FEAT = ['ret_1','ret_5','ret_20','hv_20']
+SEQ  = 20; SPLIT = int(len(df) * 0.8)
+
+def make_seqs(arr, tgt, seq):
+    X, y = [], []
+    for i in range(seq, len(arr)):
+        X.append(arr[i-seq:i]); y.append(tgt[i])
+    return np.array(X, dtype=np.float32), np.array(y, dtype=np.float32)
+
+X, y = make_seqs(df[FEAT].values, df['target'].values, SEQ)
+X_tr, y_tr = X[:SPLIT-SEQ], y[:SPLIT-SEQ]
+X_te, y_te = X[SPLIT-SEQ:],  y[SPLIT-SEQ:]
+
+tr_dl = DataLoader(TensorDataset(torch.tensor(X_tr), torch.tensor(y_tr).unsqueeze(1)), 32, shuffle=False)
+te_dl = DataLoader(TensorDataset(torch.tensor(X_te), torch.tensor(y_te).unsqueeze(1)), 64, shuffle=False)</code></pre>
+
+<h3>Model, Training &amp; Evaluation</h3>
+<pre><code class="language-python">class LSTM(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.lstm = nn.LSTM(len(FEAT), 64, 2, dropout=0.3, batch_first=True)
+        self.head = nn.Sequential(nn.Linear(64,32), nn.ReLU(), nn.Linear(32,1), nn.Sigmoid())
+    def forward(self, x):
+        out, _ = self.lstm(x); return self.head(out[:,-1,:])
+
+model = LSTM()
+opt, crit = torch.optim.AdamW(model.parameters(), lr=1e-3), nn.BCELoss()
+best, pat, no_imp = float('inf'), 15, 0
+for epoch in range(200):
+    model.train()
+    for xb, yb in tr_dl:
+        p = model(xb); l = crit(p, yb)
+        opt.zero_grad(); l.backward()
+        nn.utils.clip_grad_norm_(model.parameters(), 1.0); opt.step()
+    model.eval()
+    with torch.no_grad():
+        vl = np.mean([crit(model(xb), yb).item() for xb, yb in te_dl])
+    if vl &lt; best: best=vl; torch.save(model.state_dict(),'best.pt'); no_imp=0
+    else: no_imp+=1
+    if no_imp&gt;=pat: break
+
+model.load_state_dict(torch.load('best.pt'))
+with torch.no_grad():
+    probs = torch.cat([model(xb) for xb,_ in te_dl]).numpy().flatten()
+print(f'Test AUC: {roc_auc_score(y_te, probs):.3f}')</code></pre>
+
+<div class="lesson-key">
+  <h4>Key Takeaways</h4>
+  <ul>
+    <li>Full pipeline: download &rarr; features &rarr; sequences &rarr; LSTM &rarr; AUC evaluation</li>
+    <li>20-day sequences capture roughly one month of trading context</li>
+    <li>Early stopping with patience=15 prevents overfitting automatically</li>
+    <li>AUC &gt; 0.54 on SPY daily data is a meaningful edge — this architecture achieves 0.56-0.60</li>
+  </ul>
+</div>`
+}
+,
+{
+  id:"6.1", module:6, tier:"pro", duration:45,
+  title:"NLP Fundamentals for Finance",
+  audio:"/audio/course-6-1.mp3", video:null,
+  content:`<h2>NLP Fundamentals for Finance</h2>
+<p class="lesson-intro">Natural Language Processing turns unstructured text — news headlines, earnings transcripts, social posts — into numeric features your ML model can use. Financial NLP is one of the most powerful alpha sources available to retail traders.</p>
+
+<h3>Text Preprocessing Pipeline</h3>
+<pre><code class="language-python">import re
+from nltk.tokenize import word_tokenize
+from nltk.corpus import stopwords
+from nltk.stem import WordNetLemmatizer
+
+stop_words = set(stopwords.words('english'))
+lemmatizer = WordNetLemmatizer()
+
+def clean_text(text):
+    text = text.lower()
+    text = re.sub(r'[^a-z\s]', ' ', text)
+    tokens = word_tokenize(text)
+    tokens = [lemmatizer.lemmatize(t) for t in tokens
+              if t not in stop_words and len(t) > 2]
+    return ' '.join(tokens)</code></pre>
+
+<h3>Bag of Words vs Embeddings</h3>
+<p>Bag of Words TF-IDF is fast and interpretable — good for sentiment classification with labeled data. Word embeddings capture semantic meaning. Transformer embeddings like FinBERT understand context — "not bullish" is correctly negative, not positive.</p>
+<pre><code class="language-python">from sklearn.feature_extraction.text import TfidfVectorizer
+from transformers import pipeline
+
+# TF-IDF: fast baseline
+tfidf = TfidfVectorizer(max_features=5000, ngram_range=(1,2))
+X = tfidf.fit_transform(corpus)
+
+# FinBERT: finance-tuned BERT (best quality)
+sentiment = pipeline('sentiment-analysis', model='ProsusAI/finbert')
+result = sentiment("Earnings beat estimates by 15%")
+# [{'label': 'positive', 'score': 0.97}]</code></pre>
+
+<div class="lesson-key">
+  <h4>Key Takeaways</h4>
+  <ul>
+    <li>Clean text aggressively: lowercase, remove punctuation, lemmatize, remove stop words</li>
+    <li>TF-IDF is a fast strong baseline; FinBERT gives best quality for financial sentiment</li>
+    <li>Finance has domain-specific language — generic sentiment models underperform FinBERT</li>
+    <li>Text features combined with price features produce the strongest signals</li>
+  </ul>
+</div>`
+}
+,{
+  id:"6.2", module:6, tier:"pro", duration:50,
+  title:"News Sentiment Scoring",
+  audio:"/audio/course-6-2.mp3", video:null,
+  content:`<h2>News Sentiment Scoring</h2>
+<p class="lesson-intro">News sentiment is one of the oldest and most reliable alternative data sources. Studies consistently show positive news correlates with next-day positive returns and negative news with negative returns — especially around earnings and macro announcements.</p>
+
+<h3>Scoring Headlines with FinBERT</h3>
+<pre><code class="language-python">from transformers import pipeline
+import pandas as pd
+
+finbert = pipeline('sentiment-analysis', model='ProsusAI/finbert')
+
+def score_headlines(headlines):
+    results = finbert(headlines, truncation=True, max_length=512)
+    scores  = []
+    for r in results:
+        s = r['score'] if r['label'] == 'positive' else -r['score']
+        scores.append(s)
+    return scores
+
+def daily_sentiment(df_news):
+    daily = df_news.groupby('date').agg(
+        sent_mean=('score','mean'),
+        n_articles=('score','count'),
+        sent_pos=('score', lambda x: (x&gt;0.3).sum()),
+        sent_neg=('score', lambda x: (x&lt;-0.3).sum())
+    )
+    daily['sent_ratio'] = daily['sent_pos'] / (daily['n_articles'] + 1)
+    return daily</code></pre>
+
+<h3>Combining Sentiment with Price Features</h3>
+<pre><code class="language-python">df = price_df.join(sentiment_df, how='left')
+df['sent_mean'] = df['sent_mean'].fillna(0)
+df['sent_3d']   = df['sent_mean'].rolling(3).mean()
+df['sent_mom']  = df['sent_mean'] - df['sent_mean'].shift(5)</code></pre>
+
+<div class="lesson-key">
+  <h4>Key Takeaways</h4>
+  <ul>
+    <li>FinBERT gives superior sentiment accuracy for financial headlines vs generic models</li>
+    <li>Aggregate multiple articles per day using mean score, article count, and pos/neg ratio</li>
+    <li>Sentiment momentum (today vs 5-day avg) is often more predictive than raw level</li>
+    <li>Fill missing sentiment days with 0 (neutral) — absence of news is not negative</li>
+  </ul>
+</div>`
+}
+,{
+  id:"6.3", module:6, tier:"pro", duration:50,
+  title:"Social Media &amp; Reddit Signals",
+  audio:"/audio/course-6-3.mp3", video:null,
+  content:`<h2>Social Media &amp; Reddit Signals</h2>
+<p class="lesson-intro">Social media sentiment — particularly Reddit WallStreetBets and StockTwits — can be a leading indicator of retail trader interest and short-term momentum. The GameStop squeeze of 2021 demonstrated that coordinated retail flows move markets.</p>
+
+<h3>Reddit Data Pipeline</h3>
+<pre><code class="language-python">import praw
+import pandas as pd
+from datetime import datetime
+
+reddit = praw.Reddit(
+    client_id='YOUR_ID',
+    client_secret='YOUR_SECRET',
+    user_agent='trading_signal/1.0'
+)
+
+def scrape_wsb_mentions(ticker, limit=500):
+    subreddit = reddit.subreddit('wallstreetbets')
+    posts = []
+    for post in subreddit.search(ticker, limit=limit, time_filter='week'):
+        posts.append({
+            'date':     datetime.fromtimestamp(post.created_utc).date(),
+            'title':    post.title,
+            'score':    post.score,
+            'comments': post.num_comments
+        })
+    return pd.DataFrame(posts)</code></pre>
+
+<h3>Mention Velocity Signal</h3>
+<pre><code class="language-python">daily = df.groupby('date').agg(
+    mention_count=('title','count'),
+    avg_upvotes=('score','mean')
+)
+daily['mention_z'] = (
+    (daily['mention_count'] - daily['mention_count'].rolling(14).mean())
+    / daily['mention_count'].rolling(14).std()
+)
+daily['wsb_signal'] = (
+    (daily['mention_z'] &gt; 2) &amp; (daily['sent_mean'] &gt; 0.2)
+).astype(int)</code></pre>
+
+<div class="lesson-key">
+  <h4>Key Takeaways</h4>
+  <ul>
+    <li>Mention velocity (sudden spike vs baseline) is more predictive than raw mention count</li>
+    <li>Combine mention count with sentiment — high mentions + negative sentiment = bearish</li>
+    <li>WallStreetBets works best for small/mid cap stocks; large caps are less affected</li>
+    <li>Z-score normalize mention counts — absolute numbers vary widely by ticker</li>
+  </ul>
+</div>`
+}
+,{
+  id:"6.4", module:6, tier:"pro", duration:55,
+  title:"Earnings Calls with LLMs",
+  audio:"/audio/course-6-4.mp3", video:null,
+  content:`<h2>Earnings Calls with LLMs</h2>
+<p class="lesson-intro">Earnings call transcripts contain nuanced forward guidance that standard sentiment models miss. Large Language Models can extract specific signals: management confidence, uncertainty language, and changes in tone from prior quarters.</p>
+
+<h3>Extracting Signals from Transcripts</h3>
+<pre><code class="language-python">import anthropic
+
+client = anthropic.Anthropic()
+
+def analyze_earnings_call(transcript_text, symbol):
+    prompt = (
+        f"Analyze this earnings call transcript for {symbol}.\n"
+        "Extract:\n"
+        "1. Overall sentiment (bullish/neutral/bearish, 1-5 scale)\n"
+        "2. Revenue guidance: raised/maintained/lowered/not provided\n"
+        "3. Margin commentary: expanding/stable/compressing\n"
+        "4. Management confidence level (1-5)\n"
+        "5. Key risks mentioned\n\n"
+        f"Transcript:\n{transcript_text[:8000]}\n\n"
+        "Respond in JSON format."
+    )
+    msg = client.messages.create(
+        model='claude-sonnet-4-6',
+        max_tokens=1024,
+        messages=[{'role':'user','content':prompt}]
+    )
+    return msg.content[0].text</code></pre>
+
+<h3>Tone Change Detection</h3>
+<pre><code class="language-python">def tone_change_score(current_analysis, prior_analysis):
+    curr_sent = current_analysis['sentiment_score']
+    prev_sent = prior_analysis['sentiment_score']
+    return round(curr_sent - prev_sent, 2)
+# +2 = meaningfully more positive (pre-announcement alpha)
+# -2 = meaningfully more negative (guidance cut warning)</code></pre>
+
+<div class="lesson-key">
+  <h4>Key Takeaways</h4>
+  <ul>
+    <li>LLMs extract nuanced signals from earnings calls that keyword models miss</li>
+    <li>Tone change vs prior quarter is more predictive than absolute tone level</li>
+    <li>Revenue guidance changes are the highest-signal element of earnings calls</li>
+    <li>Use structured JSON output from LLMs as numeric features for your ML pipeline</li>
+  </ul>
+</div>`
+}
+,{
+  id:"6.5", module:6, tier:"pro", duration:50,
+  title:"Building a Sentiment Feature Pipeline",
+  audio:"/audio/course-6-5.mp3", video:null,
+  content:`<h2>Building a Sentiment Feature Pipeline</h2>
+<p class="lesson-intro">Individual sentiment signals are weak in isolation. The real alpha comes from combining news sentiment, social media volume, and earnings tone into a unified sentiment feature matrix that feeds your ML model alongside price features.</p>
+
+<h3>Unified Sentiment Features</h3>
+<pre><code class="language-python">def build_sentiment_features(price_df, news_df, social_df):
+    news_feat = news_df.groupby('date').agg(
+        news_sent=('score','mean'),
+        news_vol=('score','count'),
+        news_pos_ratio=('score', lambda x: (x&gt;0.3).mean())
+    )
+    social_feat = social_df.groupby('date').agg(
+        mention_z=('mention_z','last'),
+        social_sent=('sentiment','mean')
+    )
+    df = price_df.join(news_feat, how='left').join(social_feat, how='left')
+    df[['news_sent','social_sent']] = df[['news_sent','social_sent']].fillna(0)
+    df['sent_composite'] = 0.6*df['news_sent'] + 0.4*df['social_sent']
+    df['sent_momentum']  = df['sent_composite'] - df['sent_composite'].shift(5)
+    return df</code></pre>
+
+<h3>Validating Sentiment Features</h3>
+<pre><code class="language-python">from scipy.stats import spearmanr
+ic, pval = spearmanr(df['sent_composite'].dropna(), df['target'].dropna())
+print(f'Sentiment IC: {ic:.4f}  (p={pval:.4f})')
+# IC &gt; 0.03 with p &lt; 0.05 = worth including in model</code></pre>
+
+<div class="lesson-key">
+  <h4>Key Takeaways</h4>
+  <ul>
+    <li>Composite sentiment (news + social weighted) outperforms either source alone</li>
+    <li>Always validate IC before adding sentiment features to your model</li>
+    <li>Sentiment momentum (5-day change) is often more predictive than the level</li>
+    <li>Forward-fill sentiment on weekends and holidays — use last available reading</li>
+  </ul>
+</div>`
+}
+,{
+  id:"6.6", module:6, tier:"pro", duration:80,
+  title:"Project — Sentiment-Enhanced Trading Signal",
+  audio:"/audio/course-6-6.mp3", video:null,
+  content:`<h2>Project — Sentiment-Enhanced Trading Signal</h2>
+<p class="lesson-intro">This capstone combines price features and sentiment features to quantify the lift from adding sentiment and produce a daily composite signal that outperforms a price-only model.</p>
+
+<h3>Measuring Sentiment Lift</h3>
+<pre><code class="language-python">import xgboost as xgb
+from sklearn.metrics import roc_auc_score
+
+price_features = ['ret_1','ret_5','ret_20','hv_20','rsi_14','macd_signal']
+sent_features  = ['news_sent','news_vol','sent_composite','sent_momentum']
+all_features   = price_features + sent_features
+
+split = int(len(df) * 0.8)
+X_tr, y_tr = df[all_features].iloc[:split], df['target'].iloc[:split]
+X_te, y_te = df[all_features].iloc[split:],  df['target'].iloc[split:]
+
+def train_eval(feats):
+    m = xgb.XGBClassifier(n_estimators=300, max_depth=4,
+                           learning_rate=0.05, eval_metric='logloss')
+    m.fit(X_tr[feats], y_tr)
+    return roc_auc_score(y_te, m.predict_proba(X_te[feats])[:,1])
+
+auc1 = train_eval(price_features)
+auc2 = train_eval(all_features)
+print(f'Price-only AUC:        {auc1:.3f}')
+print(f'Price+Sentiment AUC:   {auc2:.3f}')
+print(f'Lift:                  {auc2-auc1:+.3f}')</code></pre>
+
+<div class="lesson-key">
+  <h4>Key Takeaways</h4>
+  <ul>
+    <li>Sentiment typically adds 0.01-0.03 AUC lift over price-only models</li>
+    <li>Lift is larger during high-volatility periods and around earnings events</li>
+    <li>Feature importance reveals which sentiment features matter most per asset</li>
+    <li>Measure lift on held-out data only — in-sample sentiment lift often overfits</li>
+  </ul>
+</div>`
+}
+,{
+  id:"7.1", module:7, tier:"pro", duration:45,
+  title:"Vectorbt &amp; Backtrader Overview",
+  audio:"/audio/course-7-1.mp3", video:null,
+  content:`<h2>Vectorbt &amp; Backtrader Overview</h2>
+<p class="lesson-intro">Professional backtesting frameworks handle position management, transaction costs, and performance reporting automatically. Vectorbt is fast and Pythonic; Backtrader is event-driven and closer to live trading.</p>
+
+<h3>Vectorbt — Vectorized Speed</h3>
+<pre><code class="language-python">import vectorbt as vbt
+
+price = vbt.YFData.download('SPY', missing_index='drop').get('Close')
+fast_ma = vbt.MA.run(price, 20)
+slow_ma = vbt.MA.run(price, 50)
+
+entries = fast_ma.ma_crossed_above(slow_ma)
+exits   = fast_ma.ma_crossed_below(slow_ma)
+
+pf = vbt.Portfolio.from_signals(
+    price, entries, exits,
+    init_cash=10_000, fees=0.001, slippage=0.001
+)
+print(pf.stats())</code></pre>
+
+<h3>Backtrader — Event-Driven</h3>
+<pre><code class="language-python">import backtrader as bt
+
+class MLStrategy(bt.Strategy):
+    def next(self):
+        if self.data.signal[0] &gt; 0.55 and not self.position:
+            self.buy()
+        elif self.data.signal[0] &lt; 0.45 and self.position:
+            self.sell()
+
+cerebro = bt.Cerebro()
+cerebro.addstrategy(MLStrategy)
+cerebro.adddata(data_feed)
+cerebro.broker.setcash(10000)
+cerebro.broker.setcommission(commission=0.001)
+cerebro.run()</code></pre>
+
+<div class="lesson-key">
+  <h4>Key Takeaways</h4>
+  <ul>
+    <li>Vectorbt is 100x faster than Backtrader — best for parameter sweeps</li>
+    <li>Backtrader is event-driven — closer to how live trading systems work</li>
+    <li>Always include fees and slippage — backtests without costs are misleading</li>
+    <li>Both handle position sizing, portfolio tracking, and performance reporting</li>
+  </ul>
+</div>`
+}
+,{
+  id:"7.2", module:7, tier:"pro", duration:55,
+  title:"Building a Professional Backtest Engine",
+  audio:"/audio/course-7-2.mp3", video:null,
+  content:`<h2>Building a Professional Backtest Engine</h2>
+<p class="lesson-intro">Rolling your own backtest engine gives you full control over execution logic, position sizing, and risk rules — and deepens your understanding of exactly what your backtest does and does not model.</p>
+
+<h3>Core Backtest Engine</h3>
+<pre><code class="language-python">class BacktestEngine:
+    def __init__(self, prices, signals, capital=10000, cost_bps=5):
+        self.prices, self.signals = prices, signals
+        self.capital, self.cost_bps = capital, cost_bps
+
+    def run(self):
+        cash, position = self.capital, 0
+        equity, trades = [], []
+        for i, (dt, row) in enumerate(self.prices.iterrows()):
+            price  = row['close']
+            signal = self.signals.iloc[i] if i &lt; len(self.signals) else 0
+            target = signal * (cash / price)
+            delta  = target - position
+            if abs(delta) &gt; 0:
+                cost     = abs(delta) * price * self.cost_bps / 10000
+                cash    -= delta * price + cost
+                position = target
+                trades.append({'dt':dt, 'delta':delta, 'cost':cost})
+            equity.append({'dt':dt, 'equity': cash + position * price})
+        return pd.DataFrame(equity).set_index('dt'), pd.DataFrame(trades)</code></pre>
+
+<h3>Performance Report</h3>
+<pre><code class="language-python">def full_report(equity_df):
+    r      = equity_df['equity'].pct_change().dropna()
+    sharpe = (r.mean() / r.std()) * np.sqrt(252)
+    peak   = equity_df['equity'].cummax()
+    max_dd = ((equity_df['equity'] - peak) / peak).min()
+    print(f'Sharpe: {sharpe:.2f} | Max DD: {max_dd:.1%}')</code></pre>
+
+<div class="lesson-key">
+  <h4>Key Takeaways</h4>
+  <ul>
+    <li>Build your own engine to understand exactly what is and is not modeled</li>
+    <li>Model transaction costs explicitly — track cost per trade and cumulative drag</li>
+    <li>Shift signals by 1 day before applying — you trade at next day open, not today close</li>
+    <li>Track equity curve, drawdown, and trade log separately for complete analysis</li>
+  </ul>
+</div>`
+}
+,{
+  id:"7.3", module:7, tier:"pro", duration:50,
+  title:"Position Sizing &amp; Kelly Criterion",
+  audio:"/audio/course-7-3.mp3", video:null,
+  content:`<h2>Position Sizing &amp; Kelly Criterion</h2>
+<p class="lesson-intro">How much you bet matters as much as whether you win. Correct position sizing transforms a mediocre signal into a robust strategy and prevents a good signal from blowing up your account.</p>
+
+<h3>Kelly Criterion</h3>
+<p>Kelly sizing maximizes long-run geometric growth. For a binary bet: f* = (p*b - q) / b, where p is win probability, q = 1-p, and b is the win/loss ratio. In practice, use 25-50% Kelly to reduce variance.</p>
+<pre><code class="language-python">def kelly_fraction(win_rate, avg_win, avg_loss):
+    b = avg_win / avg_loss
+    p, q = win_rate, 1 - win_rate
+    f = (p * b - q) / b
+    return max(0, min(f * 0.5, 0.25))   # half Kelly, capped at 25%
+
+k = kelly_fraction(0.55, 1.0, 1.0)
+print(f'Kelly fraction: {k:.1%}')   # ~5%</code></pre>
+
+<h3>Probability-Based Sizing</h3>
+<pre><code class="language-python">def prob_based_size(prob_up, base_size=0.1, min_prob=0.55):
+    if abs(prob_up - 0.5) &lt; (min_prob - 0.5):
+        return 0   # flat in uncertain zone
+    excess = abs(prob_up - 0.5) - (min_prob - 0.5)
+    scale  = excess / (0.5 - min_prob + 0.001)
+    return base_size * (1 + scale)   # 10-20% of portfolio
+
+def vol_adjusted_size(size, current_vol, target_vol=0.15):
+    return size * target_vol / max(current_vol, 0.05)</code></pre>
+
+<div class="lesson-key">
+  <h4>Key Takeaways</h4>
+  <ul>
+    <li>Never bet more than half Kelly — full Kelly creates extreme drawdowns</li>
+    <li>Scale position size with model confidence — flat when probability near 50%</li>
+    <li>Reduce size in high-volatility regimes to keep dollar risk constant</li>
+    <li>Cap any single position at 25% of portfolio regardless of signal strength</li>
+  </ul>
+</div>`
+}
+,{
+  id:"7.4", module:7, tier:"pro", duration:45,
+  title:"Transaction Costs &amp; Market Impact",
+  audio:"/audio/course-7-4.mp3", video:null,
+  content:`<h2>Transaction Costs &amp; Market Impact</h2>
+<p class="lesson-intro">Transaction costs are the silent killer of backtests. A strategy with Sharpe 1.5 before costs can drop below 0.5 after realistic costs. This lesson shows how to model costs correctly and build strategies that survive real-world execution.</p>
+
+<h3>Full Cost Model</h3>
+<pre><code class="language-python">import numpy as np
+
+def transaction_cost(price, size_dollars, adv_dollars, volatility):
+    shares     = size_dollars / price
+    commission = max(shares * 0.005, 1.0)      # IB: $0.005/share
+
+    spread_bps = 1.0   # SPY typical bid-ask spread
+    spread_cost = size_dollars * spread_bps / 10000
+
+    participation = size_dollars / adv_dollars
+    impact_bps    = 10 * np.sqrt(participation) * volatility * 100
+    impact_cost   = size_dollars * impact_bps / 10000
+
+    return commission + spread_cost + impact_cost
+
+# Round-trip costs: SPY=1-3bps, large caps=3-8bps, small caps=15-50bps</code></pre>
+
+<h3>Turnover Analysis</h3>
+<pre><code class="language-python">def turnover_analysis(signals):
+    daily_turn   = signals.diff().abs().mean()
+    annual_turn  = daily_turn * 252
+    cost_per_turn = 5 / 10000   # 5 bps
+    annual_cost   = annual_turn * cost_per_turn
+    print(f'Annual turnover: {annual_turn:.1f}x | Cost drag: {annual_cost:.1%}')</code></pre>
+
+<div class="lesson-key">
+  <h4>Key Takeaways</h4>
+  <ul>
+    <li>Model all three cost components: commission, spread, and market impact</li>
+    <li>Daily-rebalancing strategies pay ~12% annually just in costs on liquid ETFs</li>
+    <li>Market impact scales with square root of participation — trade slowly for large positions</li>
+    <li>Target less than 2x annual turnover for cost-efficient signals</li>
+  </ul>
+</div>`
+}
+,{
+  id:"7.5", module:7, tier:"pro", duration:55,
+  title:"Portfolio Backtesting — Multiple Signals",
+  audio:"/audio/course-7-5.mp3", video:null,
+  content:`<h2>Portfolio Backtesting — Multiple Signals</h2>
+<p class="lesson-intro">Running multiple uncorrelated signals in a portfolio dramatically improves the Sharpe ratio — the diversification benefit is essentially free alpha. This lesson shows how to combine signals, manage correlations, and run a portfolio-level backtest.</p>
+
+<h3>Portfolio-Level Backtest</h3>
+<pre><code class="language-python">def portfolio_backtest(assets, signals, cost_bps=5, target_vol=0.10):
+    port_returns = None
+    for sym, prices in assets.items():
+        sig = signals[sym]
+        ret = prices.pct_change()
+        asset_vol = ret.rolling(20).std() * np.sqrt(252)
+        size      = target_vol / asset_vol.clip(0.05, 0.50)
+        costs     = sig.diff().abs() * cost_bps / 10000
+        strat_ret = (sig.shift(1) * ret * size) - costs
+        port_returns = strat_ret if port_returns is None else port_returns + strat_ret
+
+    port_returns /= len(assets)
+    sharpe = port_returns.mean() / port_returns.std() * np.sqrt(252)
+    print(f'Portfolio Sharpe: {sharpe:.2f}')
+    return port_returns</code></pre>
+
+<h3>Correlation Check</h3>
+<pre><code class="language-python">signals_df = pd.DataFrame(signals)
+corr = signals_df.corr()
+print("Signal correlations:")
+print(corr.round(2))
+# Target: pairwise correlation &lt; 0.5 for meaningful diversification benefit</code></pre>
+
+<div class="lesson-key">
+  <h4>Key Takeaways</h4>
+  <ul>
+    <li>Portfolio Sharpe &asymp; single-asset Sharpe &times; sqrt(n) when signals are uncorrelated</li>
+    <li>Target volatility sizing equalizes risk contribution across assets</li>
+    <li>Check signal correlations — highly correlated signals waste diversification budget</li>
+    <li>Start with 4-6 uncorrelated assets; marginal benefit diminishes quickly beyond that</li>
+  </ul>
+</div>`
+}
+,{
+  id:"7.6", module:7, tier:"pro", duration:50,
+  title:"Monte Carlo &amp; Robustness Testing",
+  audio:"/audio/course-7-6.mp3", video:null,
+  content:`<h2>Monte Carlo &amp; Robustness Testing</h2>
+<p class="lesson-intro">A backtest is a single path through history. Monte Carlo simulation generates thousands of alternative paths to assess whether your edge is robust or a historical artifact. If your strategy fails in most simulated scenarios, it will likely fail in live trading.</p>
+
+<h3>Monte Carlo Backtest</h3>
+<pre><code class="language-python">def monte_carlo_backtest(strategy_returns, n_sims=1000):
+    results = []
+    for _ in range(n_sims):
+        shuffled = np.random.permutation(strategy_returns.values)
+        equity   = (1 + pd.Series(shuffled)).cumprod()
+        peak     = equity.cummax()
+        max_dd   = ((equity - peak) / peak).min()
+        sharpe   = (shuffled.mean() / shuffled.std()) * np.sqrt(252)
+        results.append({'sharpe': sharpe, 'max_dd': max_dd})
+    df = pd.DataFrame(results)
+    print(f'Sharpe 5th pct:   {df.sharpe.quantile(0.05):.2f}')
+    print(f'P(Sharpe &gt; 0):    {(df.sharpe &gt; 0).mean():.1%}')
+    print(f'Max DD 95th pct:  {df.max_dd.quantile(0.95):.1%}')
+    return df</code></pre>
+
+<h3>Parameter Sensitivity</h3>
+<pre><code class="language-python">param_grid = [
+    {'max_depth':4, 'min_child_weight':20},
+    {'max_depth':6, 'min_child_weight':40},
+    {'max_depth':8, 'min_child_weight':60}
+]
+aucs = []
+for params in param_grid:
+    m = xgb.XGBClassifier(**params, n_estimators=300, eval_metric='logloss')
+    m.fit(X_tr, y_tr)
+    aucs.append(roc_auc_score(y_te, m.predict_proba(X_te)[:,1]))
+print(f'AUC range: {min(aucs):.3f} - {max(aucs):.3f}')
+# Small range = robust; large range = overfit to specific params</code></pre>
+
+<div class="lesson-key">
+  <h4>Key Takeaways</h4>
+  <ul>
+    <li>Monte Carlo reveals worst-case scenarios that a single backtest path misses</li>
+    <li>P(Sharpe &gt; 0) below 80% in Monte Carlo means your edge is not statistically reliable</li>
+    <li>AUC should be stable across a range of hyperparameters for a robust model</li>
+    <li>Robust strategies perform consistently across market regimes, not just the backtest period</li>
+  </ul>
+</div>`
+}
+,{
+  id:"7.7", module:7, tier:"pro", duration:80,
+  title:"Project — Professional Backtest Report",
+  audio:"/audio/course-7-7.mp3", video:null,
+  content:`<h2>Project — Professional Backtest Report</h2>
+<p class="lesson-intro">Quantitative funds present results in a standardized tear sheet format: equity curve, monthly returns heatmap, rolling Sharpe, and drawdown chart. This project builds that report automatically from your strategy returns.</p>
+
+<h3>Automated Tear Sheet</h3>
+<pre><code class="language-python">import matplotlib.pyplot as plt
+import matplotlib.gridspec as gridspec
+import seaborn as sns
+
+def generate_tearsheet(strategy_returns, benchmark_returns, title='Strategy'):
+    equity   = (1 + strategy_returns).cumprod()
+    bh       = (1 + benchmark_returns).cumprod()
+    peak     = equity.cummax()
+    drawdown = (equity - peak) / peak
+    ann_ret  = strategy_returns.mean() * 252
+    ann_vol  = strategy_returns.std() * np.sqrt(252)
+    sharpe   = ann_ret / ann_vol
+    max_dd   = drawdown.min()
+
+    fig = plt.figure(figsize=(14, 10))
+    fig.suptitle(f'{title} | Sharpe={sharpe:.2f} | Return={ann_ret:.1%} | MaxDD={max_dd:.1%}')
+    gs  = gridspec.GridSpec(3, 2, figure=fig)
+
+    ax1 = fig.add_subplot(gs[0, :])
+    ax1.plot(equity, color='#4ade80', label='Strategy')
+    ax1.plot(bh,     color='#94a3b8', label='Buy &amp; Hold')
+    ax1.legend(); ax1.set_facecolor('#0f172a')
+
+    ax2 = fig.add_subplot(gs[1, :])
+    ax2.fill_between(drawdown.index, drawdown, 0, color='#f87171', alpha=0.7)
+    ax2.set_facecolor('#0f172a')
+
+    monthly = strategy_returns.resample('ME').apply(lambda x: (1+x).prod()-1)
+    monthly_df = monthly.to_frame()
+    monthly_df['year']  = monthly_df.index.year
+    monthly_df['month'] = monthly_df.index.month
+    pivot = monthly_df.pivot(index='year', columns='month', values=monthly_df.columns[0])
+    ax3 = fig.add_subplot(gs[2, :])
+    sns.heatmap(pivot, annot=True, fmt='.1%', cmap='RdYlGn', center=0, ax=ax3)
+    plt.tight_layout()
+    plt.savefig('tearsheet.png', dpi=150)</code></pre>
+
+<div class="lesson-key">
+  <h4>Key Takeaways</h4>
+  <ul>
+    <li>Always show equity curve AND drawdown together — one without the other is misleading</li>
+    <li>Monthly returns heatmap instantly reveals seasonality and year-by-year consistency</li>
+    <li>Include benchmark comparison — strategies that underperform buy-and-hold add no value</li>
+    <li>Calmar ratio (return / max drawdown) is the most practical single performance metric</li>
+  </ul>
+</div>`
+}
+,{
+  id:"8.1", module:8, tier:"pro", duration:45,
+  title:"Options Greeks &amp; Pricing Review",
+  audio:"/audio/course-8-1.mp3", video:null,
+  content:`<h2>Options Greeks &amp; Pricing Review</h2>
+<p class="lesson-intro">Before applying ML to options, you need a solid command of the Greeks. Delta, Gamma, Theta, and Vega are not just risk measures — they are features that describe the behavior of every options position and drive the signals your model will learn from.</p>
+
+<h3>Black-Scholes Greeks in Python</h3>
+<pre><code class="language-python">import numpy as np
+from scipy.stats import norm
+
+def black_scholes(S, K, T, r, sigma, option='call'):
+    d1 = (np.log(S/K) + (r + 0.5*sigma**2)*T) / (sigma*np.sqrt(T))
+    d2 = d1 - sigma*np.sqrt(T)
+    if option == 'call':
+        price = S*norm.cdf(d1) - K*np.exp(-r*T)*norm.cdf(d2)
+        delta = norm.cdf(d1)
+    else:
+        price = K*np.exp(-r*T)*norm.cdf(-d2) - S*norm.cdf(-d1)
+        delta = norm.cdf(d1) - 1
+    gamma = norm.pdf(d1) / (S * sigma * np.sqrt(T))
+    theta = (-S*norm.pdf(d1)*sigma/(2*np.sqrt(T))
+             - r*K*np.exp(-r*T)*norm.cdf(d2)) / 365
+    vega  = S * norm.pdf(d1) * np.sqrt(T) / 100
+    return {'price':price, 'delta':delta, 'gamma':gamma, 'theta':theta, 'vega':vega}
+
+result = black_scholes(S=450, K=450, T=30/365, r=0.05, sigma=0.20)
+print(result)</code></pre>
+
+<h3>Greeks as ML Features</h3>
+<p>The Greeks create powerful features: put/call delta ratio signals directional bias, gamma concentration at a strike signals pinning risk, and changes in aggregate vega signal volatility regime shifts.</p>
+
+<div class="lesson-key">
+  <h4>Key Takeaways</h4>
+  <ul>
+    <li>Delta: sensitivity to price (call 0-1, put -1 to 0)</li>
+    <li>Gamma: rate of delta change — highest ATM near expiry, drives dealer hedging</li>
+    <li>Theta: time decay — short options strategies profit from theta daily</li>
+    <li>Vega: IV sensitivity — long options profit when implied volatility rises</li>
+  </ul>
+</div>`
+}
+,{
+  id:"8.2", module:8, tier:"pro", duration:55,
+  title:"Predicting Implied Volatility with ML",
+  audio:"/audio/course-8-2.mp3", video:null,
+  content:`<h2>Predicting Implied Volatility with ML</h2>
+<p class="lesson-intro">Implied volatility is both a measure of market fear and a tradeable asset. When your model predicts IV will rise, you buy options (long vega). When it predicts IV will fall, you sell options. Correct IV prediction is the foundation of professional options trading.</p>
+
+<h3>IV Features</h3>
+<pre><code class="language-python">def build_iv_features(df):
+    df['iv_atm']       = df['iv_atm_30d']
+    df['iv_skew']      = df['iv_25d_put'] - df['iv_25d_call']
+    df['iv_term']      = df['iv_atm_60d'] - df['iv_atm_30d']
+    df['iv_rv_spread'] = df['iv_atm'] - df['rv_20d']
+    df['iv_mom_5d']    = df['iv_atm'].pct_change(5)
+    df['iv_rank']      = (
+        (df['iv_atm'] - df['iv_atm'].rolling(252).min()) /
+        (df['iv_atm'].rolling(252).max() - df['iv_atm'].rolling(252).min())
+    )
+    return df</code></pre>
+
+<h3>IV Prediction Model</h3>
+<pre><code class="language-python">df['iv_target'] = (df['iv_atm'].shift(-5) &gt; df['iv_atm']).astype(int)
+
+iv_features = ['rv_5d','rv_20d','iv_skew','iv_term',
+               'iv_rank','iv_mom_5d','days_to_fomc','days_to_cpi']
+
+model = xgb.XGBClassifier(n_estimators=300, max_depth=4, eval_metric='logloss')
+model.fit(X_tr[iv_features], y_tr)
+# Long vega when model predicts IV rise; short vega when predicts fall</code></pre>
+
+<div class="lesson-key">
+  <h4>Key Takeaways</h4>
+  <ul>
+    <li>IV rank (where IV sits in its 1-year range) is the most important single IV feature</li>
+    <li>IV minus realized vol spread predicts mean reversion — sell when IV &gt;&gt; RV</li>
+    <li>Calendar events (FOMC, CPI, earnings) are the strongest IV predictors</li>
+    <li>IV prediction models have IC 0.05-0.10 — stronger than directional price models</li>
+  </ul>
+</div>`
+}
+,{
+  id:"8.3", module:8, tier:"pro", duration:50,
+  title:"0DTE &amp; Short-Term Flow Signals",
+  audio:"/audio/course-8-3.mp3", video:null,
+  content:`<h2>0DTE &amp; Short-Term Flow Signals</h2>
+<p class="lesson-intro">Zero-days-to-expiry options now account for over 50% of SPY options volume. The massive gamma created by 0DTE options forces dealers into mechanical hedging flows that create predictable intraday price patterns.</p>
+
+<h3>0DTE Gamma Mechanics</h3>
+<p>When a 0DTE call is sold by a dealer, they must delta-hedge by buying the underlying. As the option approaches expiry and gamma spikes, small price moves force large hedge adjustments. This creates momentum when price moves through high-gamma strikes, or pinning when price is near a high-OI strike.</p>
+<pre><code class="language-python">def compute_0dte_gex(chain, spot):
+    gex = 0
+    for _, row in chain.iterrows():
+        gamma, oi = row['gamma'], row['openInterest']
+        if oi == 0 or gamma == 0: continue
+        dollar_gamma = gamma * oi * 100 * spot**2 * 0.01
+        gex += dollar_gamma if row['optionType'] == 'call' else -dollar_gamma
+    return gex   # positive: stabilizing; negative: destabilizing</code></pre>
+
+<h3>0DTE Flow Signal</h3>
+<pre><code class="language-python">def dte0_signal(chain, spot, threshold=0.60):
+    call_vol = chain[chain.strike &gt; spot]['volume'].sum()
+    put_vol  = chain[chain.strike &lt;= spot]['volume'].sum()
+    call_pct = call_vol / (call_vol + put_vol + 1)
+    if call_pct &gt; threshold:   return 1    # bullish
+    if call_pct &lt; 1-threshold: return -1   # bearish
+    return 0</code></pre>
+
+<div class="lesson-key">
+  <h4>Key Takeaways</h4>
+  <ul>
+    <li>0DTE options create massive gamma that forces mechanical dealer hedging flows</li>
+    <li>Negative dealer GEX = destabilizing flows (moves are amplified)</li>
+    <li>Positive dealer GEX = stabilizing flows (price pins near large-OI strikes)</li>
+    <li>0DTE call/put volume ratio above the open is the simplest actionable intraday signal</li>
+  </ul>
+</div>`
+}
+,{
+  id:"8.4", module:8, tier:"pro", duration:50,
+  title:"Delta-Neutral Strategies",
+  audio:"/audio/course-8-4.mp3", video:null,
+  content:`<h2>Delta-Neutral Strategies</h2>
+<p class="lesson-intro">Delta-neutral strategies profit from volatility — not direction. By combining options to zero out delta, you trade pure volatility: long vol when IV is cheap, short vol when expensive, regardless of market direction.</p>
+
+<h3>Straddles</h3>
+<pre><code class="language-python">class Straddle:
+    def __init__(self, strike, call_price, put_price):
+        self.strike  = strike
+        self.premium = call_price + put_price
+        self.be_up   = strike + self.premium
+        self.be_down = strike - self.premium
+
+    def pnl(self, underlying_price):
+        call_val = max(0, underlying_price - self.strike)
+        put_val  = max(0, self.strike - underlying_price)
+        return call_val + put_val - self.premium
+
+def should_buy_straddle(iv_rank, rv_20d, iv_atm):
+    iv_rv_premium = iv_atm - rv_20d
+    return iv_rank &lt; 0.25 and iv_rv_premium &lt; 0.02</code></pre>
+
+<h3>Iron Condor — Short Vol Income</h3>
+<pre><code class="language-python">def iron_condor_pnl(S, K1, K2, K3, K4, premium):
+    # Sell K2 put, buy K1 put, sell K3 call, buy K4 call
+    # K1 &lt; K2 &lt; spot &lt; K3 &lt; K4
+    put_spread  = max(0, K2-S) - max(0, K1-S)
+    call_spread = max(0, S-K3) - max(0, S-K4)
+    return premium - put_spread - call_spread
+# Enter when IV rank &gt; 60% — sell expensive volatility</code></pre>
+
+<div class="lesson-key">
+  <h4>Key Takeaways</h4>
+  <ul>
+    <li>Long straddle profits when realized vol exceeds implied vol (IV underpriced)</li>
+    <li>Short straddle profits when IV exceeds realized vol (IV overpriced)</li>
+    <li>Use IV rank to time entries: sell vol when rank &gt; 60%, buy when &lt; 30%</li>
+    <li>Always define max risk with wings — naked short options can blow up accounts</li>
+  </ul>
+</div>`
+}
+,{
+  id:"8.5", module:8, tier:"pro", duration:50,
+  title:"Gamma Exposure &amp; Dealer Positioning",
+  audio:"/audio/course-8-5.mp3", video:null,
+  content:`<h2>Gamma Exposure &amp; Dealer Positioning</h2>
+<p class="lesson-intro">Dealer gamma exposure is one of the most powerful predictive signals for intraday price behavior. Positive GEX stabilizes prices; negative GEX amplifies moves. This is exactly what your ML dashboard displays, and now you will learn to trade it.</p>
+
+<h3>Aggregate GEX Computation</h3>
+<pre><code class="language-python">def aggregate_gex(options_chain, spot):
+    total_gex = 0
+    for _, row in options_chain.iterrows():
+        gamma = row.get('gamma', 0) or 0
+        oi    = row.get('openInterest', 0) or 0
+        if oi == 0 or gamma == 0: continue
+        dollar_gamma = gamma * oi * 100 * spot**2 * 0.01
+        if row['type'] == 'call':
+            total_gex += dollar_gamma
+        else:
+            total_gex -= dollar_gamma
+    return total_gex
+# GEX &gt; 0: dealers long gamma, BUY dips + SELL rips (mean-reverting)
+# GEX &lt; 0: dealers short gamma, SELL dips + BUY rips (trend-following)</code></pre>
+
+<h3>Trading the GEX Regime</h3>
+<pre><code class="language-python">def gex_regime_signal(gex, flip_level, spot):
+    if gex &gt; 0 and spot &gt; flip_level:
+        return 'MEAN_REVERT'   # fade moves, sell high-gamma calls
+    elif gex &lt; 0:
+        return 'TREND_FOLLOW'  # ride breakouts, buy momentum
+    return 'NEUTRAL'</code></pre>
+
+<div class="lesson-key">
+  <h4>Key Takeaways</h4>
+  <ul>
+    <li>Positive GEX = mean-reverting regime; negative GEX = trending/volatile regime</li>
+    <li>The flip level (zero gamma crossing) is a critical support/resistance level intraday</li>
+    <li>Large GEX strikes act as price magnets — pinning effect near expiry</li>
+    <li>Combine GEX regime with directional ML signal for highest-conviction setups</li>
+  </ul>
+</div>`
+}
+,{
+  id:"8.6", module:8, tier:"pro", duration:50,
+  title:"Building an Options Scanner",
+  audio:"/audio/course-8-6.mp3", video:null,
+  content:`<h2>Building an Options Scanner</h2>
+<p class="lesson-intro">An options scanner automatically identifies unusual activity across hundreds of contracts — large block trades, elevated volume-to-OI ratios, and cross-strike accumulation patterns that indicate informed positioning ahead of major moves.</p>
+
+<h3>Unusual Activity Scanner</h3>
+<pre><code class="language-python">def scan_unusual_activity(chain_df, min_vol=500, min_ratio=3.0):
+    unusual = []
+    for _, row in chain_df.iterrows():
+        vol = row.get('volume', 0) or 0
+        oi  = row.get('openInterest', 0) or 0
+        if vol &lt; min_vol or oi == 0: continue
+        ratio   = vol / oi
+        if ratio &lt; min_ratio: continue
+        premium = vol * row.get('lastPrice', 0) * 100
+        unusual.append({
+            'symbol':    row['symbol'],
+            'strike':    row['strike'],
+            'type':      row['type'],
+            'volume':    int(vol),
+            'oi':        int(oi),
+            'ratio':     round(ratio, 1),
+            'premium_k': round(premium / 1000, 1)
+        })
+    return pd.DataFrame(unusual).sort_values('premium_k', ascending=False)</code></pre>
+
+<h3>Sweep Detection</h3>
+<pre><code class="language-python">def detect_sweeps(trades_df, size_threshold=100):
+    sweeps = trades_df[
+        (trades_df['size'] &gt;= size_threshold) &amp;
+        (trades_df['condition'].str.contains('SWEEP', na=False))
+    ].copy()
+    sweeps['bullish'] = sweeps['price'] &gt;= sweeps['ask'] * 0.98
+    return sweeps</code></pre>
+
+<div class="lesson-key">
+  <h4>Key Takeaways</h4>
+  <ul>
+    <li>Volume/OI ratio &gt; 3 with size &gt; 500 contracts signals unusual informed activity</li>
+    <li>Sweeps (multi-exchange simultaneous fills) indicate urgency and institutional motivation</li>
+    <li>Track cumulative unusual activity over 3-5 days for highest reliability</li>
+    <li>Large premium (&gt;$500K) unusual calls above spot = the strongest bullish signal</li>
+  </ul>
+</div>`
+}
+,{
+  id:"8.7", module:8, tier:"pro", duration:55,
+  title:"ML-Enhanced Options Strategies",
+  audio:"/audio/course-8-7.mp3", video:null,
+  content:`<h2>ML-Enhanced Options Strategies</h2>
+<p class="lesson-intro">ML adds precision to options trading by predicting not just direction but the probability distribution of outcomes — letting you select the right strategy and strike for each market condition.</p>
+
+<h3>Strategy Selection Based on ML Predictions</h3>
+<pre><code class="language-python">def select_options_strategy(ml_prob_up, iv_rank, days_to_expiry):
+    strategies = []
+    # High conviction + cheap IV: buy call spread
+    if ml_prob_up &gt; 0.60 and iv_rank &lt; 0.40:
+        strategies.append({
+            'name':     'Bull Call Spread',
+            'rationale':'High directional conviction + cheap IV',
+            'legs':     ['+1 ATM call', '-1 OTM call (5% above)']
+        })
+    # High conviction + expensive IV: sell credit spread
+    elif ml_prob_up &gt; 0.60 and iv_rank &gt; 0.60:
+        strategies.append({
+            'name':     'Bull Put Spread',
+            'rationale':'Directional + expensive IV — collect premium',
+            'legs':     ['+1 OTM put', '-1 ATM put']
+        })
+    # No directional edge + very expensive IV: iron condor
+    elif abs(ml_prob_up - 0.5) &lt; 0.10 and iv_rank &gt; 0.65:
+        strategies.append({
+            'name':     'Iron Condor',
+            'rationale':'No directional edge + expensive IV',
+            'legs':     ['Sell OTM strangle + buy wings']
+        })
+    return strategies</code></pre>
+
+<div class="lesson-key">
+  <h4>Key Takeaways</h4>
+  <ul>
+    <li>Match strategy to both directional conviction (ML prob) AND IV regime (IV rank)</li>
+    <li>High conviction + low IV: buy vertical spreads (long options)</li>
+    <li>High conviction + high IV: sell credit spreads (collect premium on right side)</li>
+    <li>No directional edge + very high IV: iron condor is the highest-probability trade</li>
+  </ul>
+</div>`
+}
+,{
+  id:"8.8", module:8, tier:"pro", duration:80,
+  title:"Project — Options Flow Signal System",
+  audio:"/audio/course-8-8.mp3", video:null,
+  content:`<h2>Project — Options Flow Signal System</h2>
+<p class="lesson-intro">This capstone integrates options flow data, GEX analysis, IV prediction, and directional ML into a unified daily options signal system — the type of system used by professional options desks.</p>
+
+<h3>Complete Options Signal Pipeline</h3>
+<pre><code class="language-python">class OptionsSignalSystem:
+    def __init__(self, symbol='SPY'):
+        self.symbol = symbol
+
+    def daily_signal(self, price_df, options_chain, iv_history):
+        # 1. Directional ML
+        direction_prob = self.direction_model.predict_proba(
+            self.get_price_features(price_df))[:, 1][-1]
+
+        # 2. IV regime
+        iv_rank = self.compute_iv_rank(iv_history, window=252)
+
+        # 3. GEX
+        spot       = price_df['close'].iloc[-1]
+        gex        = aggregate_gex(options_chain, spot)
+        gex_regime = 'positive' if gex &gt; 0 else 'negative'
+
+        # 4. Flow bias from unusual activity
+        unusual  = scan_unusual_activity(options_chain)
+        call_prem = unusual[unusual.type=='call'].premium_k.sum()
+        put_prem  = unusual[unusual.type=='put'].premium_k.sum()
+        flow_bias = 'bullish' if call_prem &gt; put_prem * 1.5 else 'neutral'
+
+        # 5. Strategy selection
+        strategy = select_options_strategy(direction_prob, iv_rank, 7)
+
+        return {
+            'direction_prob': round(direction_prob, 3),
+            'iv_rank':        round(iv_rank, 2),
+            'gex_regime':     gex_regime,
+            'flow_bias':      flow_bias,
+            'recommended':    strategy[0] if strategy else None,
+        }</code></pre>
+
+<div class="lesson-key">
+  <h4>Key Takeaways</h4>
+  <ul>
+    <li>Full system: directional ML + IV regime + GEX + unusual flow = complete options signal</li>
+    <li>All four signals aligned = very high conviction — increase position size</li>
+    <li>Mixed signals = wait or take smaller size — conflicting data means uncertainty</li>
+    <li>This architecture is production-ready — connect to your broker API for live signals</li>
+  </ul>
+</div>`
+}
+,{
+  id:"9.1", module:9, tier:"pro", duration:55,
+  title:"Architecture of a Live Trading System",
+  audio:"/audio/course-9-1.mp3", video:null,
+  content:`<h2>Architecture of a Live Trading System</h2>
+<p class="lesson-intro">A production trading system is not a Jupyter notebook — it is a collection of specialized components that work together reliably, handle errors gracefully, and never lose money due to a software bug.</p>
+
+<h3>System Architecture</h3>
+<pre><code>Data Layer       Signal Layer      Execution Layer
+─────────────    ─────────────     ───────────────
+Market data      ML model          Order manager
+Options chain    Feature eng.      Risk checks
+News/sentiment   Signal gen.       Broker API
+
+Infrastructure
+──────────────────────────────────────────────
+Database  |  Scheduler  |  Monitor  |  Alerts</code></pre>
+
+<h3>System Configuration</h3>
+<pre><code class="language-python">CONFIG = {
+    'symbols':             ['SPY','QQQ','AAPL','MSFT'],
+    'max_position_pct':   0.25,
+    'max_portfolio_risk': 0.02,
+    'signal_threshold':   0.58,
+    'cost_bps':           5,
+    'retrain_days':       30,
+    'data_source':        'schwab',
+    'paper_trading':      True      # always start in paper mode
+}
+
+def load_config(path='config.yaml'):
+    import yaml
+    with open(path) as f:
+        return yaml.safe_load(f)</code></pre>
+
+<div class="lesson-key">
+  <h4>Key Takeaways</h4>
+  <ul>
+    <li>Separate data, signal, and execution layers — each can fail without cascading</li>
+    <li>Always start in paper trading mode — validate live behavior before risking capital</li>
+    <li>Every system parameter should be in a config file, never hardcoded</li>
+    <li>Build for failure: every component should handle errors gracefully and alert you</li>
+  </ul>
+</div>`
+}
+,{
+  id:"9.2", module:9, tier:"pro", duration:60,
+  title:"IBKR API Integration",
+  audio:"/audio/course-9-2.mp3", video:null,
+  content:`<h2>IBKR API Integration</h2>
+<p class="lesson-intro">Interactive Brokers provides one of the best APIs for retail algorithmic traders — access to real-time data, options chains, and order execution across global markets.</p>
+
+<h3>Connecting with ib_async</h3>
+<pre><code class="language-python">from ib_async import IB, Stock, MarketOrder, LimitOrder
+import asyncio
+
+ib = IB()
+
+async def connect():
+    await ib.connectAsync('127.0.0.1', 7497, clientId=1)
+    print(f'Connected: {ib.isConnected()}')
+
+asyncio.run(connect())</code></pre>
+
+<h3>Market Data and Orders</h3>
+<pre><code class="language-python">async def get_quote(symbol):
+    contract = Stock(symbol, 'SMART', 'USD')
+    await ib.qualifyContractsAsync(contract)
+    ticker = ib.reqMktData(contract)
+    await asyncio.sleep(2)
+    return ticker
+
+async def place_order(symbol, action, qty, limit_price=None):
+    contract = Stock(symbol, 'SMART', 'USD')
+    await ib.qualifyContractsAsync(contract)
+    order = (LimitOrder(action, qty, limit_price)
+             if limit_price else MarketOrder(action, qty))
+    trade = ib.placeOrder(contract, order)
+    await asyncio.sleep(1)
+    print(f'Order: {trade.orderStatus.status}')
+    return trade</code></pre>
+
+<div class="lesson-key">
+  <h4>Key Takeaways</h4>
+  <ul>
+    <li>Use ib_async with async/await for clean, non-blocking code</li>
+    <li>Always qualify contracts before requesting data or placing orders</li>
+    <li>Paper trading port 7497; live trading port 7496 — start with paper always</li>
+    <li>Limit market data subscriptions — IBKR caps concurrent data streams by account tier</li>
+  </ul>
+</div>`
+}
+,{
+  id:"9.3", module:9, tier:"pro", duration:55,
+  title:"Order Management &amp; Execution",
+  audio:"/audio/course-9-3.mp3", video:null,
+  content:`<h2>Order Management &amp; Execution</h2>
+<p class="lesson-intro">Execution quality directly impacts returns. The difference between a market order and a well-designed limit order strategy can be 2-5 bps per trade — 5-12% annually for active strategies.</p>
+
+<h3>Order Manager</h3>
+<pre><code class="language-python">class OrderManager:
+    def __init__(self, ib_client, config):
+        self.ib, self.config = ib_client, config
+        self.open_orders = {}
+
+    async def execute_signal(self, symbol, signal, portfolio_value):
+        current_pos = self.get_position(symbol)
+        target_pos  = self.compute_target(signal, portfolio_value, symbol)
+        delta       = target_pos - current_pos
+        if abs(delta) &lt; 1: return None
+
+        action  = 'BUY' if delta &gt; 0 else 'SELL'
+        qty     = abs(int(delta))
+        quote   = await self.get_quote(symbol)
+        mid     = (quote.bid + quote.ask) / 2
+        order   = LimitOrder(action, qty, round(mid, 2))
+        trade   = self.ib.placeOrder(self.get_contract(symbol), order)
+        self.open_orders[symbol] = trade
+        return trade
+
+    def compute_target(self, signal, nav, symbol):
+        if abs(signal - 0.5) &lt; 0.08: return 0
+        price     = self.get_price(symbol)
+        max_value = nav * self.config['max_position_pct']
+        return int(max_value / price) * (1 if signal &gt; 0.5 else -1)</code></pre>
+
+<div class="lesson-key">
+  <h4>Key Takeaways</h4>
+  <ul>
+    <li>Midpoint limit orders save 1-2 bps vs market orders for liquid ETFs</li>
+    <li>Compute delta between current and target position to minimize unnecessary trades</li>
+    <li>Set a minimum trade size (1 share) to avoid micro-adjustments that generate costs</li>
+    <li>Cancel stale limit orders that have not filled within 5 minutes</li>
+  </ul>
+</div>`
+}
+,{
+  id:"9.4", module:9, tier:"pro", duration:50,
+  title:"Real-Time Data Pipelines",
+  audio:"/audio/course-9-4.mp3", video:null,
+  content:`<h2>Real-Time Data Pipelines</h2>
+<p class="lesson-intro">A live trading system needs fresh data every minute or second — not the 15-minute delayed snapshots used in backtesting. Building a reliable real-time pipeline requires handling dropped connections, stale data, and market hours correctly.</p>
+
+<h3>Real-Time Quote Stream</h3>
+<pre><code class="language-python">from datetime import datetime
+from ib_async import IB, Stock
+
+class RealTimeDataPipeline:
+    def __init__(self):
+        self.ib     = IB()
+        self.quotes = {}
+
+    async def start(self, symbols):
+        await self.ib.connectAsync('127.0.0.1', 7497, clientId=2)
+        for sym in symbols:
+            contract = Stock(sym, 'SMART', 'USD')
+            await self.ib.qualifyContractsAsync(contract)
+            ticker = self.ib.reqMktData(contract)
+            ticker.updateEvent += lambda t, s=sym: self.on_quote(t, s)
+
+    def on_quote(self, ticker, symbol):
+        if ticker.last and ticker.last &gt; 0:
+            self.quotes[symbol] = {
+                'price': ticker.last,
+                'bid':   ticker.bid,
+                'ask':   ticker.ask,
+                'time':  datetime.now()
+            }
+
+    def is_stale(self, symbol, max_seconds=60):
+        q = self.quotes.get(symbol)
+        if not q: return True
+        return (datetime.now() - q['time']).seconds &gt; max_seconds</code></pre>
+
+<div class="lesson-key">
+  <h4>Key Takeaways</h4>
+  <ul>
+    <li>Event-driven callbacks (updateEvent) are more efficient than polling for real-time data</li>
+    <li>Always check data staleness before generating signals — stale data means wrong decisions</li>
+    <li>Reconnect automatically on disconnect — IBKR sessions drop without warning</li>
+    <li>Store raw ticks to a database for debugging and strategy improvement</li>
+  </ul>
+</div>`
+}
+,{
+  id:"9.5", module:9, tier:"pro", duration:55,
+  title:"Risk Management in Production",
+  audio:"/audio/course-9-5.mp3", video:null,
+  content:`<h2>Risk Management in Production</h2>
+<p class="lesson-intro">In live trading, a bad trade is real money gone. Production risk management means automated circuit breakers, position limits, and daily loss controls that execute without human intervention.</p>
+
+<h3>Risk Controller</h3>
+<pre><code class="language-python">class RiskController:
+    def __init__(self, config, broker):
+        self.config    = config
+        self.broker    = broker
+        self.daily_pnl = 0.0
+        self.halted    = False
+
+    def check_pre_trade(self, symbol, size_dollars, portfolio_value):
+        if self.halted:
+            return False, 'System halted — daily loss limit reached'
+        pos_pct = size_dollars / portfolio_value
+        if pos_pct &gt; self.config['max_position_pct']:
+            return False, f'Position {pos_pct:.1%} exceeds limit'
+        return True, 'OK'
+
+    def update_pnl(self, trade_pnl):
+        self.daily_pnl += trade_pnl
+        pnl_pct = self.daily_pnl / self.broker.get_nav()
+        if pnl_pct &lt; -self.config['max_portfolio_risk']:
+            self.halted = True
+            self.broker.cancel_all_orders()
+            self.broker.flatten_all_positions()
+            self.send_alert(f'HALT: Daily loss {pnl_pct:.1%} exceeded')</code></pre>
+
+<div class="lesson-key">
+  <h4>Key Takeaways</h4>
+  <ul>
+    <li>Hard daily loss limit (2% of NAV) triggers automatic halt and position flattening</li>
+    <li>Pre-trade checks prevent position concentration and runaway trading</li>
+    <li>The risk controller must be called before every order — no exceptions</li>
+    <li>Log every risk event with timestamp and reason for post-mortems</li>
+  </ul>
+</div>`
+}
+,{
+  id:"9.6", module:9, tier:"pro", duration:50,
+  title:"Monitoring, Logging &amp; Alerting",
+  audio:"/audio/course-9-6.mp3", video:null,
+  content:`<h2>Monitoring, Logging &amp; Alerting</h2>
+<p class="lesson-intro">A live trading system running unattended can lose money silently if something goes wrong. Professional monitoring means you know within seconds when anything abnormal happens.</p>
+
+<h3>Structured Logging</h3>
+<pre><code class="language-python">import logging, json
+from datetime import datetime
+
+class TradingLogger:
+    def __init__(self, log_file='trading.log'):
+        logging.basicConfig(filename=log_file, level=logging.INFO)
+        self.logger = logging.getLogger('trading')
+
+    def log_signal(self, symbol, prob, signal, iv_rank):
+        self.logger.info(json.dumps({
+            'event': 'signal', 'symbol': symbol,
+            'prob_up': prob, 'signal': signal, 'iv_rank': iv_rank,
+            'ts': datetime.now().isoformat()
+        }))
+
+    def log_trade(self, symbol, action, qty, price):
+        self.logger.info(json.dumps({
+            'event': 'trade', 'symbol': symbol,
+            'action': action, 'qty': qty, 'price': price,
+            'ts': datetime.now().isoformat()
+        }))</code></pre>
+
+<h3>Telegram Alerts</h3>
+<pre><code class="language-python">import requests
+
+def send_alert(message, bot_token, chat_id):
+    url = f'https://api.telegram.org/bot{bot_token}/sendMessage'
+    requests.post(url, json={'chat_id': chat_id, 'text': message})
+
+send_alert('TRADE: BUY 10 SPY @ $450.25 | P(up)=0.62', BOT_TOKEN, CHAT_ID)</code></pre>
+
+<div class="lesson-key">
+  <h4>Key Takeaways</h4>
+  <ul>
+    <li>Log every signal, trade, and risk event as structured JSON for easy analysis</li>
+    <li>Telegram alerts give real-time visibility into system behavior from your phone</li>
+    <li>Monitor data staleness, connection status, and order fill rates continuously</li>
+    <li>Alert on positive events too (new trades, daily PnL) — silence is suspicious</li>
+  </ul>
+</div>`
+}
+,{
+  id:"9.7", module:9, tier:"pro", duration:55,
+  title:"From Backtest to Live — Closing the Gap",
+  audio:"/audio/course-9-7.mp3", video:null,
+  content:`<h2>From Backtest to Live — Closing the Gap</h2>
+<p class="lesson-intro">Most strategies perform worse in live trading than in backtesting. Understanding why — and systematically closing the gap — is what separates profitable systematic traders from those who burn through capital learning the hard way.</p>
+
+<h3>Common Causes of Degradation</h3>
+<pre><code># 1. Execution slippage (model assumed mid, got worse fill)
+#    Fix: use bid for sells, ask for buys in backtest
+
+# 2. Signal lag (data arrives later than assumed)
+#    Fix: add 1-bar delay between signal generation and execution
+
+# 3. Lookahead bias missed in complex feature pipelines
+#    Fix: code review every feature; verify no forward-looking data
+
+# 4. Overfitting to the backtest period
+#    Fix: walk-forward validation with out-of-sample test period
+
+# 5. Regime change (model trained pre-2022, tested in 2022 inflation)
+#    Fix: monitor IC monthly; retrain when IC drops below 0.02
+
+# 6. Transaction cost underestimation
+#    Fix: calibrate cost model using actual paper trade fills</code></pre>
+
+<h3>Paper Trading Validation</h3>
+<pre><code class="language-python">def compare_paper_to_backtest(paper_trades_df, backtest_returns):
+    paper_ret = paper_trades_df['pnl'].sum() / paper_trades_df['capital'].iloc[0]
+    bt_ret    = backtest_returns.iloc[-60:].sum()
+    ratio     = paper_ret / bt_ret if bt_ret != 0 else 0
+    print(f'Paper / Backtest ratio: {ratio:.2f}')
+    # Target: &gt; 0.70 before going live with real capital</code></pre>
+
+<div class="lesson-key">
+  <h4>Key Takeaways</h4>
+  <ul>
+    <li>Paper trade for 30-60 days before going live — capture real execution data</li>
+    <li>Target paper/backtest return ratio above 0.70 before risking real capital</li>
+    <li>Monitor IC monthly in live trading — regime shifts degrade models silently</li>
+    <li>The biggest gap sources: execution lag, cost underestimation, and regime change</li>
+  </ul>
+</div>`
+}
+,{
+  id:"9.8", module:9, tier:"pro", duration:55,
+  title:"Portfolio Management &amp; Rebalancing",
+  audio:"/audio/course-9-8.mp3", video:null,
+  content:`<h2>Portfolio Management &amp; Rebalancing</h2>
+<p class="lesson-intro">Running multiple strategies across multiple assets requires portfolio-level thinking. This lesson covers target-weight rebalancing, correlation management, and optimal rebalancing frequency.</p>
+
+<h3>Target Weight Rebalancing</h3>
+<pre><code class="language-python">def compute_rebalance_trades(current_positions, target_weights, prices, nav):
+    trades = []
+    for symbol, target_wt in target_weights.items():
+        price       = prices[symbol]
+        current_val = current_positions.get(symbol, 0) * price
+        target_val  = nav * target_wt
+        delta_shares = int((target_val - current_val) / price)
+        if abs(delta_shares) &gt; 0:
+            trades.append({
+                'symbol':  symbol,
+                'action':  'BUY' if delta_shares &gt; 0 else 'SELL',
+                'shares':  abs(delta_shares)
+            })
+    return trades
+
+def dynamic_weights(ml_signals, max_weight=0.30):
+    raw   = {s: max(0, abs(sig-0.5)*2) for s,sig in ml_signals.items()}
+    total = sum(raw.values()) or 1
+    return {s: min(v/total, max_weight) for s,v in raw.items()}</code></pre>
+
+<div class="lesson-key">
+  <h4>Key Takeaways</h4>
+  <ul>
+    <li>Rebalance weekly or when positions drift &gt; 5% from target — not daily</li>
+    <li>Weight by signal confidence &times; inverse volatility for optimal risk allocation</li>
+    <li>Cap any single position at 25-30% regardless of signal strength</li>
+    <li>Track portfolio correlation — correlated positions provide less diversification benefit</li>
+  </ul>
+</div>`
+}
+,{
+  id:"9.9", module:9, tier:"pro", duration:40,
+  title:"Regulatory &amp; Compliance Basics",
+  audio:"/audio/course-9-9.mp3", video:null,
+  content:`<h2>Regulatory &amp; Compliance Basics</h2>
+<p class="lesson-intro">Algorithmic trading in the US is regulated. Understanding the rules that apply to individual traders — pattern day trader rules, wash sale rules, and reporting requirements — keeps you compliant and avoids costly surprises.</p>
+
+<h3>Pattern Day Trader Rule</h3>
+<p>If you execute 4 or more day trades in a 5-business-day period using a margin account with less than $25,000, your account is flagged as a Pattern Day Trader and restricted. Strategies that trade daily with smaller accounts must use cash accounts or consider non-US regulated brokers.</p>
+<pre><code class="language-python">def count_day_trades(trades_df, days=5):
+    trades_df['is_dt'] = trades_df['entry_date'] == trades_df['exit_date']
+    return trades_df['is_dt'].rolling(f'{days}D').sum().max()</code></pre>
+
+<h3>Wash Sale Rule &amp; Record Keeping</h3>
+<p>You cannot claim a tax loss if you repurchase the same or substantially identical security within 30 days before or after the sale. Keep complete records of all trades including: date/time, symbol, price, quantity, strategy name, and the signal that triggered the trade. This is required for capital gains calculation.</p>
+
+<div class="lesson-key">
+  <h4>Key Takeaways</h4>
+  <ul>
+    <li>Accounts under $25K in a margin account face the Pattern Day Trader restriction</li>
+    <li>Wash sale rule disallows tax losses on round trips within 30 days</li>
+    <li>Keep complete trade records including the signal that generated each trade</li>
+    <li>This is educational — consult a licensed financial advisor for personal legal/tax advice</li>
+  </ul>
+</div>`
+}
+,{
+  id:"9.10", module:9, tier:"pro", duration:120,
+  title:"Capstone — Deploy Your Live Trading Bot",
+  audio:"/audio/course-9-10.mp3", video:null,
+  content:`<h2>Capstone — Deploy Your Live Trading Bot</h2>
+<p class="lesson-intro">This is the final capstone of the Pro tier. You will assemble every component from Modules 5-9 into a complete live trading bot: real-time data, ML signals, risk management, execution, and monitoring.</p>
+
+<h3>Complete Bot</h3>
+<pre><code class="language-python">class LiveTradingBot:
+    def __init__(self, config_path='config.yaml'):
+        self.config  = load_config(config_path)
+        self.ib      = IB()
+        self.data    = RealTimeDataPipeline()
+        self.risk    = RiskController(self.config, self.ib)
+        self.orders  = OrderManager(self.ib, self.config)
+        self.logger  = TradingLogger()
+        self.models  = {}
+
+    async def start(self):
+        await self.ib.connectAsync('127.0.0.1', 7497, clientId=1)
+        await self.data.start(self.config['symbols'])
+        self.load_models()
+        print('Bot started in paper trading mode')
+        await self.run_loop()
+
+    async def run_loop(self):
+        while True:
+            if self.is_market_hours():
+                for sym in self.config['symbols']:
+                    if not self.data.is_stale(sym):
+                        await self.process_symbol(sym)
+            await asyncio.sleep(60)
+
+    async def process_symbol(self, sym):
+        features = self.build_features(sym)
+        prob_up  = self.models[sym].predict_proba(features)[0, 1]
+        nav      = float(self.ib.accountValues()['NetLiquidation'])
+        ok, _    = self.risk.check_pre_trade(sym, nav*0.20, nav)
+        if not ok: return
+        signal   = 1 if prob_up &gt; 0.58 else -1 if prob_up &lt; 0.42 else 0
+        self.logger.log_signal(sym, prob_up, signal, 0)
+        if signal != 0:
+            await self.orders.execute_signal(sym, prob_up, nav)</code></pre>
+
+<h3>Daily Schedule</h3>
+<pre><code class="language-python">import schedule, time
+
+def daily_tasks(bot):
+    bot.retrain_if_needed()
+    bot.generate_daily_report()
+    bot.check_model_health()
+
+schedule.every().day.at('09:00').do(daily_tasks, bot=bot)
+while True:
+    schedule.run_pending()
+    time.sleep(60)</code></pre>
+
+<div class="lesson-key">
+  <h4>Key Takeaways</h4>
+  <ul>
+    <li>Always run in paper trading mode first — validate behavior before risking capital</li>
+    <li>The event loop checks every minute: stale data? risk blocked? signal? execute.</li>
+    <li>Daily tasks: retrain check, performance report, model health monitoring</li>
+    <li>Congratulations — you have completed the Pro tier and built a production-ready ML trading system!</li>
   </ul>
 </div>`
 }
