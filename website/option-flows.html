@@ -561,7 +561,7 @@ function renderCards() {
     <div class="cards-grid">${g.rows.map(r => buildCard(r)).join('')}</div>
   `).join('');
 
-  // Draw visible charts immediately, defer off-screen charts via IntersectionObserver
+  // Draw charts once each canvas has a real width (ResizeObserver fires after CSS layout)
   var _drawnSyms = {};
   function _drawCard(r) {
     if (_drawnSyms[r.symbol]) return;
@@ -570,16 +570,19 @@ function renderCards() {
     drawNetPrem(r);
     drawDealerDelta(r);
   }
-  // Use a single rAF after a short delay to ensure layout is computed
-  setTimeout(function() {
-    requestAnimationFrame(function() {
-      filtered.forEach(function(r) {
-        if (!r.no_options && r.strikes && r.strikes.length) {
-          _drawCard(r);
-        }
-      });
+
+  filtered.forEach(function(r) {
+    if (r.no_options || !r.strikes || !r.strikes.length) return;
+    var cv = document.getElementById('tornado-' + r.symbol);
+    if (!cv) return;
+    var robs = new ResizeObserver(function(entries) {
+      if (entries[0].contentRect.width > 50) {
+        robs.disconnect();
+        _drawCard(r);
+      }
     });
-  }, 50);
+    robs.observe(cv);
+  });
 }
 
 /* ── Build card HTML ── */
@@ -786,7 +789,8 @@ function drawTornado(r) {
   if (!cv) return;
 
   // Use parent width for reliable sizing
-  const W = cv.parentElement ? (cv.parentElement.clientWidth || cv.parentElement.offsetWidth || 520) : 520;
+  const rect = cv.getBoundingClientRect();
+  const W = Math.max(200, rect.width || (cv.parentElement ? (cv.parentElement.clientWidth || cv.parentElement.offsetWidth || 520) : 520));
   const H = 320;
   cv.width  = W;
   cv.height = H;

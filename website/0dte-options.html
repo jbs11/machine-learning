@@ -478,8 +478,7 @@ async function loadData(nocache = false) {
   msg.textContent = 'Fetching 0DTE options data (reuses cached flow data if available)…';
   try {
     const qs  = nocache ? '?nocache=1' : '';
-    const res = await cachedFetch(`${API}/api/0dte${qs}`);
-    const json = await res.json();
+    const json = await cachedFetch(`${API}/api/0dte${qs}`);
     allData = json.assets || [];
     dot.className = 'sdot on';
     const ts = json.timestamp ? new Date(json.timestamp).toLocaleTimeString() : '—';
