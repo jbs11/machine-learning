@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GEX Heat Maps — Gamma Exposure Heatmap</title>
+  <link rel="preload" href="style.css" as="style" fetchpriority="high">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .ghm-wrap { max-width:1600px; margin:0 auto; padding:0 1.5rem 6rem; }
+    .ghm-hero {
+      padding:3.5rem 1.5rem 2.5rem; text-align:center;
+      background:radial-gradient(ellipse 80% 55% at 50% -5%, rgba(34,211,238,.1) 0%, transparent 65%), var(--bg);
+      border-bottom:1px solid var(--border);
+    }
+    .ghm-hero h1 {
+      font-size:clamp(1.8rem,4vw,3rem); font-weight:900;
+      letter-spacing:-.03em; line-height:1.15; margin-bottom:.8rem;
+      background:linear-gradient(135deg,#22d3ee 0%,#a78bfa 50%,#fff 90%);
+      -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+    }
+    .ghm-hero p { color:var(--muted); font-size:1.05rem; max-width:760px; margin:0 auto 1.5rem; line-height:1.7; }
+    .ghm-badge {
+      display:inline-flex; align-items:center; gap:.5rem;
+      padding:.3rem 1rem; background:rgba(34,211,238,.1);
+      border:1px solid rgba(34,211,238,.25); border-radius:999px;
+      color:#22d3ee; font-size:.78rem; font-weight:600;
+      letter-spacing:.08em; text-transform:uppercase; margin-bottom:1rem;
+    }
+    .ghm-legend {
+      display:flex; flex-wrap:wrap; gap:.6rem 1.2rem; justify-content:center;
+      padding:1rem 1.5rem; background:var(--surface); border-bottom:1px solid var(--border);
+    }
+    .ghm-leg-item { display:flex; align-items:center; gap:.4rem; font-size:.75rem; color:var(--muted); }
+    .ghm-leg-swatch { width:14px; height:14px; border-radius:3px; flex-shrink:0; }
+    .ghm-controls {
+      display:flex; flex-wrap:wrap; align-items:center; gap:.6rem;
+      padding:1rem 0 .5rem;
+    }
+    .filter-pill {
+      padding:.3rem .85rem; border-radius:99px; border:1px solid var(--border);
+      background:transparent; color:var(--muted); font-size:.78rem; font-weight:700;
+      cursor:pointer; transition:all .15s;
+    }
+    .filter-pill.active { background:rgba(34,211,238,.12); border-color:#22d3ee; color:#22d3ee; }
+    .filter-pill:hover:not(.active) { border-color:var(--muted); color:var(--text); }
+    .tf-pill {
+      padding:.3rem .85rem; border-radius:99px; border:1px solid var(--border);
+      background:transparent; color:var(--muted); font-size:.78rem; font-weight:700;
+      cursor:pointer; transition:all .15s;
+    }
+    .tf-pill.active { background:rgba(251,191,36,.12); border-color:#fbbf24; color:#fbbf24; }
+    .tf-pill:hover:not(.active) { border-color:var(--muted); color:var(--text); }
+    .ctl-sep { width:1px; height:20px; background:var(--border); margin:0 .3rem; }
+    .ghm-grid {
+      display:grid;
+      grid-template-columns:repeat(auto-fill, minmax(520px,1fr));
+      gap:1.2rem; margin-top:.8rem;
+    }
+    .ghm-card {
+      background:var(--surface); border:1px solid var(--border); border-radius:10px;
+      overflow:hidden; transition:border-color .2s;
+    }
+    .ghm-card:hover { border-color:rgba(34,211,238,.3); }
+    .ghm-card-hdr {
+      display:flex; align-items:center; justify-content:space-between;
+      padding:.7rem 1rem .5rem; border-bottom:1px solid var(--border);
+    }
+    .ghm-sym { font-size:1.05rem; font-weight:900; color:var(--text); }
+    .ghm-label { font-size:.72rem; color:var(--muted); margin-top:.05rem; }
+    .ghm-regime {
+      font-size:.68rem; font-weight:700; padding:.2rem .65rem;
+      border-radius:5px; letter-spacing:.05em; text-transform:uppercase;
+    }
+    .regime-pos  { background:rgba(34,197,94,.12);  color:#4ade80; border:1px solid rgba(34,197,94,.25); }
+    .regime-neg  { background:rgba(249,115,22,.12); color:#fb923c; border:1px solid rgba(249,115,22,.25); }
+    .regime-trans{ background:rgba(251,191,36,.12); color:#fbbf24; border:1px solid rgba(251,191,36,.25); }
+    .ghm-levels {
+      display:flex; gap:1rem; padding:.4rem 1rem;
+      border-bottom:1px solid var(--border); flex-wrap:wrap;
+    }
+    .ghm-lv { font-size:.7rem; }
+    .ghm-lv span { font-weight:700; }
+    .ghm-canvas-wrap { padding:.5rem; }
+    canvas.ghm-canvas { display:block; width:100%; border-radius:5px; }
+    .ghm-loading {
+      height:260px; display:flex; align-items:center; justify-content:center;
+      color:var(--muted); font-size:.85rem; gap:.5rem;
+    }
+    .ghm-spinner {
+      width:16px; height:16px; border:2px solid var(--border);
+      border-top-color:#22d3ee; border-radius:50%;
+      animation:spin .7s linear infinite;
+    }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    .grp-hdr {
+      font-size:.72rem; font-weight:700; text-transform:uppercase; letter-spacing:.1em;
+      color:#22d3ee; padding:.6rem 0 .4rem; margin-top:1.2rem;
+      border-bottom:1px solid var(--border); grid-column:1/-1;
+    }
+  </style>
+</head>
+<body>
+<nav class="nav">
+  <a href="index.html" class="nav-logo">
+    <img src="images/steve.jpg" class="nav-logo-photo" alt="Stephen Borick">
+    <div class="nav-logo-text"><span class="nav-company">Artificial Intelligence</span><span class="nav-name">Solutions, Inc.</span></div>
+  </a>
+  <ul class="nav-links">
+    <li><a href="index.html">Home</a></li>
+    <li><a href="neural-networks.html">Neural Networks</a></li>
+    <li><a href="machine-learning.html">Machine Learning</a></li>
+    <li><a href="ml-trading.html">ML in Trading</a></li>
+    <li><a href="ml-sp500-example.html">ML Example</a></li>
+    <li><a href="stock-trading.html">Stock Trading</a></li>
+    <li><a href="options-trading.html">Options</a></li>
+    <li><a href="futures-trading.html">Futures</a></li>
+    <li><a href="brokers.html">Brokers</a></li>
+    <li><a href="algorithms-bots.html" style="color:#4ade80;font-weight:700;">&#129302; Algo Bots</a></li>
+    <li><a href="asset-algorithms.html" style="color:#22d3ee;font-weight:700;">&#128200; Asset Algos</a></li>
+    <li><a href="live-trading.html">Live Trading</a></li>
+    <li><a href="market-preparation.html">&#128204; Market Prep</a></li>
+    <li><a href="world-events.html">&#127758; World Events</a></li>
+    <li><a href="forecast.html" style="color:#f59e0b;font-weight:700;">&#128200; Forecast</a></li>
+    <li><a href="gex-heatmap.html" style="color:#22d3ee;font-weight:700;" class="active">&#127777; GEX Heat Maps</a></li>
+    <li><a href="gex-heatmap.html" style="color:#22d3ee;font-weight:700;" class="active">&#127777; GEX Heat Maps</a></li>
+    <li><a href="https://jbs11.github.io/ml-trading-course" style="background:#f59e0b;color:#0a0f1e;padding:.28rem .85rem;border-radius:5px;font-weight:700;letter-spacing:.02em;">&#128218; ML Course</a></li>
+    <li><a href="report-ms.html" target="_blank" style="background:#22d3ee;color:var(--bg);padding:.28rem .85rem;border-radius:5px;font-weight:700;letter-spacing:.02em;">&#128202; Market Report</a></li>
+    <li><a href="report-tg.html" target="_blank" style="background:#a78bfa;color:var(--bg);padding:.28rem .85rem;border-radius:5px;font-weight:700;letter-spacing:.02em;">&#128214; Trading Guide</a></li>
+  </ul>
+  
+</nav>
+
+<div class="ghm-hero">
+  <div class="ghm-badge">&#127777; Volatility Regime Heatmap</div>
+  <h1>GEX Heat Maps</h1>
+  <p>Candlestick charts with color-coded gamma exposure heatmap backgrounds. Each zone reveals the prevailing market-maker hedging regime. Green zones suppress volatility; orange and red zones amplify it. GEX level lines mark the key transition points.</p>
+</div>
+
+<div class="ghm-legend">
+  <div class="ghm-leg-item"><div class="ghm-leg-swatch" style="background:rgba(239,68,68,0.5);border:1px solid rgba(239,68,68,.6);"></div>Gamma Squeeze — above Call Wall, amplified rallies</div>
+  <div class="ghm-leg-item"><div class="ghm-leg-swatch" style="background:rgba(34,197,94,0.35);border:1px solid rgba(34,197,94,.4);"></div>Positive Gamma — MM hedging dampens moves</div>
+  <div class="ghm-leg-item"><div class="ghm-leg-swatch" style="background:rgba(251,191,36,0.4);border:1px solid rgba(251,191,36,.5);"></div>Transition — near Gamma Flip, unstable</div>
+  <div class="ghm-leg-item"><div class="ghm-leg-swatch" style="background:rgba(249,115,22,0.4);border:1px solid rgba(249,115,22,.5);"></div>Negative Gamma — MM hedging amplifies moves</div>
+  <div class="ghm-leg-item"><div class="ghm-leg-swatch" style="background:rgba(139,92,246,0.4);border:1px solid rgba(139,92,246,.5);"></div>Max Neg. Gamma — below Put Wall, high volatility</div>
+  <div class="ghm-leg-item" style="margin-left:1rem;"><div style="width:22px;height:2px;border-top:2px dashed #4ade80;display:inline-block;vertical-align:middle;margin-right:4px;"></div>Call Wall</div>
+  <div class="ghm-leg-item"><div style="width:22px;height:2px;border-top:2px dashed #fbbf24;display:inline-block;vertical-align:middle;margin-right:4px;"></div>Gamma Flip</div>
+  <div class="ghm-leg-item"><div style="width:22px;height:2px;border-top:2px dashed #f87171;display:inline-block;vertical-align:middle;margin-right:4px;"></div>Put Wall</div>
+</div>
+
+<div class="ghm-wrap">
+  <div class="ghm-controls">
+    <button class="filter-pill active" data-group="all">All Assets</button>
+    <button class="filter-pill" data-group="etf">ETFs</button>
+    <button class="filter-pill" data-group="stock">Stocks</button>
+    <button class="filter-pill" data-group="futures">Futures</button>
+    <div class="ctl-sep"></div>
+    <button class="tf-pill active" data-tf="1d">1D</button>
+    <button class="tf-pill" data-tf="4h">4H</button>
+    <button class="tf-pill" data-tf="1h">1H</button>
+  </div>
+  <div id="ghm-grid" class="ghm-grid"></div>
+</div>
+
+<script>
+'use strict';
+const API = '';
+let gexData = [];
+let candleCache = {};
+let activeGroup = 'all';
+let activeTF = '1d';
+
+const TF_CONFIG = {
+  '1d': { interval:'1d', period:'90d',  bars:60  },
+  '4h': { interval:'4h', period:'60d',  bars:120 },
+  '1h': { interval:'1h', period:'14d',  bars:168 },
+};
+
+async function loadGex() {
+  try {
+    const res = await fetch(API + '/api/gamma-exposure', { cache:'no-store' });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const d = await res.json();
+    gexData = (d.assets || []).filter(function(a) { return !a.no_options; });
+    renderGrid();
+  } catch(e) {
+    document.getElementById('ghm-grid').innerHTML =
+      '<div style="color:var(--muted);padding:2rem">Failed to load GEX data: ' + e.message + '</div>';
+  }
+}
+
+function getFiltered() {
+  return gexData.filter(function(a) {
+    if (activeGroup === 'all')     return true;
+    if (activeGroup === 'etf')     return a.asset_type === 'etf';
+    if (activeGroup === 'stock')   return a.asset_type === 'stock';
+    if (activeGroup === 'futures') return a.asset_type === 'futures';
+    return true;
+  });
+}
+
+function renderGrid() {
+  const grid = document.getElementById('ghm-grid');
+  const filtered = getFiltered();
+  const groups = {};
+  filtered.forEach(function(a) {
+    const g = a.group || a.asset_type || 'Other';
+    if (!groups[g]) groups[g] = [];
+    groups[g].push(a);
+  });
+
+  let html = '';
+  Object.keys(groups).forEach(function(grp) {
+    html += '<div class="grp-hdr">' + grp + '</div>';
+    groups[grp].forEach(function(a) { html += buildCard(a); });
+  });
+  grid.innerHTML = html;
+  // Use ResizeObserver so canvas has real width before drawing
+  filtered.forEach(function(a) {
+    var cv = document.getElementById('cv-' + a.symbol);
+    if (!cv) { loadCandles(a); return; }
+    var robs = new ResizeObserver(function(entries) {
+      if (entries[0].contentRect.width > 50) {
+        robs.disconnect();
+        loadCandles(a);
+      }
+    });
+    robs.observe(cv.parentElement);
+  });
+}
+
+function buildCard(a) {
+  const regime    = a.regime || '';
+  const regimeCls = regime.toLowerCase().indexOf('long')  >= 0 ? 'regime-pos'
+                  : regime.toLowerCase().indexOf('short') >= 0 ? 'regime-neg' : 'regime-trans';
+  const spot  = a.spot  || 0;
+  const gwall = a.gamma_wall  || 0;
+  const pwall = a.put_wall    || 0;
+  const flip  = a.flip_level  || 0;
+  function fmt(v) { return v >= 1000 ? v.toLocaleString(undefined,{maximumFractionDigits:1}) : v.toFixed(2); }
+  return '<div class="ghm-card" data-sym="' + a.symbol + '">' +
+    '<div class="ghm-card-hdr">' +
+      '<div><div class="ghm-sym">' + a.symbol + '</div>' +
+      '<div class="ghm-label">' + (a.label||a.symbol) + ' &nbsp;&middot;&nbsp; Spot: <strong style="color:var(--text)">' + fmt(spot) + '</strong></div></div>' +
+      '<div class="ghm-regime ' + regimeCls + '">' + regime + '</div>' +
+    '</div>' +
+    '<div class="ghm-levels">' +
+      '<div class="ghm-lv" style="color:#4ade80">Call Wall <span>' + fmt(gwall) + '</span></div>' +
+      '<div class="ghm-lv" style="color:#fbbf24">Gamma Flip <span>' + fmt(flip) + '</span></div>' +
+      '<div class="ghm-lv" style="color:#f87171">Put Wall <span>' + fmt(pwall) + '</span></div>' +
+    '</div>' +
+    '<div class="ghm-canvas-wrap">' +
+      '<div class="ghm-loading" id="load-' + a.symbol + '"><div class="ghm-spinner"></div><span>Loading candles...</span></div>' +
+      '<canvas class="ghm-canvas" id="cv-' + a.symbol + '" style="display:none;"></canvas>' +
+    '</div></div>';
+}
+
+async function loadCandles(a) {
+  const cfg = TF_CONFIG[activeTF];
+  const key = a.symbol + '_' + activeTF;
+  try {
+    let candles = candleCache[key];
+    if (!candles) {
+      const url = API + '/api/candles/' + encodeURIComponent(a.symbol) + '?interval=' + cfg.interval + '&period=' + cfg.period;
+      const res = await fetch(url, { cache:'no-store' });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      candles = await res.json();
+      if (!Array.isArray(candles)) throw new Error('Bad data');
+      candleCache[key] = candles;
+    }
+    drawChart(a, candles.slice(-cfg.bars));
+  } catch(e) {
+    const ld = document.getElementById('load-' + a.symbol);
+    if (ld) ld.innerHTML = '<span style="color:var(--muted);font-size:.8rem">No candle data available</span>';
+  }
+}
+
+function drawChart(a, candles) {
+  const cv = document.getElementById('cv-' + a.symbol);
+  const ld = document.getElementById('load-' + a.symbol);
+  if (!cv || !candles || candles.length < 2) return;
+  if (ld) ld.style.display = 'none';
+  cv.style.display = 'block';
+
+  const W  = cv.parentElement.clientWidth || 500;
+  const H  = 300;
+  const VH = 50;
+  const TH = H + VH;
+  cv.width = W; cv.height = TH;
+  cv.style.width = W + 'px'; cv.style.height = TH + 'px';
+
+  const ctx = cv.getContext('2d');
+  ctx.fillStyle = '#070d18';
+  ctx.fillRect(0, 0, W, TH);
+
+  const PL = 8, PR = 62, PT = 18, PB = 28;
+  const chartW = W - PL - PR;
+  const chartH = H - PT - PB;
+
+  const gwall = a.gamma_wall  || 0;
+  const pwall = a.put_wall    || 0;
+  const flip  = a.flip_level  || (gwall + pwall) / 2;
+
+  const highs = candles.map(function(c) { return c.high; });
+  const lows  = candles.map(function(c) { return c.low; });
+  const maxP  = Math.max.apply(null, highs.concat([gwall])) * 1.01;
+  const minP  = Math.min.apply(null, lows.concat([pwall]))  * 0.99;
+  const priceR = maxP - minP || 1;
+
+  function toY(p) { return PT + (maxP - p) / priceR * chartH; }
+  function toX(i) { return PL + (i + 0.5) / candles.length * chartW; }
+  function clampY(p) { return Math.max(PT, Math.min(PT + chartH, toY(p))); }
+
+  // Heatmap zones
+  var zones = [
+    [maxP,  gwall, 'rgba(239,68,68,0.22)'],
+    [gwall, flip,  'rgba(34,197,94,0.12)'],
+    [flip,  pwall, 'rgba(249,115,22,0.18)'],
+    [pwall, minP,  'rgba(139,92,246,0.22)'],
+  ];
+  zones.forEach(function(z) {
+    var y1 = clampY(z[0]), y2 = clampY(z[1]);
+    if (y2 <= y1) return;
+    ctx.fillStyle = z[2];
+    ctx.fillRect(PL, y1, chartW, y2 - y1);
+  });
+
+  // Transition band around flip
+  var fb = flip * 0.004;
+  var fy1 = clampY(flip + fb), fy2 = clampY(flip - fb);
+  if (fy2 > fy1) {
+    ctx.fillStyle = 'rgba(251,191,36,0.22)';
+    ctx.fillRect(PL, fy1, chartW, fy2 - fy1);
+  }
+
+  // Grid lines
+  ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+  ctx.lineWidth = 1;
+  for (var gi = 1; gi < 5; gi++) {
+    var gy = PT + (chartH / 5) * gi;
+    ctx.beginPath(); ctx.moveTo(PL, gy); ctx.lineTo(PL + chartW, gy); ctx.stroke();
+  }
+
+  // GEX level lines
+  function drawDashed(price, color, label) {
+    if (price < minP || price > maxP) return;
+    var y = toY(price);
+    ctx.save();
+    ctx.setLineDash([5, 4]);
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1.5;
+    ctx.globalAlpha = 0.9;
+    ctx.beginPath(); ctx.moveTo(PL, y); ctx.lineTo(PL + chartW, y); ctx.stroke();
+    ctx.restore();
+    ctx.fillStyle = color;
+    ctx.font = 'bold 9px sans-serif';
+    var lbl = price >= 1000 ? price.toLocaleString(undefined,{maximumFractionDigits:0}) : price.toFixed(1);
+    ctx.fillText(label + ' ' + lbl, PL + chartW + 3, y + 3.5);
+  }
+  drawDashed(gwall, '#4ade80', 'CW');
+  drawDashed(flip,  '#fbbf24', 'GF');
+  drawDashed(pwall, '#f87171', 'PW');
+
+  // Spot line
+  if (a.spot >= minP && a.spot <= maxP) {
+    var sy = toY(a.spot);
+    ctx.save();
+    ctx.setLineDash([3, 3]);
+    ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(PL, sy); ctx.lineTo(PL + chartW, sy); ctx.stroke();
+    ctx.restore();
+    ctx.fillStyle = 'rgba(255,255,255,0.8)';
+    ctx.font = 'bold 9px sans-serif';
+    var spotLbl = a.spot >= 1000 ? a.spot.toLocaleString(undefined,{maximumFractionDigits:1}) : a.spot.toFixed(2);
+    ctx.fillText(spotLbl, PL + chartW + 3, sy + 3.5);
+  }
+
+  // Candlesticks
+  var n    = candles.length;
+  var bw   = Math.max(1, Math.floor(chartW / n) - 1);
+  var halfB = bw / 2;
+  candles.forEach(function(c, i) {
+    var x    = toX(i);
+    var yO   = toY(c.open);
+    var yC   = toY(c.close);
+    var yH   = toY(c.high);
+    var yL   = toY(c.low);
+    var bull = c.close >= c.open;
+    var col  = bull ? '#22c55e' : '#ef4444';
+    var bodyT = Math.min(yO, yC);
+    var bodyH = Math.max(1, Math.abs(yC - yO));
+    ctx.strokeStyle = col; ctx.lineWidth = 1; ctx.globalAlpha = 0.8;
+    ctx.beginPath(); ctx.moveTo(x, yH); ctx.lineTo(x, yL); ctx.stroke();
+    ctx.fillStyle = col; ctx.globalAlpha = bull ? 0.85 : 0.75;
+    ctx.fillRect(x - halfB, bodyT, bw, bodyH);
+    ctx.globalAlpha = 1;
+  });
+
+  // Volume bars
+  var maxVol = Math.max.apply(null, candles.map(function(c){ return c.volume||0; })) || 1;
+  candles.forEach(function(c, i) {
+    if (!c.volume) return;
+    var x  = toX(i);
+    var bh = (c.volume / maxVol) * (VH - 8);
+    ctx.fillStyle = c.close >= c.open ? 'rgba(34,197,94,0.45)' : 'rgba(239,68,68,0.45)';
+    ctx.fillRect(x - halfB, H + (VH - 8 - bh), bw, bh);
+  });
+
+  // Time axis
+  ctx.fillStyle = 'rgba(148,163,184,0.7)';
+  ctx.font = '9px sans-serif';
+  var step = Math.max(1, Math.floor(n / 6));
+  candles.forEach(function(c, i) {
+    if (i % step !== 0) return;
+    var x  = toX(i);
+    var dt = new Date(c.time * 1000);
+    var lbl = activeTF === '1d'
+      ? (dt.getMonth()+1) + '/' + dt.getDate()
+      : (dt.getMonth()+1) + '/' + dt.getDate() + ' ' + dt.getHours().toString().padStart(2,'0') + 'h';
+    ctx.fillText(lbl, x - 12, TH - 4);
+  });
+
+  // Price axis
+  ctx.fillStyle = 'rgba(148,163,184,0.6)';
+  ctx.font = '9px sans-serif';
+  var pStep = priceR / 5;
+  for (var pi = 0; pi <= 5; pi++) {
+    var p = minP + pStep * pi;
+    var y = toY(p);
+    if (y < PT || y > PT + chartH) continue;
+    var plbl = p >= 1000 ? p.toLocaleString(undefined,{maximumFractionDigits:0}) : p.toFixed(1);
+    ctx.fillText(plbl, PL + chartW + 3, y + 3);
+  }
+}
+
+// Controls
+document.querySelectorAll('.filter-pill').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    document.querySelectorAll('.filter-pill').forEach(function(b){ b.classList.remove('active'); });
+    btn.classList.add('active');
+    activeGroup = btn.dataset.group;
+    renderGrid();
+  });
+});
+
+document.querySelectorAll('.tf-pill').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    document.querySelectorAll('.tf-pill').forEach(function(b){ b.classList.remove('active'); });
+    btn.classList.add('active');
+    activeTF = btn.dataset.tf;
+    getFiltered().forEach(function(a) {
+      var ld = document.getElementById('load-' + a.symbol);
+      var cv = document.getElementById('cv-'   + a.symbol);
+      if (ld) { ld.style.display = 'flex'; ld.innerHTML = '<div class="ghm-spinner"></div><span>Loading candles...</span>'; }
+      if (cv) cv.style.display = 'none';
+      loadCandles(a);
+    });
+  });
+});
+
+loadGex();
+</script>
+<script src="ibkr-widget.js" defer></script>
+<script src="search.js" defer></script>
+</body>
+</html>
