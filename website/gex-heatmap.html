@@ -268,50 +268,165 @@ async function loadCandles(a) {
       if (!Array.isArray(candles)) throw new Error('Bad data');
       candleCache[key] = candles;
     }
-    drawChart(a, candles.slice(-cfg.bars));
+    var slice = getPanSlice(a.symbol, candles);
+    drawChart(a, slice);
+    var cv2 = document.getElementById('cv-' + a.symbol);
+    if (cv2 && !cv2._panInit) { cv2._panInit = true; initPan(cv2, a); }
   } catch(e) {
     const ld = document.getElementById('load-' + a.symbol);
     if (ld) ld.innerHTML = '<span style="color:var(--muted);font-size:.8rem">No candle data available</span>';
   }
 }
 
+
+// ── Pan state ─────────────────────────────────────────────────────────────────
+var panState = {};
+
+function getPanSlice(sym, allCandles) {
+  var cfg  = TF_CONFIG[activeTF];
+  var ps   = panState[sym] || { offset: 0 };
+  var maxOff = Math.max(0, allCandles.length - cfg.bars);
+  var off  = Math.max(0, Math.min(maxOff, ps.offset));
+  var end  = allCandles.length - off;
+  var start = Math.max(0, end - cfg.bars);
+  return allCandles.slice(start, end);
+}
+
+// ── Y-zoom state ──────────────────────────────────────────────────────────────
+var yZoom = {}; // sym -> { factor: 1.0 }
+
+function initPan(cv, a) {
+  if (!panState[a.symbol]) panState[a.symbol] = { offset: 0 };
+  if (!yZoom[a.symbol])    yZoom[a.symbol]    = { factor: 1.0, dragging: false };
+
+  function isOnYAxis(clientX) {
+    var rect = cv.getBoundingClientRect();
+    var scaleX = cv.width / rect.width;
+    var cx = (clientX - rect.left) * scaleX;
+    return cx > cv.width - 76; // PR = 72 + a few px margin
+  }
+
+  function onDown(clientX, clientY) {
+    var yz = yZoom[a.symbol];
+    var ps = panState[a.symbol];
+    if (isOnYAxis(clientX)) {
+      yz.dragging  = true;
+      yz.startY    = clientY;
+      yz.startFact = yz.factor;
+      cv.style.cursor = 'ns-resize';
+    } else {
+      ps.dragging = true; ps.startX = clientX; ps.startOff = ps.offset;
+      cv.style.cursor = 'grabbing';
+    }
+  }
+  function onMove(clientX, clientY) {
+    var yz = yZoom[a.symbol];
+    var ps = panState[a.symbol];
+    // Update cursor based on position
+    if (!yz.dragging && !ps.dragging) {
+      cv.style.cursor = isOnYAxis(clientX) ? 'ns-resize' : 'grab';
+    }
+    var all = candleCache[a.symbol + '_' + activeTF] || [];
+    if (yz.dragging) {
+      var dy = yz.startY - clientY; // drag up = positive = zoom in
+      yz.factor = Math.max(0.3, Math.min(10, yz.startFact * (1 + dy * 0.008)));
+      drawChart(a, getPanSlice(a.symbol, all));
+    } else if (ps.dragging) {
+      var cfg = TF_CONFIG[activeTF];
+      var chartW = cv.width - 10 - 72;
+      var cw = Math.max(1, chartW / cfg.bars);
+      var delta = Math.round((ps.startX - clientX) / cw);
+      var maxOff = Math.max(0, all.length - cfg.bars);
+      ps.offset = Math.max(0, Math.min(maxOff, ps.startOff + delta));
+      drawChart(a, getPanSlice(a.symbol, all));
+    }
+  }
+  function onUp() {
+    if (yZoom[a.symbol])    yZoom[a.symbol].dragging    = false;
+    if (panState[a.symbol]) panState[a.symbol].dragging = false;
+    cv.style.cursor = 'grab';
+  }
+  function onDblClick(clientX) {
+    if (isOnYAxis(clientX)) {
+      yZoom[a.symbol].factor = 1.0; // reset Y zoom
+      var all = candleCache[a.symbol + '_' + activeTF] || [];
+      drawChart(a, getPanSlice(a.symbol, all));
+    }
+  }
+
+  cv.addEventListener('mousedown',  function(e) { onDown(e.clientX, e.clientY); });
+  cv.addEventListener('mousemove',  function(e) { onMove(e.clientX, e.clientY); });
+  cv.addEventListener('mouseup',    onUp);
+  cv.addEventListener('mouseleave', onUp);
+  cv.addEventListener('dblclick',   function(e) { onDblClick(e.clientX); });
+  cv.addEventListener('touchstart', function(e) { e.preventDefault(); onDown(e.touches[0].clientX, e.touches[0].clientY); }, { passive: false });
+  cv.addEventListener('touchmove',  function(e) { e.preventDefault(); onMove(e.touches[0].clientX, e.touches[0].clientY); }, { passive: false });
+  cv.addEventListener('touchend',   onUp);
+  cv.style.cursor = 'grab';
+}
+
 function drawChart(a, candles) {
-  const cv = document.getElementById('cv-' + a.symbol);
-  const ld = document.getElementById('load-' + a.symbol);
+  var cv = document.getElementById('cv-' + a.symbol);
+  var ld = document.getElementById('load-' + a.symbol);
   if (!cv || !candles || candles.length < 2) return;
   if (ld) ld.style.display = 'none';
   cv.style.display = 'block';
 
-  const W  = cv.parentElement.clientWidth || 500;
-  const H  = 300;
-  const VH = 50;
-  const TH = H + VH;
+  // ── Layout constants ───────────────────────────────────────────────────────
+  var W        = cv.parentElement.clientWidth || 500;
+  var PL       = 10;   // left padding
+  var PR       = 74;   // right padding (Y axis labels)
+  var PT       = 22;   // top padding
+  var CHART_H  = 256;  // main candlestick chart height
+  var VOL_GAP  = 8;    // gap between chart and volume panel
+  var VOL_H    = 44;   // volume bars height
+  var XGAP     = 10;   // gap between volume and x-axis labels
+  var XLABEL_H = 22;   // x-axis label area height
+  var TH       = PT + CHART_H + VOL_GAP + VOL_H + XGAP + XLABEL_H;
+  var chartW   = W - PL - PR;
+
+  // Y positions of key regions
+  var CHART_BOT = PT + CHART_H;           // bottom of candle chart
+  var VOL_TOP   = CHART_BOT + VOL_GAP;    // top of volume bars
+  var VOL_BOT   = VOL_TOP + VOL_H;        // bottom of volume bars
+  var XAXIS_Y   = VOL_BOT + XGAP + 14;   // baseline of x-axis labels
+
   cv.width = W; cv.height = TH;
   cv.style.width = W + 'px'; cv.style.height = TH + 'px';
 
-  const ctx = cv.getContext('2d');
+  var ctx = cv.getContext('2d');
   ctx.fillStyle = '#070d18';
   ctx.fillRect(0, 0, W, TH);
 
-  const PL = 8, PR = 62, PT = 18, PB = 28;
-  const chartW = W - PL - PR;
-  const chartH = H - PT - PB;
+  // ── Price range (with Y zoom) ──────────────────────────────────────────────
+  var gwall = a.gamma_wall || 0;
+  var pwall = a.put_wall   || 0;
+  var flip  = a.flip_level || (gwall + pwall) / 2;
 
-  const gwall = a.gamma_wall  || 0;
-  const pwall = a.put_wall    || 0;
-  const flip  = a.flip_level  || (gwall + pwall) / 2;
+  var highs   = candles.map(function(c) { return c.high; });
+  var lows    = candles.map(function(c) { return c.low;  });
+  var autoMax = Math.max.apply(null, highs.concat([gwall])) * 1.012;
+  var autoMin = Math.min.apply(null, lows.concat([pwall]))  * 0.988;
+  var autoMid = (autoMax + autoMin) / 2;
+  var autoR   = autoMax - autoMin || 1;
 
-  const highs = candles.map(function(c) { return c.high; });
-  const lows  = candles.map(function(c) { return c.low; });
-  const maxP  = Math.max.apply(null, highs.concat([gwall])) * 1.01;
-  const minP  = Math.min.apply(null, lows.concat([pwall]))  * 0.99;
-  const priceR = maxP - minP || 1;
+  var yz     = yZoom[a.symbol] || { factor: 1.0 };
+  var visR   = autoR / yz.factor;
+  var maxP   = autoMid + visR / 2;
+  var minP   = autoMid - visR / 2;
+  var priceR = maxP - minP || 1;
 
-  function toY(p) { return PT + (maxP - p) / priceR * chartH; }
-  function toX(i) { return PL + (i + 0.5) / candles.length * chartW; }
-  function clampY(p) { return Math.max(PT, Math.min(PT + chartH, toY(p))); }
+  function toY(p) { return PT + (maxP - p) / priceR * CHART_H; }
+  var CBUF = 16; // right buffer so last candle has breathing room
+  function toX(i) { return PL + (i + 0.5) / candles.length * (chartW - CBUF); }
+  function clampY(p) { return Math.max(PT, Math.min(CHART_BOT, toY(p))); }
+  function fmtP(p) {
+    if (p >= 10000) return p.toLocaleString(undefined, { maximumFractionDigits: 0 });
+    if (p >= 1000)  return p.toFixed(1);
+    return p.toFixed(2);
+  }
 
-  // Heatmap zones
+  // ── Heatmap zones ──────────────────────────────────────────────────────────
   var zones = [
     [maxP,  gwall, 'rgba(239,68,68,0.22)'],
     [gwall, flip,  'rgba(34,197,94,0.12)'],
@@ -324,113 +439,121 @@ function drawChart(a, candles) {
     ctx.fillStyle = z[2];
     ctx.fillRect(PL, y1, chartW, y2 - y1);
   });
-
-  // Transition band around flip
   var fb = flip * 0.004;
   var fy1 = clampY(flip + fb), fy2 = clampY(flip - fb);
-  if (fy2 > fy1) {
-    ctx.fillStyle = 'rgba(251,191,36,0.22)';
-    ctx.fillRect(PL, fy1, chartW, fy2 - fy1);
-  }
+  if (fy2 > fy1) { ctx.fillStyle = 'rgba(251,191,36,0.2)'; ctx.fillRect(PL, fy1, chartW, fy2 - fy1); }
 
-  // Grid lines
-  ctx.strokeStyle = 'rgba(255,255,255,0.04)';
-  ctx.lineWidth = 1;
-  for (var gi = 1; gi < 5; gi++) {
-    var gy = PT + (chartH / 5) * gi;
+  // ── Grid lines ─────────────────────────────────────────────────────────────
+  ctx.strokeStyle = 'rgba(255,255,255,0.05)'; ctx.lineWidth = 1;
+  for (var gi = 1; gi < 6; gi++) {
+    var gy = PT + (CHART_H / 6) * gi;
     ctx.beginPath(); ctx.moveTo(PL, gy); ctx.lineTo(PL + chartW, gy); ctx.stroke();
   }
 
-  // GEX level lines
+  // ── Axis borders ───────────────────────────────────────────────────────────
+  ctx.strokeStyle = 'rgba(255,255,255,0.18)'; ctx.lineWidth = 1;
+  // Right axis line
+  ctx.beginPath(); ctx.moveTo(PL + chartW, PT); ctx.lineTo(PL + chartW, CHART_BOT); ctx.stroke();
+  // Bottom of chart
+  ctx.beginPath(); ctx.moveTo(PL, CHART_BOT); ctx.lineTo(PL + chartW, CHART_BOT); ctx.stroke();
+  // Separator above volume
+  ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+  ctx.beginPath(); ctx.moveTo(PL, VOL_TOP); ctx.lineTo(PL + chartW, VOL_TOP); ctx.stroke();
+  // Separator below volume / above x-axis
+  ctx.beginPath(); ctx.moveTo(PL, VOL_BOT + 2); ctx.lineTo(PL + chartW, VOL_BOT + 2); ctx.stroke();
+
+  // ── GEX level lines ────────────────────────────────────────────────────────
   function drawDashed(price, color, label) {
     if (price < minP || price > maxP) return;
     var y = toY(price);
     ctx.save();
-    ctx.setLineDash([5, 4]);
-    ctx.strokeStyle = color;
-    ctx.lineWidth = 1.5;
-    ctx.globalAlpha = 0.9;
+    ctx.setLineDash([6, 4]);
+    ctx.strokeStyle = color; ctx.lineWidth = 1.5; ctx.globalAlpha = 0.9;
     ctx.beginPath(); ctx.moveTo(PL, y); ctx.lineTo(PL + chartW, y); ctx.stroke();
     ctx.restore();
-    ctx.fillStyle = color;
-    ctx.font = 'bold 9px sans-serif';
-    var lbl = price >= 1000 ? price.toLocaleString(undefined,{maximumFractionDigits:0}) : price.toFixed(1);
-    ctx.fillText(label + ' ' + lbl, PL + chartW + 3, y + 3.5);
+    ctx.fillStyle = color; ctx.font = 'bold 10px sans-serif'; ctx.globalAlpha = 1;
+    ctx.fillText(label + ' ' + fmtP(price), PL + chartW + 5, y + 4);
   }
   drawDashed(gwall, '#4ade80', 'CW');
   drawDashed(flip,  '#fbbf24', 'GF');
   drawDashed(pwall, '#f87171', 'PW');
 
-  // Spot line
+  // ── Spot line ──────────────────────────────────────────────────────────────
   if (a.spot >= minP && a.spot <= maxP) {
     var sy = toY(a.spot);
-    ctx.save();
-    ctx.setLineDash([3, 3]);
-    ctx.strokeStyle = 'rgba(255,255,255,0.5)';
-    ctx.lineWidth = 1;
+    ctx.save(); ctx.setLineDash([3, 3]);
+    ctx.strokeStyle = 'rgba(255,255,255,0.55)'; ctx.lineWidth = 1;
     ctx.beginPath(); ctx.moveTo(PL, sy); ctx.lineTo(PL + chartW, sy); ctx.stroke();
     ctx.restore();
-    ctx.fillStyle = 'rgba(255,255,255,0.8)';
-    ctx.font = 'bold 9px sans-serif';
-    var spotLbl = a.spot >= 1000 ? a.spot.toLocaleString(undefined,{maximumFractionDigits:1}) : a.spot.toFixed(2);
-    ctx.fillText(spotLbl, PL + chartW + 3, sy + 3.5);
+    ctx.fillStyle = '#ffffff'; ctx.font = 'bold 10px sans-serif';
+    ctx.fillText(fmtP(a.spot), PL + chartW + 5, sy + 4);
   }
 
-  // Candlesticks
-  var n    = candles.length;
-  var bw   = Math.max(1, Math.floor(chartW / n) - 1);
+  // ── Candlesticks ───────────────────────────────────────────────────────────
+  var n = candles.length;
+  var bw = Math.max(1, Math.floor(chartW / n) - 1);
   var halfB = bw / 2;
   candles.forEach(function(c, i) {
-    var x    = toX(i);
-    var yO   = toY(c.open);
-    var yC   = toY(c.close);
-    var yH   = toY(c.high);
-    var yL   = toY(c.low);
+    var x = toX(i), yO = toY(c.open), yC = toY(c.close), yH = toY(c.high), yL = toY(c.low);
     var bull = c.close >= c.open;
     var col  = bull ? '#22c55e' : '#ef4444';
-    var bodyT = Math.min(yO, yC);
-    var bodyH = Math.max(1, Math.abs(yC - yO));
-    ctx.strokeStyle = col; ctx.lineWidth = 1; ctx.globalAlpha = 0.8;
+    ctx.strokeStyle = col; ctx.lineWidth = 1; ctx.globalAlpha = 0.85;
     ctx.beginPath(); ctx.moveTo(x, yH); ctx.lineTo(x, yL); ctx.stroke();
-    ctx.fillStyle = col; ctx.globalAlpha = bull ? 0.85 : 0.75;
-    ctx.fillRect(x - halfB, bodyT, bw, bodyH);
+    ctx.fillStyle = col; ctx.globalAlpha = bull ? 0.88 : 0.78;
+    ctx.fillRect(x - halfB, Math.min(yO, yC), bw, Math.max(1, Math.abs(yC - yO)));
     ctx.globalAlpha = 1;
   });
 
-  // Volume bars
-  var maxVol = Math.max.apply(null, candles.map(function(c){ return c.volume||0; })) || 1;
+  // ── Volume bars ────────────────────────────────────────────────────────────
+  var maxVol = Math.max.apply(null, candles.map(function(c) { return c.volume || 0; })) || 1;
   candles.forEach(function(c, i) {
     if (!c.volume) return;
     var x  = toX(i);
-    var bh = (c.volume / maxVol) * (VH - 8);
-    ctx.fillStyle = c.close >= c.open ? 'rgba(34,197,94,0.45)' : 'rgba(239,68,68,0.45)';
-    ctx.fillRect(x - halfB, H + (VH - 8 - bh), bw, bh);
+    var bh = (c.volume / maxVol) * VOL_H;
+    ctx.fillStyle = c.close >= c.open ? 'rgba(34,197,94,0.4)' : 'rgba(239,68,68,0.4)';
+    ctx.fillRect(x - halfB, VOL_BOT - bh, bw, bh);
   });
+  ctx.fillStyle = 'rgba(148,163,184,0.4)'; ctx.font = '9px sans-serif';
+  ctx.fillText('VOL', PL + 3, VOL_TOP + 11);
 
-  // Time axis
-  ctx.fillStyle = 'rgba(148,163,184,0.7)';
-  ctx.font = '9px sans-serif';
-  var step = Math.max(1, Math.floor(n / 6));
+  // ── X axis — time labels (clearly below volume) ────────────────────────────
+  ctx.font = 'bold 11px sans-serif';
+  var step = Math.max(1, Math.floor(n / 7));
+  var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   candles.forEach(function(c, i) {
     if (i % step !== 0) return;
     var x  = toX(i);
     var dt = new Date(c.time * 1000);
-    var lbl = activeTF === '1d'
-      ? (dt.getMonth()+1) + '/' + dt.getDate()
-      : (dt.getMonth()+1) + '/' + dt.getDate() + ' ' + dt.getHours().toString().padStart(2,'0') + 'h';
-    ctx.fillText(lbl, x - 12, TH - 4);
+    var lbl;
+    if (activeTF === '1d') {
+      lbl = months[dt.getMonth()] + ' ' + dt.getDate();
+    } else {
+      lbl = (dt.getMonth()+1) + '/' + dt.getDate() + ' ' + dt.getHours().toString().padStart(2,'0') + ':00';
+    }
+    // Tick on separator line
+    ctx.strokeStyle = 'rgba(226,232,240,0.2)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(x, VOL_BOT + 2); ctx.lineTo(x, VOL_BOT + 6); ctx.stroke();
+    var tw = ctx.measureText(lbl).width;
+    ctx.fillStyle = 'rgba(226,232,240,0.9)';
+    ctx.fillText(lbl, Math.max(PL, Math.min(PL + chartW - tw, x - tw / 2)), XAXIS_Y);
   });
 
-  // Price axis
-  ctx.fillStyle = 'rgba(148,163,184,0.6)';
-  ctx.font = '9px sans-serif';
-  var pStep = priceR / 5;
-  for (var pi = 0; pi <= 5; pi++) {
-    var p = minP + pStep * pi;
-    var y = toY(p);
-    if (y < PT || y > PT + chartH) continue;
-    var plbl = p >= 1000 ? p.toLocaleString(undefined,{maximumFractionDigits:0}) : p.toFixed(1);
-    ctx.fillText(plbl, PL + chartW + 3, y + 3);
+  // ── Y axis — price labels ──────────────────────────────────────────────────
+  ctx.font = 'bold 11px sans-serif';
+  var pStep = priceR / 6;
+  for (var pi = 0; pi <= 6; pi++) {
+    var p  = minP + pStep * pi;
+    var yp = toY(p);
+    if (yp < PT + 4 || yp > CHART_BOT - 2) continue;
+    ctx.strokeStyle = 'rgba(226,232,240,0.2)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(PL + chartW, yp); ctx.lineTo(PL + chartW + 5, yp); ctx.stroke();
+    ctx.fillStyle = 'rgba(226,232,240,0.92)';
+    ctx.fillText(fmtP(p), PL + chartW + 9, yp + 4);
+  }
+  // Y zoom hint
+  if (yz.factor !== 1.0) {
+    ctx.fillStyle = 'rgba(251,191,36,0.6)'; ctx.font = '9px sans-serif';
+    ctx.fillText('zoom ' + yz.factor.toFixed(1) + 'x  (dbl-click reset)', PL + chartW + 5, PT + CHART_H - 6);
   }
 }
 
@@ -461,7 +584,6 @@ document.querySelectorAll('.tf-pill').forEach(function(btn) {
 
 loadGex();
 </script>
-<script src="ibkr-widget.js" defer></script>
 <script src="search.js" defer></script>
 </body>
 </html>
