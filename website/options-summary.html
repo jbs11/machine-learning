@@ -1095,8 +1095,16 @@ function renderAll() {
 
   container.innerHTML = filtered.map(a => buildCard(a)).join('');
 
-  // Draw mini GEX charts after DOM insertion
-  filtered.forEach(a => { if (a.gex && !a.gex.no_options) drawMiniGex(a); });
+  // Draw mini GEX charts via ResizeObserver (ensures layout is complete)
+  filtered.forEach(a => {
+    if (!a.gex || a.gex.no_options) return;
+    const cv = document.getElementById('gex-' + a.symbol);
+    if (!cv) return;
+    const ro = new ResizeObserver(entries => {
+      if (entries[0].contentRect.width > 0) { ro.disconnect(); drawMiniGex(a); }
+    });
+    ro.observe(cv);
+  });
 }
 
 /* ── Build card HTML ── */
@@ -1289,9 +1297,24 @@ function drawMiniGex(a) {
   const strikes = gex.strikes || [];
   const gexArr  = gex.gex    || [];
   if (!strikes.length || !gexArr.length) return;
+  // Check for zero GEX data
+  const maxGex = Math.max(...gexArr.map(Math.abs), 0);
+  if (maxGex === 0) {
+    const wrap = cv.parentElement;
+    if (wrap && !wrap.querySelector('.no-vol-msg')) {
+      cv.style.display = 'none';
+      const msg = document.createElement('div');
+      msg.className = 'no-vol-msg';
+      msg.style.cssText = 'padding:.8rem;text-align:center;color:rgba(148,163,184,.55);font-size:.75rem;';
+      msg.textContent = 'No options data today';
+      wrap.appendChild(msg);
+    }
+    return;
+  }
 
   const dpr = window.devicePixelRatio || 1;
-  const W   = cv.parentElement.offsetWidth;
+  const rect = cv.getBoundingClientRect();
+  const W   = Math.max(rect.width || cv.parentElement.offsetWidth || cv.parentElement.clientWidth || 300, 100);
   const H   = 90;
   cv.width  = W * dpr;
   cv.height = H * dpr;

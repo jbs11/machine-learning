@@ -804,13 +804,16 @@ function drawTornado(r) {
   const allPutVol  = r.put_vol   || [];
   const spot       = r.spot || 0;
 
-  if (!allStrikes.length) {
+  // Check for zero volume (pre-market or market closed)
+  const maxVol = Math.max(...allCallVol.concat(allPutVol).map(v => v||0), 0);
+  if (!allStrikes.length || maxVol === 0) {
     ctx.fillStyle = '#070d18';
     ctx.fillRect(0, 0, W, H);
     ctx.fillStyle = '#475569';
     ctx.font = 'bold 13px sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('No options data available', W / 2, H / 2);
+    const noDataMsg = !allStrikes.length ? 'No options data available' : 'No options volume — check back after 9:30 AM ET';
+    ctx.fillText(noDataMsg, W / 2, H / 2);
     return;
   }
 

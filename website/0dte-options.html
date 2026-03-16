@@ -531,7 +531,14 @@ function renderCards() {
     return;
   }
   container.innerHTML = filtered.map(a => buildCard(a)).join('');
-  filtered.forEach(a => drawTornado(a));
+  filtered.forEach(a => {
+    const cv = document.getElementById('tornado-' + a.symbol);
+    if (!cv) { drawTornado(a); return; }
+    const ro = new ResizeObserver(entries => {
+      if (entries[0].contentRect.width > 0) { ro.disconnect(); drawTornado(a); }
+    });
+    ro.observe(cv);
+  });
 }
 
 /* ── Format helpers ── */
@@ -768,9 +775,24 @@ function drawTornado(a) {
   const callVols  = a.call_vol  || [];
   const putVols   = a.put_vol   || [];
   if (!strikes.length) return;
+  // Check for zero volume (pre-market / market closed)
+  const maxVol0 = Math.max(...callVols.concat(putVols).map(v => v||0), 0);
+  if (maxVol0 === 0) {
+    const dpr0 = window.devicePixelRatio || 1;
+    const W0 = Math.max(cv.parentElement.clientWidth || 300, 100);
+    cv.width = W0 * dpr0; cv.height = 60 * dpr0;
+    cv.style.width = W0 + 'px'; cv.style.height = '60px';
+    const c0 = cv.getContext('2d');
+    c0.scale(dpr0, dpr0);
+    c0.fillStyle = '#070d18'; c0.fillRect(0, 0, W0, 60);
+    c0.fillStyle = '#475569'; c0.font = '12px sans-serif'; c0.textAlign = 'center';
+    c0.fillText('No options volume — check back after 9:30 AM ET', W0 / 2, 33);
+    return;
+  }
 
   const dpr = window.devicePixelRatio || 1;
-  const W   = cv.parentElement.offsetWidth;
+  const rect = cv.getBoundingClientRect();
+  const W   = Math.max(rect.width || cv.parentElement.offsetWidth || cv.parentElement.clientWidth || 300, 100);
   const H   = 200;
   cv.width  = W * dpr; cv.height = H * dpr;
   cv.style.width = W + 'px'; cv.style.height = H + 'px';
