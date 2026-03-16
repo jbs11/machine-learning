@@ -490,28 +490,47 @@ function setSentFilter(val, btn) {
 }
 
 /* ── Fetch ── */
+let _loadController = null;
+
 async function loadData(nocache = false) {
+  // Cancel any in-flight request
+  if (_loadController) { try { _loadController.abort(); } catch(e){} }
+  _loadController = new AbortController();
+
   const dot = document.getElementById('sdot');
   const msg = document.getElementById('smsg');
   dot.className = 'sdot loading';
-  msg.textContent = 'Fetching options chains and aggregating flow data…';
+
+  // Show live elapsed timer while fetching
+  const t0 = Date.now();
+  let timerInterval = setInterval(() => {
+    const secs = ((Date.now() - t0) / 1000).toFixed(0);
+    msg.textContent = `Fetching options data… ${secs}s`;
+  }, 500);
 
   try {
     const url = `${API}/api/option-flows${nocache ? '?nocache=1' : ''}`;
-    const res = await fetch(url, { signal: AbortSignal.timeout(120000) });
+    const signal = AbortSignal.any
+      ? AbortSignal.any([_loadController.signal, AbortSignal.timeout(120000)])
+      : _loadController.signal;
+    const res = await fetch(url, { signal });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const json = await res.json();
     allData = json.assets || [];
 
+    clearInterval(timerInterval);
     dot.className = 'sdot on';
     const ts = json.timestamp ? new Date(json.timestamp).toLocaleTimeString() : '—';
-    msg.textContent = `Loaded ${json.count} assets  ·  ${ts}`;
+    const elapsed = ((Date.now() - t0) / 1000).toFixed(1);
+    msg.textContent = `Loaded ${json.count} assets  ·  ${ts}  ·  ${elapsed}s`;
 
     updateStats(allData, json.timestamp);
     renderCards();
   } catch (e) {
+    clearInterval(timerInterval);
+    if (e.name === 'AbortError') return; // cancelled by new request
     dot.className = 'sdot';
-    msg.textContent = `Error: ${e.message}`;
+    msg.textContent = `Error: ${e.message} — click ↻ Refresh to retry`;
   }
 }
 
