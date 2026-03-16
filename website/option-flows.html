@@ -843,7 +843,7 @@ function drawTornado(r) {
   const putVol  = idxArr.map(function(i) { return allPutVol[i]  || 0; });
   const n = strikes.length;
 
-  const maxVol = Math.max.apply(null, [1].concat(callVol).concat(putVol));
+  const maxBarVol = Math.max.apply(null, [1].concat(callVol).concat(putVol));
 
   const PAD_L = 56, PAD_R = 14, PAD_T = 14, PAD_B = 18;
   const chartW = W - PAD_L - PAD_R;
@@ -871,8 +871,8 @@ function drawTornado(r) {
     const displayRow = n - 1 - i;
     const y = PAD_T + displayRow * rowH;
 
-    const cw = (callVol[i] / maxVol) * (chartW / 2);
-    const pw = (putVol[i]  / maxVol) * (chartW / 2);
+    const cw = (callVol[i] / maxBarVol) * (chartW / 2);
+    const pw = (putVol[i]  / maxBarVol) * (chartW / 2);
 
     // Call bar (right, green)
     if (cw >= 1) {
