@@ -553,6 +553,11 @@ function updateChartData(sym) {
 
   var ind = buildIndData(candles);
 
+  // Freeze price scale during data update to prevent y-axis compression
+  if (_savedRange[sym]) {
+    try { sm.chart.priceScale('right').applyOptions({ autoScale: false }); } catch(e) {}
+  }
+
   sm.bbUS.setData(ind.bbU);
   sm.bbLS.setData(ind.bbL);
   sm.sma20s.setData(ind.sma20);
@@ -595,7 +600,11 @@ function updateChartData(sym) {
   } else {
     sm.chart.timeScale().fitContent();
   }
-  setTimeout(function(){ _suppressSave[sym] = false; }, 100);
+  // Re-enable autoScale after restore settles
+  setTimeout(function(){
+    _suppressSave[sym] = false;
+    try { sm.chart.priceScale('right').applyOptions({ autoScale: true }); } catch(e) {}
+  }, 150);
 }
 
 // ── changeTF — switches timeframe for one asset ───────────────────────────────
@@ -781,7 +790,7 @@ function loadAll(){
         if(pair[0]) sigMap[a.sym]=pair[0];
         if(pair[1]&&pair[1].length) canMap[a.sym]=pair[1];
         updateCardUI(a);
-        initChart(a);
+        if(chartInst[a.sym]) { updateChartData(a.sym); } else { initChart(a); }
       });
     }));
   }).then(function(){
