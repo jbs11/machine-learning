@@ -295,7 +295,7 @@
   <!-- Server bar -->
   <div class="server-bar">
     <div class="sdot loading" id="sdot"></div>
-    <span class="smsg" id="smsg">Fetching options chains and aggregating flow data…</span>
+    <span class="smsg" id="smsg">Loading…</span>
     <button class="rbtn" id="retry-btn" style="display:none;align-items:center;gap:.35rem;">&#8635; Retry</button>
     <button class="rbtn" onclick="loadData(true)">↻ Refresh</button>
     <a href="live-trading.html" class="rbtn" style="text-decoration:none;">📡 Live Trading</a>
@@ -490,47 +490,35 @@ function setSentFilter(val, btn) {
 }
 
 /* ── Fetch ── */
-let _loadController = null;
-
 async function loadData(nocache = false) {
-  // Cancel any in-flight request
-  if (_loadController) { try { _loadController.abort(); } catch(e){} }
-  _loadController = new AbortController();
-
   const dot = document.getElementById('sdot');
   const msg = document.getElementById('smsg');
   dot.className = 'sdot loading';
+  msg.textContent = 'Fetching options data… (this takes ~10 seconds)';
 
-  // Show live elapsed timer while fetching
   const t0 = Date.now();
-  let timerInterval = setInterval(() => {
-    const secs = ((Date.now() - t0) / 1000).toFixed(0);
-    msg.textContent = `Fetching options data… ${secs}s`;
-  }, 500);
+  let timer = setInterval(() => {
+    msg.textContent = 'Fetching options data… ' + Math.round((Date.now()-t0)/1000) + 's';
+  }, 1000);
 
   try {
     const url = `${API}/api/option-flows${nocache ? '?nocache=1' : ''}`;
-    const signal = AbortSignal.any
-      ? AbortSignal.any([_loadController.signal, AbortSignal.timeout(120000)])
-      : _loadController.signal;
-    const res = await fetch(url, { signal });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
     const json = await res.json();
     allData = json.assets || [];
 
-    clearInterval(timerInterval);
+    clearInterval(timer);
     dot.className = 'sdot on';
     const ts = json.timestamp ? new Date(json.timestamp).toLocaleTimeString() : '—';
-    const elapsed = ((Date.now() - t0) / 1000).toFixed(1);
-    msg.textContent = `Loaded ${json.count} assets  ·  ${ts}  ·  ${elapsed}s`;
+    msg.textContent = 'Loaded ' + json.count + ' assets  ·  ' + ts;
 
-    try { updateStats(allData, json.timestamp); } catch(eS) { console.error('updateStats error:', eS); }
-    try { renderCards(); } catch(eR) { console.error('renderCards error:', eR); msg.textContent = 'Render error: ' + eR.message; }
+    try { updateStats(allData, json.timestamp); } catch(eS) { console.error('updateStats:', eS); }
+    try { renderCards(); } catch(eR) { console.error('renderCards:', eR); dot.className='sdot'; msg.textContent='Render error: '+eR.message; }
   } catch (e) {
-    clearInterval(timerInterval);
-    if (e.name === 'AbortError') return; // cancelled by new request
+    clearInterval(timer);
     dot.className = 'sdot';
-    msg.textContent = `Error: ${e.message} — click ↻ Refresh to retry`;
+    msg.textContent = 'Error: ' + e.message + ' — click ↻ Refresh to retry';
   }
 }
 
