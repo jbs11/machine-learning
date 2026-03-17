@@ -317,7 +317,7 @@ let _schwabPollTimer = null;
 async function schwabGetAuthUrl(){
   const client_id = document.getElementById('schwab-key').value.trim();
   const client_secret = document.getElementById('schwab-secret').value.trim();
-  const callback_url = 'https://127.0.0.1:3001/schwab-callback';
+  const callback_url = 'https://127.0.0.1';
   if(!client_id || !client_secret){ setStatus('schwab','err','Enter App Key and App Secret'); return; }
   setStatus('schwab','loading','Generating authorization URL...');
   try {

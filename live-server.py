@@ -843,8 +843,8 @@ _broker_creds = _load_broker_creds()
 _schwab_auth_result = {}  # tracks latest auto-callback result for polling
 
 def _start_schwab_https_server():
-    """Start a tiny HTTPS server on 127.0.0.1:3001 to auto-capture Schwab OAuth callbacks.
-    Register https://127.0.0.1:3001/schwab-callback in your Schwab developer app."""
+    """Start a tiny HTTPS server on 127.0.0.1:443 to auto-capture Schwab OAuth callbacks.
+    Requires running the batch file as Administrator. Falls back silently if not admin."""
     import ssl, threading, tempfile, os
     from cryptography import x509
     from cryptography.x509.oid import NameOID
@@ -876,7 +876,7 @@ def _start_schwab_https_server():
         # Start mini HTTPS Flask server in thread
         import flask as _fl
         mini = _fl.Flask('schwab_https')
-        @mini.route('/schwab-callback')
+        @mini.route('/')
         def _mini_cb():
             import base64, time, requests as _req
             global _schwab_auth_result
@@ -886,7 +886,7 @@ def _start_schwab_https_server():
                 return '<h2 style="font-family:sans-serif;color:#f87171;padding:2rem;">Auth failed. Close this tab.</h2>', 400
             sc = _broker_creds.get('schwab', {})
             cid, csec = sc.get('client_id',''), sc.get('client_secret','')
-            cb = 'https://127.0.0.1:3001/schwab-callback'
+            cb = 'https://127.0.0.1'
             if not (cid and csec):
                 _schwab_auth_result = {'ok': False, 'error': 'No Schwab credentials saved'}
                 return 'Error: no credentials', 400
@@ -921,10 +921,12 @@ def _start_schwab_https_server():
             ctx.load_cert_chain(cert_file, key_file)
             ctx.check_hostname = False
             import werkzeug.serving
-            srv = werkzeug.serving.make_server('127.0.0.1', 3001, mini, ssl_context=ctx, threaded=True)
-            print('[Schwab HTTPS] Listening on https://127.0.0.1:3001/schwab-callback')
+            srv = werkzeug.serving.make_server('127.0.0.1', 443, mini, ssl_context=ctx, threaded=True)
+            print('[Schwab HTTPS] Listening on https://127.0.0.1:443/ — Schwab auto-capture ACTIVE')
             srv.serve_forever()
         threading.Thread(target=_run_mini, daemon=True).start()
+    except PermissionError:
+        print('[Schwab HTTPS] Port 443 requires admin — right-click the batch file and Run as Administrator to enable auto-capture.')
     except Exception as e:
         print(f'[Schwab HTTPS] Could not start: {e}')
 
