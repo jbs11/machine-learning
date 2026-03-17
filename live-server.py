@@ -1797,13 +1797,15 @@ def api_news():
     if not symbol and not nocache and (now - _news_cache['ts']) < _NEWS_TTL:
         return jsonify({'ok': True, 'articles': _news_cache['data'], 'cached': True,
                         'count': len(_news_cache['data']), 'timestamp': _news_cache['ts']})
-    all_items  = _fetch_finnhub_news()
-    all_items += _fetch_eod_news(symbol or None)
+    fh   = _fetch_finnhub_news()
+    eod  = _fetch_eod_news(symbol or None)
+    cnbc = _fetch_rss('https://www.cnbc.com/id/100003114/device/rss/rss.html', 'CNBC')
+    mw1  = _fetch_rss('https://feeds.marketwatch.com/marketwatch/topstories/', 'MarketWatch')
+    mw2  = _fetch_rss('https://feeds.marketwatch.com/marketwatch/marketpulse/', 'MarketWatch')
+    all_items = fh + eod + cnbc + mw1 + mw2
     if symbol:
         all_items += _fetch_rss(f'https://feeds.finance.yahoo.com/rss/2.0/headline?s={symbol}&region=US&lang=en-US', 'Yahoo Finance', symbol)
-    all_items += _fetch_rss('https://www.cnbc.com/id/100003114/device/rss/rss.html', 'CNBC')
-    all_items += _fetch_rss('https://feeds.marketwatch.com/marketwatch/topstories/', 'MarketWatch')
-    all_items += _fetch_rss('https://feeds.marketwatch.com/marketwatch/marketpulse/', 'MarketWatch')
+    _news_debug = {'finnhub': len(fh), 'eod': len(eod), 'cnbc': len(cnbc), 'mw1': len(mw1), 'mw2': len(mw2), 'total': len(all_items)}
     seen_urls, seen_titles, unique = set(), set(), []
     for item in sorted(all_items, key=lambda x: x['ts'], reverse=True):
         url        = item.get('url', '')
@@ -1819,7 +1821,7 @@ def api_news():
         _news_cache['data'] = unique
         _news_cache['ts']   = now
     return jsonify({'ok': True, 'articles': unique, 'cached': False,
-                    'count': len(unique), 'timestamp': now})
+                    'count': len(unique), 'timestamp': now, 'debug': _news_debug})
 
 @app.route('/api/health')
 def health():
