@@ -1483,9 +1483,12 @@ align-items:center;justify-content:center;height:100vh;margin:0;}}
 a{{color:#38bdf8;}}p{{color:#94a3b8;}}</style></head>
 <body><div class="box"><h2>&#10003; Schwab Connected!</h2>
 <p>SPY last price: <strong style="color:#f8fafc;">${spot}</strong></p>
-<p>Token saved. You can close this tab and return to your dashboard.</p>
-<p><a href="http://localhost:3000/brokers.html">&#8592; Back to Brokers page</a></p>
-</div></body></html>"""
+<p>Closing this window automatically...</p></div>
+<script>
+try {{ window.opener.postMessage({{type:'schwab_connected',spot:'{spot}'}}, '*'); }} catch(e) {{}}
+setTimeout(function(){{ window.close(); }}, 1500);
+</script>
+</body></html>"""
     return html
 
 @app.route('/api/broker-disconnect/schwab', methods=['POST'])

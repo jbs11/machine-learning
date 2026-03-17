@@ -317,6 +317,8 @@ function setStatus(broker, state, msg){
   if(disc) disc.style.display = state==='ok' ? '' : 'none';
 }
 
+let _schwabPopup = null;
+
 async function schwabGetAuthUrl(){
   const client_id = document.getElementById('schwab-key').value.trim();
   const client_secret = document.getElementById('schwab-secret').value.trim();
@@ -333,18 +335,32 @@ async function schwabGetAuthUrl(){
       saveCreds('schwab', {client_id, callback_url, has_token: false});
       const isLocalCallback = callback_url.includes('localhost') || callback_url.includes('127.0.0.1:3000');
       if(isLocalCallback){
-        setStatus('schwab','loading','Schwab login opened — after you approve, this page will auto-complete. Then refresh this page.');
+        setStatus('schwab','loading','Schwab login opened — log in and approve, this page will update automatically...');
         document.getElementById('schwab-step2').style.display = 'none';
+        // Open in popup so postMessage works
+        _schwabPopup = window.open(d.auth_url, 'schwab_auth', 'width=520,height=680,left=200,top=100');
       } else {
         setStatus('schwab','loading','Auth URL ready — log in to Schwab, then paste the redirect URL below. Act fast — code expires in ~30s.');
         document.getElementById('schwab-step2').style.display = '';
+        window.open(d.auth_url, '_blank');
       }
-      window.open(d.auth_url, '_blank');
     } else {
       setStatus('schwab','err', d.error || 'Failed to generate URL');
     }
   } catch(e){ setStatus('schwab','err','Server error: '+e.message); }
 }
+
+// Listen for auto-callback completion message from /schwab-callback page
+window.addEventListener('message', function(e){
+  if(e.data && e.data.type === 'schwab_connected'){
+    const spot = e.data.spot || '—';
+    const saved = loadCreds('schwab') || {};
+    saveCreds('schwab', {...saved, has_token: true});
+    setStatus('schwab','ok', 'Schwab connected ✓ — SPY $' + spot);
+    document.getElementById('disc-schwab').style.display = '';
+    if(_schwabPopup){ try{ _schwabPopup.close(); }catch(ex){} }
+  }
+});
 
 async function schwabExchangeToken(){
   const redirect_response = document.getElementById('schwab-redirect').value.trim();
