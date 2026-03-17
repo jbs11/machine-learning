@@ -1678,6 +1678,144 @@ def serve_static(filename):
     return send_from_directory(_WEBSITE_DIR, filename)
 
 
+
+# ── Real-Time News API ────────────────────────────────────────────────────────
+_news_cache = {'data': [], 'ts': 0}
+_NEWS_TTL = 90  # seconds
+
+def _fetch_yahoo_rss(symbol=None):
+    import urllib.request, xml.etree.ElementTree as ET, time
+    try:
+        if symbol:
+            url = f'https://feeds.finance.yahoo.com/rss/2.0/headline?s={symbol}&region=US&lang=en-US'
+        else:
+            url = 'https://feeds.finance.yahoo.com/rss/2.0/headline?catslug=general&region=US&lang=en-US'
+        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+        with urllib.request.urlopen(req, timeout=8) as r:
+            xml_data = r.read()
+        root = ET.fromstring(xml_data)
+        items = []
+        for item in root.findall('.//item')[:20]:
+            title   = (item.findtext('title') or '').strip()
+            link    = (item.findtext('link') or '').strip()
+            summary = (item.findtext('description') or '').strip()
+            pub     = (item.findtext('pubDate') or '').strip()
+            if not title: continue
+            try:
+                from email.utils import parsedate_to_datetime
+                ts = parsedate_to_datetime(pub).timestamp()
+            except Exception:
+                ts = time.time()
+            items.append({'title': title, 'url': link, 'summary': summary,
+                          'source': 'Yahoo Finance', 'ts': ts,
+                          'category': 'general', 'tickers': [symbol] if symbol else []})
+        return items
+    except Exception as e:
+        print(f'[News] Yahoo RSS error: {e}')
+        return []
+
+def _fetch_finnhub_news():
+    import time
+    try:
+        if not _finnhub_client:
+            return []
+        raw = _finnhub_client.general_news('general', min_id=0)
+        items = []
+        for a in (raw or [])[:30]:
+            items.append({
+                'title':    a.get('headline', '').strip(),
+                'url':      a.get('url', ''),
+                'summary':  a.get('summary', '').strip(),
+                'source':   a.get('source', 'Finnhub'),
+                'ts':       float(a.get('datetime', time.time())),
+                'category': a.get('category', 'general'),
+                'tickers':  a.get('related', '').split(',') if a.get('related') else [],
+                'image':    a.get('image', ''),
+            })
+        return [x for x in items if x['title']]
+    except Exception as e:
+        print(f'[News] Finnhub error: {e}')
+        return []
+
+def _fetch_eod_news(symbol=None):
+    import time, urllib.request, json as _json
+    try:
+        eod_key = _broker_creds.get('eod', {}).get('api_key', '')
+        if not eod_key:
+            return []
+        if symbol:
+            url = f'https://eodhistoricaldata.com/api/news?api_token={eod_key}&s={symbol}.US&limit=20&fmt=json'
+        else:
+            url = f'https://eodhistoricaldata.com/api/news?api_token={eod_key}&limit=30&fmt=json'
+        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+        with urllib.request.urlopen(req, timeout=10) as r:
+            raw = _json.loads(r.read())
+        items = []
+        for a in (raw or []):
+            title = (a.get('title') or '').strip()
+            if not title: continue
+            try:
+                from datetime import datetime as _dt
+                ts = _dt.strptime(a.get('date', '')[:19], '%Y-%m-%d %H:%M:%S').timestamp()
+            except Exception:
+                ts = time.time()
+            items.append({
+                'title':    title,
+                'url':      a.get('link', ''),
+                'summary':  (a.get('content') or a.get('summary') or '')[:300].strip(),
+                'source':   'EOD',
+                'ts':       ts,
+                'category': 'general',
+                'tickers':  [t.get('Code', '') for t in (a.get('symbols') or [])],
+                'sentiment_score': a.get('sentiment', {}).get('polarity', 0) if isinstance(a.get('sentiment'), dict) else 0,
+            })
+        return items
+    except Exception as e:
+        print(f'[News] EOD error: {e}')
+        return []
+
+def _sentiment_label(item):
+    pol = item.get('sentiment_score', None)
+    if pol is not None:
+        if pol > 0.1:  return 'bullish'
+        if pol < -0.1: return 'bearish'
+        return 'neutral'
+    title = item.get('title', '').lower()
+    bull = ['surge','rally','jump','gain','rise','beat','record','strong','upgrade']
+    bear = ['fall','drop','plunge','decline','miss','weak','downgrade','loss','crash','cut']
+    if any(w in title for w in bull): return 'bullish'
+    if any(w in title for w in bear): return 'bearish'
+    return 'neutral'
+
+@app.route('/api/news')
+def api_news():
+    import time
+    symbol  = request.args.get('symbol', '').upper().strip()
+    nocache = request.args.get('nocache', '')
+    now = time.time()
+    if not symbol and not nocache and (now - _news_cache['ts']) < _NEWS_TTL:
+        return jsonify({'ok': True, 'articles': _news_cache['data'], 'cached': True,
+                        'count': len(_news_cache['data']), 'timestamp': _news_cache['ts']})
+    all_items  = _fetch_finnhub_news()
+    all_items += _fetch_eod_news(symbol or None)
+    all_items += _fetch_yahoo_rss(symbol or None)
+    seen_urls, seen_titles, unique = set(), set(), []
+    for item in sorted(all_items, key=lambda x: x['ts'], reverse=True):
+        url        = item.get('url', '')
+        title_key  = item['title'][:60].lower().strip()
+        if (url and url in seen_urls) or title_key in seen_titles:
+            continue
+        if url: seen_urls.add(url)
+        seen_titles.add(title_key)
+        item['sentiment'] = _sentiment_label(item)
+        unique.append(item)
+    unique = unique[:60]
+    if not symbol:
+        _news_cache['data'] = unique
+        _news_cache['ts']   = now
+    return jsonify({'ok': True, 'articles': unique, 'cached': False,
+                    'count': len(unique), 'timestamp': now})
+
 @app.route('/api/health')
 def health():
     return jsonify({'status': 'ok', 'time': datetime.now().isoformat()})
