@@ -842,6 +842,92 @@ def _save_broker_creds(creds):
 _broker_creds = _load_broker_creds()
 _schwab_auth_result = {}  # tracks latest auto-callback result for polling
 
+def _start_schwab_https_server():
+    """Start a tiny HTTPS server on 127.0.0.1:3001 to auto-capture Schwab OAuth callbacks.
+    Register https://127.0.0.1:3001/schwab-callback in your Schwab developer app."""
+    import ssl, threading, tempfile, os
+    from cryptography import x509
+    from cryptography.x509.oid import NameOID
+    from cryptography.hazmat.primitives import hashes, serialization
+    from cryptography.hazmat.primitives.asymmetric import rsa
+    import datetime, ipaddress
+    try:
+        # Generate self-signed cert for 127.0.0.1
+        key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+        subject = issuer = x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, u'127.0.0.1')])
+        cert = (x509.CertificateBuilder()
+            .subject_name(subject).issuer_name(issuer)
+            .public_key(key.public_key())
+            .serial_number(x509.random_serial_number())
+            .not_valid_before(datetime.datetime.utcnow())
+            .not_valid_after(datetime.datetime.utcnow() + datetime.timedelta(days=825))
+            .add_extension(x509.SubjectAlternativeName([x509.IPAddress(ipaddress.IPv4Address('127.0.0.1'))]), critical=False)
+            .sign(key, hashes.SHA256()))
+        # Write cert/key to temp files
+        tmpdir = tempfile.mkdtemp()
+        cert_file = os.path.join(tmpdir, 'cert.pem')
+        key_file  = os.path.join(tmpdir, 'key.pem')
+        with open(cert_file, 'wb') as f:
+            f.write(cert.public_bytes(serialization.Encoding.PEM))
+        with open(key_file, 'wb') as f:
+            f.write(key.private_bytes(serialization.Encoding.PEM,
+                serialization.PrivateFormat.TraditionalOpenSSL,
+                serialization.NoEncryption()))
+        # Start mini HTTPS Flask server in thread
+        import flask as _fl
+        mini = _fl.Flask('schwab_https')
+        @mini.route('/schwab-callback')
+        def _mini_cb():
+            import base64, time, requests as _req
+            global _schwab_auth_result
+            code = _fl.request.args.get('code', '').strip()
+            if not code:
+                _schwab_auth_result = {'ok': False, 'error': _fl.request.args.get('error','unknown')}
+                return '<h2 style="font-family:sans-serif;color:#f87171;padding:2rem;">Auth failed. Close this tab.</h2>', 400
+            sc = _broker_creds.get('schwab', {})
+            cid, csec = sc.get('client_id',''), sc.get('client_secret','')
+            cb = 'https://127.0.0.1:3001/schwab-callback'
+            if not (cid and csec):
+                _schwab_auth_result = {'ok': False, 'error': 'No Schwab credentials saved'}
+                return 'Error: no credentials', 400
+            try:
+                b64 = base64.b64encode(f'{cid}:{csec}'.encode()).decode()
+                r = _req.post('https://api.schwabapi.com/v1/oauth/token',
+                    headers={'Authorization': f'Basic {b64}', 'Content-Type': 'application/x-www-form-urlencoded'},
+                    data={'grant_type': 'authorization_code', 'code': code, 'redirect_uri': cb},
+                    timeout=15, verify=False)
+                if r.status_code != 200:
+                    _schwab_auth_result = {'ok': False, 'error': f'Token exchange failed ({r.status_code}): {r.text[:200]}'}
+                    return f'<h2 style="font-family:sans-serif;color:#f87171;padding:2rem;">Failed ({r.status_code}). Close this tab.</h2>', 400
+                td = r.json()
+                td['expires_at'] = time.time() + td.get('expires_in', 1800) - 60
+                _broker_creds['schwab']['token'] = td
+                _save_broker_creds(_broker_creds)
+            except Exception as e:
+                _schwab_auth_result = {'ok': False, 'error': str(e)}
+                return f'Error: {e}', 500
+            try:
+                q = _schwab_quote('SPY')
+                spot = str(q.get('lastPrice', '—'))
+            except Exception:
+                spot = '—'
+            _schwab_auth_result = {'ok': True, 'spot': spot}
+            return f'<html><body style="font-family:sans-serif;background:#070d18;color:#4ade80;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;"><div style="text-align:center"><h2>&#10003; Schwab Connected!</h2><p style="color:#94a3b8;">SPY ${spot} &mdash; you can close this tab.</p><script>try{{window.opener.postMessage({{type:"schwab_connected",spot:"{spot}"}},"*");}}catch(e){{}}setTimeout(function(){{window.close();}},2000);</script></div></body></html>'
+        @mini.route('/')
+        def _mini_root():
+            return '', 200
+        def _run_mini():
+            ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+            ctx.load_cert_chain(cert_file, key_file)
+            ctx.check_hostname = False
+            import werkzeug.serving
+            srv = werkzeug.serving.make_server('127.0.0.1', 3001, mini, ssl_context=ctx, threaded=True)
+            print('[Schwab HTTPS] Listening on https://127.0.0.1:3001/schwab-callback')
+            srv.serve_forever()
+        threading.Thread(target=_run_mini, daemon=True).start()
+    except Exception as e:
+        print(f'[Schwab HTTPS] Could not start: {e}')
+
 # Auto-reconnect Finnhub if key was saved from a previous session
 if 'finnhub' in _broker_creds:
     try:
@@ -5260,5 +5346,6 @@ if __name__ == '__main__':
                 sys.stdout.buffer.write(f'[prewarm] {ep} FAIL {e}\n'.encode('utf-8'))
                 sys.stdout.buffer.flush()
     threading.Thread(target=_bg_prewarm, daemon=True).start()
+    _start_schwab_https_server()
 
     app.run(host='0.0.0.0', port=3000, debug=False, threaded=True)
