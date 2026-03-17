@@ -153,8 +153,11 @@ h1{font-size:1.7rem;font-weight:800;color:var(--accent);margin-bottom:.3rem;}
           <input type="password" id="schwab-secret" placeholder="Your Schwab App Secret">
         </div>
         <div class="input-row">
-          <label>CALLBACK URL <span style="color:var(--muted);font-weight:400;">(registered in your Schwab app)</span></label>
-          <input type="text" id="schwab-callback" placeholder="https://127.0.0.1" value="https://127.0.0.1">
+          <label>CALLBACK URL <span style="color:var(--muted);font-weight:400;">(must match your Schwab app — recommended: http://localhost:3000/schwab-callback)</span></label>
+          <input type="text" id="schwab-callback" placeholder="http://localhost:3000/schwab-callback" value="http://localhost:3000/schwab-callback">
+        </div>
+        <div style="font-size:.7rem;color:#fbbf24;margin:.3rem 0 .6rem;line-height:1.4;">
+          &#9888; Using <strong>http://localhost:3000/schwab-callback</strong> lets the server auto-complete the connection — no copy-paste needed. Register this URL in your <a href="https://developer.schwab.com" target="_blank" style="color:#38bdf8;">Schwab app settings</a>.
         </div>
         <div class="btn-row">
           <button class="btn btn-connect" onclick="schwabGetAuthUrl()">&#128279; Get Auth URL</button>
@@ -162,10 +165,10 @@ h1{font-size:1.7rem;font-weight:800;color:var(--accent);margin-bottom:.3rem;}
         </div>
       </div>
 
-      <!-- Step 2: Paste redirect URL (hidden until Step 1 completes) -->
+      <!-- Step 2: Paste redirect URL (shown only when NOT using local callback) -->
       <div id="schwab-step2" style="display:none;margin-top:.8rem;padding-top:.8rem;border-top:1px solid var(--border);">
         <div style="font-size:.73rem;color:var(--muted);margin-bottom:.6rem;">
-          <strong style="color:var(--text);">Step 2</strong> &mdash; After logging in to Schwab, copy the <em>full URL</em> from your browser address bar and paste it below.
+          <strong style="color:var(--text);">Step 2</strong> &mdash; After logging in to Schwab, copy the <em>full URL</em> from your browser address bar and paste it below. <strong style="color:#f87171;">Act fast — the code expires in ~30 seconds.</strong>
         </div>
         <div class="input-row">
           <label>REDIRECT URL (from browser after login)</label>
@@ -328,8 +331,14 @@ async function schwabGetAuthUrl(){
     const d = await r.json();
     if(d.ok){
       saveCreds('schwab', {client_id, callback_url, has_token: false});
-      setStatus('schwab','loading','Auth URL ready — log in to Schwab in the new tab, then paste the redirect URL below in Step 2.');
-      document.getElementById('schwab-step2').style.display = '';
+      const isLocalCallback = callback_url.includes('localhost') || callback_url.includes('127.0.0.1:3000');
+      if(isLocalCallback){
+        setStatus('schwab','loading','Schwab login opened — after you approve, this page will auto-complete. Then refresh this page.');
+        document.getElementById('schwab-step2').style.display = 'none';
+      } else {
+        setStatus('schwab','loading','Auth URL ready — log in to Schwab, then paste the redirect URL below. Act fast — code expires in ~30s.');
+        document.getElementById('schwab-step2').style.display = '';
+      }
       window.open(d.auth_url, '_blank');
     } else {
       setStatus('schwab','err', d.error || 'Failed to generate URL');

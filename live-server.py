@@ -1427,6 +1427,66 @@ def schwab_exchange_token():
     spot = q.get('lastPrice', '—')
     return jsonify({'ok': True, 'message': f'Schwab connected ✓ — SPY ${spot}'})
 
+@app.route('/schwab-callback')
+def schwab_callback():
+    """Auto-capture Schwab OAuth redirect and exchange code for tokens immediately."""
+    import base64, time, urllib.parse
+    import requests as _req
+    code    = request.args.get('code', '').strip()
+    session = request.args.get('session', '')
+    if not code:
+        error = request.args.get('error', 'unknown')
+        html = f"""<!DOCTYPE html><html><head><title>Schwab Auth</title>
+<style>body{{font-family:sans-serif;background:#070d18;color:#f87171;display:flex;
+align-items:center;justify-content:center;height:100vh;margin:0;}}
+.box{{text-align:center;max-width:480px;padding:2rem;}}</style></head>
+<body><div class="box"><h2>&#10006; Authorization Failed</h2>
+<p>Schwab returned error: <strong>{error}</strong></p>
+<p>Close this tab and try again from the Brokers page.</p></div></body></html>"""
+        return html, 400
+    sc = _broker_creds.get('schwab', {})
+    client_id     = sc.get('client_id', '')
+    client_secret = sc.get('client_secret', '')
+    callback_url  = sc.get('callback_url', '')
+    if not (client_id and client_secret):
+        return 'Error: Schwab credentials not found. Complete Step 1 first.', 400
+    try:
+        creds_b64 = base64.b64encode(f'{client_id}:{client_secret}'.encode()).decode()
+        r = _req.post(SCHWAB_TOKEN_URL,
+            headers={'Authorization': f'Basic {creds_b64}',
+                     'Content-Type': 'application/x-www-form-urlencoded'},
+            data={'grant_type': 'authorization_code', 'code': code,
+                  'redirect_uri': callback_url},
+            timeout=15)
+        if r.status_code != 200:
+            html = f"""<!DOCTYPE html><html><head><title>Schwab Auth</title>
+<style>body{{font-family:sans-serif;background:#070d18;color:#f87171;display:flex;
+align-items:center;justify-content:center;height:100vh;margin:0;}}
+.box{{text-align:center;max-width:480px;padding:2rem;}}</style></head>
+<body><div class="box"><h2>&#10006; Token Exchange Failed</h2>
+<p>HTTP {r.status_code}: {r.text[:200]}</p>
+<p>Close this tab and try again from the Brokers page.</p></div></body></html>"""
+            return html, 400
+        td = r.json()
+        td['expires_at'] = time.time() + td.get('expires_in', 1800) - 60
+        _broker_creds['schwab']['token'] = td
+        _save_broker_creds(_broker_creds)
+    except Exception as e:
+        return f'Error: {e}', 500
+    q = _schwab_quote('SPY')
+    spot = q.get('lastPrice', '—')
+    html = f"""<!DOCTYPE html><html><head><title>Schwab Connected</title>
+<style>body{{font-family:sans-serif;background:#070d18;color:#4ade80;display:flex;
+align-items:center;justify-content:center;height:100vh;margin:0;}}
+.box{{text-align:center;max-width:480px;padding:2rem;}}
+a{{color:#38bdf8;}}p{{color:#94a3b8;}}</style></head>
+<body><div class="box"><h2>&#10003; Schwab Connected!</h2>
+<p>SPY last price: <strong style="color:#f8fafc;">${spot}</strong></p>
+<p>Token saved. You can close this tab and return to your dashboard.</p>
+<p><a href="http://localhost:3000/brokers.html">&#8592; Back to Brokers page</a></p>
+</div></body></html>"""
+    return html
+
 @app.route('/api/broker-disconnect/schwab', methods=['POST'])
 def schwab_disconnect():
     _broker_creds.pop('schwab', None)
