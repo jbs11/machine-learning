@@ -312,11 +312,12 @@ function setStatus(broker, state, msg){
 }
 
 let _schwabPopup = null;
+let _schwabPollTimer = null;
 
 async function schwabGetAuthUrl(){
   const client_id = document.getElementById('schwab-key').value.trim();
   const client_secret = document.getElementById('schwab-secret').value.trim();
-  const callback_url = 'https://127.0.0.1';
+  const callback_url = window.location.origin + '/schwab-callback';
   if(!client_id || !client_secret){ setStatus('schwab','err','Enter App Key and App Secret'); return; }
   setStatus('schwab','loading','Generating authorization URL...');
   try {
@@ -327,42 +328,44 @@ async function schwabGetAuthUrl(){
     const d = await r.json();
     if(d.ok){
       saveCreds('schwab', {client_id, callback_url, has_token: false});
-      // Show Step 2 immediately and open popup side-by-side
-      const step2 = document.getElementById('schwab-step2');
-      step2.style.display = '';
-      const inp = document.getElementById('schwab-redirect');
-      inp.value = '';
-      setTimeout(function(){ inp.focus(); }, 200);
-      setStatus('schwab','loading','Log in to Schwab → when popup shows "site can’t be reached", copy the popup address bar URL and paste below.');
+      document.getElementById('schwab-step2').style.display = 'none';
+      setStatus('schwab','loading','Log in to Schwab in the popup — this page will update automatically when done...');
+      if(_schwabPollTimer){ clearInterval(_schwabPollTimer); }
       _schwabPopup = window.open(d.auth_url, 'schwab_auth', 'width=500,height=680,left=10,top=80');
+      // Poll server every 2 seconds for callback completion
+      _schwabPollTimer = setInterval(async function(){
+        try {
+          const pr = await fetch(API + '/api/broker-connect/schwab/auth-status');
+          const pd = await pr.json();
+          if(pd.ok){
+            clearInterval(_schwabPollTimer);
+            const saved = loadCreds('schwab') || {};
+            saveCreds('schwab', {...saved, has_token: true});
+            setStatus('schwab','ok','Schwab connected ✓ — SPY $' + pd.spot);
+            document.getElementById('disc-schwab').style.display = '';
+            try{ if(_schwabPopup) _schwabPopup.close(); }catch(ex){}
+          } else if(pd.error){
+            clearInterval(_schwabPollTimer);
+            setStatus('schwab','err', pd.error);
+          }
+        } catch(ex){}
+      }, 2000);
     } else {
       setStatus('schwab','err', d.error || 'Failed to generate URL');
     }
   } catch(e){ setStatus('schwab','err','Server error: '+e.message); }
 }
 
-// Auto-submit the moment user pastes into the redirect field
-document.addEventListener('DOMContentLoaded', function(){
-  const inp = document.getElementById('schwab-redirect');
-  if(inp){
-    inp.addEventListener('paste', function(){
-      setTimeout(function(){
-        const val = inp.value.trim();
-        if(val.includes('code=')){ schwabExchangeToken(); }
-      }, 50);
-    });
-  }
-});
-
-// Listen for postMessage from /schwab-callback page
+// Listen for postMessage from /schwab-callback page (fallback)
 window.addEventListener('message', function(e){
   if(e.data && e.data.type === 'schwab_connected'){
+    clearInterval(_schwabPollTimer);
     const spot = e.data.spot || '—';
     const saved = loadCreds('schwab') || {};
     saveCreds('schwab', {...saved, has_token: true});
-    setStatus('schwab','ok', 'Schwab connected ✓ — SPY $' + spot);
+    setStatus('schwab','ok','Schwab connected ✓ — SPY $' + spot);
     document.getElementById('disc-schwab').style.display = '';
-    if(_schwabPopup){ try{ _schwabPopup.close(); }catch(ex){} }
+    try{ if(_schwabPopup) _schwabPopup.close(); }catch(ex){}
   }
 });
 

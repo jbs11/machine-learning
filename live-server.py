@@ -840,6 +840,7 @@ def _save_broker_creds(creds):
         print(f"[Broker] Failed to save creds: {e}")
 
 _broker_creds = _load_broker_creds()
+_schwab_auth_result = {}  # tracks latest auto-callback result for polling
 
 # Auto-reconnect Finnhub if key was saved from a previous session
 if 'finnhub' in _broker_creds:
@@ -1430,66 +1431,48 @@ def schwab_exchange_token():
 @app.route('/schwab-callback')
 def schwab_callback():
     """Auto-capture Schwab OAuth redirect and exchange code for tokens immediately."""
-    import base64, time, urllib.parse
+    import base64, time
     import requests as _req
-    code    = request.args.get('code', '').strip()
-    session = request.args.get('session', '')
+    global _schwab_auth_result
+    code = request.args.get('code', '').strip()
     if not code:
         error = request.args.get('error', 'unknown')
-        html = f"""<!DOCTYPE html><html><head><title>Schwab Auth</title>
-<style>body{{font-family:sans-serif;background:#070d18;color:#f87171;display:flex;
-align-items:center;justify-content:center;height:100vh;margin:0;}}
-.box{{text-align:center;max-width:480px;padding:2rem;}}</style></head>
-<body><div class="box"><h2>&#10006; Authorization Failed</h2>
-<p>Schwab returned error: <strong>{error}</strong></p>
-<p>Close this tab and try again from the Brokers page.</p></div></body></html>"""
-        return html, 400
+        _schwab_auth_result = {'ok': False, 'error': error}
+        return f'<h2 style="font-family:sans-serif;color:#f87171;padding:2rem;">Authorization failed: {error}<br><br>Close this tab and try again.</h2>', 400
     sc = _broker_creds.get('schwab', {})
     client_id     = sc.get('client_id', '')
     client_secret = sc.get('client_secret', '')
-    # Use the exact URL this request arrived on as redirect_uri (must match what was registered)
-    callback_url  = request.base_url  # e.g. http://localhost:3000/schwab-callback
+    callback_url  = request.base_url
     if not (client_id and client_secret):
-        return 'Error: Schwab credentials not found. Complete Step 1 first.', 400
+        _schwab_auth_result = {'ok': False, 'error': 'Schwab credentials not found — complete Step 1 first'}
+        return 'Error: credentials not found', 400
     try:
         creds_b64 = base64.b64encode(f'{client_id}:{client_secret}'.encode()).decode()
         r = _req.post(SCHWAB_TOKEN_URL,
             headers={'Authorization': f'Basic {creds_b64}',
                      'Content-Type': 'application/x-www-form-urlencoded'},
-            data={'grant_type': 'authorization_code', 'code': code,
-                  'redirect_uri': callback_url},
+            data={'grant_type': 'authorization_code', 'code': code, 'redirect_uri': callback_url},
             timeout=15)
         if r.status_code != 200:
-            html = f"""<!DOCTYPE html><html><head><title>Schwab Auth</title>
-<style>body{{font-family:sans-serif;background:#070d18;color:#f87171;display:flex;
-align-items:center;justify-content:center;height:100vh;margin:0;}}
-.box{{text-align:center;max-width:480px;padding:2rem;}}</style></head>
-<body><div class="box"><h2>&#10006; Token Exchange Failed</h2>
-<p>HTTP {r.status_code}: {r.text[:200]}</p>
-<p>Close this tab and try again from the Brokers page.</p></div></body></html>"""
-            return html, 400
+            _schwab_auth_result = {'ok': False, 'error': f'Token exchange failed ({r.status_code}): {r.text[:200]}'}
+            return f'<h2 style="font-family:sans-serif;color:#f87171;padding:2rem;">Token exchange failed ({r.status_code})<br>{r.text[:200]}<br><br>Close this tab and try again.</h2>', 400
         td = r.json()
         td['expires_at'] = time.time() + td.get('expires_in', 1800) - 60
         _broker_creds['schwab']['token'] = td
         _save_broker_creds(_broker_creds)
     except Exception as e:
+        _schwab_auth_result = {'ok': False, 'error': str(e)}
         return f'Error: {e}', 500
     q = _schwab_quote('SPY')
     spot = q.get('lastPrice', '—')
-    html = f"""<!DOCTYPE html><html><head><title>Schwab Connected</title>
-<style>body{{font-family:sans-serif;background:#070d18;color:#4ade80;display:flex;
-align-items:center;justify-content:center;height:100vh;margin:0;}}
-.box{{text-align:center;max-width:480px;padding:2rem;}}
-a{{color:#38bdf8;}}p{{color:#94a3b8;}}</style></head>
-<body><div class="box"><h2>&#10003; Schwab Connected!</h2>
-<p>SPY last price: <strong style="color:#f8fafc;">${spot}</strong></p>
-<p>Closing this window automatically...</p></div>
-<script>
-try {{ window.opener.postMessage({{type:'schwab_connected',spot:'{spot}'}}, '*'); }} catch(e) {{}}
-setTimeout(function(){{ window.close(); }}, 1500);
-</script>
-</body></html>"""
-    return html
+    _schwab_auth_result = {'ok': True, 'spot': str(spot)}
+    return f'<html><body style="font-family:sans-serif;background:#070d18;color:#4ade80;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;"><div style="text-align:center"><h2>&#10003; Schwab Connected!</h2><p style="color:#94a3b8;">SPY ${spot} &mdash; you can close this tab.</p><script>try{{window.opener.postMessage({{type:"schwab_connected",spot:"{spot}"}},"*");}}catch(e){{}}setTimeout(function(){{window.close();}},2000);</script></div></body></html>'
+
+
+@app.route('/api/broker-connect/schwab/auth-status')
+def schwab_auth_status():
+    """Poll endpoint — returns result of latest /schwab-callback exchange."""
+    return jsonify(_schwab_auth_result)
 
 @app.route('/api/broker-connect/schwab/exchange-code', methods=['POST'])
 def schwab_exchange_code():
