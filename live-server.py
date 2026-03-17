@@ -845,12 +845,16 @@ _schwab_auth_result = {}  # tracks latest auto-callback result for polling
 def _start_schwab_https_server():
     """Start a tiny HTTPS server on 127.0.0.1:443 to auto-capture Schwab OAuth callbacks.
     Requires running the batch file as Administrator. Falls back silently if not admin."""
-    import ssl, threading, tempfile, os
-    from cryptography import x509
-    from cryptography.x509.oid import NameOID
-    from cryptography.hazmat.primitives import hashes, serialization
-    from cryptography.hazmat.primitives.asymmetric import rsa
-    import datetime, ipaddress
+    try:
+        import ssl, threading, tempfile, os
+        from cryptography import x509
+        from cryptography.x509.oid import NameOID
+        from cryptography.hazmat.primitives import hashes, serialization
+        from cryptography.hazmat.primitives.asymmetric import rsa
+        import datetime, ipaddress
+    except ImportError as _ie:
+        print(f'[Schwab HTTPS] Missing package: {_ie} — run: py -m pip install cryptography')
+        return
     try:
         # Generate self-signed cert for 127.0.0.1
         key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
@@ -5486,6 +5490,9 @@ if __name__ == '__main__':
                 sys.stdout.buffer.write(f'[prewarm] {ep} FAIL {e}\n'.encode('utf-8'))
                 sys.stdout.buffer.flush()
     threading.Thread(target=_bg_prewarm, daemon=True).start()
-    _start_schwab_https_server()
+    try:
+        _start_schwab_https_server()
+    except Exception as _e_https:
+        print(f'[Schwab HTTPS] Skipped: {_e_https}')
 
     app.run(host='0.0.0.0', port=3000, debug=False, threaded=True)

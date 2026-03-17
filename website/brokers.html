@@ -162,15 +162,19 @@ h1{font-size:1.7rem;font-weight:800;color:var(--accent);margin-bottom:.3rem;}
 
       <!-- Step 2: Paste redirect URL -->
       <div id="schwab-step2" style="display:none;margin-top:.8rem;padding-top:.8rem;border-top:1px solid var(--border);">
-        <div style="font-size:.73rem;color:#fbbf24;margin-bottom:.5rem;line-height:1.5;">
-          <strong style="color:#f8fafc;">Step 2</strong> &mdash; The popup will show <em>"This site can't be reached"</em> &mdash; that's normal.<br>
-          &#10102; Click the popup's <strong>address bar</strong> &nbsp;&#10103; Press <strong>Ctrl+A</strong> then <strong>Ctrl+C</strong> to copy the URL &nbsp;&#10104; Click the box below and press <strong>Ctrl+V</strong> &mdash; it submits automatically.
+        <div style="font-size:.73rem;color:#fbbf24;margin-bottom:.5rem;line-height:1.6;">
+          <strong style="color:#f8fafc;">Step 2</strong> &mdash; When the popup shows <em>"This site can't be reached"</em>:<br>
+          &#10102; Click the popup's <strong>address bar</strong> &nbsp;&#10103; <strong>Ctrl+A</strong> &rarr; <strong>Ctrl+C</strong> &nbsp;&#10104; Click the box below &rarr; <strong>Ctrl+V</strong> &rarr; <strong>Enter</strong>
+        </div>
+        <div style="font-size:.78rem;color:#94a3b8;margin-bottom:.5rem;">
+          Code expires in: <strong id="schwab-countdown" style="color:#f87171;font-size:.9rem;">—</strong>
         </div>
         <div class="input-row">
-          <label>PASTE REDIRECT URL HERE (auto-submits on paste)</label>
+          <label>PASTE REDIRECT URL HERE</label>
           <input type="text" id="schwab-redirect" placeholder="https://127.0.0.1/?code=..." autocomplete="off">
         </div>
         <div class="btn-row">
+          <button class="btn btn-connect" onclick="schwabExchangeToken()">&#10003; Complete Connection</button>
           <button class="btn btn-signup" onclick="schwabRestart()">&#8635; Restart</button>
           <button class="btn btn-disconnect" style="display:none" id="disc-schwab" onclick="disconnectBroker('schwab')">Disconnect</button>
         </div>
@@ -314,6 +318,27 @@ function setStatus(broker, state, msg){
 
 let _schwabPopup = null;
 let _schwabPollTimer = null;
+let _schwabCountdownTimer = null;
+
+function _startSchwabCountdown(){
+  const el = document.getElementById('schwab-countdown');
+  if(!el) return;
+  if(_schwabCountdownTimer) clearInterval(_schwabCountdownTimer);
+  let secs = 30;
+  el.textContent = secs + 's';
+  el.style.color = '#4ade80';
+  _schwabCountdownTimer = setInterval(function(){
+    secs--;
+    if(secs <= 0){
+      clearInterval(_schwabCountdownTimer);
+      el.textContent = 'EXPIRED — click Restart and try again';
+      el.style.color = '#f87171';
+    } else {
+      el.textContent = secs + 's';
+      el.style.color = secs > 10 ? '#4ade80' : '#f87171';
+    }
+  }, 1000);
+}
 
 async function schwabGetAuthUrl(){
   const client_id = document.getElementById('schwab-key').value.trim();
@@ -332,6 +357,10 @@ async function schwabGetAuthUrl(){
       document.getElementById('schwab-step2').style.display = 'none';
       setStatus('schwab','loading','Log in to Schwab in the popup — this page updates automatically when done. (First time: click Advanced → Proceed in the popup if a security warning appears)');
       if(_schwabPollTimer){ clearInterval(_schwabPollTimer); }
+      // Clear any old pasted URL and start countdown
+      const inp = document.getElementById('schwab-redirect');
+      if(inp){ inp.value = ''; }
+      _startSchwabCountdown();
       _schwabPopup = window.open(d.auth_url, 'schwab_auth', 'width=500,height=680,left=10,top=80');
       // Poll server every 2 seconds for callback completion
       _schwabPollTimer = setInterval(async function(){
