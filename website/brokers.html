@@ -152,13 +152,7 @@ h1{font-size:1.7rem;font-weight:800;color:var(--accent);margin-bottom:.3rem;}
           <label>APP SECRET</label>
           <input type="password" id="schwab-secret" placeholder="Your Schwab App Secret">
         </div>
-        <div class="input-row">
-          <label>CALLBACK URL <span style="color:var(--muted);font-weight:400;">(must match your Schwab app — recommended: http://localhost:3000/schwab-callback)</span></label>
-          <input type="text" id="schwab-callback" placeholder="http://localhost:3000/schwab-callback" value="http://localhost:3000/schwab-callback">
-        </div>
-        <div style="font-size:.7rem;color:#fbbf24;margin:.3rem 0 .6rem;line-height:1.4;">
-          &#9888; Using <strong>http://localhost:3000/schwab-callback</strong> lets the server auto-complete the connection — no copy-paste needed. Register this URL in your <a href="https://developer.schwab.com" target="_blank" style="color:#38bdf8;">Schwab app settings</a>.
-        </div>
+        <input type="hidden" id="schwab-callback" value="https://127.0.0.1">
         <div class="btn-row">
           <button class="btn btn-connect" onclick="schwabGetAuthUrl()">&#128279; Get Auth URL</button>
           <button class="btn btn-signup" onclick="window.open('https://developer.schwab.com','_blank')">+ Dev Portal</button>
@@ -318,11 +312,13 @@ function setStatus(broker, state, msg){
 }
 
 let _schwabPopup = null;
+let _schwabPollTimer = null;
 
 async function schwabGetAuthUrl(){
   const client_id = document.getElementById('schwab-key').value.trim();
   const client_secret = document.getElementById('schwab-secret').value.trim();
-  const callback_url = document.getElementById('schwab-callback').value.trim() || 'https://127.0.0.1';
+  // Always use https://127.0.0.1 — the popup will auto-capture the code
+  const callback_url = 'https://127.0.0.1';
   if(!client_id || !client_secret){ setStatus('schwab','err','Enter App Key and App Secret'); return; }
   setStatus('schwab','loading','Generating authorization URL...');
   try {
@@ -333,24 +329,55 @@ async function schwabGetAuthUrl(){
     const d = await r.json();
     if(d.ok){
       saveCreds('schwab', {client_id, callback_url, has_token: false});
-      const isLocalCallback = callback_url.includes('localhost') || callback_url.includes('127.0.0.1:3000');
-      if(isLocalCallback){
-        setStatus('schwab','loading','Schwab login opened — log in and approve, this page will update automatically...');
-        document.getElementById('schwab-step2').style.display = 'none';
-        // Open in popup so postMessage works
-        _schwabPopup = window.open(d.auth_url, 'schwab_auth', 'width=520,height=680,left=200,top=100');
-      } else {
-        setStatus('schwab','loading','Auth URL ready — log in to Schwab, then paste the redirect URL below. Act fast — code expires in ~30s.');
-        document.getElementById('schwab-step2').style.display = '';
-        window.open(d.auth_url, '_blank');
-      }
+      document.getElementById('schwab-step2').style.display = 'none';
+      setStatus('schwab','loading','Schwab login opened — log in and approve. Auto-completing...');
+      // Open in popup and poll for the redirect URL
+      if(_schwabPollTimer){ clearInterval(_schwabPollTimer); }
+      _schwabPopup = window.open(d.auth_url, 'schwab_auth', 'width=520,height=700,left=200,top=80');
+      _schwabPollTimer = setInterval(function(){
+        if(!_schwabPopup || _schwabPopup.closed){
+          clearInterval(_schwabPollTimer);
+          return;
+        }
+        try {
+          const url = _schwabPopup.location.href;
+          if(url && url.includes('127.0.0.1') && url.includes('code=')){
+            clearInterval(_schwabPollTimer);
+            const params = new URL(url).searchParams;
+            const code = params.get('code');
+            try{ _schwabPopup.close(); }catch(ex){}
+            if(code){ schwabExchangeCodeDirect(code); }
+          }
+        } catch(e){ /* cross-origin: still on Schwab login page, keep waiting */ }
+      }, 300);
     } else {
       setStatus('schwab','err', d.error || 'Failed to generate URL');
     }
   } catch(e){ setStatus('schwab','err','Server error: '+e.message); }
 }
 
-// Listen for auto-callback completion message from /schwab-callback page
+async function schwabExchangeCodeDirect(code){
+  setStatus('schwab','loading','Auto-captured code — exchanging token...');
+  try {
+    const r = await fetch(API + '/api/broker-connect/schwab/exchange-code', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({code})
+    });
+    const d = await r.json();
+    if(d.ok){
+      const saved = loadCreds('schwab') || {};
+      saveCreds('schwab', {...saved, has_token: true});
+      setStatus('schwab','ok', d.message || 'Schwab connected');
+      document.getElementById('disc-schwab').style.display = '';
+    } else {
+      setStatus('schwab','err', d.error || 'Token exchange failed');
+      // Show manual fallback
+      document.getElementById('schwab-step2').style.display = '';
+    }
+  } catch(e){ setStatus('schwab','err','Server error: '+e.message); }
+}
+
+// Listen for postMessage from /schwab-callback page (local callback flow)
 window.addEventListener('message', function(e){
   if(e.data && e.data.type === 'schwab_connected'){
     const spot = e.data.spot || '—';

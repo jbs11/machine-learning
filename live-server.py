@@ -1491,6 +1491,41 @@ setTimeout(function(){{ window.close(); }}, 1500);
 </body></html>"""
     return html
 
+@app.route('/api/broker-connect/schwab/exchange-code', methods=['POST'])
+def schwab_exchange_code():
+    """Exchange just the auth code (no full URL needed). Used by popup auto-capture."""
+    import base64, time
+    import requests as _req
+    data = request.get_json(force=True)
+    code = data.get('code', '').strip()
+    if not code:
+        return jsonify({'ok': False, 'error': 'No code provided'})
+    sc = _broker_creds.get('schwab', {})
+    client_id     = sc.get('client_id', '')
+    client_secret = sc.get('client_secret', '')
+    callback_url  = sc.get('callback_url', 'https://127.0.0.1')
+    if not (client_id and client_secret):
+        return jsonify({'ok': False, 'error': 'Complete Step 1 first'})
+    try:
+        creds_b64 = base64.b64encode(f'{client_id}:{client_secret}'.encode()).decode()
+        r = _req.post(SCHWAB_TOKEN_URL,
+            headers={'Authorization': f'Basic {creds_b64}',
+                     'Content-Type': 'application/x-www-form-urlencoded'},
+            data={'grant_type': 'authorization_code', 'code': code,
+                  'redirect_uri': callback_url},
+            timeout=15)
+        if r.status_code != 200:
+            return jsonify({'ok': False, 'error': f'Token exchange failed ({r.status_code}): {r.text[:200]}'})
+        td = r.json()
+        td['expires_at'] = time.time() + td.get('expires_in', 1800) - 60
+        _broker_creds['schwab']['token'] = td
+        _save_broker_creds(_broker_creds)
+    except Exception as e:
+        return jsonify({'ok': False, 'error': f'Request error: {e}'})
+    q = _schwab_quote('SPY')
+    spot = q.get('lastPrice', '—')
+    return jsonify({'ok': True, 'message': f'Schwab connected ✓ — SPY ${spot}'})
+
 @app.route('/api/broker-disconnect/schwab', methods=['POST'])
 def schwab_disconnect():
     _broker_creds.pop('schwab', None)
