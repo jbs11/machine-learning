@@ -1447,7 +1447,8 @@ align-items:center;justify-content:center;height:100vh;margin:0;}}
     sc = _broker_creds.get('schwab', {})
     client_id     = sc.get('client_id', '')
     client_secret = sc.get('client_secret', '')
-    callback_url  = sc.get('callback_url', '')
+    # Use the exact URL this request arrived on as redirect_uri (must match what was registered)
+    callback_url  = request.base_url  # e.g. http://localhost:3000/schwab-callback
     if not (client_id and client_secret):
         return 'Error: Schwab credentials not found. Complete Step 1 first.', 400
     try:
