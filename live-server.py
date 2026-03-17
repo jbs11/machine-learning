@@ -1687,19 +1687,15 @@ def serve_static(filename):
 _news_cache = {'data': [], 'ts': 0}
 _NEWS_TTL = 90  # seconds
 
-def _fetch_yahoo_rss(symbol=None):
+def _fetch_rss(url, source_name, symbol=None):
     import urllib.request, xml.etree.ElementTree as ET, time
     try:
-        if symbol:
-            url = f'https://feeds.finance.yahoo.com/rss/2.0/headline?s={symbol}&region=US&lang=en-US'
-        else:
-            url = 'https://feeds.finance.yahoo.com/rss/2.0/headline?catslug=general&region=US&lang=en-US'
         req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
         with urllib.request.urlopen(req, timeout=8) as r:
             xml_data = r.read()
         root = ET.fromstring(xml_data)
         items = []
-        for item in root.findall('.//item')[:20]:
+        for item in root.findall('.//item')[:25]:
             title   = (item.findtext('title') or '').strip()
             link    = (item.findtext('link') or '').strip()
             summary = (item.findtext('description') or '').strip()
@@ -1711,12 +1707,13 @@ def _fetch_yahoo_rss(symbol=None):
             except Exception:
                 ts = time.time()
             items.append({'title': title, 'url': link, 'summary': summary,
-                          'source': 'Yahoo Finance', 'ts': ts,
+                          'source': source_name, 'ts': ts,
                           'category': 'general', 'tickers': [symbol] if symbol else []})
         return items
     except Exception as e:
-        print(f'[News] Yahoo RSS error: {e}')
+        print(f'[News] {source_name} RSS error: {e}')
         return []
+
 
 def _fetch_finnhub_news():
     import time
@@ -1802,7 +1799,11 @@ def api_news():
                         'count': len(_news_cache['data']), 'timestamp': _news_cache['ts']})
     all_items  = _fetch_finnhub_news()
     all_items += _fetch_eod_news(symbol or None)
-    all_items += _fetch_yahoo_rss(symbol or None)
+    if symbol:
+        all_items += _fetch_rss(f'https://feeds.finance.yahoo.com/rss/2.0/headline?s={symbol}&region=US&lang=en-US', 'Yahoo Finance', symbol)
+    all_items += _fetch_rss('https://www.cnbc.com/id/100003114/device/rss/rss.html', 'CNBC')
+    all_items += _fetch_rss('https://feeds.marketwatch.com/marketwatch/topstories/', 'MarketWatch')
+    all_items += _fetch_rss('https://feeds.marketwatch.com/marketwatch/marketpulse/', 'MarketWatch')
     seen_urls, seen_titles, unique = set(), set(), []
     for item in sorted(all_items, key=lambda x: x['ts'], reverse=True):
         url        = item.get('url', '')
