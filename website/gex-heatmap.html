@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>GEX Heat Maps — Gamma Exposure Heatmap</title>
+  <script src="lightweight-charts.min.js"></script>
   <link rel="preload" href="style.css" as="style" fetchpriority="high">
   <link rel="stylesheet" href="style.css">
   <style>
@@ -82,9 +83,9 @@
     .ghm-lv { font-size:.7rem; }
     .ghm-lv span { font-weight:700; }
     .ghm-canvas-wrap { padding:.5rem; }
-    canvas.ghm-canvas { display:block; width:100%; border-radius:5px; }
+    .ghm-chart { width:100%; border-radius:5px; }
     .ghm-loading {
-      height:260px; display:flex; align-items:center; justify-content:center;
+      height:380px; display:flex; align-items:center; justify-content:center;
       color:var(--muted); font-size:.85rem; gap:.5rem;
     }
     .ghm-spinner {
@@ -216,18 +217,8 @@ function renderGrid() {
     groups[grp].forEach(function(a) { html += buildCard(a); });
   });
   grid.innerHTML = html;
-  // Use ResizeObserver so canvas has real width before drawing
-  filtered.forEach(function(a) {
-    var cv = document.getElementById('cv-' + a.symbol);
-    if (!cv) { loadCandles(a); return; }
-    var robs = new ResizeObserver(function(entries) {
-      if (entries[0].contentRect.width > 50) {
-        robs.disconnect();
-        loadCandles(a);
-      }
-    });
-    robs.observe(cv.parentElement);
-  });
+  // Load candles for each card
+  filtered.forEach(function(a) { loadCandles(a); });
 }
 
 function buildCard(a) {
@@ -252,311 +243,171 @@ function buildCard(a) {
     '</div>' +
     '<div class="ghm-canvas-wrap">' +
       '<div class="ghm-loading" id="load-' + a.symbol + '"><div class="ghm-spinner"></div><span>Loading candles...</span></div>' +
-      '<canvas class="ghm-canvas" id="cv-' + a.symbol + '" style="display:none;"></canvas>' +
+      '<div class="ghm-chart" id="cv-' + a.symbol + '" style="display:none;"></div>' +
     '</div></div>';
 }
 
+// ── lightweight-charts instances ──────────────────────────────────────────────
+var chartInstances = {};
+
+function destroyAllCharts() {
+  Object.keys(chartInstances).forEach(function(k) {
+    try { chartInstances[k].chart.remove(); } catch(e) {}
+  });
+  chartInstances = {};
+}
+
 async function loadCandles(a) {
-  const cfg = TF_CONFIG[activeTF];
-  const key = a.symbol + '_' + activeTF;
+  const cfg     = TF_CONFIG[activeTF];
+  const key     = a.symbol + '_' + activeTF;
+  const instKey = key;
+  var container = document.getElementById('cv-' + a.symbol);
+  var ld        = document.getElementById('load-' + a.symbol);
   try {
     let candles = candleCache[key];
     if (!candles) {
-      const url = API + '/api/candles/' + encodeURIComponent(a.symbol) + '?interval=' + cfg.interval + '&period=' + cfg.period;
+      const url = API + '/api/candles/' + encodeURIComponent(a.symbol) +
+                  '?interval=' + cfg.interval + '&period=' + cfg.period;
       const res = await fetch(url, { cache:'no-store' });
       if (!res.ok) throw new Error('HTTP ' + res.status);
       candles = await res.json();
       if (!Array.isArray(candles)) throw new Error('Bad data');
       candleCache[key] = candles;
     }
-    var slice = getPanSlice(a.symbol, candles);
-    drawChart(a, slice);
-    var cv2 = document.getElementById('cv-' + a.symbol);
-    if (cv2 && !cv2._panInit) { cv2._panInit = true; initPan(cv2, a); }
+
+    if (!chartInstances[instKey] && container) {
+      container.style.display = 'block';
+      var w = container.parentElement.clientWidth || 520;
+
+      var chart = LightweightCharts.createChart(container, {
+        width:  w,
+        height: 380,
+        layout: { background: { color: '#070d18' }, textColor: 'rgba(226,232,240,0.92)' },
+        grid:   { vertLines: { color: 'rgba(255,255,255,0.05)' }, horzLines: { color: 'rgba(255,255,255,0.05)' } },
+        crosshair:       { mode: LightweightCharts.CrosshairMode.Normal },
+        rightPriceScale: { borderColor: 'rgba(255,255,255,0.18)' },
+        timeScale: {
+          borderColor: 'rgba(255,255,255,0.18)',
+          timeVisible: true, secondsVisible: false,
+          rightOffset: 5, barSpacing: 8,
+        },
+        handleScroll: { mouseWheel: true, pressedMouseMove: true, horzTouchDrag: true, vertTouchDrag: false },
+        handleScale:  { axisPressedMouseMove: { time: true, price: true }, mouseWheel: true, pinch: true },
+      });
+
+      var candleSeries = chart.addCandlestickSeries({
+        upColor: '#22c55e', downColor: '#ef4444',
+        borderUpColor: '#22c55e', borderDownColor: '#ef4444',
+        wickUpColor:   '#22c55e', wickDownColor:   '#ef4444',
+      });
+
+      var LS = LightweightCharts.LineStyle;
+      if (a.gamma_wall) candleSeries.createPriceLine({ price: a.gamma_wall, color: '#4ade80', lineWidth: 1, lineStyle: LS.Dashed, axisLabelVisible: true, title: 'Call Wall' });
+      if (a.flip_level) candleSeries.createPriceLine({ price: a.flip_level, color: '#fbbf24', lineWidth: 1, lineStyle: LS.Dashed, axisLabelVisible: true, title: 'Gamma Flip' });
+      if (a.put_wall)   candleSeries.createPriceLine({ price: a.put_wall,   color: '#f87171', lineWidth: 1, lineStyle: LS.Dashed, axisLabelVisible: true, title: 'Put Wall' });
+      if (a.spot)       candleSeries.createPriceLine({ price: a.spot,       color: 'rgba(255,255,255,0.55)', lineWidth: 1, lineStyle: LS.Dotted, axisLabelVisible: true, title: 'Spot' });
+
+      // ── Heatmap overlay canvas ────────────────────────────────────────────────
+      container.style.position = 'relative';
+      var overlay = document.createElement('canvas');
+      overlay.style.cssText = 'position:absolute;top:0;left:0;pointer-events:none;z-index:2;';
+      container.appendChild(overlay);
+
+      var TIME_AXIS_H  = 22; // approximate height of time axis in px
+      var PRICE_AXIS_W = 60; // approximate width of price axis in px
+
+      function drawZones() {
+        var cw = container.clientWidth;
+        var ch = container.clientHeight;
+        overlay.width  = cw;
+        overlay.height = ch;
+        var ctx = overlay.getContext('2d');
+        ctx.clearRect(0, 0, cw, ch);
+
+        var paneW = Math.max(0, cw - PRICE_AXIS_W);
+        var paneH = Math.max(0, ch - TIME_AXIS_H);
+
+        var gwall = a.gamma_wall || 0;
+        var pwall = a.put_wall   || 0;
+        var flip  = a.flip_level || 0;
+
+        function toY(price) {
+          var y = candleSeries.priceToCoordinate(price);
+          return (y === null) ? null : Math.max(0, Math.min(paneH, y));
+        }
+
+        function fillBand(yTop, yBot, color) {
+          if (yTop === null || yBot === null) return;
+          if (yBot <= yTop) return;
+          ctx.fillStyle = color;
+          ctx.fillRect(0, yTop, paneW, yBot - yTop);
+        }
+
+        var yTop   = 0;
+        var yGwall = toY(gwall);
+        var yFlip  = toY(flip);
+        var yPwall = toY(pwall);
+        var yBot   = paneH;
+
+        // Above Call Wall → gamma squeeze (red)
+        fillBand(yTop,   yGwall, 'rgba(239,68,68,0.18)');
+        // Call Wall → Gamma Flip → positive gamma (green)
+        fillBand(yGwall, yFlip,  'rgba(34,197,94,0.11)');
+        // Gamma Flip → Put Wall → negative gamma (orange)
+        fillBand(yFlip,  yPwall, 'rgba(249,115,22,0.15)');
+        // Below Put Wall → max negative gamma (purple)
+        fillBand(yPwall, yBot,   'rgba(139,92,246,0.18)');
+
+        // Gamma Flip transition band (thin yellow highlight)
+        if (flip) {
+          var fb   = Math.max(flip * 0.003, 0.5);
+          var yFT  = toY(flip + fb);
+          var yFB  = toY(flip - fb);
+          if (yFT !== null && yFB !== null && yFB > yFT) {
+            ctx.fillStyle = 'rgba(251,191,36,0.22)';
+            ctx.fillRect(0, yFT, paneW, yFB - yFT);
+          }
+        }
+      }
+
+      // Redraw zones whenever the view changes (pan, zoom, Y-axis drag)
+      chart.timeScale().subscribeVisibleTimeRangeChange(drawZones);
+      chart.subscribeCrosshairMove(drawZones);
+      container.addEventListener('mousemove', drawZones);
+      container.addEventListener('wheel',     drawZones);
+
+      new ResizeObserver(function() {
+        if (container.parentElement) {
+          var nw = container.parentElement.clientWidth;
+          if (nw > 50) { chart.applyOptions({ width: nw }); drawZones(); }
+        }
+      }).observe(container.parentElement);
+
+      chartInstances[instKey] = { chart: chart, series: candleSeries, drawZones: drawZones };
+    }
+
+    var inst = chartInstances[instKey];
+    if (!inst) return;
+    var lcData = candles.map(function(c) {
+      return { time: c.time, open: c.open, high: c.high, low: c.low, close: c.close };
+    });
+    inst.series.setData(lcData);
+    inst.chart.timeScale().fitContent();
+
+    if (ld) ld.style.display = 'none';
+    if (container) container.style.display = 'block';
+
+    // Draw heatmap zones after data is set and chart has rendered
+    if (inst.drawZones) setTimeout(inst.drawZones, 50);
+
   } catch(e) {
-    const ld = document.getElementById('load-' + a.symbol);
     if (ld) ld.innerHTML = '<span style="color:var(--muted);font-size:.8rem">No candle data available</span>';
   }
 }
 
 
-// ── Pan state ─────────────────────────────────────────────────────────────────
-var panState = {};
 
-function getPanSlice(sym, allCandles) {
-  var cfg  = TF_CONFIG[activeTF];
-  var ps   = panState[sym] || { offset: 0 };
-  var maxOff = Math.max(0, allCandles.length - cfg.bars);
-  var off  = Math.max(0, Math.min(maxOff, ps.offset));
-  var end  = allCandles.length - off;
-  var start = Math.max(0, end - cfg.bars);
-  return allCandles.slice(start, end);
-}
 
-// ── Y-zoom state ──────────────────────────────────────────────────────────────
-var yZoom = {}; // sym -> { factor: 1.0 }
-
-function initPan(cv, a) {
-  if (!panState[a.symbol]) panState[a.symbol] = { offset: 0 };
-  if (!yZoom[a.symbol])    yZoom[a.symbol]    = { factor: 1.0, dragging: false };
-
-  function isOnYAxis(clientX) {
-    var rect = cv.getBoundingClientRect();
-    var scaleX = cv.width / rect.width;
-    var cx = (clientX - rect.left) * scaleX;
-    return cx > cv.width - 76; // PR = 72 + a few px margin
-  }
-
-  function onDown(clientX, clientY) {
-    var yz = yZoom[a.symbol];
-    var ps = panState[a.symbol];
-    if (isOnYAxis(clientX)) {
-      yz.dragging  = true;
-      yz.startY    = clientY;
-      yz.startFact = yz.factor;
-      cv.style.cursor = 'ns-resize';
-    } else {
-      ps.dragging = true; ps.startX = clientX; ps.startOff = ps.offset;
-      cv.style.cursor = 'grabbing';
-    }
-  }
-  function onMove(clientX, clientY) {
-    var yz = yZoom[a.symbol];
-    var ps = panState[a.symbol];
-    // Update cursor based on position
-    if (!yz.dragging && !ps.dragging) {
-      cv.style.cursor = isOnYAxis(clientX) ? 'ns-resize' : 'grab';
-    }
-    var all = candleCache[a.symbol + '_' + activeTF] || [];
-    if (yz.dragging) {
-      var dy = yz.startY - clientY; // drag up = positive = zoom in
-      yz.factor = Math.max(0.3, Math.min(10, yz.startFact * (1 + dy * 0.008)));
-      drawChart(a, getPanSlice(a.symbol, all));
-    } else if (ps.dragging) {
-      var cfg = TF_CONFIG[activeTF];
-      var chartW = cv.width - 10 - 72;
-      var cw = Math.max(1, chartW / cfg.bars);
-      var delta = Math.round((ps.startX - clientX) / cw);
-      var maxOff = Math.max(0, all.length - cfg.bars);
-      ps.offset = Math.max(0, Math.min(maxOff, ps.startOff + delta));
-      drawChart(a, getPanSlice(a.symbol, all));
-    }
-  }
-  function onUp() {
-    if (yZoom[a.symbol])    yZoom[a.symbol].dragging    = false;
-    if (panState[a.symbol]) panState[a.symbol].dragging = false;
-    cv.style.cursor = 'grab';
-  }
-  function onDblClick(clientX) {
-    if (isOnYAxis(clientX)) {
-      yZoom[a.symbol].factor = 1.0; // reset Y zoom
-      var all = candleCache[a.symbol + '_' + activeTF] || [];
-      drawChart(a, getPanSlice(a.symbol, all));
-    }
-  }
-
-  cv.addEventListener('mousedown',  function(e) { onDown(e.clientX, e.clientY); });
-  cv.addEventListener('mousemove',  function(e) { onMove(e.clientX, e.clientY); });
-  cv.addEventListener('mouseup',    onUp);
-  cv.addEventListener('mouseleave', onUp);
-  cv.addEventListener('dblclick',   function(e) { onDblClick(e.clientX); });
-  cv.addEventListener('touchstart', function(e) { e.preventDefault(); onDown(e.touches[0].clientX, e.touches[0].clientY); }, { passive: false });
-  cv.addEventListener('touchmove',  function(e) { e.preventDefault(); onMove(e.touches[0].clientX, e.touches[0].clientY); }, { passive: false });
-  cv.addEventListener('touchend',   onUp);
-  cv.style.cursor = 'grab';
-}
-
-function drawChart(a, candles) {
-  var cv = document.getElementById('cv-' + a.symbol);
-  var ld = document.getElementById('load-' + a.symbol);
-  if (!cv || !candles || candles.length < 2) return;
-  if (ld) ld.style.display = 'none';
-  cv.style.display = 'block';
-
-  // ── Layout constants ───────────────────────────────────────────────────────
-  var W        = cv.parentElement.clientWidth || 500;
-  var PL       = 10;   // left padding
-  var PR       = 74;   // right padding (Y axis labels)
-  var PT       = 22;   // top padding
-  var CHART_H  = 256;  // main candlestick chart height
-  var VOL_GAP  = 8;    // gap between chart and volume panel
-  var VOL_H    = 44;   // volume bars height
-  var XGAP     = 10;   // gap between volume and x-axis labels
-  var XLABEL_H = 22;   // x-axis label area height
-  var TH       = PT + CHART_H + VOL_GAP + VOL_H + XGAP + XLABEL_H;
-  var chartW   = W - PL - PR;
-
-  // Y positions of key regions
-  var CHART_BOT = PT + CHART_H;           // bottom of candle chart
-  var VOL_TOP   = CHART_BOT + VOL_GAP;    // top of volume bars
-  var VOL_BOT   = VOL_TOP + VOL_H;        // bottom of volume bars
-  var XAXIS_Y   = VOL_BOT + XGAP + 14;   // baseline of x-axis labels
-
-  cv.width = W; cv.height = TH;
-  cv.style.width = W + 'px'; cv.style.height = TH + 'px';
-
-  var ctx = cv.getContext('2d');
-  ctx.fillStyle = '#070d18';
-  ctx.fillRect(0, 0, W, TH);
-
-  // ── Price range (with Y zoom) ──────────────────────────────────────────────
-  var gwall = a.gamma_wall || 0;
-  var pwall = a.put_wall   || 0;
-  var flip  = a.flip_level || (gwall + pwall) / 2;
-
-  var highs   = candles.map(function(c) { return c.high; });
-  var lows    = candles.map(function(c) { return c.low;  });
-  var autoMax = Math.max.apply(null, highs.concat([gwall])) * 1.012;
-  var autoMin = Math.min.apply(null, lows.concat([pwall]))  * 0.988;
-  var autoMid = (autoMax + autoMin) / 2;
-  var autoR   = autoMax - autoMin || 1;
-
-  var yz     = yZoom[a.symbol] || { factor: 1.0 };
-  var visR   = autoR / yz.factor;
-  var maxP   = autoMid + visR / 2;
-  var minP   = autoMid - visR / 2;
-  var priceR = maxP - minP || 1;
-
-  function toY(p) { return PT + (maxP - p) / priceR * CHART_H; }
-  var CBUF = 16; // right buffer so last candle has breathing room
-  function toX(i) { return PL + (i + 0.5) / candles.length * (chartW - CBUF); }
-  function clampY(p) { return Math.max(PT, Math.min(CHART_BOT, toY(p))); }
-  function fmtP(p) {
-    if (p >= 10000) return p.toLocaleString(undefined, { maximumFractionDigits: 0 });
-    if (p >= 1000)  return p.toFixed(1);
-    return p.toFixed(2);
-  }
-
-  // ── Heatmap zones ──────────────────────────────────────────────────────────
-  var zones = [
-    [maxP,  gwall, 'rgba(239,68,68,0.22)'],
-    [gwall, flip,  'rgba(34,197,94,0.12)'],
-    [flip,  pwall, 'rgba(249,115,22,0.18)'],
-    [pwall, minP,  'rgba(139,92,246,0.22)'],
-  ];
-  zones.forEach(function(z) {
-    var y1 = clampY(z[0]), y2 = clampY(z[1]);
-    if (y2 <= y1) return;
-    ctx.fillStyle = z[2];
-    ctx.fillRect(PL, y1, chartW, y2 - y1);
-  });
-  var fb = flip * 0.004;
-  var fy1 = clampY(flip + fb), fy2 = clampY(flip - fb);
-  if (fy2 > fy1) { ctx.fillStyle = 'rgba(251,191,36,0.2)'; ctx.fillRect(PL, fy1, chartW, fy2 - fy1); }
-
-  // ── Grid lines ─────────────────────────────────────────────────────────────
-  ctx.strokeStyle = 'rgba(255,255,255,0.05)'; ctx.lineWidth = 1;
-  for (var gi = 1; gi < 6; gi++) {
-    var gy = PT + (CHART_H / 6) * gi;
-    ctx.beginPath(); ctx.moveTo(PL, gy); ctx.lineTo(PL + chartW, gy); ctx.stroke();
-  }
-
-  // ── Axis borders ───────────────────────────────────────────────────────────
-  ctx.strokeStyle = 'rgba(255,255,255,0.18)'; ctx.lineWidth = 1;
-  // Right axis line
-  ctx.beginPath(); ctx.moveTo(PL + chartW, PT); ctx.lineTo(PL + chartW, CHART_BOT); ctx.stroke();
-  // Bottom of chart
-  ctx.beginPath(); ctx.moveTo(PL, CHART_BOT); ctx.lineTo(PL + chartW, CHART_BOT); ctx.stroke();
-  // Separator above volume
-  ctx.strokeStyle = 'rgba(255,255,255,0.08)';
-  ctx.beginPath(); ctx.moveTo(PL, VOL_TOP); ctx.lineTo(PL + chartW, VOL_TOP); ctx.stroke();
-  // Separator below volume / above x-axis
-  ctx.beginPath(); ctx.moveTo(PL, VOL_BOT + 2); ctx.lineTo(PL + chartW, VOL_BOT + 2); ctx.stroke();
-
-  // ── GEX level lines ────────────────────────────────────────────────────────
-  function drawDashed(price, color, label) {
-    if (price < minP || price > maxP) return;
-    var y = toY(price);
-    ctx.save();
-    ctx.setLineDash([6, 4]);
-    ctx.strokeStyle = color; ctx.lineWidth = 1.5; ctx.globalAlpha = 0.9;
-    ctx.beginPath(); ctx.moveTo(PL, y); ctx.lineTo(PL + chartW, y); ctx.stroke();
-    ctx.restore();
-    ctx.fillStyle = color; ctx.font = 'bold 10px sans-serif'; ctx.globalAlpha = 1;
-    ctx.fillText(label + ' ' + fmtP(price), PL + chartW + 5, y + 4);
-  }
-  drawDashed(gwall, '#4ade80', 'CW');
-  drawDashed(flip,  '#fbbf24', 'GF');
-  drawDashed(pwall, '#f87171', 'PW');
-
-  // ── Spot line ──────────────────────────────────────────────────────────────
-  if (a.spot >= minP && a.spot <= maxP) {
-    var sy = toY(a.spot);
-    ctx.save(); ctx.setLineDash([3, 3]);
-    ctx.strokeStyle = 'rgba(255,255,255,0.55)'; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(PL, sy); ctx.lineTo(PL + chartW, sy); ctx.stroke();
-    ctx.restore();
-    ctx.fillStyle = '#ffffff'; ctx.font = 'bold 10px sans-serif';
-    ctx.fillText(fmtP(a.spot), PL + chartW + 5, sy + 4);
-  }
-
-  // ── Candlesticks ───────────────────────────────────────────────────────────
-  var n = candles.length;
-  var bw = Math.max(1, Math.floor(chartW / n) - 1);
-  var halfB = bw / 2;
-  candles.forEach(function(c, i) {
-    var x = toX(i), yO = toY(c.open), yC = toY(c.close), yH = toY(c.high), yL = toY(c.low);
-    var bull = c.close >= c.open;
-    var col  = bull ? '#22c55e' : '#ef4444';
-    ctx.strokeStyle = col; ctx.lineWidth = 1; ctx.globalAlpha = 0.85;
-    ctx.beginPath(); ctx.moveTo(x, yH); ctx.lineTo(x, yL); ctx.stroke();
-    ctx.fillStyle = col; ctx.globalAlpha = bull ? 0.88 : 0.78;
-    ctx.fillRect(x - halfB, Math.min(yO, yC), bw, Math.max(1, Math.abs(yC - yO)));
-    ctx.globalAlpha = 1;
-  });
-
-  // ── Volume bars ────────────────────────────────────────────────────────────
-  var maxVol = Math.max.apply(null, candles.map(function(c) { return c.volume || 0; })) || 1;
-  candles.forEach(function(c, i) {
-    if (!c.volume) return;
-    var x  = toX(i);
-    var bh = (c.volume / maxVol) * VOL_H;
-    ctx.fillStyle = c.close >= c.open ? 'rgba(34,197,94,0.4)' : 'rgba(239,68,68,0.4)';
-    ctx.fillRect(x - halfB, VOL_BOT - bh, bw, bh);
-  });
-  ctx.fillStyle = 'rgba(148,163,184,0.4)'; ctx.font = '9px sans-serif';
-  ctx.fillText('VOL', PL + 3, VOL_TOP + 11);
-
-  // ── X axis — time labels (clearly below volume) ────────────────────────────
-  ctx.font = 'bold 11px sans-serif';
-  var step = Math.max(1, Math.floor(n / 7));
-  var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  candles.forEach(function(c, i) {
-    if (i % step !== 0) return;
-    var x  = toX(i);
-    var dt = new Date(c.time * 1000);
-    var lbl;
-    if (activeTF === '1d') {
-      lbl = months[dt.getMonth()] + ' ' + dt.getDate();
-    } else {
-      lbl = (dt.getMonth()+1) + '/' + dt.getDate() + ' ' + dt.getHours().toString().padStart(2,'0') + ':00';
-    }
-    // Tick on separator line
-    ctx.strokeStyle = 'rgba(226,232,240,0.2)'; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(x, VOL_BOT + 2); ctx.lineTo(x, VOL_BOT + 6); ctx.stroke();
-    var tw = ctx.measureText(lbl).width;
-    ctx.fillStyle = 'rgba(226,232,240,0.9)';
-    ctx.fillText(lbl, Math.max(PL, Math.min(PL + chartW - tw, x - tw / 2)), XAXIS_Y);
-  });
-
-  // ── Y axis — price labels ──────────────────────────────────────────────────
-  ctx.font = 'bold 11px sans-serif';
-  var pStep = priceR / 6;
-  for (var pi = 0; pi <= 6; pi++) {
-    var p  = minP + pStep * pi;
-    var yp = toY(p);
-    if (yp < PT + 4 || yp > CHART_BOT - 2) continue;
-    ctx.strokeStyle = 'rgba(226,232,240,0.2)'; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(PL + chartW, yp); ctx.lineTo(PL + chartW + 5, yp); ctx.stroke();
-    ctx.fillStyle = 'rgba(226,232,240,0.92)';
-    ctx.fillText(fmtP(p), PL + chartW + 9, yp + 4);
-  }
-  // Y zoom hint
-  if (yz.factor !== 1.0) {
-    ctx.fillStyle = 'rgba(251,191,36,0.6)'; ctx.font = '9px sans-serif';
-    ctx.fillText('zoom ' + yz.factor.toFixed(1) + 'x  (dbl-click reset)', PL + chartW + 5, PT + CHART_H - 6);
-  }
-}
 
 // Controls
 document.querySelectorAll('.filter-pill').forEach(function(btn) {
@@ -573,11 +424,13 @@ document.querySelectorAll('.tf-pill').forEach(function(btn) {
     document.querySelectorAll('.tf-pill').forEach(function(b){ b.classList.remove('active'); });
     btn.classList.add('active');
     activeTF = btn.dataset.tf;
+    // Destroy existing chart instances so new ones are created for the new TF
+    destroyAllCharts();
     getFiltered().forEach(function(a) {
       var ld = document.getElementById('load-' + a.symbol);
       var cv = document.getElementById('cv-'   + a.symbol);
       if (ld) { ld.style.display = 'flex'; ld.innerHTML = '<div class="ghm-spinner"></div><span>Loading candles...</span>'; }
-      if (cv) cv.style.display = 'none';
+      if (cv) { cv.style.display = 'none'; cv.innerHTML = ''; }
       loadCandles(a);
     });
   });
