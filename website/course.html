@@ -202,6 +202,13 @@
       cursor:pointer; transition:all .15s; white-space:nowrap;
     }
     .cs-done-btn:hover, .cs-done-btn.done { background:#4ade80; color:#000; }
+    .cs-fs-btn, .cs-dl-btn {
+      padding:.28rem .7rem; border-radius:6px; font-size:.73rem; font-weight:700;
+      border:1px solid var(--border); color:var(--muted); background:transparent;
+      cursor:pointer; transition:all .15s; white-space:nowrap; text-decoration:none;
+      display:inline-flex; align-items:center; gap:.3rem;
+    }
+    .cs-fs-btn:hover, .cs-dl-btn:hover { border-color:#22d3ee; color:#22d3ee; }
 
     /* Lesson content typography */
     .cs-body { max-width:820px; margin:0 auto; padding:1.8rem 2.2rem 4rem; }
@@ -776,15 +783,17 @@ function buildMediaPanel(lesson) {
 
 
 function toggleFs() {
-  var panel = document.getElementById('csMediaPanel');
+  var panel = document.querySelector('.cs-lesson-media');
   var btn   = document.getElementById('csFsBtn');
   if (!panel) return;
   if (!document.fullscreenElement && !document.webkitFullscreenElement) {
-    var req = panel.requestFullscreen || panel.webkitRequestFullscreen || panel.mozRequestFullScreen;
-    if (req) { req.call(panel); if(btn) btn.innerHTML = '&#10060; Exit'; }
+    var req = panel.requestFullscreen || panel.webkitRequestFullscreen || panel.mozRequestFullScreen || panel.msRequestFullscreen;
+    if (req) req.call(panel);
+    if (btn) btn.textContent = '✕ Exit Full';
   } else {
-    var ex = document.exitFullscreen || document.webkitExitFullscreen;
+    var ex = document.exitFullscreen || document.webkitExitFullscreen || document.mozCancelFullScreen || document.msExitFullscreen;
     if (ex) ex.call(document);
+    if (btn) btn.textContent = '⛶ Fullscreen';
   }
 }
 document.addEventListener('fullscreenchange', function() {
@@ -843,6 +852,15 @@ function loadLesson(id) {
     + ' onclick="toggleComplete(\'' + lesson.id + '\')">'
     + (done ? '&#10003; Completed' : 'Mark Complete')
     + '</button>'
+    + '<button class="cs-fs-btn" id="csFsBtn" onclick="toggleFs()" title="Fullscreen media panel">&#x26F6; Fullscreen</button>'
+    + (lesson.video && /\.(mp4|webm|ogg)$/i.test(lesson.video)
+        ? '<a class="cs-dl-btn" href="' + lesson.video + '" download title="Download video">&#11015; Video</a>'
+        : lesson.audio
+          ? '<a class="cs-dl-btn" href="' + lesson.audio + '" download title="Download audio MP3">&#11015; Audio</a>'
+          : '')
+    + (lesson.video && !/\.(mp4|webm|ogg)$/i.test(lesson.video)
+        ? '<a class="cs-dl-btn" href="https://www.youtube.com/watch?v=' + lesson.video.replace(/.*(?:youtu\.be\/|v=|embed\/)([^&?]+).*/,'$1') + '" target="_blank" title="Open in YouTube">&#127775; YouTube</a>'
+        : '')
     + '</div>'
     + '<div class="cs-lesson-split">'
     + '<div class="cs-lesson-text">'
