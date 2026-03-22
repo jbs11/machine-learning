@@ -430,6 +430,30 @@
     .cs-media:fullscreen .csp-stage,
     .cs-media:-webkit-full-screen .csp-stage,
     .cs-media:-moz-full-screen .csp-stage { flex:1; height:auto; }
+
+    /* Side panel toolbar — fullscreen + download */
+    .cs-side-wrap { display:flex; flex-direction:column; height:100%; }
+    .cs-side-toolbar {
+      display:flex; align-items:center; gap:.4rem; flex-wrap:wrap;
+      padding:.4rem .7rem; background:var(--surface);
+      border-bottom:1px solid var(--border); flex-shrink:0;
+    }
+    .cs-tool-btn {
+      padding:.26rem .65rem; border-radius:6px; border:1px solid var(--border);
+      background:transparent; color:var(--muted); font-size:.72rem; font-weight:700;
+      cursor:pointer; transition:all .15s; white-space:nowrap; text-decoration:none;
+      display:inline-flex; align-items:center; gap:.3rem;
+    }
+    .cs-tool-btn:hover { border-color:#22d3ee; color:#22d3ee; }
+    .cs-tool-btn.dl { color:#4ade80; border-color:rgba(74,222,128,.35); }
+    .cs-tool-btn.dl:hover { background:rgba(74,222,128,.08); }
+    /* Fullscreen mode */
+    .cs-side-wrap:fullscreen,
+    .cs-side-wrap:-webkit-full-screen { background:#070d18; }
+    .cs-side-wrap:fullscreen .csp-wrap,
+    .cs-side-wrap:-webkit-full-screen .csp-wrap { height:calc(100vh - 42px); }
+    .cs-side-wrap:fullscreen .csp-stage,
+    .cs-side-wrap:-webkit-full-screen .csp-stage { height:calc(100vh - 84px); }
   </style>
   <script src="slides-data.js"></script>
   <script src="slide-player.js"></script>
@@ -624,38 +648,46 @@ function toggleMod(id, hdr) {
 
 // ── Side panel (split view) ────────────────────────────────────────
 function buildSidePanel(lesson) {
-  var html = '';
   var hasVideo  = !!lesson.video;
   var hasSlides = !hasVideo && !!(window.SLIDE_DATA && window.SLIDE_DATA[lesson.id]);
+  var hasAudio  = !!lesson.audio;
 
+  var inner = '';
   // Slides or video
   if (hasVideo) {
     var v = lesson.video;
     if (/\.(mp4|webm|ogg)$/i.test(v) || v.charAt(0) === '/') {
-      html += '<video controls preload="metadata"'
+      inner += '<video controls preload="metadata"'
         + ' style="width:100%;display:block;background:#000;max-height:240px;">'
         + '<source src="' + v + '" type="video/mp4">'
         + '</video>';
     } else {
       var ytId = v.replace(/.*(?:youtu\.be\/|v=|embed\/)([^&?]+).*/,'$1');
-      html += '<div style="position:relative;padding-bottom:56.25%;height:0;background:#000;">'
+      inner += '<div style="position:relative;padding-bottom:56.25%;height:0;background:#000;">'
         + '<iframe style="position:absolute;top:0;left:0;width:100%;height:100%;border:none"'
         + ' src="https://www.youtube.com/embed/' + ytId + '?rel=0&modestbranding=1"'
         + ' allowfullscreen></iframe>'
         + '</div>';
     }
   } else if (hasSlides) {
-    html += '<div id="csp-' + lesson.id.replace('.','_') + '"></div>';
+    inner += '<div id="csp-' + lesson.id.replace('.','_') + '"></div>';
   } else {
-    html += '<div class="cs-side-placeholder">'
+    inner += '<div class="cs-side-placeholder">'
       + '<div style="font-size:2rem">&#128202;</div>'
       + '<div>Slides coming soon<br>for this lesson</div>'
       + '</div>';
   }
 
-  // Audio is handled inside the slide player (synced) — no separate player needed
+  // Toolbar: Fullscreen + Download
+  var dlBtn = hasAudio
+    ? '<a class="cs-tool-btn dl" href="' + lesson.audio + '" download title="Download audio MP3">&#11015; Download</a>'
+    : '';
+  var toolbar = '<div class="cs-side-toolbar">'
+    + '<button class="cs-tool-btn" onclick="toggleFs()" id="csFsBtn">&#x26F6; Fullscreen</button>'
+    + dlBtn
+    + '</div>';
 
-  return html;
+  return '<div class="cs-side-wrap" id="csMediaPanel">' + toolbar + inner + '</div>';
 }
 
 // ── Media panel helpers ────────────────────────────────────────────
