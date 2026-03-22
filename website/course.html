@@ -783,17 +783,17 @@ function buildMediaPanel(lesson) {
 
 
 function toggleFs() {
-  var panel = document.querySelector('.cs-lesson-media');
+  var panel = document.querySelector('.cs-lesson-media') || document.getElementById('csMediaPanel');
   var btn   = document.getElementById('csFsBtn');
   if (!panel) return;
   if (!document.fullscreenElement && !document.webkitFullscreenElement) {
-    var req = panel.requestFullscreen || panel.webkitRequestFullscreen || panel.mozRequestFullScreen || panel.msRequestFullscreen;
+    var req = panel.requestFullscreen || panel.webkitRequestFullscreen || panel.mozRequestFullScreen;
     if (req) req.call(panel);
-    if (btn) btn.textContent = '✕ Exit Full';
+    if (btn) btn.innerHTML = '&#x2715; Exit Full';
   } else {
-    var ex = document.exitFullscreen || document.webkitExitFullscreen || document.mozCancelFullScreen || document.msExitFullscreen;
+    var ex = document.exitFullscreen || document.webkitExitFullscreen || document.mozCancelFullScreen;
     if (ex) ex.call(document);
-    if (btn) btn.textContent = '⛶ Fullscreen';
+    if (btn) btn.innerHTML = '&#x26F6; Fullscreen';
   }
 }
 document.addEventListener('fullscreenchange', function() {
@@ -823,6 +823,38 @@ function loadLesson(id) {
   var lesson = null;
   for (var i = 0; i < window.COURSE_LESSONS.length; i++) {
     if (window.COURSE_LESSONS[i].id === id) { lesson = window.COURSE_LESSONS[i]; break; }
+
+  // ── Show floating toolbar and update buttons ──────────────────────
+  var tools = document.getElementById('csLessonTools');
+  var dlBtn = document.getElementById('csDownloadBtn');
+  var ytBtn = document.getElementById('csYtBtn');
+  if (tools) {
+    tools.style.display = 'flex';
+    var isLocalVid = lesson.video && /\.(mp4|webm|ogg)$/i.test(lesson.video);
+    var isYT       = lesson.video && !isLocalVid;
+    if (dlBtn) {
+      if (isLocalVid) {
+        dlBtn.href = lesson.video;
+        dlBtn.innerHTML = '&#11015; Download Video';
+        dlBtn.style.display = 'inline-flex';
+      } else if (lesson.audio) {
+        dlBtn.href = lesson.audio;
+        dlBtn.innerHTML = '&#11015; Download Audio';
+        dlBtn.style.display = 'inline-flex';
+      } else {
+        dlBtn.style.display = 'none';
+      }
+    }
+    if (ytBtn) {
+      if (isYT) {
+        ytBtn.href = 'https://www.youtube.com/watch?v=' +
+          lesson.video.replace(/.*(?:youtu\.be\/|v=|embed\/)([^&?]+).*/, '$1');
+        ytBtn.style.display = 'inline-flex';
+      } else {
+        ytBtn.style.display = 'none';
+      }
+    }
+  }
   }
   if (!lesson) return;
 
@@ -852,15 +884,6 @@ function loadLesson(id) {
     + ' onclick="toggleComplete(\'' + lesson.id + '\')">'
     + (done ? '&#10003; Completed' : 'Mark Complete')
     + '</button>'
-    + '<button class="cs-fs-btn" id="csFsBtn" onclick="toggleFs()" title="Fullscreen media panel">&#x26F6; Fullscreen</button>'
-    + (lesson.video && /\.(mp4|webm|ogg)$/i.test(lesson.video)
-        ? '<a class="cs-dl-btn" href="' + lesson.video + '" download title="Download video">&#11015; Video</a>'
-        : lesson.audio
-          ? '<a class="cs-dl-btn" href="' + lesson.audio + '" download title="Download audio MP3">&#11015; Audio</a>'
-          : '')
-    + (lesson.video && !/\.(mp4|webm|ogg)$/i.test(lesson.video)
-        ? '<a class="cs-dl-btn" href="https://www.youtube.com/watch?v=' + lesson.video.replace(/.*(?:youtu\.be\/|v=|embed\/)([^&?]+).*/,'$1') + '" target="_blank" title="Open in YouTube">&#127775; YouTube</a>'
-        : '')
     + '</div>'
     + '<div class="cs-lesson-split">'
     + '<div class="cs-lesson-text">'
@@ -879,6 +902,27 @@ function loadLesson(id) {
   if (!lesson.video && window.CSP && window.SLIDE_DATA && window.SLIDE_DATA[lesson.id]) {
     var cspEl = document.getElementById('csp-' + lesson.id.replace('.', '_'));
     if (cspEl) window.CSP.init(lesson.id, cspEl, lesson.audio || null);
+  }
+
+  // Show floating toolbar and wire buttons
+  var _tools = document.getElementById('csLessonTools');
+  var _dl    = document.getElementById('csDownloadBtn');
+  var _yt    = document.getElementById('csYtBtn');
+  if (_tools) {
+    _tools.style.display = 'flex';
+    var _isVid = !!(lesson.video && /\.(mp4|webm|ogg)$/i.test(lesson.video));
+    var _isYT  = !!(lesson.video && !_isVid);
+    if (_dl) {
+      if (_isVid) { _dl.href = lesson.video; _dl.innerHTML = '&#11015; Download Video'; _dl.style.display = 'inline-flex'; }
+      else if (lesson.audio) { _dl.href = lesson.audio; _dl.innerHTML = '&#11015; Download Audio'; _dl.style.display = 'inline-flex'; }
+      else { _dl.style.display = 'none'; }
+    }
+    if (_yt) {
+      if (_isYT) {
+        _yt.href = 'https://www.youtube.com/watch?v=' + lesson.video.replace(/.*(?:youtu\.be\/|v=|embed\/)([^&?]+).*/, '$1');
+        _yt.style.display = 'inline-flex';
+      } else { _yt.style.display = 'none'; }
+    }
   }
 }
 
@@ -922,5 +966,30 @@ window.addEventListener('DOMContentLoaded', function() {
   showWelcome();
 });
 </script>
+
+<!-- ── Lesson Tools Toolbar ── always in DOM, shown when lesson loads ── -->
+<div id="csLessonTools" style="display:none;position:fixed;bottom:1.2rem;right:1.4rem;
+  z-index:999;display:none;align-items:center;gap:.5rem;flex-wrap:wrap;">
+  <button id="csFsBtn" onclick="toggleFs()"
+    style="padding:.4rem .85rem;border-radius:7px;border:1px solid rgba(34,211,238,.4);
+    background:rgba(10,15,30,.92);color:#22d3ee;font-size:.78rem;font-weight:700;
+    cursor:pointer;backdrop-filter:blur(8px);white-space:nowrap;">
+    &#x26F6; Fullscreen
+  </button>
+  <a id="csDownloadBtn" href="#" download
+    style="padding:.4rem .85rem;border-radius:7px;border:1px solid rgba(74,222,128,.4);
+    background:rgba(10,15,30,.92);color:#4ade80;font-size:.78rem;font-weight:700;
+    cursor:pointer;backdrop-filter:blur(8px);white-space:nowrap;text-decoration:none;
+    display:inline-flex;align-items:center;gap:.35rem;">
+    &#11015; Download Audio
+  </a>
+  <a id="csYtBtn" href="#" target="_blank"
+    style="display:none;padding:.4rem .85rem;border-radius:7px;
+    border:1px solid rgba(251,191,36,.4);background:rgba(10,15,30,.92);
+    color:#fbbf24;font-size:.78rem;font-weight:700;
+    cursor:pointer;backdrop-filter:blur(8px);white-space:nowrap;text-decoration:none;">
+    &#127775; YouTube
+  </a>
+</div>
 </body>
 </html>
