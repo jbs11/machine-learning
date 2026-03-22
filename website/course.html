@@ -679,12 +679,19 @@ function buildSidePanel(lesson) {
   }
 
   // Toolbar: Fullscreen + Download
-  var dlBtn = hasAudio
-    ? '<a class="cs-tool-btn dl" href="' + lesson.audio + '" download title="Download audio MP3">&#11015; Download</a>'
+  var isLocalVideo = hasVideo && /\.(mp4|webm|ogg)$/i.test(lesson.video || '');
+  var isYouTube    = hasVideo && !isLocalVideo;
+  var dlBtn = isLocalVideo
+    ? '<a class="cs-tool-btn dl" href="' + lesson.video + '" download title="Download video MP4">&#11015; Download Video</a>'
+    : hasAudio
+      ? '<a class="cs-tool-btn dl" href="' + lesson.audio + '" download title="Download audio MP3">&#11015; Download Audio</a>'
+      : '';
+  var ytBtn = isYouTube
+    ? '<a class="cs-tool-btn" href="https://www.youtube.com/watch?v=' + lesson.video.replace(/.*(?:youtu\.be\/|v=|embed\/)([^&?]+).*/,'$1') + '" target="_blank" title="Open in YouTube">&#127775; YouTube</a>'
     : '';
   var toolbar = '<div class="cs-side-toolbar">'
     + '<button class="cs-tool-btn" onclick="toggleFs()" id="csFsBtn">&#x26F6; Fullscreen</button>'
-    + dlBtn
+    + ytBtn + dlBtn
     + '</div>';
 
   return '<div class="cs-side-wrap" id="csMediaPanel">' + toolbar + inner + '</div>';

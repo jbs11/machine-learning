@@ -1674,7 +1674,7 @@ def serve_audio(filename):
 
 @app.route('/video/<path:filename>')
 def serve_video(filename):
-    video_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'public', 'video')
+    video_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'website', 'video')
     return send_from_directory(video_dir, filename)
 
 @app.route('/<path:filename>')
