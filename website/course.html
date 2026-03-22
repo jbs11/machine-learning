@@ -397,6 +397,39 @@
     @keyframes cspFade { from{opacity:0} to{opacity:1} }
     @keyframes cspUp   { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
 
+
+    /* Fullscreen and Download toolbar */
+    .cs-media-tabs { display:flex; align-items:center; }
+    .cs-tool-btn {
+      padding:.26rem .6rem; border-radius:6px; border:1px solid var(--border);
+      background:transparent; color:var(--muted); font-size:.7rem; font-weight:700;
+      cursor:pointer; transition:all .15s; white-space:nowrap; margin-left:.3rem;
+      display:inline-flex; align-items:center; gap:.3rem; text-decoration:none;
+    }
+    .cs-tool-btn:hover { border-color:#22d3ee; color:#22d3ee; }
+    .cs-tool-btn.dl { color:#4ade80; border-color:rgba(74,222,128,.35); }
+    .cs-tool-btn.dl:hover { background:rgba(74,222,128,.08); }
+    /* Full-screen overlay styles */
+    .cs-media:fullscreen,
+    .cs-media:-webkit-full-screen,
+    .cs-media:-moz-full-screen {
+      background:#000; display:flex; flex-direction:column;
+      width:100vw; height:100vh;
+    }
+    .cs-media:fullscreen .cs-media-panel.active,
+    .cs-media:-webkit-full-screen .cs-media-panel.active,
+    .cs-media:-moz-full-screen .cs-media-panel.active { flex:1; overflow:auto; }
+    .cs-media:fullscreen .cs-video-wrap,
+    .cs-media:-webkit-full-screen .cs-video-wrap,
+    .cs-media:-moz-full-screen .cs-video-wrap {
+      padding-bottom:0 !important; height:100% !important; max-height:none !important;
+    }
+    .cs-media:fullscreen .csp-wrap,
+    .cs-media:-webkit-full-screen .csp-wrap,
+    .cs-media:-moz-full-screen .csp-wrap { height:100%; }
+    .cs-media:fullscreen .csp-stage,
+    .cs-media:-webkit-full-screen .csp-stage,
+    .cs-media:-moz-full-screen .csp-stage { flex:1; height:auto; }
   </style>
   <script src="slides-data.js"></script>
   <script src="slide-player.js"></script>
@@ -682,19 +715,47 @@ function buildMediaPanel(lesson) {
     audioContent = '<div class="cs-audio-placeholder">Audio narration coming soon.</div>';
   }
 
-  return '<div class="cs-media">'
+  var dlBtn = hasAudio
+    ? '<a class="cs-tool-btn dl" href="' + lesson.audio + '" download title="Download MP3">&#11015; Download</a>'
+    : '';
+  var fsBtn = '<button class="cs-tool-btn" onclick="toggleFs()" id="csFsBtn" title="Fullscreen">&#x26F6; Fullscreen</button>';
+
+  return '<div class="cs-media" id="csMediaPanel">'
     + '<div class="cs-media-tabs">'
-    + '<button class="cs-media-tab' + (defaultTab==='video' ? ' active' : '') + '"'
-    + ' onclick="switchTab(\'video\',this)">&#127909; Video</button>'
-    + '<button class="cs-media-tab' + (defaultTab==='audio' ? ' active' : '') + '"'
-    + ' onclick="switchTab(\'audio\',this)">&#127911; Audio</button>'
+    + '<button class="cs-media-tab' + (defaultTab==="video" ? " active" : "") + '"'
+    + " onclick=\"switchTab('video',this)\">&#127909; Video</button>"
+    + '<button class="cs-media-tab' + (defaultTab==="audio" ? " active" : "") + '"'
+    + " onclick=\"switchTab('audio',this)\">&#127911; Audio</button>"
+    + '<div style="flex:1"></div>' + fsBtn + dlBtn
     + '</div>'
-    + '<div class="cs-media-panel' + (defaultTab==='video' ? ' active' : '') + '" id="mediaPanelVideo">'
+    + '<div class="cs-media-panel' + (defaultTab==="video" ? " active" : "") + '" id="mediaPanelVideo">'
     + videoContent + '</div>'
-    + '<div class="cs-media-panel' + (defaultTab==='audio' ? ' active' : '') + '" id="mediaPanelAudio">'
+    + '<div class="cs-media-panel' + (defaultTab==="audio" ? " active" : "") + '" id="mediaPanelAudio">'
     + audioContent + '</div>'
     + '</div>';
 }
+
+
+function toggleFs() {
+  var panel = document.getElementById('csMediaPanel');
+  var btn   = document.getElementById('csFsBtn');
+  if (!panel) return;
+  if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+    var req = panel.requestFullscreen || panel.webkitRequestFullscreen || panel.mozRequestFullScreen;
+    if (req) { req.call(panel); if(btn) btn.innerHTML = '&#10060; Exit'; }
+  } else {
+    var ex = document.exitFullscreen || document.webkitExitFullscreen;
+    if (ex) ex.call(document);
+  }
+}
+document.addEventListener('fullscreenchange', function() {
+  var btn = document.getElementById('csFsBtn');
+  if (btn) btn.innerHTML = document.fullscreenElement ? '&#10060; Exit' : '&#x26F6; Fullscreen';
+});
+document.addEventListener('webkitfullscreenchange', function() {
+  var btn = document.getElementById('csFsBtn');
+  if (btn) btn.innerHTML = document.webkitFullscreenElement ? '&#10060; Exit' : '&#x26F6; Fullscreen';
+});
 
 function switchTab(tab, btn) {
   // Update tab buttons
