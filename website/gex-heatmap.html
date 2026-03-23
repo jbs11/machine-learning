@@ -160,6 +160,9 @@
     <button class="tf-pill active" data-tf="1d">1D</button>
     <button class="tf-pill" data-tf="4h">4H</button>
     <button class="tf-pill" data-tf="1h">1H</button>
+    <button class="tf-pill" data-tf="30m">30m</button>
+    <button class="tf-pill" data-tf="15m">15m</button>
+    <button class="tf-pill" data-tf="5m">5m</button>
   </div>
   <div id="ghm-grid" class="ghm-grid"></div>
 </div>
@@ -173,9 +176,12 @@ let activeGroup = 'all';
 let activeTF = '1d';
 
 const TF_CONFIG = {
-  '1d': { interval:'1d', period:'90d',  bars:60  },
-  '4h': { interval:'4h', period:'60d',  bars:120 },
-  '1h': { interval:'1h', period:'14d',  bars:168 },
+  '1d':  { interval:'1d',  period:'90d', bars:60  },
+  '4h':  { interval:'4h',  period:'60d', bars:120 },
+  '1h':  { interval:'1h',  period:'14d', bars:168 },
+  '30m': { interval:'30m', period:'5d',  bars:65  },
+  '15m': { interval:'15m', period:'3d',  bars:78  },
+  '5m':  { interval:'5m',  period:'1d',  bars:78  },
 };
 
 async function loadGex() {
