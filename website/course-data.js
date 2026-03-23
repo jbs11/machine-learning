@@ -21,7 +21,7 @@ window.COURSE_LESSONS = [
 {
   id:"1.1", module:1, tier:"basic", duration:35,
   title:"How Financial Markets Work",
-  audio:"/audio/course-1-1.mp3", video:"https://youtu.be/F3QpgXBtDeo",
+  audio:"/audio/course-1-1.mp3", video:null,
   content:`
 <h2>How Financial Markets Work</h2>
 <p class="lesson-intro">Before writing a single line of code, you need to understand the arena you're trading in. Financial markets are complex adaptive systems — but their core mechanics are surprisingly simple once you break them down.</p>

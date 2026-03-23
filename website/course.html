@@ -1,6 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ML Trading Course — AI Solutions</title>
@@ -35,13 +38,13 @@
 
     /* Video */
     .cs-video-wrap {
-      position:relative; padding-bottom:42%; height:0; overflow:hidden;
-      background:#000; max-height:380px;
+      position:relative; width:100%; padding-bottom:56.25%; height:0;
+      background:#000; overflow:hidden;
     }
     .cs-video-wrap iframe,
     .cs-video-wrap video {
       position:absolute; top:0; left:0; width:100%; height:100%;
-      border:none;
+      border:none; object-fit:contain;
     }
     .cs-video-placeholder {
       display:flex; flex-direction:column; align-items:center;
@@ -202,13 +205,6 @@
       cursor:pointer; transition:all .15s; white-space:nowrap;
     }
     .cs-done-btn:hover, .cs-done-btn.done { background:#4ade80; color:#000; }
-    .cs-fs-btn, .cs-dl-btn {
-      padding:.28rem .7rem; border-radius:6px; font-size:.73rem; font-weight:700;
-      border:1px solid var(--border); color:var(--muted); background:transparent;
-      cursor:pointer; transition:all .15s; white-space:nowrap; text-decoration:none;
-      display:inline-flex; align-items:center; gap:.3rem;
-    }
-    .cs-fs-btn:hover, .cs-dl-btn:hover { border-color:#22d3ee; color:#22d3ee; }
 
     /* Lesson content typography */
     .cs-body { max-width:820px; margin:0 auto; padding:1.8rem 2.2rem 4rem; }
@@ -404,68 +400,51 @@
     @keyframes cspFade { from{opacity:0} to{opacity:1} }
     @keyframes cspUp   { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
 
-
-    /* Fullscreen and Download toolbar */
-    .cs-media-tabs { display:flex; align-items:center; }
-    .cs-tool-btn {
-      padding:.26rem .6rem; border-radius:6px; border:1px solid var(--border);
-      background:transparent; color:var(--muted); font-size:.7rem; font-weight:700;
-      cursor:pointer; transition:all .15s; white-space:nowrap; margin-left:.3rem;
-      display:inline-flex; align-items:center; gap:.3rem; text-decoration:none;
-    }
-    .cs-tool-btn:hover { border-color:#22d3ee; color:#22d3ee; }
-    .cs-tool-btn.dl { color:#4ade80; border-color:rgba(74,222,128,.35); }
-    .cs-tool-btn.dl:hover { background:rgba(74,222,128,.08); }
-    /* Full-screen overlay styles */
-    .cs-media:fullscreen,
-    .cs-media:-webkit-full-screen,
-    .cs-media:-moz-full-screen {
-      background:#000; display:flex; flex-direction:column;
-      width:100vw; height:100vh;
-    }
-    .cs-media:fullscreen .cs-media-panel.active,
-    .cs-media:-webkit-full-screen .cs-media-panel.active,
-    .cs-media:-moz-full-screen .cs-media-panel.active { flex:1; overflow:auto; }
-    .cs-media:fullscreen .cs-video-wrap,
-    .cs-media:-webkit-full-screen .cs-video-wrap,
-    .cs-media:-moz-full-screen .cs-video-wrap {
-      padding-bottom:0 !important; height:100% !important; max-height:none !important;
-    }
-    .cs-media:fullscreen .csp-wrap,
-    .cs-media:-webkit-full-screen .csp-wrap,
-    .cs-media:-moz-full-screen .csp-wrap { height:100%; }
-    .cs-media:fullscreen .csp-stage,
-    .cs-media:-webkit-full-screen .csp-stage,
-    .cs-media:-moz-full-screen .csp-stage { flex:1; height:auto; }
-
-    /* Side panel toolbar — fullscreen + download */
-    .cs-side-wrap { display:flex; flex-direction:column; height:100%; }
-    .cs-side-toolbar {
-      display:flex; align-items:center; gap:.4rem; flex-wrap:wrap;
-      padding:.4rem .7rem; background:var(--surface);
-      border-bottom:1px solid var(--border); flex-shrink:0;
-    }
-    .cs-tool-btn {
-      padding:.26rem .65rem; border-radius:6px; border:1px solid var(--border);
-      background:transparent; color:var(--muted); font-size:.72rem; font-weight:700;
-      cursor:pointer; transition:all .15s; white-space:nowrap; text-decoration:none;
-      display:inline-flex; align-items:center; gap:.3rem;
-    }
-    .cs-tool-btn:hover { border-color:#22d3ee; color:#22d3ee; }
-    .cs-tool-btn.dl { color:#4ade80; border-color:rgba(74,222,128,.35); }
-    .cs-tool-btn.dl:hover { background:rgba(74,222,128,.08); }
-    /* Fullscreen mode */
-    .cs-side-wrap:fullscreen,
-    .cs-side-wrap:-webkit-full-screen { background:#070d18; }
-    .cs-side-wrap:fullscreen .csp-wrap,
-    .cs-side-wrap:-webkit-full-screen .csp-wrap { height:calc(100vh - 42px); }
-    .cs-side-wrap:fullscreen .csp-stage,
-    .cs-side-wrap:-webkit-full-screen .csp-stage { height:calc(100vh - 84px); }
-  </style>
+    
+/* Panel fullscreen for slides */
+#csMediaPanel:-webkit-full-screen,
+#csMediaPanel:fullscreen {
+  width: 100vw !important; height: 100vh !important;
+  max-width: none !important; background: #0a0a0a !important;
+  display: flex !important; flex-direction: column !important;
+  overflow: hidden !important; box-sizing: border-box !important;
+  position: fixed !important; top: 0 !important; left: 0 !important;
+}
+#csMediaPanel:-webkit-full-screen .cs-media-panel.active,
+#csMediaPanel:fullscreen .cs-media-panel.active {
+  flex: 1 !important; display: flex !important; flex-direction: column !important;
+  overflow: hidden !important; min-height: 0 !important;
+}
+#csMediaPanel:-webkit-full-screen [id^="csp-"],
+#csMediaPanel:fullscreen [id^="csp-"] {
+  flex: 1 !important; min-height: 0 !important;
+  display: flex !important; flex-direction: column !important;
+}
+#csMediaPanel:-webkit-full-screen .csp-wrap,
+#csMediaPanel:fullscreen .csp-wrap {
+  flex: 1 !important; min-height: 0 !important;
+}
+#csMediaPanel:-webkit-full-screen .csp-stage,
+#csMediaPanel:fullscreen .csp-stage {
+  flex: 1 !important; height: auto !important; min-height: 0 !important;
+}
+/* Close button — hidden normally, visible only in fullscreen */
+#fsCloseBtn { display: none !important; }
+#csMediaPanel:-webkit-full-screen #fsCloseBtn,
+#csMediaPanel:fullscreen #fsCloseBtn {
+  display: flex !important; align-items: center; gap: .3rem;
+}
+</style>
   <script src="slides-data.js"></script>
   <script src="slide-player.js"></script>
 </head>
 <body>
+<script>
+// Force fresh load — prevents Chrome from serving stale cached JS
+if (window.location.search.indexOf('_v=') === -1) {
+  window.location.replace(window.location.pathname + '?_v=' + Date.now());
+}
+</script>
 
 <!-- ── Main Nav ── -->
 <nav class="nav">
@@ -541,9 +520,21 @@
 
 </div><!-- end .course-wrap -->
 
-<script src="course-data.js"></script>
+<script src="course-data.js?v=1774223925"></script>
 <script>
 'use strict';
+var COURSE_MOD_VIDEOS = {
+  1:'/videos/stock-trading.mp4',
+  2:'/videos/live-trading.mp4',
+  3:'/videos/ml-trading.mp4',
+  4:'/videos/machine-learning.mp4',
+  5:'/videos/neural-network.mp4',
+  7:'/videos/futures-trading.mp4',
+  8:'/videos/options-trading.mp4',
+  9:'/videos/dashboard-tour.mp4'
+};
+var currentVideoSrc = null;
+
 
 // ── State ──────────────────────────────────────────────────────────
 var STORAGE_KEY = 'ml_course_v1';
@@ -655,60 +646,47 @@ function toggleMod(id, hdr) {
 
 // ── Side panel (split view) ────────────────────────────────────────
 function buildSidePanel(lesson) {
+  var html = '';
   var hasVideo  = !!lesson.video;
   var hasSlides = !hasVideo && !!(window.SLIDE_DATA && window.SLIDE_DATA[lesson.id]);
-  var hasAudio  = !!lesson.audio;
 
-  var inner = '';
   // Slides or video
   if (hasVideo) {
-    var v = lesson.video;
+    var v = videoSrc;
     if (/\.(mp4|webm|ogg)$/i.test(v) || v.charAt(0) === '/') {
-      inner += '<video controls preload="metadata"'
+      html += '<video controls preload="metadata"'
         + ' style="width:100%;display:block;background:#000;max-height:240px;">'
         + '<source src="' + v + '" type="video/mp4">'
         + '</video>';
     } else {
       var ytId = v.replace(/.*(?:youtu\.be\/|v=|embed\/)([^&?]+).*/,'$1');
-      inner += '<div style="position:relative;padding-bottom:56.25%;height:0;background:#000;">'
+      html += '<div style="position:relative;padding-bottom:56.25%;height:0;background:#000;">'
         + '<iframe style="position:absolute;top:0;left:0;width:100%;height:100%;border:none"'
         + ' src="https://www.youtube.com/embed/' + ytId + '?rel=0&modestbranding=1"'
         + ' allowfullscreen></iframe>'
         + '</div>';
     }
   } else if (hasSlides) {
-    inner += '<div id="csp-' + lesson.id.replace('.','_') + '"></div>';
+    html += '<div id="csp-' + lesson.id.replace('.','_') + '"></div>';
   } else {
-    inner += '<div class="cs-side-placeholder">'
+    html += '<div class="cs-side-placeholder">'
       + '<div style="font-size:2rem">&#128202;</div>'
       + '<div>Slides coming soon<br>for this lesson</div>'
       + '</div>';
   }
 
-  // Toolbar: Fullscreen + Download
-  var isLocalVideo = hasVideo && /\.(mp4|webm|ogg)$/i.test(lesson.video || '');
-  var isYouTube    = hasVideo && !isLocalVideo;
-  var dlBtn = isLocalVideo
-    ? '<a class="cs-tool-btn dl" href="' + lesson.video + '" download title="Download video MP4">&#11015; Download Video</a>'
-    : hasAudio
-      ? '<a class="cs-tool-btn dl" href="' + lesson.audio + '" download title="Download audio MP3">&#11015; Download Audio</a>'
-      : '';
-  var ytBtn = isYouTube
-    ? '<a class="cs-tool-btn" href="https://www.youtube.com/watch?v=' + lesson.video.replace(/.*(?:youtu\.be\/|v=|embed\/)([^&?]+).*/,'$1') + '" target="_blank" title="Open in YouTube">&#127775; YouTube</a>'
-    : '';
-  var toolbar = '<div class="cs-side-toolbar">'
-    + '<button class="cs-tool-btn" onclick="toggleFs()" id="csFsBtn">&#x26F6; Fullscreen</button>'
-    + ytBtn + dlBtn
-    + '</div>';
+  // Audio is handled inside the slide player (synced) — no separate player needed
 
-  return '<div class="cs-side-wrap" id="csMediaPanel">' + toolbar + inner + '</div>';
+  return html;
 }
 
 // ── Media panel helpers ────────────────────────────────────────────
 function buildMediaPanel(lesson) {
-  var hasVideo  = !!lesson.video;
+  var videoSrc  = lesson.video || null;
+  var hasSlides = !videoSrc && !!(window.SLIDE_DATA && window.SLIDE_DATA[lesson.id]);
+  currentVideoSrc = videoSrc;
+  var hasVideo  = !!videoSrc;
   var hasAudio  = !!lesson.audio;
-  var hasSlides = !hasVideo && !!(window.SLIDE_DATA && window.SLIDE_DATA[lesson.id]);
   if (!hasVideo && !hasAudio && !hasSlides) return '';
 
   // Decide which tab is default
@@ -717,12 +695,14 @@ function buildMediaPanel(lesson) {
   // Video panel content
   var videoContent = '';
   if (hasVideo) {
-    var v = lesson.video;
+    var v = videoSrc;
     // Local MP4/WebM file (e.g. /video/lesson-1-1.mp4) — use HTML5 <video>
     if (/\.(mp4|webm|ogg)$/i.test(v) || v.charAt(0) === '/') {
       videoContent =
-        '<div class="cs-video-wrap">'
-        + '<video controls preload="metadata" style="position:absolute;top:0;left:0;width:100%;height:100%;background:#000;">'
+        '<div style="font-size:.65rem;color:#7dd3fc;padding:.2rem .5rem;background:#0a1628;">'
+        + v.split('/').pop() + '</div>'
+        + '<div class="cs-video-wrap">'
+        + '<video controls preload="metadata" style="background:#000;">'
         + '<source src="' + v + '" type="video/mp4">'
         + 'Your browser does not support video playback.'
         + '</video>'
@@ -761,10 +741,6 @@ function buildMediaPanel(lesson) {
     audioContent = '<div class="cs-audio-placeholder">Audio narration coming soon.</div>';
   }
 
-  var dlBtn = hasAudio
-    ? '<a class="cs-tool-btn dl" href="' + lesson.audio + '" download title="Download MP3">&#11015; Download</a>'
-    : '';
-  var fsBtn = '<button class="cs-tool-btn" onclick="toggleFs()" id="csFsBtn" title="Fullscreen">&#x26F6; Fullscreen</button>';
 
   return '<div class="cs-media" id="csMediaPanel">'
     + '<div class="cs-media-tabs">'
@@ -772,7 +748,8 @@ function buildMediaPanel(lesson) {
     + " onclick=\"switchTab('video',this)\">&#127909; Video</button>"
     + '<button class="cs-media-tab' + (defaultTab==="audio" ? " active" : "") + '"'
     + " onclick=\"switchTab('audio',this)\">&#127911; Audio</button>"
-    + '<div style="flex:1"></div>' + fsBtn + dlBtn
+    + '<div style="flex:1"></div>'
+    + '<button onclick="toggleFs()" style="padding:.25rem .7rem;border-radius:5px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:.72rem;cursor:pointer;margin-left:.4rem;" title="Fullscreen">&#x26F6; Fullscreen</button>'
     + '</div>'
     + '<div class="cs-media-panel' + (defaultTab==="video" ? " active" : "") + '" id="mediaPanelVideo">'
     + videoContent + '</div>'
@@ -782,29 +759,39 @@ function buildMediaPanel(lesson) {
 }
 
 
-function toggleFs() {
-  var panel = document.querySelector('.cs-lesson-media') || document.getElementById('csMediaPanel');
-  var btn   = document.getElementById('csFsBtn');
-  if (!panel) return;
-  if (!document.fullscreenElement && !document.webkitFullscreenElement) {
-    var req = panel.requestFullscreen || panel.webkitRequestFullscreen || panel.mozRequestFullScreen;
-    if (req) req.call(panel);
-    if (btn) btn.innerHTML = '&#x2715; Exit Full';
-  } else {
-    var ex = document.exitFullscreen || document.webkitExitFullscreen || document.mozCancelFullScreen;
-    if (ex) ex.call(document);
-    if (btn) btn.innerHTML = '&#x26F6; Fullscreen';
-  }
-}
-document.addEventListener('fullscreenchange', function() {
-  var btn = document.getElementById('csFsBtn');
-  if (btn) btn.innerHTML = document.fullscreenElement ? '&#10060; Exit' : '&#x26F6; Fullscreen';
-});
-document.addEventListener('webkitfullscreenchange', function() {
-  var btn = document.getElementById('csFsBtn');
-  if (btn) btn.innerHTML = document.webkitFullscreenElement ? '&#10060; Exit' : '&#x26F6; Fullscreen';
+
+
+
+
+
+
+
+
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') closeFsModal();
 });
 
+
+
+
+
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') closeFsModal();
+});
+
+
+function toggleFs() {
+  if (document.fullscreenElement || document.webkitFullscreenElement) {
+    var ex = document.exitFullscreen || document.webkitExitFullscreen;
+    if (ex) ex.call(document);
+    return;
+  }
+  var vid    = document.querySelector('#csMediaPanel video');
+  var target = vid || document.getElementById('csMediaPanel');
+  if (!target) return;
+  var req = target.requestFullscreen || target.webkitRequestFullscreen || target.mozRequestFullScreen;
+  if (req) req.call(target);
+}
 function switchTab(tab, btn) {
   // Update tab buttons
   var tabs = btn.parentElement.querySelectorAll('.cs-media-tab');
@@ -823,38 +810,6 @@ function loadLesson(id) {
   var lesson = null;
   for (var i = 0; i < window.COURSE_LESSONS.length; i++) {
     if (window.COURSE_LESSONS[i].id === id) { lesson = window.COURSE_LESSONS[i]; break; }
-
-  // ── Show floating toolbar and update buttons ──────────────────────
-  var tools = document.getElementById('csLessonTools');
-  var dlBtn = document.getElementById('csDownloadBtn');
-  var ytBtn = document.getElementById('csYtBtn');
-  if (tools) {
-    tools.style.display = 'flex';
-    var isLocalVid = lesson.video && /\.(mp4|webm|ogg)$/i.test(lesson.video);
-    var isYT       = lesson.video && !isLocalVid;
-    if (dlBtn) {
-      if (isLocalVid) {
-        dlBtn.href = lesson.video;
-        dlBtn.innerHTML = '&#11015; Download Video';
-        dlBtn.style.display = 'inline-flex';
-      } else if (lesson.audio) {
-        dlBtn.href = lesson.audio;
-        dlBtn.innerHTML = '&#11015; Download Audio';
-        dlBtn.style.display = 'inline-flex';
-      } else {
-        dlBtn.style.display = 'none';
-      }
-    }
-    if (ytBtn) {
-      if (isYT) {
-        ytBtn.href = 'https://www.youtube.com/watch?v=' +
-          lesson.video.replace(/.*(?:youtu\.be\/|v=|embed\/)([^&?]+).*/, '$1');
-        ytBtn.style.display = 'inline-flex';
-      } else {
-        ytBtn.style.display = 'none';
-      }
-    }
-  }
   }
   if (!lesson) return;
 
@@ -890,8 +845,9 @@ function loadLesson(id) {
     + '<div class="cs-lesson-content">' + lesson.content + '</div>'
     + '<div class="cs-footer">' + prevBtn + nextBtn + '</div>'
     + '</div>'
-    + '<div class="cs-lesson-media">' + buildSidePanel(lesson) + '</div>'
+    + '<div class="cs-lesson-media" id="csLessonMedia">' + buildMediaPanel(lesson) + '</div>'
     + '</div>';
+
 
   renderSidebar();
   var textPanel = document.querySelector('.cs-lesson-text');
@@ -902,27 +858,6 @@ function loadLesson(id) {
   if (!lesson.video && window.CSP && window.SLIDE_DATA && window.SLIDE_DATA[lesson.id]) {
     var cspEl = document.getElementById('csp-' + lesson.id.replace('.', '_'));
     if (cspEl) window.CSP.init(lesson.id, cspEl, lesson.audio || null);
-  }
-
-  // Show floating toolbar and wire buttons
-  var _tools = document.getElementById('csLessonTools');
-  var _dl    = document.getElementById('csDownloadBtn');
-  var _yt    = document.getElementById('csYtBtn');
-  if (_tools) {
-    _tools.style.display = 'flex';
-    var _isVid = !!(lesson.video && /\.(mp4|webm|ogg)$/i.test(lesson.video));
-    var _isYT  = !!(lesson.video && !_isVid);
-    if (_dl) {
-      if (_isVid) { _dl.href = lesson.video; _dl.innerHTML = '&#11015; Download Video'; _dl.style.display = 'inline-flex'; }
-      else if (lesson.audio) { _dl.href = lesson.audio; _dl.innerHTML = '&#11015; Download Audio'; _dl.style.display = 'inline-flex'; }
-      else { _dl.style.display = 'none'; }
-    }
-    if (_yt) {
-      if (_isYT) {
-        _yt.href = 'https://www.youtube.com/watch?v=' + lesson.video.replace(/.*(?:youtu\.be\/|v=|embed\/)([^&?]+).*/, '$1');
-        _yt.style.display = 'inline-flex';
-      } else { _yt.style.display = 'none'; }
-    }
   }
 }
 
@@ -965,31 +900,17 @@ window.addEventListener('DOMContentLoaded', function() {
   }
   showWelcome();
 });
+
 </script>
 
-<!-- ── Lesson Tools Toolbar ── always in DOM, shown when lesson loads ── -->
-<div id="csLessonTools" style="display:none;position:fixed;bottom:1.2rem;right:1.4rem;
-  z-index:999;display:none;align-items:center;gap:.5rem;flex-wrap:wrap;">
-  <button id="csFsBtn" onclick="toggleFs()"
-    style="padding:.4rem .85rem;border-radius:7px;border:1px solid rgba(34,211,238,.4);
-    background:rgba(10,15,30,.92);color:#22d3ee;font-size:.78rem;font-weight:700;
-    cursor:pointer;backdrop-filter:blur(8px);white-space:nowrap;">
-    &#x26F6; Fullscreen
-  </button>
-  <a id="csDownloadBtn" href="#" download
-    style="padding:.4rem .85rem;border-radius:7px;border:1px solid rgba(74,222,128,.4);
-    background:rgba(10,15,30,.92);color:#4ade80;font-size:.78rem;font-weight:700;
-    cursor:pointer;backdrop-filter:blur(8px);white-space:nowrap;text-decoration:none;
-    display:inline-flex;align-items:center;gap:.35rem;">
-    &#11015; Download Audio
-  </a>
-  <a id="csYtBtn" href="#" target="_blank"
-    style="display:none;padding:.4rem .85rem;border-radius:7px;
-    border:1px solid rgba(251,191,36,.4);background:rgba(10,15,30,.92);
-    color:#fbbf24;font-size:.78rem;font-weight:700;
-    cursor:pointer;backdrop-filter:blur(8px);white-space:nowrap;text-decoration:none;">
-    &#127775; YouTube
-  </a>
+
+  <div id="csFsModalBody" style="flex:1;overflow:auto;display:flex;
+    align-items:center;justify-content:center;padding:1rem;">
+  </div>
+</div>
+
+  <div id="csFsModalBody" style="flex:1;overflow:hidden;position:relative;background:#000;">
+  </div>
 </div>
 </body>
 </html>

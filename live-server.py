@@ -816,6 +816,8 @@ def add_cache_headers(response):
         response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
         response.headers['Pragma'] = 'no-cache'
         response.headers['Expires'] = '0'
+        response.headers.pop('ETag', None)
+        response.headers.pop('Last-Modified', None)
     return response
 
 
@@ -1674,7 +1676,12 @@ def serve_audio(filename):
 
 @app.route('/video/<path:filename>')
 def serve_video(filename):
-    video_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'website', 'video')
+    video_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'public', 'video')
+    return send_from_directory(video_dir, filename)
+
+@app.route('/videos/<path:filename>')
+def serve_videos(filename):
+    video_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'website', 'videos')
     return send_from_directory(video_dir, filename)
 
 @app.route('/<path:filename>')
