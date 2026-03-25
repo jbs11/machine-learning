@@ -102,6 +102,8 @@
       color:#22d3ee; padding:.6rem 0 .4rem; margin-top:1.2rem;
       border-bottom:1px solid var(--border); grid-column:1/-1;
     }
+    .ghm-cvd { border-top:1px solid rgba(255,255,255,0.07); position:relative; overflow:hidden; }
+    .ghm-cvd-lbl { position:absolute; top:3px; left:8px; font-size:.6rem; font-weight:700; letter-spacing:.06em; color:rgba(255,255,255,.45); z-index:3; pointer-events:none; text-transform:uppercase; }
   </style>
 </head>
 <body>
@@ -267,25 +269,32 @@ function buildCard(a) {
     '<div class="ghm-canvas-wrap">' +
       '<div class="ghm-loading" id="load-' + a.symbol + '"><div class="ghm-spinner"></div><span>Loading candles...</span></div>' +
       '<div class="ghm-chart" id="cv-' + a.symbol + '" style="display:none;"></div>' +
+      '<div class="ghm-cvd" id="cvd-' + a.symbol + '" style="display:none;height:80px;"></div>' +
     '</div></div>';
 }
 
 // ── lightweight-charts instances ──────────────────────────────────────────────
 var chartInstances = {};
+var cvdInstances   = {};
 
 function destroyAllCharts() {
   Object.keys(chartInstances).forEach(function(k) {
     try { chartInstances[k].chart.remove(); } catch(e) {}
   });
   chartInstances = {};
+  Object.keys(cvdInstances).forEach(function(k) {
+    try { cvdInstances[k].chart.remove(); } catch(e) {}
+  });
+  cvdInstances = {};
 }
 
 async function loadCandles(a) {
   const cfg     = TF_CONFIG[activeTF];
   const key     = a.symbol + '_' + activeTF;
   const instKey = key;
-  var container = document.getElementById('cv-' + a.symbol);
-  var ld        = document.getElementById('load-' + a.symbol);
+  var container    = document.getElementById('cv-'  + a.symbol);
+  var ld           = document.getElementById('load-'+ a.symbol);
+  var cvdContainer = document.getElementById('cvd-' + a.symbol);
   try {
     let candles = candleCache[key];
     if (!candles) {
@@ -402,9 +411,53 @@ async function loadCandles(a) {
       new ResizeObserver(function() {
         if (container.parentElement) {
           var nw = container.parentElement.clientWidth;
-          if (nw > 50) { chart.applyOptions({ width: nw }); drawZones(); }
+          if (nw > 50) {
+            chart.applyOptions({ width: nw });
+            if (cvdInstances[instKey]) cvdInstances[instKey].chart.applyOptions({ width: nw });
+            drawZones();
+          }
         }
       }).observe(container.parentElement);
+
+      // CVD sub-chart
+      if (cvdContainer && !cvdInstances[instKey]) {
+        cvdContainer.style.display = 'block';
+        cvdContainer.style.position = 'relative';
+        var cvdChart = LightweightCharts.createChart(cvdContainer, {
+          width: w, height: 80,
+          layout: { background:{ color:'#050b14' }, textColor:'rgba(226,232,240,0.65)' },
+          grid:   { vertLines:{ color:'rgba(255,255,255,0.03)' }, horzLines:{ visible:false } },
+          crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
+          rightPriceScale: { borderColor:'rgba(255,255,255,0.1)', scaleMargins:{ top:0.1, bottom:0.1 } },
+          timeScale: { borderColor:'rgba(255,255,255,0.1)', visible:false },
+          handleScroll: { mouseWheel:true, pressedMouseMove:true, horzTouchDrag:true, vertTouchDrag:false },
+          handleScale:  { axisPressedMouseMove:{ time:true, price:true }, mouseWheel:true, pinch:true },
+        });
+        var cvdSeries = cvdChart.addBaselineSeries({
+          baseValue: { type:'price', price:0 },
+          topLineColor:     '#4ade80',
+          topFillColor1:    'rgba(74,222,128,0.3)',
+          topFillColor2:    'rgba(74,222,128,0.05)',
+          bottomLineColor:  '#f87171',
+          bottomFillColor1: 'rgba(248,113,113,0.05)',
+          bottomFillColor2: 'rgba(248,113,113,0.3)',
+          lineWidth: 1.5,
+          priceFormat: { type:'volume' },
+          lastValueVisible: false, priceLineVisible: false,
+        });
+        var cvdLbl = document.createElement('div');
+        cvdLbl.className = 'ghm-cvd-lbl';
+        cvdLbl.textContent = 'CVD';
+        cvdContainer.appendChild(cvdLbl);
+        var _cvdSync = false;
+        chart.timeScale().subscribeVisibleLogicalRangeChange(function(r) {
+          if (!_cvdSync && r) { _cvdSync=true; cvdChart.timeScale().setVisibleLogicalRange(r); _cvdSync=false; }
+        });
+        cvdChart.timeScale().subscribeVisibleLogicalRangeChange(function(r) {
+          if (!_cvdSync && r) { _cvdSync=true; chart.timeScale().setVisibleLogicalRange(r); _cvdSync=false; }
+        });
+        cvdInstances[instKey] = { chart: cvdChart, series: cvdSeries };
+      }
 
       chartInstances[instKey] = { chart: chart, series: candleSeries, drawZones: drawZones };
     }
@@ -416,6 +469,19 @@ async function loadCandles(a) {
     });
     inst.series.setData(lcData);
     inst.chart.timeScale().fitContent();
+
+    var cvdInst = cvdInstances[instKey];
+    if (cvdInst) {
+      var _cvd = 0;
+      var cvdData = candles.map(function(c) {
+        _cvd += (c.close >= c.open ? c.volume : -c.volume);
+        return { time: c.time, value: _cvd };
+      });
+      cvdInst.series.setData(cvdData);
+      var vr = inst.chart.timeScale().getVisibleLogicalRange();
+      if (vr) cvdInst.chart.timeScale().setVisibleLogicalRange(vr);
+      if (cvdContainer) cvdContainer.style.display = 'block';
+    }
 
     if (ld) ld.style.display = 'none';
     if (container) container.style.display = 'block';
@@ -452,8 +518,10 @@ document.querySelectorAll('.tf-pill').forEach(function(btn) {
     getFiltered().forEach(function(a) {
       var ld = document.getElementById('load-' + a.symbol);
       var cv = document.getElementById('cv-'   + a.symbol);
+      var cd = document.getElementById('cvd-' + a.symbol);
       if (ld) { ld.style.display = 'flex'; ld.innerHTML = '<div class="ghm-spinner"></div><span>Loading candles...</span>'; }
       if (cv) { cv.style.display = 'none'; cv.innerHTML = ''; }
+      if (cd) { cd.style.display = 'none'; cd.innerHTML = ''; }
       loadCandles(a);
     });
   });
