@@ -29,10 +29,11 @@
       letter-spacing:.08em; text-transform:uppercase; margin-bottom:1rem;
     }
     .ghm-legend {
-      display:flex; flex-wrap:wrap; gap:.4rem 1.1rem; align-items:center;
-      padding:.5rem .9rem; background:var(--surface);
-      border:1px solid var(--border); border-radius:8px;
-      margin:.2rem 0 .6rem;
+      grid-column: 1 / -1;
+      display:flex; flex-wrap:wrap; gap:.45rem 1.3rem; align-items:center;
+      padding:.55rem 1rem; background:#0a1628;
+      border:1px solid #2d4a7a; border-radius:8px;
+      border-left:3px solid #22d3ee;
     }
     .ghm-leg-item { display:flex; align-items:center; gap:.4rem; font-size:.75rem; color:var(--muted); }
     .ghm-leg-swatch { width:14px; height:14px; border-radius:3px; flex-shrink:0; }
@@ -104,6 +105,11 @@
   </style>
 </head>
 <body>
+<script>
+if (window.location.search.indexOf('_v=') === -1) {
+  window.location.replace(window.location.pathname + '?_v=' + Date.now());
+}
+</script>
 <nav class="nav">
   <a href="index.html" class="nav-logo">
     <img src="images/steve.jpg" class="nav-logo-photo" alt="Stephen Borick">
@@ -156,17 +162,6 @@
     <button class="tf-pill" data-tf="5m">5m</button>
   </div>
 
-  <div class="ghm-legend">
-    <div class="ghm-leg-item"><div class="ghm-leg-swatch" style="background:rgba(239,68,68,0.5);border:1px solid rgba(239,68,68,.6);"></div>Gamma Squeeze</div>
-    <div class="ghm-leg-item"><div class="ghm-leg-swatch" style="background:rgba(34,197,94,0.35);border:1px solid rgba(34,197,94,.4);"></div>Positive Gamma</div>
-    <div class="ghm-leg-item"><div class="ghm-leg-swatch" style="background:rgba(251,191,36,0.4);border:1px solid rgba(251,191,36,.5);"></div>Transition</div>
-    <div class="ghm-leg-item"><div class="ghm-leg-swatch" style="background:rgba(249,115,22,0.4);border:1px solid rgba(249,115,22,.5);"></div>Negative Gamma</div>
-    <div class="ghm-leg-item"><div class="ghm-leg-swatch" style="background:rgba(139,92,246,0.4);border:1px solid rgba(139,92,246,.5);"></div>Max Neg. Gamma</div>
-    <div class="ctl-sep" style="margin:0 .4rem;"></div>
-    <div class="ghm-leg-item"><div style="width:22px;height:2px;border-top:2px dashed #4ade80;display:inline-block;vertical-align:middle;margin-right:4px;"></div>Call Wall</div>
-    <div class="ghm-leg-item"><div style="width:22px;height:2px;border-top:2px dashed #fbbf24;display:inline-block;vertical-align:middle;margin-right:4px;"></div>Gamma Flip</div>
-    <div class="ghm-leg-item"><div style="width:22px;height:2px;border-top:2px dashed #f87171;display:inline-block;vertical-align:middle;margin-right:4px;"></div>Put Wall</div>
-  </div>
   <div id="ghm-grid" class="ghm-grid"></div>
 </div>
 
@@ -220,11 +215,30 @@ function renderGrid() {
     groups[g].push(a);
   });
 
+  var rowLegend = '<div class="ghm-legend">'
+    + '<div class="ghm-leg-item"><div class="ghm-leg-swatch" style="background:rgba(239,68,68,0.5);border:1px solid rgba(239,68,68,.6);"></div>Gamma Squeeze — above Call Wall, amplified rallies</div>'
+    + '<div class="ghm-leg-item"><div class="ghm-leg-swatch" style="background:rgba(34,197,94,0.35);border:1px solid rgba(34,197,94,.4);"></div>Positive Gamma — MM hedging dampens moves</div>'
+    + '<div class="ghm-leg-item"><div class="ghm-leg-swatch" style="background:rgba(251,191,36,0.4);border:1px solid rgba(251,191,36,.5);"></div>Transition — near Gamma Flip, unstable</div>'
+    + '<div class="ghm-leg-item"><div class="ghm-leg-swatch" style="background:rgba(249,115,22,0.4);border:1px solid rgba(249,115,22,.5);"></div>Negative Gamma — MM hedging amplifies moves</div>'
+    + '<div class="ghm-leg-item"><div class="ghm-leg-swatch" style="background:rgba(139,92,246,0.4);border:1px solid rgba(139,92,246,.5);"></div>Max Neg. Gamma — below Put Wall, high volatility</div>'
+    + '<div class="ctl-sep" style="margin:0 .5rem;"></div>'
+    + '<div class="ghm-leg-item"><div style="width:22px;height:2px;border-top:2px dashed #4ade80;display:inline-block;vertical-align:middle;margin-right:4px;"></div>Call Wall</div>'
+    + '<div class="ghm-leg-item"><div style="width:22px;height:2px;border-top:2px dashed #fbbf24;display:inline-block;vertical-align:middle;margin-right:4px;"></div>Gamma Flip</div>'
+    + '<div class="ghm-leg-item"><div style="width:22px;height:2px;border-top:2px dashed #f87171;display:inline-block;vertical-align:middle;margin-right:4px;"></div>Put Wall</div>'
+    + '</div>';
+
   let html = '';
+  let cardCount = 0;
   Object.keys(groups).forEach(function(grp) {
     html += '<div class="grp-hdr">' + grp + '</div>';
-    groups[grp].forEach(function(a) { html += buildCard(a); });
+    groups[grp].forEach(function(a) {
+      html += buildCard(a);
+      cardCount++;
+      if (cardCount % 2 === 0) html += rowLegend;
+    });
   });
+  // Add legend after last row if odd number of cards
+  if (cardCount % 2 !== 0) html += rowLegend;
   grid.innerHTML = html;
   // Load candles for each card
   filtered.forEach(function(a) { loadCandles(a); });
