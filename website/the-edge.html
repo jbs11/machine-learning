@@ -1,0 +1,1212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>The EDGE — 3-Layer Trading Framework</title>
+  <link rel="preload" href="style.css" as="style" fetchpriority="high">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    /* ── Layout ─────────────────────────────── */
+    .edge-wrap { max-width:1400px; margin:0 auto; padding:0 1.5rem 6rem; }
+
+    /* ── Hero ───────────────────────────────── */
+    .edge-hero {
+      padding:3.5rem 1.5rem 2.5rem; text-align:center;
+      background:radial-gradient(ellipse 80% 55% at 50% -5%,rgba(251,191,36,.12) 0%,transparent 65%), var(--bg);
+      border-bottom:1px solid var(--border);
+    }
+    .edge-hero h1 {
+      font-size:clamp(2.2rem,5vw,4rem); font-weight:900; letter-spacing:-.04em;
+      line-height:1.1; margin-bottom:.8rem;
+      background:linear-gradient(135deg,#fbbf24 0%,#f97316 40%,#ef4444 75%,#a78bfa 100%);
+      -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+    }
+    .edge-hero p { color:var(--muted); font-size:1.05rem; max-width:820px; margin:0 auto 1.5rem; line-height:1.75; }
+    .edge-badge {
+      display:inline-flex; align-items:center; gap:.5rem; padding:.3rem 1rem;
+      background:rgba(251,191,36,.1); border:1px solid rgba(251,191,36,.3);
+      border-radius:999px; color:#fbbf24; font-size:.78rem; font-weight:600;
+      letter-spacing:.08em; text-transform:uppercase; margin-bottom:1rem;
+    }
+
+    /* ── Section header ─────────────────────── */
+    .sec-hdr {
+      display:flex; align-items:center; gap:.8rem; margin:2rem 0 1rem;
+      padding-bottom:.7rem; border-bottom:2px solid var(--border);
+    }
+    .sec-hdr-num {
+      width:32px; height:32px; border-radius:8px; display:flex; align-items:center;
+      justify-content:center; font-size:1rem; font-weight:900; flex-shrink:0;
+    }
+    .sec-hdr-text h2 { font-size:1.15rem; font-weight:900; color:var(--text); margin:0 0 .15rem; }
+    .sec-hdr-text p { font-size:.78rem; color:var(--muted); margin:0; }
+    .sec-hdr-badge {
+      margin-left:auto; font-size:.65rem; font-weight:700; padding:.22rem .7rem;
+      border-radius:5px; text-transform:uppercase; letter-spacing:.06em; white-space:nowrap;
+    }
+
+    /* Layer colors */
+    .layer-regime  { --lc:#22d3ee; --lb:rgba(34,211,238,.12); --lborder:rgba(34,211,238,.3); }
+    .layer-trigger { --lc:#a78bfa; --lb:rgba(167,139,250,.12); --lborder:rgba(167,139,250,.3); }
+    .layer-mag     { --lc:#f97316; --lb:rgba(249,115,22,.12);  --lborder:rgba(249,115,22,.3); }
+
+    /* ── Tool cards ─────────────────────────── */
+    .tool-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:1rem; margin-bottom:1rem; }
+    .tool-card {
+      background:var(--surface); border:1px solid var(--border); border-radius:12px;
+      padding:1.2rem; transition:border-color .2s;
+    }
+    .tool-card:hover { border-color:rgba(255,255,255,.15); }
+    .tc-header { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:.7rem; }
+    .tc-name { font-size:.92rem; font-weight:900; color:var(--text); }
+    .tc-sub  { font-size:.65rem; color:var(--muted); margin-top:.1rem; }
+    .tc-sig  {
+      font-size:.65rem; font-weight:700; padding:.2rem .65rem; border-radius:5px;
+      text-transform:uppercase; letter-spacing:.06em; white-space:nowrap;
+    }
+    .sig-bull  { background:rgba(74,222,128,.12); color:#4ade80; border:1px solid rgba(74,222,128,.3); }
+    .sig-bear  { background:rgba(239,68,68,.12);  color:#f87171; border:1px solid rgba(239,68,68,.3); }
+    .sig-neut  { background:rgba(251,191,36,.12); color:#fbbf24; border:1px solid rgba(251,191,36,.3); }
+    .sig-wait  { background:rgba(255,255,255,.05);color:var(--muted); border:1px solid var(--border); }
+    .tc-value { font-size:1.05rem; font-weight:800; color:var(--text); margin-bottom:.35rem; }
+    .tc-desc  { font-size:.72rem; color:var(--muted); line-height:1.6; }
+    .tc-bars  { display:flex; flex-direction:column; gap:.3rem; margin:.6rem 0; }
+    .tc-bar-row { display:flex; align-items:center; gap:.5rem; }
+    .tc-bar-lbl { font-size:.65rem; color:var(--muted); min-width:52px; }
+    .tc-bar-track { flex:1; height:5px; background:rgba(255,255,255,.07); border-radius:3px; overflow:hidden; }
+    .tc-bar-fill  { height:100%; border-radius:3px; transition:width .5s; }
+    .tc-bar-val   { font-size:.65rem; font-weight:700; min-width:36px; text-align:right; }
+
+    /* ── Layer summary card ─────────────────── */
+    .layer-summary {
+      border-radius:12px; padding:1.1rem 1.3rem; margin-bottom:.5rem;
+      display:flex; align-items:center; gap:1rem; flex-wrap:wrap;
+    }
+    .ls-icon  { font-size:1.6rem; flex-shrink:0; }
+    .ls-body  { flex:1; min-width:180px; }
+    .ls-label { font-size:.7rem; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); }
+    .ls-signal{ font-size:1.1rem; font-weight:900; }
+    .ls-desc  { font-size:.73rem; color:var(--muted); margin-top:.2rem; line-height:1.5; }
+    .ls-score { flex-shrink:0; text-align:right; }
+    .ls-score-val { font-size:2rem; font-weight:900; line-height:1; }
+    .ls-score-lbl { font-size:.6rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; }
+
+    /* ── EDGE Score ─────────────────────────── */
+    .edge-score-panel {
+      background:var(--surface); border:1px solid var(--border); border-radius:16px;
+      padding:1.5rem; margin:1.5rem 0; text-align:center;
+    }
+    .edge-score-title { font-size:.78rem; font-weight:700; text-transform:uppercase; letter-spacing:.1em; color:var(--muted); margin-bottom:.8rem; }
+    .edge-score-main  { font-size:2.8rem; font-weight:900; line-height:1; margin-bottom:.3rem; }
+    .edge-score-sub   { font-size:.85rem; color:var(--muted); margin-bottom:1.2rem; }
+    .edge-score-bars  { display:grid; grid-template-columns:repeat(3,1fr); gap:1rem; max-width:600px; margin:0 auto; }
+    .esb-item { text-align:center; }
+    .esb-label{ font-size:.65rem; text-transform:uppercase; letter-spacing:.07em; color:var(--muted); margin-bottom:.4rem; }
+    .esb-val  { font-size:1.3rem; font-weight:900; }
+    .esb-ring {
+      width:56px; height:56px; border-radius:50%; margin:0 auto .5rem;
+      display:flex; align-items:center; justify-content:center;
+      font-size:1.2rem; font-weight:900; border:3px solid;
+    }
+
+    /* ── Framework diagram ──────────────────── */
+    .framework-canvas { width:100%; border-radius:10px; }
+
+    /* ── Decision matrix ────────────────────── */
+    .matrix-table { width:100%; border-collapse:collapse; }
+    .matrix-table th {
+      font-size:.67rem; font-weight:700; text-transform:uppercase; letter-spacing:.08em;
+      color:var(--muted); padding:.5rem .7rem; border-bottom:1px solid var(--border);
+      text-align:left;
+    }
+    .matrix-table td { padding:.6rem .7rem; border-bottom:1px solid rgba(255,255,255,.04); font-size:.75rem; vertical-align:middle; }
+    .matrix-table tr:hover td { background:rgba(255,255,255,.02); }
+    .matrix-table td:last-child { font-weight:700; }
+
+    /* ── How-to panel ───────────────────────── */
+    .howto-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:.8rem; margin:1rem 0; }
+    .howto-item {
+      background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:1rem;
+    }
+    .howto-step { font-size:.65rem; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); margin-bottom:.3rem; }
+    .howto-title{ font-size:.85rem; font-weight:800; color:var(--text); margin-bottom:.35rem; }
+    .howto-desc { font-size:.72rem; color:var(--muted); line-height:1.6; }
+
+    /* ── Notes panel ────────────────────────── */
+    .notes-panel {
+      background:var(--surface); border:1px solid var(--border); border-left:4px solid #fbbf24;
+      border-radius:12px; padding:1.3rem; margin:1.5rem 0;
+    }
+    .notes-title { font-size:.9rem; font-weight:800; color:var(--text); margin-bottom:.8rem; }
+    .notes-list  { list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:.5rem; }
+    .notes-list li { font-size:.75rem; color:var(--muted); display:flex; gap:.6rem; line-height:1.55; }
+    .notes-list li::before { content:"▸"; color:#fbbf24; font-weight:700; flex-shrink:0; }
+
+    /* ── Misc ───────────────────────────────── */
+    .refresh-bar { display:flex; align-items:center; justify-content:space-between; padding:.6rem 0 .3rem; flex-wrap:wrap; gap:.5rem; }
+    .refresh-btn { padding:.3rem .9rem; border-radius:7px; border:1px solid var(--border); background:transparent; color:var(--muted); font-size:.75rem; font-weight:700; cursor:pointer; transition:all .15s; }
+    .refresh-btn:hover { border-color:#fbbf24; color:#fbbf24; }
+    .last-update { font-size:.72rem; color:var(--muted); }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    .spinner { width:14px; height:14px; border:2px solid var(--border); border-top-color:#fbbf24; border-radius:50%; animation:spin .7s linear infinite; display:inline-block; vertical-align:middle; }
+  </style>
+</head>
+<body>
+<script>
+if (window.location.search.indexOf('_v=') === -1) {
+  window.location.replace(window.location.pathname + '?_v=' + Date.now());
+}
+</script>
+<nav class="nav">
+  <a href="index.html" class="nav-logo">
+    <img src="images/steve.jpg" class="nav-logo-photo" alt="Stephen Borick">
+    <div class="nav-logo-text"><span class="nav-company">Artificial Intelligence</span><span class="nav-name">Solutions, Inc.</span></div>
+  </a>
+  <ul class="nav-links">
+    <li><a href="index.html">Home</a></li>
+    <li><a href="neural-networks.html">Neural Networks</a></li>
+    <li><a href="machine-learning.html">Machine Learning</a></li>
+    <li><a href="ml-trading.html">ML in Trading</a></li>
+    <li><a href="ml-sp500-example.html">ML Example</a></li>
+    <li><a href="stock-trading.html">Stock Trading</a></li>
+    <li><a href="options-trading.html">Options</a></li>
+    <li><a href="futures-trading.html">Futures</a></li>
+    <li><a href="brokers.html">Brokers</a></li>
+    <li><a href="algorithms-bots.html" style="color:#4ade80;font-weight:700;">&#129302; Algo Bots</a></li>
+    <li><a href="asset-algorithms.html" style="color:#22d3ee;font-weight:700;">&#128200; Asset Algos</a></li>
+    <li><a href="live-trading.html">Live Trading</a></li>
+    <li><a href="market-preparation.html">&#128204; Market Prep</a></li>
+    <li><a href="world-events.html">&#127758; World Events</a></li>
+    <li><a href="forecast.html" style="color:#f59e0b;font-weight:700;">&#128200; Forecast</a></li>
+    <li><a href="gex-heatmap.html" style="color:#22d3ee;font-weight:700;">&#127777; GEX Heat Maps</a></li>
+    <li><a href="spx-correlations.html" style="color:#a78bfa;font-weight:700;">&#128202; SPX Correlations</a></li>
+    <li><a href="vix-dashboard.html" style="color:#f87171;font-weight:700;">&#128293; VIX Dashboard</a></li>
+    <li><a href="the-edge.html" style="color:#fbbf24;font-weight:700;" class="active">&#9889; The EDGE</a></li>
+    <li><a href="real-time-news.html" style="color:#4ade80;font-weight:700;">&#128240; Real-Time News</a></li>
+    <li><a href="course.html" style="background:#f59e0b;color:#0a0f1e;padding:.28rem .85rem;border-radius:5px;font-weight:700;letter-spacing:.02em;">&#128218; ML Course</a></li>
+    <li><a href="report-ms.html" target="_blank" style="background:#22d3ee;color:var(--bg);padding:.28rem .85rem;border-radius:5px;font-weight:700;letter-spacing:.02em;">&#128202; Market Report</a></li>
+    <li><a href="report-tg.html" target="_blank" style="background:#a78bfa;color:var(--bg);padding:.28rem .85rem;border-radius:5px;font-weight:700;letter-spacing:.02em;">&#128214; Trading Guide</a></li>
+  </ul>
+</nav>
+
+<!-- HERO -->
+<div class="edge-hero">
+  <div class="edge-badge">&#9889; Systematic Trading Framework</div>
+  <h1>The EDGE</h1>
+  <p>Three layered filters that separate high-probability trades from noise.
+     No single indicator wins consistently — but when <strong style="color:#fbbf24">Regime</strong>,
+     <strong style="color:#a78bfa">Trigger</strong>, and <strong style="color:#f97316">Magnitude</strong>
+     align, the probability stack tips decisively in your favor.
+     Every signal below is computed live from market data.</p>
+</div>
+
+<div class="edge-wrap">
+
+  <div class="refresh-bar">
+    <button class="refresh-btn" id="refresh-btn">&#8635; Refresh Signals</button>
+    <span class="last-update" id="last-update">Loading live data…</span>
+  </div>
+
+  <!-- FRAMEWORK DIAGRAM -->
+  <canvas id="framework-canvas" class="framework-canvas" height="180" style="margin:1rem 0;"></canvas>
+
+  <!-- EDGE SCORE -->
+  <div class="edge-score-panel" id="edge-score-panel">
+    <div class="edge-score-title">&#9889; Combined EDGE Score — Live</div>
+    <div class="edge-score-main" id="edge-score-main"><span class="spinner"></span></div>
+    <div class="edge-score-sub"  id="edge-score-sub">Calculating…</div>
+    <div class="edge-score-bars">
+      <div class="esb-item">
+        <div class="esb-label">Regime</div>
+        <div class="esb-ring" id="esb-regime" style="border-color:#22d3ee;color:#22d3ee">—</div>
+        <div class="esb-val" id="esb-regime-val" style="color:#22d3ee">—</div>
+      </div>
+      <div class="esb-item">
+        <div class="esb-label">Trigger</div>
+        <div class="esb-ring" id="esb-trigger" style="border-color:#a78bfa;color:#a78bfa">—</div>
+        <div class="esb-val" id="esb-trigger-val" style="color:#a78bfa">—</div>
+      </div>
+      <div class="esb-item">
+        <div class="esb-label">Magnitude</div>
+        <div class="esb-ring" id="esb-mag" style="border-color:#f97316;color:#f97316">—</div>
+        <div class="esb-val" id="esb-mag-val" style="color:#f97316">—</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       LAYER 1 — REGIME
+  ═══════════════════════════════════════════ -->
+  <div class="sec-hdr layer-regime">
+    <div class="sec-hdr-num" style="background:rgba(34,211,238,.12);color:#22d3ee;border:1px solid rgba(34,211,238,.3);">1</div>
+    <div class="sec-hdr-text">
+      <h2>Regime — Direction Bias</h2>
+      <p>Are conditions structurally bullish or bearish? Trade only in the direction the regime allows.</p>
+    </div>
+    <div class="sec-hdr-badge" id="regime-badge" style="background:rgba(34,211,238,.1);color:#22d3ee;border:1px solid rgba(34,211,238,.3);">Loading…</div>
+  </div>
+
+  <div class="tool-grid">
+    <!-- Ichimoku -->
+    <div class="tool-card">
+      <div class="tc-header">
+        <div><div class="tc-name">Ichimoku Cloud</div><div class="tc-sub">Tenkan / Kijun / Kumo</div></div>
+        <div class="tc-sig" id="ich-sig">—</div>
+      </div>
+      <div class="tc-value" id="ich-value">Loading…</div>
+      <div class="tc-bars" id="ich-bars"></div>
+      <div class="tc-desc">
+        The <strong style="color:#22d3ee">Kumo (cloud)</strong> defines the macro support/resistance zone.
+        Price above a green cloud = strong bullish regime; below red cloud = bearish.
+        <strong>Tenkan</strong> (9-period midpoint) crossing above <strong>Kijun</strong> (26-period midpoint) is a momentum confirmation signal — the "TK Cross."
+        The <strong>Chikou Span</strong> (close plotted 26 bars back) confirms when it clears prior price action.
+        <br><br>
+        <em>Rule:</em> Only buy when price &gt; cloud AND cloud is green AND Tenkan &gt; Kijun. All three aligned = high-confidence regime.
+      </div>
+    </div>
+
+    <!-- EMA Stack -->
+    <div class="tool-card">
+      <div class="tc-header">
+        <div><div class="tc-name">EMA Stack</div><div class="tc-sub">8 / 21 / 50 / 200</div></div>
+        <div class="tc-sig" id="ema-sig">—</div>
+      </div>
+      <div class="tc-value" id="ema-value">Loading…</div>
+      <div class="tc-bars" id="ema-bars"></div>
+      <div class="tc-desc">
+        When exponential moving averages are stacked in order (8 &gt; 21 &gt; 50 &gt; 200 for bulls), price is in a healthy uptrend.
+        The <strong style="color:#22d3ee">EMA 8/21 cross</strong> catches early momentum shifts (fast signal).
+        The <strong style="color:#a78bfa">EMA 50</strong> is the swing trader's anchor — dips to it in an uptrend are buy opportunities.
+        The <strong style="color:#fbbf24">EMA 200</strong> defines the multi-month regime — price above = structural bull market.
+        <br><br>
+        <em>Rule:</em> Full bull stack (8&gt;21&gt;50&gt;200, price above all) = 2 regime points. Mixed = 0. Inverse stack = −2.
+      </div>
+    </div>
+
+    <!-- GEX Sign -->
+    <div class="tool-card">
+      <div class="tc-header">
+        <div><div class="tc-name">GEX Sign</div><div class="tc-sub">Gamma Exposure Regime</div></div>
+        <div class="tc-sig" id="gex-sig">—</div>
+      </div>
+      <div class="tc-value" id="gex-value">Loading…</div>
+      <div class="tc-bars" id="gex-bars"></div>
+      <div class="tc-desc">
+        <strong style="color:#4ade80">Positive GEX</strong> — dealers are net long gamma.
+        They sell into rallies and buy dips, acting as a shock absorber.
+        Volatility is suppressed; SPX tends to mean-revert toward the gamma wall.
+        Ideal for premium selling and tight range-bound strategies.
+        <br><br>
+        <strong style="color:#f87171">Negative GEX (Short Gamma)</strong> — dealers must buy as price rises and sell as it falls — <em>amplifying</em> every move.
+        Small triggers create outsized price swings. Directional momentum strategies and long premium are favored.
+        <br><br>
+        <em>Rule:</em> Positive GEX = regime support (sell premium). Negative GEX = amplified moves (buy premium, wider stops).
+      </div>
+    </div>
+  </div>
+
+  <!-- Regime Summary -->
+  <div class="layer-summary" id="regime-summary" style="background:rgba(34,211,238,.06);border:1px solid rgba(34,211,238,.2);">
+    <div class="ls-icon">&#127777;</div>
+    <div class="ls-body">
+      <div class="ls-label">Layer 1 · Regime Verdict</div>
+      <div class="ls-signal" id="regime-verdict" style="color:#22d3ee">Loading…</div>
+      <div class="ls-desc"  id="regime-desc">Analyzing Ichimoku + EMA + GEX…</div>
+    </div>
+    <div class="ls-score">
+      <div class="ls-score-val" id="regime-score" style="color:#22d3ee">—</div>
+      <div class="ls-score-lbl">/ 3 pts</div>
+    </div>
+  </div>
+
+
+  <!-- ═══════════════════════════════════════════
+       LAYER 2 — TRIGGER
+  ═══════════════════════════════════════════ -->
+  <div class="sec-hdr layer-trigger" style="margin-top:2.5rem;">
+    <div class="sec-hdr-num" style="background:rgba(167,139,250,.12);color:#a78bfa;border:1px solid rgba(167,139,250,.3);">2</div>
+    <div class="sec-hdr-text">
+      <h2>Trigger — Entry Timing</h2>
+      <p>Wait for momentum confirmation before entering. The regime sets the direction; the trigger tells you <em>when</em>.</p>
+    </div>
+    <div class="sec-hdr-badge" id="trigger-badge" style="background:rgba(167,139,250,.1);color:#a78bfa;border:1px solid rgba(167,139,250,.3);">Loading…</div>
+  </div>
+
+  <div class="tool-grid">
+    <!-- MACD -->
+    <div class="tool-card">
+      <div class="tc-header">
+        <div><div class="tc-name">MACD</div><div class="tc-sub">12 / 26 / 9 · EMA-based momentum</div></div>
+        <div class="tc-sig" id="macd-sig">—</div>
+      </div>
+      <div class="tc-value" id="macd-value">Loading…</div>
+      <div class="tc-bars" id="macd-bars"></div>
+      <div class="tc-desc">
+        MACD = EMA(12) − EMA(26). The <strong style="color:#a78bfa">Signal line</strong> is EMA(9) of MACD.
+        The <strong>histogram</strong> = MACD − Signal — rising histogram bars mean accelerating momentum.
+        <br><br>
+        <strong>Bullish trigger:</strong> MACD crosses above Signal AND histogram turns positive — especially powerful when crossing from below zero (confirms trend reversal, not just pullback).
+        <strong>Bearish trigger:</strong> MACD crosses below Signal with histogram turning negative.
+        <br><br>
+        <em>Key edge:</em> A MACD crossover that occurs while price is above Ichimoku cloud and EMA stack = highest-confidence entry. MACD divergence (price makes new low but MACD does not) predicts reversal 2–3 sessions ahead.
+      </div>
+    </div>
+
+    <!-- RSI -->
+    <div class="tool-card">
+      <div class="tc-header">
+        <div><div class="tc-name">RSI Divergence</div><div class="tc-sub">14-period · Momentum oscillator</div></div>
+        <div class="tc-sig" id="rsi-sig">—</div>
+      </div>
+      <div class="tc-value" id="rsi-value">Loading…</div>
+      <div class="tc-bars" id="rsi-bars"></div>
+      <div class="tc-desc">
+        RSI measures the speed of price change (0–100).
+        Levels: <strong style="color:#f87171">Overbought &gt;70</strong>, <strong style="color:#fbbf24">Neutral 40–60</strong>, <strong style="color:#4ade80">Oversold &lt;30</strong>.
+        <br><br>
+        <strong>Divergence (highest value):</strong>
+        <em>Bullish</em> — price makes lower low but RSI makes higher low = buyers absorbing selling, reversal near.
+        <em>Bearish</em> — price makes higher high but RSI makes lower high = exhaustion, reversal near.
+        <br><br>
+        <strong>Regime filter:</strong> In a bull regime, RSI &gt; 50 is a confirmation that momentum is intact.
+        RSI pulling back to 40–50 in an uptrend = buy-the-dip opportunity, not reversal.
+        RSI &lt; 40 in an uptrend = warning; wait for reclaim of 50 before entries.
+      </div>
+    </div>
+
+    <!-- Options Flow -->
+    <div class="tool-card">
+      <div class="tc-header">
+        <div><div class="tc-name">Options Flow Spike</div><div class="tc-sub">Call / Put volume &amp; premium</div></div>
+        <div class="tc-sig" id="flow-sig">—</div>
+      </div>
+      <div class="tc-value" id="flow-value">Loading…</div>
+      <div class="tc-bars" id="flow-bars"></div>
+      <div class="tc-desc">
+        Unusual options activity reveals institutional positioning <em>before</em> price moves.
+        A sudden spike in <strong style="color:#4ade80">call volume + premium</strong> on SPY/SPX signals that large players are positioning for upside — often ahead of a catalyst.
+        A spike in <strong style="color:#f87171">put volume + premium</strong> signals hedging or directional bearish bets.
+        <br><br>
+        <strong>Flow sentiment vs. price:</strong> When options flow turns bullish but price is still falling = smart money buying the dip.
+        When flow turns bearish while price is rallying = distribution — institutional players selling into strength.
+        <br><br>
+        <em>Trigger rule:</em> A net-call flow spike in SPY (&gt;2× average call volume) that aligns with MACD crossover = confirmed trigger. Use as "green light" to enter within the next 1–2 sessions.
+      </div>
+    </div>
+  </div>
+
+  <!-- Trigger Summary -->
+  <div class="layer-summary" id="trigger-summary" style="background:rgba(167,139,250,.06);border:1px solid rgba(167,139,250,.2);">
+    <div class="ls-icon">&#9889;</div>
+    <div class="ls-body">
+      <div class="ls-label">Layer 2 · Trigger Verdict</div>
+      <div class="ls-signal" id="trigger-verdict" style="color:#a78bfa">Loading…</div>
+      <div class="ls-desc"  id="trigger-desc">Analyzing MACD + RSI + Flow…</div>
+    </div>
+    <div class="ls-score">
+      <div class="ls-score-val" id="trigger-score" style="color:#a78bfa">—</div>
+      <div class="ls-score-lbl">/ 3 pts</div>
+    </div>
+  </div>
+
+
+  <!-- ═══════════════════════════════════════════
+       LAYER 3 — MAGNITUDE
+  ═══════════════════════════════════════════ -->
+  <div class="sec-hdr layer-mag" style="margin-top:2.5rem;">
+    <div class="sec-hdr-num" style="background:rgba(249,115,22,.12);color:#f97316;border:1px solid rgba(249,115,22,.3);">3</div>
+    <div class="sec-hdr-text">
+      <h2>Magnitude — Size the Trade</h2>
+      <p>Regime and trigger tell you direction and timing. Magnitude tells you how large to trade and how wide to set stops.</p>
+    </div>
+    <div class="sec-hdr-badge" id="mag-badge" style="background:rgba(249,115,22,.1);color:#f97316;border:1px solid rgba(249,115,22,.3);">Loading…</div>
+  </div>
+
+  <div class="tool-grid">
+    <!-- ATR -->
+    <div class="tool-card">
+      <div class="tc-header">
+        <div><div class="tc-name">ATR — Average True Range</div><div class="tc-sub">14-period · Daily range expectation</div></div>
+        <div class="tc-sig" id="atr-sig">—</div>
+      </div>
+      <div class="tc-value" id="atr-value">Loading…</div>
+      <div class="tc-bars" id="atr-bars"></div>
+      <div class="tc-desc">
+        ATR measures the average daily range of SPX over 14 sessions.
+        It tells you how much the market <em>typically</em> moves — and therefore how wide stops must be to avoid random noise.
+        <br><br>
+        <strong>Stop sizing rule:</strong> Minimum stop = 1× ATR from entry (never tighter, or noise will stop you out).
+        For 0DTE options, ATR/2 = expected intraday range each half-day.
+        <br><br>
+        <strong>Position sizing:</strong> Risk ÷ (ATR × contract delta) = number of contracts.
+        Higher ATR = fewer contracts to maintain constant dollar risk.
+        ATR expanding (rising) = market becoming more volatile; reduce size proactively.
+        ATR contracting = volatility compression before a breakout — watch for regime shift.
+      </div>
+    </div>
+
+    <!-- VIX Level + IV Rank -->
+    <div class="tool-card">
+      <div class="tc-header">
+        <div><div class="tc-name">VIX Level &amp; IV Rank</div><div class="tc-sub">Implied vol percentile · 52-week range</div></div>
+        <div class="tc-sig" id="vix-mag-sig">—</div>
+      </div>
+      <div class="tc-value" id="vix-mag-value">Loading…</div>
+      <div class="tc-bars" id="vix-mag-bars"></div>
+      <div class="tc-desc">
+        <strong>VIX Level</strong> determines the overall volatility budget.
+        High VIX = expensive options + wide swings = smaller position size and wider stops.
+        Low VIX = cheap options + tight ranges = larger size, tighter stops.
+        <br><br>
+        <strong style="color:#f97316">IV Rank (IVR)</strong> = (Current VIX − 52w Low) ÷ (52w High − 52w Low) × 100.
+        IVR &gt;50 → options are relatively expensive → <em>sell premium</em> (iron condors, credit spreads).
+        IVR &lt;30 → options are cheap → <em>buy premium</em> (debit spreads, long straddles).
+        IVR 30–50 → neutral → directional spreads at fair value.
+        <br><br>
+        <em>Size rule:</em> Position size × (1 − VIX/50). At VIX=25, use 50% of max size. At VIX=40, use 20%.
+      </div>
+    </div>
+
+    <!-- Term Structure Slope -->
+    <div class="tool-card">
+      <div class="tc-header">
+        <div><div class="tc-name">VIX Term Structure Slope</div><div class="tc-sub">9D → 3M contango / backwardation</div></div>
+        <div class="tc-sig" id="ts-sig">—</div>
+      </div>
+      <div class="tc-value" id="ts-value">Loading…</div>
+      <div class="tc-bars" id="ts-bars"></div>
+      <div class="tc-desc">
+        The slope of the VIX curve from front (VIX9D) to back (VIX3M) reveals how fear is distributed across time.
+        <br><br>
+        <strong style="color:#4ade80">Steep contango (VIX3M ≫ VIX9D):</strong>
+        Near-term calm, longer-term uncertainty. Dealers are hedged.
+        Premium selling is rewarded. Use full calculated position size.
+        <br><br>
+        <strong style="color:#fbbf24">Flat curve (VIX3M ≈ VIX9D):</strong>
+        Market is uncertain across all timeframes. Use 75% size.
+        Reduce short-dated premium exposure.
+        <br><br>
+        <strong style="color:#f87171">Backwardation (VIX9D &gt; VIX3M):</strong>
+        Immediate panic priced into front-month. Dealers must amplify short-term moves.
+        Halve position size, widen stops by 50%, avoid selling premium on 0DTE/1DTE.
+      </div>
+    </div>
+  </div>
+
+  <!-- Magnitude Summary -->
+  <div class="layer-summary" id="mag-summary" style="background:rgba(249,115,22,.06);border:1px solid rgba(249,115,22,.2);">
+    <div class="ls-icon">&#127919;</div>
+    <div class="ls-body">
+      <div class="ls-label">Layer 3 · Magnitude Verdict</div>
+      <div class="ls-signal" id="mag-verdict" style="color:#f97316">Loading…</div>
+      <div class="ls-desc"  id="mag-desc">Analyzing ATR + VIX + IVR + Term Structure…</div>
+    </div>
+    <div class="ls-score">
+      <div class="ls-score-val" id="mag-score" style="color:#f97316">—</div>
+      <div class="ls-score-lbl">size mult.</div>
+    </div>
+  </div>
+
+
+  <!-- ═══════════════════════════════════════════
+       DECISION MATRIX
+  ═══════════════════════════════════════════ -->
+  <div class="sec-hdr" style="margin-top:2.5rem;border-bottom-color:rgba(251,191,36,.3);">
+    <div class="sec-hdr-num" style="background:rgba(251,191,36,.12);color:#fbbf24;border:1px solid rgba(251,191,36,.3);">&#9654;</div>
+    <div class="sec-hdr-text">
+      <h2>Decision Matrix — How the Layers Combine</h2>
+      <p>All three layers must agree before committing full size. Partial alignment = partial size.</p>
+    </div>
+  </div>
+
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1rem;margin-bottom:1rem;overflow-x:auto;">
+    <table class="matrix-table">
+      <thead>
+        <tr>
+          <th>Regime</th>
+          <th>Trigger</th>
+          <th>VIX / Term Structure</th>
+          <th>ATR</th>
+          <th>Action</th>
+          <th>Size</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="tc-sig sig-bull">Bullish</span></td>
+          <td><span class="tc-sig sig-bull">Fired</span></td>
+          <td><span class="tc-sig sig-bull">Low VIX, Contango</span></td>
+          <td>Normal</td>
+          <td style="color:#4ade80">Enter long — all green</td>
+          <td style="color:#4ade80">100% size</td>
+        </tr>
+        <tr>
+          <td><span class="tc-sig sig-bull">Bullish</span></td>
+          <td><span class="tc-sig sig-bull">Fired</span></td>
+          <td><span class="tc-sig sig-neut">Elevated VIX</span></td>
+          <td>Wide</td>
+          <td style="color:#fbbf24">Enter long — reduce for vol</td>
+          <td style="color:#fbbf24">50–60% size</td>
+        </tr>
+        <tr>
+          <td><span class="tc-sig sig-bull">Bullish</span></td>
+          <td><span class="tc-sig sig-wait">Not fired</span></td>
+          <td>Any</td>
+          <td>Any</td>
+          <td style="color:var(--muted)">Wait for trigger — no entry</td>
+          <td style="color:var(--muted)">0%</td>
+        </tr>
+        <tr>
+          <td><span class="tc-sig sig-neut">Neutral</span></td>
+          <td><span class="tc-sig sig-bull">Fired</span></td>
+          <td><span class="tc-sig sig-bull">Low VIX</span></td>
+          <td>Tight</td>
+          <td style="color:#fbbf24">Scalp only — no conviction</td>
+          <td style="color:#fbbf24">25% size</td>
+        </tr>
+        <tr>
+          <td><span class="tc-sig sig-bear">Bearish</span></td>
+          <td><span class="tc-sig sig-bear">Fired</span></td>
+          <td><span class="tc-sig sig-bear">High VIX, Backwardation</span></td>
+          <td>Wide</td>
+          <td style="color:#f87171">Enter short/puts — all red</td>
+          <td style="color:#f87171">40% size (wide stops)</td>
+        </tr>
+        <tr>
+          <td><span class="tc-sig sig-bear">Bearish</span></td>
+          <td><span class="tc-sig sig-bull">Fired Bull</span></td>
+          <td>Any</td>
+          <td>Any</td>
+          <td style="color:var(--muted)">Counter-regime — skip</td>
+          <td style="color:var(--muted)">0%</td>
+        </tr>
+        <tr>
+          <td><span class="tc-sig sig-bear">Bearish</span></td>
+          <td><span class="tc-sig sig-neut">Mixed</span></td>
+          <td><span class="tc-sig sig-neut">Elevated</span></td>
+          <td>Expanding</td>
+          <td style="color:#fbbf24">Sell OTM call spreads / hedge</td>
+          <td style="color:#fbbf24">30% size</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- HOW-TO STEPS -->
+  <div class="sec-hdr" style="border-bottom-color:rgba(255,255,255,.1);">
+    <div class="sec-hdr-num" style="background:rgba(255,255,255,.07);color:var(--muted);border:1px solid var(--border);">&#128161;</div>
+    <div class="sec-hdr-text">
+      <h2>How to Use The EDGE — Step by Step</h2>
+      <p>A repeatable pre-trade checklist. Run through all three layers before pressing any button.</p>
+    </div>
+  </div>
+
+  <div class="howto-grid">
+    <div class="howto-item">
+      <div class="howto-step">Step 1 — Pre-market</div>
+      <div class="howto-title">&#127777; Check Regime</div>
+      <div class="howto-desc">
+        Open this page before market open. Check Layer 1. Is price above or below the Ichimoku cloud?
+        Is the EMA stack bullish, bearish, or mixed? What is the GEX sign for SPY?
+        <br><br>
+        If regime is bearish, only consider put spreads or short call spreads — do not fight the regime for directional long trades.
+        If neutral (price in cloud), reduce all sizes by 50% and wait for clarity.
+      </div>
+    </div>
+    <div class="howto-item">
+      <div class="howto-step">Step 2 — First 15 minutes</div>
+      <div class="howto-title">&#9889; Wait for Trigger</div>
+      <div class="howto-desc">
+        Never enter at the open on direction alone. Wait for MACD histogram to turn in the direction of the regime.
+        Confirm RSI is above 50 (bull) or below 50 (bear) and trending, not just touching.
+        Check options flow for a confirming spike in the direction of your trade.
+        <br><br>
+        If all three trigger signals align with the regime within the first 30–60 minutes, that is your entry window.
+      </div>
+    </div>
+    <div class="howto-item">
+      <div class="howto-step">Step 3 — Entry sizing</div>
+      <div class="howto-title">&#127919; Apply Magnitude</div>
+      <div class="howto-desc">
+        Calculate max dollar risk for the trade. Divide by ATR (in points) to get raw position size.
+        Apply VIX size multiplier: size × (1 − VIX/50).
+        If term structure is in backwardation, halve the result again.
+        <br><br>
+        Set your stop at 1× ATR below entry (longs) or above (shorts). Never move stop against the position.
+      </div>
+    </div>
+    <div class="howto-item">
+      <div class="howto-step">Step 4 — In the trade</div>
+      <div class="howto-title">&#128200; Monitor Layer Changes</div>
+      <div class="howto-desc">
+        Refresh this page every 30–60 minutes while in a trade. If the regime flips (price crosses cloud, EMA stack inverts),
+        exit immediately — the structural case for your trade no longer exists.
+        <br><br>
+        If trigger signals weaken (MACD histogram shrinking, RSI losing 50) but regime is intact, reduce size by 50% — the trade may still work but with less conviction.
+      </div>
+    </div>
+    <div class="howto-item">
+      <div class="howto-step">Step 5 — Exit rules</div>
+      <div class="howto-title">&#128683; When to Get Out</div>
+      <div class="howto-desc">
+        Exit when: (a) stop hit (1× ATR), (b) regime flips, (c) trigger fires in opposite direction,
+        (d) profit target reached (2× ATR from entry = 2:1 R/R minimum).
+        <br><br>
+        For 0DTE: exit by 3:30pm ET unless in strong profit — time decay accelerates in last 30 minutes and can eliminate gains instantly.
+        For 1DTE/5DTE: hold only if regime and trigger remain aligned.
+      </div>
+    </div>
+    <div class="howto-item">
+      <div class="howto-step">Bonus — Confluence</div>
+      <div class="howto-title">&#127775; Maximum Confluence Setup</div>
+      <div class="howto-desc">
+        The highest-probability setups occur when <em>all</em> of these align simultaneously:
+        Price above green Ichimoku cloud + full bull EMA stack + positive GEX + MACD bullish cross +
+        RSI &gt; 50 rising + net call flow spike + VIX &lt; 20 + contango term structure + ATR contracting.
+        <br><br>
+        This setup appears 2–4 times per month. When it does, use full calculated size. These are the trades that build accounts.
+      </div>
+    </div>
+  </div>
+
+  <!-- NOTES -->
+  <div class="notes-panel">
+    <div class="notes-title">&#9888; Key Reminders</div>
+    <ul class="notes-list">
+      <li>No single indicator is sufficient — the EDGE comes from <em>confluence</em> across all three layers. A perfect trigger in a bearish regime is still a losing setup.</li>
+      <li>GEX sign is the most underrated regime filter. Negative GEX (short gamma) means dealers amplify your losses AND your gains — it is not a directional signal on its own, but it multiplies magnitude.</li>
+      <li>RSI divergence is a leading signal (predicts reversal 2–3 sessions ahead). MACD crossover is a lagging confirmation. Use divergence to prepare, use MACD to pull the trigger.</li>
+      <li>ATR-based stops are not optional. They exist to survive market noise. A stop tighter than 1× ATR will be hit by random price action regardless of direction — you will be right on direction and still lose money.</li>
+      <li>VIX term structure backwardation is the single best signal that you should reduce size immediately. It indicates panic and dealer-amplified moves — the market will be bigger than your model expects.</li>
+      <li>All live data on this page is 15–20 minutes delayed via yfinance. For live 0DTE execution, always confirm entry signals on a real-time charting platform before placing the order.</li>
+    </ul>
+  </div>
+
+</div><!-- end edge-wrap -->
+
+<script src="search.js" defer></script>
+<script>
+'use strict';
+
+// ── helpers ──────────────────────────────────────────
+function fmt2(n)   { return (n===null||isNaN(n)) ? '—' : n.toFixed(2); }
+function fmt1(n)   { return (n===null||isNaN(n)) ? '—' : n.toFixed(1); }
+function fmtPct(n) { return (n===null||isNaN(n)) ? '—' : (n>=0?'+':'')+n.toFixed(2)+'%'; }
+
+function setSig(id, label, cls) {
+  var el = document.getElementById(id);
+  if (!el) return;
+  el.textContent = label;
+  el.className = 'tc-sig ' + cls;
+}
+function setTxt(id, txt) {
+  var el = document.getElementById(id);
+  if (el) el.textContent = txt;
+}
+function setHtml(id, html) {
+  var el = document.getElementById(id);
+  if (el) el.innerHTML = html;
+}
+
+function barHtml(label, pct, color, valTxt) {
+  var p = Math.max(0, Math.min(100, pct));
+  return '<div class="tc-bar-row">' +
+    '<span class="tc-bar-lbl">' + label + '</span>' +
+    '<div class="tc-bar-track"><div class="tc-bar-fill" style="width:' + p + '%;background:' + color + '"></div></div>' +
+    '<span class="tc-bar-val" style="color:' + color + '">' + valTxt + '</span>' +
+  '</div>';
+}
+
+// ── indicator math ───────────────────────────────────
+function calcEMA(data, period) {
+  var k = 2 / (period + 1), e = [data[0]];
+  for (var i = 1; i < data.length; i++) e.push(data[i]*k + e[i-1]*(1-k));
+  return e;
+}
+
+function calcRSI(closes, period) {
+  if (closes.length < period + 1) return null;
+  var gains = [], losses = [];
+  for (var i = 1; i < closes.length; i++) {
+    var d = closes[i] - closes[i-1];
+    gains.push(Math.max(d, 0));
+    losses.push(Math.max(-d, 0));
+  }
+  var ag = gains.slice(-period).reduce(function(a,b){return a+b;},0) / period;
+  var al = losses.slice(-period).reduce(function(a,b){return a+b;},0) / period;
+  if (al === 0) return 100;
+  return 100 - (100 / (1 + ag/al));
+}
+
+function calcATR(candles, period) {
+  var trs = [];
+  for (var i = 1; i < candles.length; i++) {
+    var h = candles[i].high, l = candles[i].low, pc = candles[i-1].close;
+    trs.push(Math.max(h-l, Math.abs(h-pc), Math.abs(l-pc)));
+  }
+  if (trs.length < period) return null;
+  return trs.slice(-period).reduce(function(a,b){return a+b;},0) / period;
+}
+
+function calcIchimoku(highs, lows) {
+  var len = highs.length;
+  if (len < 52) return null;
+  function midRange(h, l, period, idx) {
+    var slice_h = h.slice(idx-period, idx);
+    var slice_l = l.slice(idx-period, idx);
+    return (Math.max.apply(null,slice_h) + Math.min.apply(null,slice_l)) / 2;
+  }
+  var tenkan = midRange(highs, lows, 9, len);
+  var kijun  = midRange(highs, lows, 26, len);
+  var senA   = (tenkan + kijun) / 2;
+  var senB   = midRange(highs, lows, 52, len);
+  return { tenkan, kijun, senA, senB };
+}
+
+// ── fetch helpers ────────────────────────────────────
+async function fetchCandles(sym, period) {
+  try {
+    var r = await fetch('/api/candles/'+encodeURIComponent(sym)+'?period='+period+'&interval=1d&nocache=1', {cache:'no-store'});
+    if (!r.ok) return null;
+    return await r.json();
+  } catch(e) { return null; }
+}
+
+async function fetchLast1(sym) {
+  var arr = await fetchCandles(sym, '5d');
+  if (!arr || !arr.length) return null;
+  return arr[arr.length-1].close;
+}
+
+// ── framework diagram ────────────────────────────────
+function drawFramework() {
+  var canvas = document.getElementById('framework-canvas');
+  if (!canvas) return;
+  var W = canvas.offsetWidth || 900;
+  canvas.width = W;
+  var H = 180;
+  var ctx = canvas.getContext('2d');
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle = '#0a0f1e';
+  ctx.fillRect(0,0,W,H);
+
+  var layers = [
+    { label:'1 · REGIME', sub:'Direction Bias', tools:'Ichimoku  ·  EMA Stack  ·  GEX Sign', color:'#22d3ee', icon:'▲' },
+    { label:'2 · TRIGGER', sub:'Entry Timing',   tools:'MACD  ·  RSI Divergence  ·  Options Flow', color:'#a78bfa', icon:'⚡' },
+    { label:'3 · MAGNITUDE', sub:'Trade Size',   tools:'ATR  ·  VIX Level  ·  IV Rank  ·  Term Structure', color:'#f97316', icon:'◎' },
+  ];
+
+  var boxW = Math.floor((W - 60) / 3);
+  var boxH = 130;
+  var startY = 25;
+
+  layers.forEach(function(l, i) {
+    var x = 20 + i * (boxW + 10);
+    // Card bg
+    ctx.fillStyle = 'rgba(255,255,255,.03)';
+    ctx.strokeStyle = l.color + '55';
+    ctx.lineWidth = 1.5;
+    roundRect(ctx, x, startY, boxW, boxH, 8);
+    ctx.fill(); ctx.stroke();
+
+    // Top accent bar
+    ctx.fillStyle = l.color;
+    roundRect(ctx, x, startY, boxW, 4, {tl:8,tr:8,bl:0,br:0});
+    ctx.fill();
+
+    // Icon
+    ctx.font = 'bold 18px sans-serif';
+    ctx.fillStyle = l.color;
+    ctx.textAlign = 'center';
+    ctx.fillText(l.icon, x + boxW/2, startY + 28);
+
+    // Label
+    ctx.font = 'bold 13px sans-serif';
+    ctx.fillStyle = '#fff';
+    ctx.fillText(l.label, x + boxW/2, startY + 50);
+
+    // Sub
+    ctx.font = '11px sans-serif';
+    ctx.fillStyle = 'rgba(255,255,255,.45)';
+    ctx.fillText(l.sub, x + boxW/2, startY + 67);
+
+    // Tools
+    ctx.font = '10px monospace';
+    ctx.fillStyle = 'rgba(255,255,255,.3)';
+    // Word-wrap tools text
+    var words = l.tools.split('  ·  ');
+    var line1 = words.slice(0, Math.ceil(words.length/2)).join(' · ');
+    var line2 = words.slice(Math.ceil(words.length/2)).join(' · ');
+    ctx.fillText(line1, x+boxW/2, startY+90);
+    if (line2) ctx.fillText(line2, x+boxW/2, startY+104);
+
+    // Arrow between boxes
+    if (i < 2) {
+      ctx.fillStyle = 'rgba(255,255,255,.2)';
+      ctx.font = '18px sans-serif';
+      ctx.fillText('→', x + boxW + 5, startY + boxH/2 + 6);
+    }
+  });
+
+  // Bottom label
+  ctx.font = 'bold 11px sans-serif';
+  ctx.fillStyle = 'rgba(255,255,255,.2)';
+  ctx.textAlign = 'center';
+  ctx.fillText('All three layers must align for maximum-confidence trades', W/2, startY + boxH + 20);
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  if (typeof r === 'number') r = {tl:r,tr:r,bl:r,br:r};
+  ctx.beginPath();
+  ctx.moveTo(x + r.tl, y);
+  ctx.lineTo(x + w - r.tr, y);
+  ctx.quadraticCurveTo(x+w, y, x+w, y+r.tr);
+  ctx.lineTo(x+w, y+h-r.br);
+  ctx.quadraticCurveTo(x+w, y+h, x+w-r.br, y+h);
+  ctx.lineTo(x+r.bl, y+h);
+  ctx.quadraticCurveTo(x, y+h, x, y+h-r.bl);
+  ctx.lineTo(x, y+r.tl);
+  ctx.quadraticCurveTo(x, y, x+r.tl, y);
+  ctx.closePath();
+}
+
+// ── main load ────────────────────────────────────────
+async function loadAll() {
+  setTxt('last-update', 'Loading live data…');
+  drawFramework();
+
+  // fetch SPX 200d for indicators
+  var [spxArr, vix9dArr, vix3mArr, vixArr, gexData, flowData] = await Promise.all([
+    fetchCandles('^GSPC', '200d'),
+    fetchCandles('^VIX9D', '5d'),
+    fetchCandles('^VIX3M', '5d'),
+    fetchCandles('^VIX',   '200d'),
+    fetch('/api/gamma-exposure', {cache:'no-store'}).then(function(r){return r.json();}).catch(function(){return null;}),
+    fetch('/api/option-flows',   {cache:'no-store'}).then(function(r){return r.json();}).catch(function(){return null;})
+  ]);
+
+  if (!spxArr || spxArr.length < 50) {
+    setTxt('last-update', 'Error loading SPX data');
+    return;
+  }
+
+  var closes = spxArr.map(function(c){return c.close;});
+  var highs   = spxArr.map(function(c){return c.high;});
+  var lows    = spxArr.map(function(c){return c.low;});
+  var spxLast = closes[closes.length-1];
+
+  // ── LAYER 1: REGIME ──────────────────────────────
+  var regimeScore = 0;
+
+  // Ichimoku
+  var ich = calcIchimoku(highs, lows);
+  var ichSig = 'sig-neut', ichLabel = 'Neutral';
+  var ichScore = 0;
+  if (ich) {
+    var cloudTop = Math.max(ich.senA, ich.senB);
+    var cloudBot = Math.min(ich.senA, ich.senB);
+    var cloudBull = ich.senA > ich.senB;
+    var tkCross = ich.tenkan > ich.kijun;
+    if (spxLast > cloudTop && cloudBull && tkCross) { ichSig='sig-bull'; ichLabel='Strong Bull'; ichScore=2; }
+    else if (spxLast > cloudTop && cloudBull)         { ichSig='sig-bull'; ichLabel='Bullish';     ichScore=1.5; }
+    else if (spxLast > cloudTop)                       { ichSig='sig-bull'; ichLabel='Above Cloud'; ichScore=1; }
+    else if (spxLast < cloudBot && !cloudBull && !tkCross){ ichSig='sig-bear'; ichLabel='Strong Bear'; ichScore=-2; }
+    else if (spxLast < cloudBot)                       { ichSig='sig-bear'; ichLabel='Bearish';    ichScore=-1; }
+    else                                               { ichSig='sig-neut'; ichLabel='In Cloud';   ichScore=0; }
+    setSig('ich-sig', ichLabel, ichSig);
+    setTxt('ich-value', 'Price: '+fmt2(spxLast)+' | Cloud: '+fmt2(cloudBot)+'–'+fmt2(cloudTop)+' | Tenkan: '+fmt2(ich.tenkan)+' | Kijun: '+fmt2(ich.kijun));
+    setHtml('ich-bars',
+      barHtml('Price vs Cloud', spxLast>cloudTop?100:(spxLast<cloudBot?0:50), ichScore>0?'#4ade80':'#f87171', spxLast>cloudTop?'Above':(spxLast<cloudBot?'Below':'Inside')) +
+      barHtml('TK Cross', tkCross?75:25, tkCross?'#22d3ee':'#f97316', tkCross?'Bull':'Bear') +
+      barHtml('Cloud Color', cloudBull?80:20, cloudBull?'#4ade80':'#f87171', cloudBull?'Green':'Red')
+    );
+    regimeScore += ichScore;
+  }
+
+  // EMA Stack
+  var e8   = calcEMA(closes, 8);
+  var e21  = calcEMA(closes, 21);
+  var e50  = calcEMA(closes, 50);
+  var e200 = calcEMA(closes, 200);
+  var ema8=e8[e8.length-1], ema21=e21[e21.length-1], ema50=e50[e50.length-1], ema200=e200[e200.length-1];
+
+  var emaBullCount = 0;
+  if (ema8 > ema21)   emaBullCount++;
+  if (ema21 > ema50)  emaBullCount++;
+  if (ema50 > ema200) emaBullCount++;
+  if (spxLast > ema8) emaBullCount++;
+  var emaSig, emaLabel, emaScore;
+  if (emaBullCount >= 4) { emaSig='sig-bull'; emaLabel='Full Bull Stack'; emaScore=2; }
+  else if (emaBullCount >= 3) { emaSig='sig-bull'; emaLabel='Mostly Bullish'; emaScore=1; }
+  else if (emaBullCount >= 2) { emaSig='sig-neut'; emaLabel='Mixed'; emaScore=0; }
+  else if (emaBullCount >= 1) { emaSig='sig-bear'; emaLabel='Mostly Bearish'; emaScore=-1; }
+  else { emaSig='sig-bear'; emaLabel='Full Bear Stack'; emaScore=-2; }
+  setSig('ema-sig', emaLabel, emaSig);
+  setTxt('ema-value', 'EMA8: '+fmt2(ema8)+' | EMA21: '+fmt2(ema21)+' | EMA50: '+fmt2(ema50)+' | EMA200: '+fmt2(ema200));
+  setHtml('ema-bars',
+    barHtml('EMA8', Math.round(ema8/spxLast*50+50), ema8<spxLast?'#4ade80':'#f87171', fmt2(ema8)) +
+    barHtml('EMA21', Math.round(ema21/spxLast*50+50), ema21<spxLast?'#4ade80':'#f87171', fmt2(ema21)) +
+    barHtml('EMA50', Math.round(ema50/spxLast*50+50), ema50<spxLast?'#4ade80':'#f87171', fmt2(ema50)) +
+    barHtml('EMA200', Math.round(ema200/spxLast*50+50), ema200<spxLast?'#4ade80':'#f87171', fmt2(ema200))
+  );
+  regimeScore += emaScore;
+
+  // GEX Sign
+  var gexSig='sig-neut', gexLabel='No Data', gexScore=0, gexDesc='—';
+  if (gexData && gexData.assets) {
+    var spy = gexData.assets.find(function(a){return a.symbol==='SPY';}) ||
+              gexData.assets.find(function(a){return a.symbol==='SPX';}) ||
+              gexData.assets[0];
+    if (spy) {
+      var regime = (spy.regime||'').toLowerCase();
+      if (regime.indexOf('long gamma')>=0 || regime.indexOf('positive')>=0) {
+        gexSig='sig-bull'; gexLabel='Positive GEX'; gexScore=1; gexDesc=spy.symbol+' in Long Gamma — dealers suppress vol, mean-revert';
+      } else if (regime.indexOf('short gamma')>=0 || regime.indexOf('negative')>=0) {
+        gexSig='sig-bear'; gexLabel='Negative GEX'; gexScore=-1; gexDesc=spy.symbol+' in Short Gamma — dealers amplify moves, wider swings';
+      } else {
+        gexSig='sig-neut'; gexLabel='Transition'; gexScore=0; gexDesc=spy.symbol+' near GEX flip — regime unclear';
+      }
+      setSig('gex-sig', gexLabel, gexSig);
+      setTxt('gex-value', spy.symbol+' regime: '+spy.regime+(spy.gamma_wall?' | Gamma Wall: '+fmt2(spy.gamma_wall):'')+' | Flip: '+(spy.flip_level?fmt2(spy.flip_level):'—'));
+      setHtml('gex-bars',
+        barHtml('GEX Sign', gexScore>0?80:gexScore<0?20:50, gexScore>0?'#4ade80':'#f87171', gexLabel) +
+        barHtml('Gamma Wall', spy.gamma_wall?Math.round(Math.min(spy.gamma_wall/spxLast*50+50,100)):50, '#22d3ee', spy.gamma_wall?fmt2(spy.gamma_wall):'—') +
+        barHtml('Flip Level', spy.flip_level?Math.round(Math.min(spy.flip_level/spxLast*50+50,100)):50, '#fbbf24', spy.flip_level?fmt2(spy.flip_level):'—')
+      );
+    }
+  }
+  regimeScore += gexScore;
+  regimeScore = Math.max(-3, Math.min(3, regimeScore));
+
+  // Regime verdict
+  var regVerdict, regVClass, regDesc2;
+  if (regimeScore >= 2) { regVerdict='Strong Bullish Regime'; regVClass='#4ade80'; regDesc2='Ichimoku, EMA stack, and GEX all support upside. Bias: long only. Wait for Layer 2 trigger.'; }
+  else if (regimeScore >= 1) { regVerdict='Bullish Bias'; regVClass='#86efac'; regDesc2='Majority of regime signals lean bullish. Long trades preferred but reduce size 25% vs. full confluence.'; }
+  else if (regimeScore >= -0.5) { regVerdict='Neutral / Transitional'; regVClass='#fbbf24'; regDesc2='Mixed signals — Ichimoku, EMA, or GEX in conflict. Reduce all size 50%. Scalps only.'; }
+  else if (regimeScore >= -2) { regVerdict='Bearish Bias'; regVClass='#fb923c'; regDesc2='Regime favors downside. Consider put spreads. No long entries unless strong reversal signal.'; }
+  else { regVerdict='Strong Bearish Regime'; regVClass='#f87171'; regDesc2='All regime signals bearish. Short-only bias. Capital preservation priority in extreme regimes.'; }
+
+  document.getElementById('regime-verdict').textContent = regVerdict;
+  document.getElementById('regime-verdict').style.color = regVClass;
+  setTxt('regime-desc', regDesc2);
+  setTxt('regime-score', fmt1(regimeScore));
+  document.getElementById('regime-score').style.color = regVClass;
+  document.getElementById('regime-badge').textContent = regVerdict;
+  document.getElementById('regime-badge').style.color = regVClass;
+  document.getElementById('regime-badge').style.borderColor = regVClass + '55';
+  document.getElementById('regime-badge').style.background = regVClass + '15';
+
+
+  // ── LAYER 2: TRIGGER ─────────────────────────────
+  var triggerScore = 0;
+
+  // MACD
+  var macd12 = calcEMA(closes, 12);
+  var macd26 = calcEMA(closes, 26);
+  var macdLine = macd12.map(function(v,i){return v - macd26[i];});
+  var macdSignal = calcEMA(macdLine.slice(25), 9);
+  var mLast = macdLine[macdLine.length-1];
+  var mSig  = macdSignal[macdSignal.length-1];
+  var mHist = mLast - mSig;
+  var mHistPrev = macdLine[macdLine.length-2] - macdSignal[macdSignal.length-2];
+  var macdSig2, macdLabel, macdScore;
+  if (mHist > 0 && mHistPrev <= 0) { macdSig2='sig-bull'; macdLabel='Bullish Cross'; macdScore=1.5; }
+  else if (mHist > 0 && mHist > mHistPrev) { macdSig2='sig-bull'; macdLabel='Bull Momentum'; macdScore=1; }
+  else if (mHist > 0) { macdSig2='sig-bull'; macdLabel='Bullish'; macdScore=0.5; }
+  else if (mHist < 0 && mHistPrev >= 0) { macdSig2='sig-bear'; macdLabel='Bearish Cross'; macdScore=-1.5; }
+  else if (mHist < 0 && mHist < mHistPrev) { macdSig2='sig-bear'; macdLabel='Bear Momentum'; macdScore=-1; }
+  else { macdSig2='sig-bear'; macdLabel='Bearish'; macdScore=-0.5; }
+  setSig('macd-sig', macdLabel, macdSig2);
+  setTxt('macd-value', 'MACD: '+fmt2(mLast)+' | Signal: '+fmt2(mSig)+' | Histogram: '+(mHist>=0?'+':'')+fmt2(mHist));
+  setHtml('macd-bars',
+    barHtml('MACD Line', Math.min(Math.max((mLast+200)/4,0),100), mLast>0?'#4ade80':'#f87171', fmt2(mLast)) +
+    barHtml('Signal',    Math.min(Math.max((mSig+200)/4,0),100),  mSig>0?'#86efac':'#fb923c', fmt2(mSig)) +
+    barHtml('Histogram', Math.min(Math.max((mHist+50)/1,0),100),  mHist>0?'#4ade80':'#f87171', (mHist>=0?'+':'')+fmt2(mHist))
+  );
+  triggerScore += macdScore;
+
+  // RSI
+  var rsi = calcRSI(closes, 14);
+  var rsiSig2, rsiLabel, rsiScore;
+  if (rsi > 70) { rsiSig2='sig-bear'; rsiLabel='Overbought'; rsiScore=-0.5; }
+  else if (rsi > 55) { rsiSig2='sig-bull'; rsiLabel='Bullish Momentum'; rsiScore=1; }
+  else if (rsi >= 45) { rsiSig2='sig-neut'; rsiLabel='Neutral'; rsiScore=0; }
+  else if (rsi >= 30) { rsiSig2='sig-neut'; rsiLabel='Weakening'; rsiScore=-0.5; }
+  else { rsiSig2='sig-bull'; rsiLabel='Oversold — Watch'; rsiScore=0.5; }
+  setSig('rsi-sig', rsiLabel, rsiSig2);
+  setTxt('rsi-value', 'RSI(14): '+fmt1(rsi)+'   |   Overbought>70 · Neutral 40–60 · Oversold<30');
+  setHtml('rsi-bars',
+    barHtml('RSI', rsi, rsi>70?'#f87171':rsi>55?'#4ade80':rsi>30?'#fbbf24':'#22d3ee', fmt1(rsi)) +
+    barHtml('50-Level', 50, 'rgba(255,255,255,.2)', rsi>50?'Above':'Below') +
+    barHtml('Momentum', Math.max(0,Math.min(100,rsi)), rsi>50?'#86efac':'#fb923c', rsi>50?'Positive':'Negative')
+  );
+  triggerScore += rsiScore;
+
+  // Options Flow
+  var flowSig='sig-neut', flowLabel='No Data', flowScore=0, flowVal='—';
+  if (flowData && flowData.assets) {
+    var fspy = flowData.assets.find(function(a){return a.symbol==='SPY';}) ||
+               flowData.assets.find(function(a){return a.symbol==='SPX';}) ||
+               flowData.assets[0];
+    if (fspy) {
+      var sent = (fspy.flow_sentiment||'').toUpperCase();
+      if (sent.indexOf('BULL')>=0||sent.indexOf('CALL')>=0) { flowSig='sig-bull'; flowLabel='Bullish Flow'; flowScore=1; }
+      else if (sent.indexOf('BEAR')>=0||sent.indexOf('PUT')>=0) { flowSig='sig-bear'; flowLabel='Bearish Flow'; flowScore=-1; }
+      else { flowSig='sig-neut'; flowLabel='Neutral Flow'; flowScore=0; }
+      // Latest strike call vs put premium
+      var callPrem = fspy.call_prem_k ? fspy.call_prem_k[fspy.call_prem_k.length-1] : 0;
+      var putPrem  = fspy.put_prem_k  ? fspy.put_prem_k[fspy.put_prem_k.length-1]   : 0;
+      flowVal = fspy.symbol + ' · Sentiment: ' + (fspy.flow_sentiment||'—') + ' | Call Prem: $' + fmt2(callPrem) + 'K | Put Prem: $' + fmt2(putPrem) + 'K';
+      var total = (callPrem||0) + (putPrem||0);
+      setSig('flow-sig', flowLabel, flowSig);
+      setTxt('flow-value', flowVal);
+      setHtml('flow-bars',
+        barHtml('Call Prem', total?Math.round(callPrem/total*100):50, '#4ade80', '$'+fmt2(callPrem)+'K') +
+        barHtml('Put Prem',  total?Math.round(putPrem/total*100):50,  '#f87171', '$'+fmt2(putPrem)+'K') +
+        barHtml('Net Bias',  flowScore>0?75:flowScore<0?25:50, flowScore>0?'#4ade80':'#f87171', flowLabel)
+      );
+    }
+  }
+  triggerScore += flowScore;
+  triggerScore = Math.max(-3, Math.min(3, triggerScore));
+
+  // Trigger verdict
+  var trgVerdict, trgVClass, trgDesc2;
+  if (triggerScore >= 2) { trgVerdict='Strong Trigger — Enter Now'; trgVClass='#4ade80'; trgDesc2='MACD bullish + RSI above 50 + bullish flow = high-conviction entry signal. Align with regime.'; }
+  else if (triggerScore >= 1) { trgVerdict='Trigger Developing'; trgVClass='#86efac'; trgDesc2='Most trigger signals positive. Wait for final confirmation (MACD histogram turning or flow spike) before full entry.'; }
+  else if (triggerScore >= -0.5) { trgVerdict='No Clear Trigger'; trgVClass='#fbbf24'; trgDesc2='Mixed signals. Wait — entering without a trigger is gambling, not trading.'; }
+  else if (triggerScore >= -2) { trgVerdict='Bearish Trigger'; trgVClass='#fb923c'; trgDesc2='MACD and/or RSI signaling downside momentum. Align with bearish regime for short entries.'; }
+  else { trgVerdict='Strong Bearish Trigger'; trgVClass='#f87171'; trgDesc2='All trigger signals pointing down. High-conviction bearish entry if regime is also bearish.'; }
+
+  document.getElementById('trigger-verdict').textContent = trgVerdict;
+  document.getElementById('trigger-verdict').style.color = trgVClass;
+  setTxt('trigger-desc', trgDesc2);
+  setTxt('trigger-score', fmt1(triggerScore));
+  document.getElementById('trigger-score').style.color = trgVClass;
+  document.getElementById('trigger-badge').textContent = trgVerdict;
+  document.getElementById('trigger-badge').style.color = trgVClass;
+  document.getElementById('trigger-badge').style.borderColor = trgVClass+'55';
+  document.getElementById('trigger-badge').style.background = trgVClass+'15';
+
+
+  // ── LAYER 3: MAGNITUDE ───────────────────────────
+  var sizeMult = 1.0;
+
+  // ATR
+  var atr14 = calcATR(spxArr, 14);
+  var atrPct = atr14 ? (atr14 / spxLast * 100) : 0;
+  var atrSig2, atrLabel;
+  if (atrPct < 0.8) { atrSig2='sig-bull'; atrLabel='Low — Tight Stops'; }
+  else if (atrPct < 1.4) { atrSig2='sig-bull'; atrLabel='Normal'; }
+  else if (atrPct < 2.0) { atrSig2='sig-neut'; atrLabel='Elevated'; sizeMult*=0.75; }
+  else { atrSig2='sig-bear'; atrLabel='High — Wide Stops'; sizeMult*=0.5; }
+  setSig('atr-sig', atrLabel, atrSig2);
+  setTxt('atr-value', 'ATR(14): '+fmt2(atr14)+' pts ('+fmt2(atrPct)+'% of SPX) | Stop: 1×ATR = '+fmt2(atr14)+' pts | Target: 2×ATR = '+fmt2(atr14*2)+' pts');
+  setHtml('atr-bars',
+    barHtml('ATR %', Math.min(atrPct/3*100,100), atrPct<1.4?'#4ade80':'#f87171', fmt2(atrPct)+'%') +
+    barHtml('1× Stop', Math.min(atr14/200*100,100), '#fbbf24', fmt2(atr14)+' pts') +
+    barHtml('2× Target', Math.min(atr14*2/200*100,100), '#22d3ee', fmt2(atr14*2)+' pts')
+  );
+
+  // VIX + IV Rank
+  var vixLast = null, vix52hi = null, vix52lo = null, ivr = null;
+  if (vixArr && vixArr.length > 0) {
+    vixLast = vixArr[vixArr.length-1].close;
+    var vixCloses = vixArr.map(function(c){return c.close;});
+    vix52hi = Math.max.apply(null, vixCloses);
+    vix52lo = Math.min.apply(null, vixCloses);
+    ivr = vix52hi > vix52lo ? (vixLast - vix52lo) / (vix52hi - vix52lo) * 100 : 50;
+  }
+  var vixMagSig, vixMagLabel, vixSizeMult2 = 1.0;
+  if (vixLast) {
+    vixSizeMult2 = Math.max(0.1, 1 - vixLast/50);
+    if (vixLast < 15) { vixMagSig='sig-bull'; vixMagLabel='Low VIX — Full Size'; }
+    else if (vixLast < 20) { vixMagSig='sig-bull'; vixMagLabel='Normal VIX'; }
+    else if (vixLast < 28) { vixMagSig='sig-neut'; vixMagLabel='Elevated — Reduce Size'; }
+    else { vixMagSig='sig-bear'; vixMagLabel='High VIX — Half Size'; }
+    sizeMult *= vixSizeMult2;
+  }
+  setSig('vix-mag-sig', vixMagLabel, vixMagSig);
+  setTxt('vix-mag-value', 'VIX: '+fmt2(vixLast)+' | 52w Range: '+fmt2(vix52lo)+'–'+fmt2(vix52hi)+' | IV Rank: '+fmt1(ivr)+'%  ('+(ivr>50?'Sell Premium':'Buy Premium')+')');
+  setHtml('vix-mag-bars',
+    barHtml('VIX Level', Math.min(vixLast/50*100,100), vixLast<20?'#4ade80':'#f87171', fmt2(vixLast)) +
+    barHtml('IV Rank', ivr, ivr>50?'#f97316':'#22d3ee', fmt1(ivr)+'%') +
+    barHtml('Size Mult', Math.round(vixSizeMult2*100), vixSizeMult2>0.6?'#4ade80':'#fbbf24', Math.round(vixSizeMult2*100)+'%')
+  );
+
+  // Term Structure Slope
+  var v9d = vix9dArr && vix9dArr.length ? vix9dArr[vix9dArr.length-1].close : null;
+  var v3m = vix3mArr && vix3mArr.length ? vix3mArr[vix3mArr.length-1].close : null;
+  var slope = (v9d && v3m) ? v3m - v9d : null;
+  var tsSig2, tsLabel, tsSizeMult = 1.0;
+  if (slope !== null) {
+    if (slope > 3)  { tsSig2='sig-bull'; tsLabel='Steep Contango'; tsSizeMult=1.0; }
+    else if (slope > 0) { tsSig2='sig-bull'; tsLabel='Mild Contango'; tsSizeMult=0.9; }
+    else if (slope > -1) { tsSig2='sig-neut'; tsLabel='Flat Curve'; tsSizeMult=0.75; }
+    else { tsSig2='sig-bear'; tsLabel='Backwardation'; tsSizeMult=0.5; sizeMult*=0.5; }
+    setSig('ts-sig', tsLabel, tsSig2);
+    setTxt('ts-value', 'VIX9D: '+fmt2(v9d)+' | VIX3M: '+fmt2(v3m)+' | Slope: '+(slope>=0?'+':'')+fmt2(slope)+' ('+(slope>0?'Contango':'Backwardation')+')');
+    setHtml('ts-bars',
+      barHtml('VIX9D',  Math.min(v9d/50*100,100), '#f87171', fmt2(v9d)) +
+      barHtml('VIX3M',  Math.min(v3m/50*100,100), '#a78bfa', fmt2(v3m)) +
+      barHtml('Slope',  Math.min(Math.max((slope+5)/15*100,0),100), slope>0?'#4ade80':'#f87171', (slope>=0?'+':'')+fmt2(slope))
+    );
+  }
+
+  sizeMult = Math.max(0.1, Math.min(1.0, sizeMult));
+  var magSig3, magLabel3, magColor;
+  if (sizeMult >= 0.85) { magSig3='sig-bull'; magLabel3='Full Size'; magColor='#4ade80'; }
+  else if (sizeMult >= 0.6) { magSig3='sig-bull'; magLabel3='Normal Size'; magColor='#86efac'; }
+  else if (sizeMult >= 0.4) { magSig3='sig-neut'; magLabel3='Reduced Size'; magColor='#fbbf24'; }
+  else { magSig3='sig-bear'; magLabel3='Small Size'; magColor='#f87171'; }
+
+  document.getElementById('mag-badge').textContent = magLabel3;
+  document.getElementById('mag-verdict').textContent = magLabel3 + ' (' + Math.round(sizeMult*100) + '% of max)';
+  document.getElementById('mag-verdict').style.color = magColor;
+  setTxt('mag-desc', 'ATR='+fmt2(atr14)+'pts | VIX='+fmt2(vixLast)+' | IVR='+fmt1(ivr)+'% | Term slope='+(slope>=0?'+':'')+fmt2(slope)+' → size multiplier '+Math.round(sizeMult*100)+'%');
+  setTxt('mag-score', Math.round(sizeMult*100)+'%');
+  document.getElementById('mag-score').style.color = magColor;
+
+
+  // ── EDGE SCORE ────────────────────────────────────
+  var combinedScore = (regimeScore + triggerScore) / 2;
+  var edgeLabel, edgeColor;
+  if (combinedScore >= 2)      { edgeLabel='Strong Bullish'; edgeColor='#4ade80'; }
+  else if (combinedScore >= 1) { edgeLabel='Bullish';        edgeColor='#86efac'; }
+  else if (combinedScore >= 0) { edgeLabel='Neutral / Wait'; edgeColor='#fbbf24'; }
+  else if (combinedScore >= -1){ edgeLabel='Bearish';        edgeColor='#fb923c'; }
+  else                          { edgeLabel='Strong Bearish'; edgeColor='#f87171'; }
+
+  var scoreMain = document.getElementById('edge-score-main');
+  scoreMain.textContent = edgeLabel;
+  scoreMain.style.color = edgeColor;
+  setTxt('edge-score-sub', 'Combined score: '+fmt2(combinedScore)+' | Position size: '+Math.round(sizeMult*100)+'% of max | Regime: '+fmt2(regimeScore)+' | Trigger: '+fmt2(triggerScore));
+
+  // Rings
+  function setRing(id, valId, val, max, color, label) {
+    var el = document.getElementById(id);
+    if (el) { el.textContent = label; el.style.borderColor=color; el.style.color=color; }
+    var ve = document.getElementById(valId);
+    if (ve) { ve.textContent = label; ve.style.color=color; }
+  }
+  setRing('esb-regime',  'esb-regime-val',  regimeScore,  3, regVClass,  regVerdict.split(' ').slice(0,2).join(' '));
+  setRing('esb-trigger', 'esb-trigger-val', triggerScore, 3, trgVClass,  trgVerdict.split(' ').slice(0,2).join(' '));
+  setRing('esb-mag',     'esb-mag-val',     sizeMult,     1, magColor,   Math.round(sizeMult*100)+'% Size');
+  document.getElementById('esb-regime').textContent  = fmt1(regimeScore);
+  document.getElementById('esb-trigger').textContent = fmt1(triggerScore);
+  document.getElementById('esb-mag').textContent     = Math.round(sizeMult*100)+'%';
+
+  setTxt('last-update', 'Last updated: ' + new Date().toLocaleTimeString() + ' (15–20 min delayed)');
+}
+
+window.addEventListener('resize', function() {
+  clearTimeout(window._rdTimer);
+  window._rdTimer = setTimeout(drawFramework, 250);
+});
+
+document.getElementById('refresh-btn').addEventListener('click', loadAll);
+loadAll();
+</script>
+</body>
+</html>
