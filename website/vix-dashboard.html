@@ -1,0 +1,894 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VIX Dashboard — Volatility Regime, Term Structure &amp; Market Direction</title>
+  <link rel="preload" href="style.css" as="style" fetchpriority="high">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .vd-wrap { max-width:1400px; margin:0 auto; padding:0 1.5rem 6rem; }
+
+    /* Hero */
+    .vd-hero {
+      padding:3.5rem 1.5rem 2.5rem; text-align:center;
+      background:radial-gradient(ellipse 80% 55% at 50% -5%, rgba(239,68,68,.12) 0%, transparent 65%), var(--bg);
+      border-bottom:1px solid var(--border);
+    }
+    .vd-hero h1 {
+      font-size:clamp(1.8rem,4vw,3rem); font-weight:900;
+      letter-spacing:-.03em; line-height:1.15; margin-bottom:.8rem;
+      background:linear-gradient(135deg,#ef4444 0%,#f97316 40%,#fbbf24 80%,#fff 100%);
+      -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+    }
+    .vd-hero p { color:var(--muted); font-size:1.05rem; max-width:800px; margin:0 auto 1.5rem; line-height:1.7; }
+    .vd-badge {
+      display:inline-flex; align-items:center; gap:.5rem;
+      padding:.3rem 1rem; background:rgba(239,68,68,.1);
+      border:1px solid rgba(239,68,68,.3); border-radius:999px;
+      color:#f87171; font-size:.78rem; font-weight:600;
+      letter-spacing:.08em; text-transform:uppercase; margin-bottom:1rem;
+    }
+    .vd-hero-badges { display:flex; gap:.5rem; justify-content:center; flex-wrap:wrap; margin-top:.5rem; }
+    .vd-hb {
+      padding:.25rem .9rem; border-radius:999px; font-size:.72rem; font-weight:700;
+      letter-spacing:.06em; text-transform:uppercase;
+      background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.12); color:var(--muted);
+    }
+
+    /* Section title */
+    .section-title {
+      font-size:.78rem; font-weight:700; text-transform:uppercase; letter-spacing:.1em;
+      color:#ef4444; padding:.6rem 0 .8rem; border-bottom:1px solid var(--border); margin-bottom:1rem;
+    }
+
+    /* Snapshot strip */
+    .snap-strip { display:flex; flex-wrap:wrap; gap:.7rem; padding:1.2rem 0 .5rem; }
+    .snap-card {
+      flex:1 1 140px; background:var(--surface); border:1px solid var(--border);
+      border-radius:10px; padding:.75rem 1rem; min-width:130px; transition:border-color .2s;
+    }
+    .snap-card:hover { border-color:rgba(239,68,68,.4); }
+    .snap-card.active-card { border-color:#ef4444; background:rgba(239,68,68,.05); }
+    .snap-sym { font-size:.7rem; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); }
+    .snap-name { font-size:.62rem; color:var(--muted); opacity:.7; margin-bottom:.3rem; }
+    .snap-price { font-size:1.35rem; font-weight:900; color:var(--text); line-height:1; }
+    .snap-chg { font-size:.78rem; font-weight:700; margin-top:.2rem; }
+    .pos { color:#4ade80; } .neg { color:#f87171; } .neu { color:var(--muted); }
+
+    /* Two-col layout */
+    .two-col { display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin:1rem 0; }
+    @media(max-width:860px) { .two-col { grid-template-columns:1fr; } }
+
+    /* Cards */
+    .vd-card {
+      background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:1.25rem;
+    }
+    .vd-card-title { font-size:.82rem; font-weight:800; color:var(--text); margin-bottom:.9rem; display:flex; align-items:center; gap:.5rem; }
+
+    /* Regime meter */
+    .vix-regime-big { font-size:1.6rem; font-weight:900; text-align:center; padding:.4rem 0 .1rem; }
+    .vix-val-big { font-size:.9rem; color:var(--muted); text-align:center; margin-bottom:.7rem; }
+    .vix-meter-wrap {
+      position:relative; height:28px; border-radius:8px; overflow:hidden; margin-bottom:.6rem;
+      background:linear-gradient(to right,#22d3ee 0%,#4ade80 18%,#86efac 30%,#fbbf24 45%,#f97316 62%,#ef4444 80%,#7f1d1d 100%);
+    }
+    .vix-needle {
+      position:absolute; top:0; width:3px; height:100%; background:#fff; border-radius:2px;
+      box-shadow:0 0 8px rgba(255,255,255,.9); transition:left .7s ease;
+    }
+    .vix-zone-row { display:flex; gap:.35rem; flex-wrap:wrap; margin-bottom:.8rem; }
+    .vz {
+      padding:.18rem .6rem; border-radius:4px; font-size:.65rem; font-weight:700;
+      letter-spacing:.05em; text-transform:uppercase;
+    }
+    .vix-strategy-list { list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:.35rem; }
+    .vix-strategy-list li {
+      font-size:.75rem; color:var(--muted); display:flex; gap:.5rem; line-height:1.5;
+    }
+    .vix-strategy-list li::before { content:"›"; color:#ef4444; font-weight:700; flex-shrink:0; }
+
+    /* Expected Move */
+    .em-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:.6rem; margin-bottom:.8rem; }
+    .em-item {
+      background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.07);
+      border-radius:8px; padding:.7rem; text-align:center;
+    }
+    .em-label { font-size:.62rem; font-weight:700; text-transform:uppercase; letter-spacing:.07em; color:var(--muted); margin-bottom:.3rem; }
+    .em-pct { font-size:1.2rem; font-weight:900; color:#fbbf24; }
+    .em-pts { font-size:.72rem; color:var(--muted); margin-top:.1rem; }
+    .em-note { font-size:.7rem; color:var(--muted); line-height:1.55; }
+
+    /* Term Structure Chart */
+    .ts-chart-wrap { position:relative; width:100%; }
+    .ts-canvas { width:100%; border-radius:6px; }
+    .ts-regime-badge {
+      display:inline-flex; align-items:center; gap:.4rem;
+      padding:.25rem .8rem; border-radius:6px; font-size:.72rem; font-weight:700;
+      text-transform:uppercase; letter-spacing:.06em; margin-bottom:.7rem;
+    }
+    .ts-contango { background:rgba(74,222,128,.12); border:1px solid rgba(74,222,128,.3); color:#4ade80; }
+    .ts-backwardation { background:rgba(239,68,68,.12); border:1px solid rgba(239,68,68,.3); color:#f87171; }
+    .ts-mixed { background:rgba(251,191,36,.12); border:1px solid rgba(251,191,36,.3); color:#fbbf24; }
+    .ts-stats { display:flex; flex-wrap:wrap; gap:.5rem 1.5rem; margin-top:.7rem; }
+    .ts-stat { font-size:.72rem; color:var(--muted); }
+    .ts-stat span { font-weight:700; color:var(--text); }
+
+    /* VIX History Chart */
+    .hist-canvas { width:100%; border-radius:6px; }
+    .hist-legend { display:flex; flex-wrap:wrap; gap:.4rem .9rem; margin-top:.5rem; }
+    .hist-leg-item { display:flex; align-items:center; gap:.3rem; font-size:.65rem; color:var(--muted); }
+    .hist-leg-swatch { width:12px; height:4px; border-radius:2px; }
+
+    /* Contango/Backwardation explainer */
+    .cb-grid { display:grid; grid-template-columns:1fr 1fr; gap:.8rem; }
+    @media(max-width:600px) { .cb-grid { grid-template-columns:1fr; } }
+    .cb-item {
+      border-radius:8px; padding:1rem;
+    }
+    .cb-item h4 { font-size:.8rem; font-weight:800; margin-bottom:.35rem; }
+    .cb-item p { font-size:.72rem; color:var(--muted); line-height:1.6; margin:0; }
+    .cb-contango { background:rgba(74,222,128,.06); border:1px solid rgba(74,222,128,.2); }
+    .cb-contango h4 { color:#4ade80; }
+    .cb-back { background:rgba(239,68,68,.06); border:1px solid rgba(239,68,68,.2); }
+    .cb-back h4 { color:#f87171; }
+
+    /* GEX panel */
+    .gex-panel {
+      background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:1.25rem;
+      border-left:4px solid #f97316; margin:1rem 0;
+    }
+    .gex-panel-title { font-size:1rem; font-weight:800; color:var(--text); margin-bottom:.5rem; }
+    .gex-panel-sub { font-size:.8rem; color:var(--muted); margin-bottom:1rem; line-height:1.6; }
+    .gex-levels { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:.6rem; }
+    .gex-level-item {
+      border-radius:8px; padding:.8rem;
+      background:rgba(255,255,255,.02); border:1px solid rgba(255,255,255,.07);
+    }
+    .gex-level-item h4 { font-size:.75rem; font-weight:800; margin-bottom:.3rem; }
+    .gex-level-item p { font-size:.7rem; color:var(--muted); line-height:1.55; margin:0; }
+
+    /* Signal cards */
+    .signal-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:1rem; margin:1rem 0; }
+    .sig-card {
+      background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:1.2rem;
+      transition:border-color .2s;
+    }
+    .sig-card:hover { border-color:rgba(239,68,68,.35); }
+    .sig-hdr { display:flex; align-items:center; justify-content:space-between; margin-bottom:.7rem; }
+    .sig-title { font-size:.92rem; font-weight:900; color:var(--text); }
+    .sig-badge {
+      font-size:.65rem; font-weight:700; padding:.18rem .6rem; border-radius:5px;
+      text-transform:uppercase; letter-spacing:.06em;
+    }
+    .sig-desc { font-size:.75rem; color:var(--muted); line-height:1.55; }
+
+    /* Refresh bar */
+    .refresh-bar { display:flex; align-items:center; justify-content:space-between; padding:.6rem 0 .3rem; flex-wrap:wrap; gap:.5rem; }
+    .refresh-btn {
+      padding:.3rem .9rem; border-radius:7px; border:1px solid var(--border);
+      background:transparent; color:var(--muted); font-size:.75rem; font-weight:700;
+      cursor:pointer; transition:all .15s;
+    }
+    .refresh-btn:hover { border-color:#ef4444; color:#ef4444; }
+    .last-update { font-size:.72rem; color:var(--muted); }
+
+    @keyframes spin { to { transform:rotate(360deg); } }
+    .spinner { width:14px; height:14px; border:2px solid var(--border); border-top-color:#ef4444; border-radius:50%; animation:spin .7s linear infinite; display:inline-block; }
+  </style>
+</head>
+<body>
+<script>
+if (window.location.search.indexOf('_v=') === -1) {
+  window.location.replace(window.location.pathname + '?_v=' + Date.now());
+}
+</script>
+<nav class="nav">
+  <a href="index.html" class="nav-logo">
+    <img src="images/steve.jpg" class="nav-logo-photo" alt="Stephen Borick">
+    <div class="nav-logo-text"><span class="nav-company">Artificial Intelligence</span><span class="nav-name">Solutions, Inc.</span></div>
+  </a>
+  <ul class="nav-links">
+    <li><a href="index.html">Home</a></li>
+    <li><a href="neural-networks.html">Neural Networks</a></li>
+    <li><a href="machine-learning.html">Machine Learning</a></li>
+    <li><a href="ml-trading.html">ML in Trading</a></li>
+    <li><a href="ml-sp500-example.html">ML Example</a></li>
+    <li><a href="stock-trading.html">Stock Trading</a></li>
+    <li><a href="options-trading.html">Options</a></li>
+    <li><a href="futures-trading.html">Futures</a></li>
+    <li><a href="brokers.html">Brokers</a></li>
+    <li><a href="algorithms-bots.html" style="color:#4ade80;font-weight:700;">&#129302; Algo Bots</a></li>
+    <li><a href="asset-algorithms.html" style="color:#22d3ee;font-weight:700;">&#128200; Asset Algos</a></li>
+    <li><a href="live-trading.html">Live Trading</a></li>
+    <li><a href="market-preparation.html">&#128204; Market Prep</a></li>
+    <li><a href="world-events.html">&#127758; World Events</a></li>
+    <li><a href="forecast.html" style="color:#f59e0b;font-weight:700;">&#128200; Forecast</a></li>
+    <li><a href="gex-heatmap.html" style="color:#22d3ee;font-weight:700;">&#127777; GEX Heat Maps</a></li>
+    <li><a href="spx-correlations.html" style="color:#a78bfa;font-weight:700;">&#128202; SPX Correlations</a></li>
+    <li><a href="vix-dashboard.html" style="color:#f87171;font-weight:700;" class="active">&#128293; VIX Dashboard</a></li>
+    <li><a href="real-time-news.html" style="color:#4ade80;font-weight:700;">&#128240; Real-Time News</a></li>
+    <li><a href="course.html" style="background:#f59e0b;color:#0a0f1e;padding:.28rem .85rem;border-radius:5px;font-weight:700;letter-spacing:.02em;">&#128218; ML Course</a></li>
+    <li><a href="report-ms.html" target="_blank" style="background:#22d3ee;color:var(--bg);padding:.28rem .85rem;border-radius:5px;font-weight:700;letter-spacing:.02em;">&#128202; Market Report</a></li>
+    <li><a href="report-tg.html" target="_blank" style="background:#a78bfa;color:var(--bg);padding:.28rem .85rem;border-radius:5px;font-weight:700;letter-spacing:.02em;">&#128214; Trading Guide</a></li>
+  </ul>
+</nav>
+
+<div class="vd-hero">
+  <div class="vd-badge">&#128293; Volatility Intelligence</div>
+  <h1>VIX Dashboard</h1>
+  <p>The CBOE Volatility Index — market's fear gauge. Track real-time VIX term structure, contango/backwardation regime, expected move calculations, and gamma squeeze risk to predict S&amp;P 500 direction and magnitude.</p>
+  <div class="vd-hero-badges">
+    <span class="vd-hb">Term Structure</span>
+    <span class="vd-hb">Regime Detection</span>
+    <span class="vd-hb">Expected Move</span>
+    <span class="vd-hb">Gamma Squeeze Risk</span>
+    <span class="vd-hb">0DTE / 1DTE / 5DTE Signals</span>
+  </div>
+</div>
+
+<div class="vd-wrap">
+
+  <div class="refresh-bar">
+    <button class="refresh-btn" id="refresh-btn">&#8635; Refresh Data</button>
+    <span class="last-update" id="last-update">Loading…</span>
+  </div>
+
+  <!-- Term Structure Snapshot Strip -->
+  <div class="section-title">&#128293; VIX Term Structure — Live Values</div>
+  <div class="snap-strip" id="snap-strip">
+    <div class="snap-card" id="sc-vix9d"><div class="snap-sym">VIX9D</div><div class="snap-name">9-Day Implied Vol</div><div><span class="spinner"></span></div></div>
+    <div class="snap-card" id="sc-vix"><div class="snap-sym">VIX</div><div class="snap-name">30-Day Implied Vol</div><div><span class="spinner"></span></div></div>
+    <div class="snap-card" id="sc-vix3m"><div class="snap-sym">VIX3M</div><div class="snap-name">3-Month Implied Vol</div><div><span class="spinner"></span></div></div>
+    <div class="snap-card" id="sc-vix6m"><div class="snap-sym">VIX6M</div><div class="snap-name">6-Month Implied Vol</div><div><span class="spinner"></span></div></div>
+    <div class="snap-card" id="sc-vix1y"><div class="snap-sym">VIX1Y</div><div class="snap-name">1-Year Implied Vol</div><div><span class="spinner"></span></div></div>
+    <div class="snap-card" id="sc-spx"><div class="snap-sym">SPX</div><div class="snap-name">S&amp;P 500 Index</div><div><span class="spinner"></span></div></div>
+  </div>
+
+  <!-- Regime + Expected Move Row -->
+  <div class="two-col">
+    <!-- VIX Regime Panel -->
+    <div class="vd-card">
+      <div class="vd-card-title">&#127777; VIX Volatility Regime</div>
+      <div class="vix-regime-big" id="regime-label">—</div>
+      <div class="vix-val-big" id="regime-val"></div>
+      <div class="vix-meter-wrap"><div class="vix-needle" id="vix-needle" style="left:5%"></div></div>
+      <div class="vix-zone-row">
+        <span class="vz" style="background:rgba(34,211,238,.12);color:#22d3ee;border:1px solid rgba(34,211,238,.25);">&lt;12 Complacent</span>
+        <span class="vz" style="background:rgba(74,222,128,.12);color:#4ade80;border:1px solid rgba(74,222,128,.25);">12–15 Low</span>
+        <span class="vz" style="background:rgba(134,239,172,.12);color:#86efac;border:1px solid rgba(134,239,172,.25);">15–20 Normal</span>
+        <span class="vz" style="background:rgba(251,191,36,.12);color:#fbbf24;border:1px solid rgba(251,191,36,.25);">20–25 Elevated</span>
+        <span class="vz" style="background:rgba(249,115,22,.12);color:#fb923c;border:1px solid rgba(249,115,22,.25);">25–35 High</span>
+        <span class="vz" style="background:rgba(239,68,68,.12);color:#f87171;border:1px solid rgba(239,68,68,.25);">&gt;35 Extreme</span>
+      </div>
+      <ul class="vix-strategy-list" id="regime-bullets">
+        <li>Loading strategy guidance…</li>
+      </ul>
+    </div>
+
+    <!-- Expected Move -->
+    <div class="vd-card">
+      <div class="vd-card-title">&#127919; SPX Expected Move (VIX-Implied)</div>
+      <div class="em-grid" id="em-grid">
+        <div class="em-item"><div class="em-label">Daily</div><div class="em-pct" id="em-daily-pct">—</div><div class="em-pts" id="em-daily-pts">— pts</div></div>
+        <div class="em-item"><div class="em-label">Weekly</div><div class="em-pct" id="em-weekly-pct">—</div><div class="em-pts" id="em-weekly-pts">— pts</div></div>
+        <div class="em-item"><div class="em-label">Monthly</div><div class="em-pct" id="em-monthly-pct">—</div><div class="em-pts" id="em-monthly-pts">— pts</div></div>
+      </div>
+      <div class="em-note">
+        Expected move = ±(VIX ÷ 100) ÷ √T where T = trading periods per year (252 daily, 52 weekly, 12 monthly).
+        This is the 1-standard-deviation range that options markets price in — roughly a 68% probability the SPX stays within this range.
+        <br><br>
+        <strong style="color:var(--text)">Note:</strong> When VIX is elevated, these ranges can be exceeded intraday. Use expected moves as a guide, not a guarantee. Always check ES futures pre-market for directional bias before trading.
+      </div>
+    </div>
+  </div>
+
+  <!-- Term Structure Chart + Contango/Backwardation -->
+  <div class="two-col">
+    <!-- Term Structure Curve -->
+    <div class="vd-card">
+      <div class="vd-card-title">&#128200; Term Structure Curve</div>
+      <div id="ts-regime-badge" class="ts-regime-badge ts-contango">Loading…</div>
+      <div class="ts-chart-wrap">
+        <canvas id="ts-canvas" class="ts-canvas" height="200"></canvas>
+      </div>
+      <div class="ts-stats" id="ts-stats"></div>
+    </div>
+
+    <!-- Contango / Backwardation Explainer -->
+    <div class="vd-card">
+      <div class="vd-card-title">&#128259; Contango vs Backwardation</div>
+      <div class="cb-grid">
+        <div class="cb-item cb-contango">
+          <h4>&#9660; Contango (Normal)</h4>
+          <p>VIX9D &lt; VIX &lt; VIX3M &lt; VIX6M — fear increases with time horizon. Dealers are hedged. Market expects calm near-term with uncertainty further out. Premium sellers have edge. SPX tends to drift up.</p>
+        </div>
+        <div class="cb-item cb-back">
+          <h4>&#9650; Backwardation (Fear)</h4>
+          <p>VIX9D &gt; VIX &gt; VIX3M — short-term fear exceeds long-term. Market prices immediate shock risk. Options become very expensive. Mean-reversion setups emerge when VIX spikes and SPX overshoots support.</p>
+        </div>
+      </div>
+      <div style="margin-top:.9rem;padding:.8rem;background:rgba(255,255,255,.02);border-radius:8px;border:1px solid rgba(255,255,255,.07);">
+        <div style="font-size:.75rem;font-weight:800;color:var(--text);margin-bottom:.35rem;">&#128161; Current Structure Signal</div>
+        <div id="ts-signal-text" style="font-size:.75rem;color:var(--muted);line-height:1.6;">Analyzing term structure…</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- VIX History Chart -->
+  <div class="vd-card" style="margin:1rem 0;">
+    <div class="vd-card-title">&#128202; VIX 90-Day History with Regime Zones</div>
+    <canvas id="hist-canvas" class="hist-canvas" height="220"></canvas>
+    <div class="hist-legend">
+      <div class="hist-leg-item"><div class="hist-leg-swatch" style="background:#22d3ee"></div>Complacent &lt;12</div>
+      <div class="hist-leg-item"><div class="hist-leg-swatch" style="background:#4ade80"></div>Low 12–15</div>
+      <div class="hist-leg-item"><div class="hist-leg-swatch" style="background:#86efac"></div>Normal 15–20</div>
+      <div class="hist-leg-item"><div class="hist-leg-swatch" style="background:#fbbf24"></div>Elevated 20–25</div>
+      <div class="hist-leg-item"><div class="hist-leg-swatch" style="background:#f97316"></div>High 25–35</div>
+      <div class="hist-leg-item"><div class="hist-leg-swatch" style="background:#ef4444"></div>Extreme &gt;35</div>
+    </div>
+  </div>
+
+  <!-- GEX Gamma Squeeze -->
+  <div class="gex-panel">
+    <div class="gex-panel-title">&#9889; VIX Gamma Exposure — The Squeeze Mechanism</div>
+    <div class="gex-panel-sub">
+      When VIX approaches negative GEX (Gamma Exposure) zones, options market-makers must hedge their books by buying volatility as it rises — creating a self-reinforcing gamma squeeze.
+      Unlike equity GEX where dealers sell into rallies to hedge, VIX negative GEX means dealers <em>amplify</em> moves, pushing VIX (and SPX swings) dramatically higher with little friction.
+    </div>
+    <div class="gex-levels">
+      <div class="gex-level-item">
+        <h4 style="color:#4ade80;">Positive VIX GEX</h4>
+        <p>Dealers are net long gamma on VIX options. They sell VIX as it rises and buy as it falls — dampening volatility spikes. SPX options become cheaper. Favors premium selling strategies on SPX.</p>
+      </div>
+      <div class="gex-level-item">
+        <h4 style="color:#f87171;">Negative VIX GEX</h4>
+        <p>Dealers are net short gamma on VIX options. They must buy VIX as it rises — adding fuel to volatility spikes. Small SPX moves can cascade into large VIX explosions. Avoid short premium; buy protection.</p>
+      </div>
+      <div class="gex-level-item">
+        <h4 style="color:#fbbf24;">VIX Flip Level</h4>
+        <p>The price at which VIX GEX transitions from positive to negative. When VIX crosses above its flip level, the gamma squeeze mechanism activates. Watch for VIX closes above key levels: 20, 25, and 35.</p>
+      </div>
+      <div class="gex-level-item">
+        <h4 style="color:#a78bfa;">SPX / VIX Divergence</h4>
+        <p>When SPX makes new lows but VIX fails to make new highs (divergence), selling exhaustion is near — a reliable 0DTE reversal signal. Conversely, SPX bouncing with VIX staying elevated = weak bounce, likely to retest lows.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Trading Signal Cards -->
+  <div class="section-title">&#9889; Live Trading Signals by Timeframe</div>
+  <div class="signal-grid" id="signal-grid">
+    <div class="vd-card"><span class="spinner"></span> Loading signals…</div>
+  </div>
+
+</div><!-- end vd-wrap -->
+
+<script src="search.js" defer></script>
+<script>
+'use strict';
+
+const TERM_SYMS = [
+  { sym:'^VIX9D', label:'VIX9D', name:'9-Day',    cardId:'sc-vix9d' },
+  { sym:'^VIX',   label:'VIX',   name:'30-Day',   cardId:'sc-vix'   },
+  { sym:'^VIX3M', label:'VIX3M', name:'3-Month',  cardId:'sc-vix3m' },
+  { sym:'^VIX6M', label:'VIX6M', name:'6-Month',  cardId:'sc-vix6m' },
+  { sym:'^VIX1Y', label:'VIX1Y', name:'1-Year',   cardId:'sc-vix1y' },
+];
+
+let vixVal = 0, spxVal = 0;
+let termVals = [null, null, null, null, null]; // 9D, 30D, 3M, 6M, 1Y
+
+function fmt2(n) { return (n === null || isNaN(n)) ? '—' : n.toFixed(2); }
+function fmtPct(n) { return (n === null || isNaN(n)) ? '—' : (n >= 0 ? '+' : '') + n.toFixed(2) + '%'; }
+function fmtPrice(p) { return (!p || isNaN(p)) ? '—' : p >= 1000 ? p.toFixed(2) : p.toFixed(2); }
+
+async function fetchLast(sym) {
+  try {
+    const r = await fetch('/api/candles/' + encodeURIComponent(sym) + '?period=5d&interval=1d&nocache=1', { cache:'no-store' });
+    if (!r.ok) return null;
+    const arr = await r.json();
+    if (!Array.isArray(arr) || arr.length === 0) return null;
+    return arr;
+  } catch(e) { return null; }
+}
+
+async function fetchHistory(sym, period) {
+  try {
+    const r = await fetch('/api/candles/' + encodeURIComponent(sym) + '?period=' + period + '&interval=1d&nocache=1', { cache:'no-store' });
+    if (!r.ok) return null;
+    const arr = await r.json();
+    return Array.isArray(arr) ? arr : null;
+  } catch(e) { return null; }
+}
+
+function updateSnapCard(cardId, label, name, arr) {
+  const card = document.getElementById(cardId);
+  if (!card) return;
+  if (!arr || arr.length === 0) {
+    card.innerHTML = '<div class="snap-sym">'+label+'</div><div class="snap-name">'+name+'</div><div class="neg">No data</div>';
+    return;
+  }
+  const last = arr[arr.length-1].close;
+  const prev = arr.length >= 2 ? arr[arr.length-2].close : last;
+  const chg = (last - prev) / prev * 100;
+  const cls = chg > 0 ? 'neg' : (chg < 0 ? 'pos' : 'neu'); // VIX up = fear = bad for bulls
+  const sign = chg >= 0 ? '+' : '';
+  card.innerHTML =
+    '<div class="snap-sym">'+label+'</div>' +
+    '<div class="snap-name">'+name+'</div>' +
+    '<div class="snap-price">'+fmt2(last)+'</div>' +
+    '<div class="snap-chg '+cls+'">'+sign+fmt2(chg)+'%</div>';
+}
+
+// VIX regime
+function vixRegime(v) {
+  if (!v) return { label:'Unknown', color:'#888', bullets:[] };
+  if (v < 12) return { label:'Complacency', color:'#22d3ee', bullets:[
+    'Market pricing no near-term risk — historically precedes vol expansion',
+    'Sell OTM condors for 0DTE; premium sellers have maximum edge',
+    'Watch for vol catalyst — complacency ends suddenly, not gradually',
+    'Long vol via VIX calls or SPX calendar spreads is cheap here',
+  ]};
+  if (v < 15) return { label:'Low Volatility', color:'#4ade80', bullets:[
+    'Trending market — SPX tends to drift with low daily swings',
+    'Sell credit spreads: bull put spreads on dips, bear call on resistance',
+    'ES futures pre-market gap direction is high-probability 0DTE bias',
+    'Volatility sellers win consistently; avoid buying premium',
+  ]};
+  if (v < 20) return { label:'Normal', color:'#86efac', bullets:[
+    'Best risk/reward zone — both buyers and sellers can profit',
+    'Directional debit spreads work well for 1DTE–5DTE trades',
+    'Watch SPX/TLT divergence for macro trend confirmation',
+    'VIX 15–20 with contango term structure: market-maker support below',
+  ]};
+  if (v < 25) return { label:'Elevated', color:'#fbbf24', bullets:[
+    'Fear is priced in — premium buying outperforms selling at these levels',
+    'Reduce position size significantly; stops can be hit by noise',
+    'Mean-reversion opportunity: VIX > 22 historically snaps back within 3–5 sessions',
+    'Watch for VIX/SPX divergence as early reversal signal for 1DTE longs',
+  ]};
+  if (v < 35) return { label:'High Volatility', color:'#fb923c', bullets:[
+    'Gamma risk is extreme — 0DTE positions can gap through strikes instantly',
+    'Only long premium with small size; no naked selling or tight spreads',
+    'VIX backwardation likely — front-loaded fear, watch for exhaustion candle',
+    '5DTE SPX calls after second green day historically high-reward setup',
+  ]};
+  return { label:'Extreme Fear', color:'#f87171', bullets:[
+    'AVOID 0DTE — bid/ask predatory, gap risk immense; capital preservation only',
+    'VIX > 35 preceded every major SPX bottom in the last 20 years',
+    'Far OTM puts may be overpriced — VIX mean-reversion is violent when it turns',
+    'Paper trade only until VIX closes below 30 for two consecutive sessions',
+  ]};
+}
+
+function updateRegime(v) {
+  const regime = vixRegime(v);
+  const label = document.getElementById('regime-label');
+  const val = document.getElementById('regime-val');
+  const needle = document.getElementById('vix-needle');
+  const bullets = document.getElementById('regime-bullets');
+
+  label.textContent = regime.label;
+  label.style.color = regime.color;
+  val.textContent = 'VIX: ' + fmt2(v);
+  const pct = Math.min(98, Math.max(2, (v / 50) * 96 + 2));
+  needle.style.left = pct + '%';
+  bullets.innerHTML = regime.bullets.map(function(b) {
+    return '<li>'+b+'</li>';
+  }).join('');
+}
+
+function updateExpectedMove(vix, spx) {
+  if (!vix || !spx) return;
+  const dailyPct  = (vix / 100) / Math.sqrt(252);
+  const weeklyPct = (vix / 100) / Math.sqrt(52);
+  const monthlyPct= (vix / 100) / Math.sqrt(12);
+
+  document.getElementById('em-daily-pct').textContent  = '±' + (dailyPct*100).toFixed(2)+'%';
+  document.getElementById('em-weekly-pct').textContent = '±' + (weeklyPct*100).toFixed(2)+'%';
+  document.getElementById('em-monthly-pct').textContent= '±' + (monthlyPct*100).toFixed(2)+'%';
+  document.getElementById('em-daily-pts').textContent  = '±' + (dailyPct*spx).toFixed(0)+' pts';
+  document.getElementById('em-weekly-pts').textContent = '±' + (weeklyPct*spx).toFixed(0)+' pts';
+  document.getElementById('em-monthly-pts').textContent= '±' + (monthlyPct*spx).toFixed(0)+' pts';
+}
+
+// Term Structure Chart
+function drawTermStructure(vals) {
+  const canvas = document.getElementById('ts-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.offsetWidth || 400;
+  canvas.width = W;
+  canvas.height = 200;
+  const H = 200;
+  const pad = { top:20, right:30, bottom:35, left:45 };
+  const cW = W - pad.left - pad.right;
+  const cH = H - pad.top - pad.bottom;
+
+  const labels = ['VIX9D','VIX','VIX3M','VIX6M','VIX1Y'];
+  const valid = vals.filter(function(v){ return v !== null && !isNaN(v); });
+  if (valid.length === 0) return;
+
+  const minV = Math.max(0, Math.min.apply(null, valid) - 2);
+  const maxV = Math.max.apply(null, valid) + 2;
+
+  ctx.clearRect(0, 0, W, H);
+
+  // Background
+  ctx.fillStyle = '#0a0f1e';
+  ctx.fillRect(0, 0, W, H);
+
+  // Grid lines
+  const gridLevels = [10, 15, 20, 25, 30, 35, 40];
+  gridLevels.forEach(function(lv) {
+    if (lv < minV || lv > maxV) return;
+    const y = pad.top + cH - ((lv - minV) / (maxV - minV)) * cH;
+    ctx.strokeStyle = 'rgba(255,255,255,.06)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(pad.left + cW, y); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = 'rgba(255,255,255,.25)';
+    ctx.font = '10px monospace';
+    ctx.textAlign = 'right';
+    ctx.fillText(lv, pad.left - 4, y + 3);
+  });
+
+  // Points
+  const points = [];
+  vals.forEach(function(v, i) {
+    if (v === null || isNaN(v)) return;
+    const x = pad.left + (i / (vals.length - 1)) * cW;
+    const y = pad.top + cH - ((v - minV) / (maxV - minV)) * cH;
+    points.push({ x, y, v, i, label: labels[i] });
+  });
+
+  if (points.length < 2) return;
+
+  // Determine if contango or backwardation (front to back)
+  const isBackwardation = points[0].v > points[points.length-1].v;
+
+  // Gradient fill under curve
+  const grad = ctx.createLinearGradient(pad.left, pad.top, pad.left, pad.top + cH);
+  if (isBackwardation) {
+    grad.addColorStop(0, 'rgba(239,68,68,.25)');
+    grad.addColorStop(1, 'rgba(239,68,68,.02)');
+  } else {
+    grad.addColorStop(0, 'rgba(74,222,128,.2)');
+    grad.addColorStop(1, 'rgba(74,222,128,.02)');
+  }
+
+  // Fill area
+  ctx.beginPath();
+  ctx.moveTo(points[0].x, pad.top + cH);
+  points.forEach(function(p){ ctx.lineTo(p.x, p.y); });
+  ctx.lineTo(points[points.length-1].x, pad.top + cH);
+  ctx.closePath();
+  ctx.fillStyle = grad;
+  ctx.fill();
+
+  // Line
+  ctx.beginPath();
+  ctx.moveTo(points[0].x, points[0].y);
+  for (let i = 1; i < points.length; i++) {
+    const cp1x = (points[i-1].x + points[i].x) / 2;
+    ctx.bezierCurveTo(cp1x, points[i-1].y, cp1x, points[i].y, points[i].x, points[i].y);
+  }
+  ctx.strokeStyle = isBackwardation ? '#f87171' : '#4ade80';
+  ctx.lineWidth = 2.5;
+  ctx.setLineDash([]);
+  ctx.stroke();
+
+  // Dots and labels
+  points.forEach(function(p) {
+    // Dot
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, 5, 0, Math.PI * 2);
+    ctx.fillStyle = isBackwardation ? '#ef4444' : '#22c55e';
+    ctx.fill();
+    ctx.strokeStyle = '#0a0f1e';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Value label
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 10px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(p.v.toFixed(1), p.x, p.y - 10);
+
+    // X label
+    ctx.fillStyle = 'rgba(255,255,255,.5)';
+    ctx.font = '10px monospace';
+    ctx.fillText(p.label, p.x, H - 8);
+  });
+
+  // Update regime badge
+  const badge = document.getElementById('ts-regime-badge');
+  if (isBackwardation) {
+    badge.className = 'ts-regime-badge ts-backwardation';
+    badge.textContent = '⚠ Backwardation — Front-Loaded Fear';
+  } else {
+    // Check for mixed (e.g. short end flat but long end elevated)
+    const slope = points[points.length-1].v - points[0].v;
+    if (Math.abs(slope) < 1) {
+      badge.className = 'ts-regime-badge ts-mixed';
+      badge.textContent = '⇔ Flat Curve — Uncertainty Across All Timeframes';
+    } else {
+      badge.className = 'ts-regime-badge ts-contango';
+      badge.textContent = '✓ Contango — Normal Structure, Near-Term Calm';
+    }
+  }
+
+  // Term structure stats
+  const statsEl = document.getElementById('ts-stats');
+  const slope9d3m = vals[2] !== null && vals[0] !== null ? (vals[2] - vals[0]).toFixed(2) : '—';
+  const slope3m1y = vals[4] !== null && vals[2] !== null ? (vals[4] - vals[2]).toFixed(2) : '—';
+  const carry = vals[1] !== null && vals[0] !== null ? ((vals[0] - vals[1]) / vals[1] * 100).toFixed(1) + '%' : '—';
+  statsEl.innerHTML =
+    '<div class="ts-stat">Front Slope (9D→3M): <span style="color:'+(parseFloat(slope9d3m)>0?'#4ade80':'#f87171')+'">'+slope9d3m+'</span></div>' +
+    '<div class="ts-stat">Back Slope (3M→1Y): <span style="color:'+(parseFloat(slope3m1y)>0?'#4ade80':'#f87171')+'">'+slope3m1y+'</span></div>' +
+    '<div class="ts-stat">VIX9D vs VIX Carry: <span>'+carry+'</span></div>';
+
+  // Signal text
+  const signalEl = document.getElementById('ts-signal-text');
+  if (isBackwardation) {
+    signalEl.textContent = 'Term structure is inverted — the market prices more fear today than in the future. This is typical of sharp selloffs and VIX spikes. High probability of mean-reversion within 1–5 sessions. Watch for VIX failure at intraday high + ES reversal above prior close as 0DTE/1DTE long signal.';
+  } else {
+    const frontSlope = vals[2] !== null && vals[0] !== null ? vals[2] - vals[0] : 0;
+    if (frontSlope > 3) {
+      signalEl.textContent = 'Steep contango with significant front-to-back premium. Market is calm near-term but pricing risk further out. Premium selling on 0DTE/1DTE is favored. Watch for any catalyst that flattens the curve — that signals increasing near-term risk.';
+    } else {
+      signalEl.textContent = 'Flat-to-mild contango. Near-term and long-term vol are priced similarly — market is uncertain about the near-term direction. Both debit and credit spread strategies can work. Use ES futures direction and SPX/VIX correlation as primary bias filter.';
+    }
+  }
+}
+
+// History chart
+function drawHistory(histData) {
+  const canvas = document.getElementById('hist-canvas');
+  if (!canvas || !histData || histData.length < 5) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.offsetWidth || 800;
+  canvas.width = W;
+  canvas.height = 220;
+  const H = 220;
+  const pad = { top:15, right:20, bottom:25, left:40 };
+  const cW = W - pad.left - pad.right;
+  const cH = H - pad.top - pad.bottom;
+
+  const closes = histData.map(function(d){ return d.close; });
+  const minV = 0;
+  const maxV = Math.max(40, Math.max.apply(null, closes) + 3);
+
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = '#0a0f1e';
+  ctx.fillRect(0, 0, W, H);
+
+  // Zone bands
+  const zones = [
+    { lo:0,  hi:12, color:'rgba(34,211,238,.08)' },
+    { lo:12, hi:15, color:'rgba(74,222,128,.08)' },
+    { lo:15, hi:20, color:'rgba(134,239,172,.06)' },
+    { lo:20, hi:25, color:'rgba(251,191,36,.08)' },
+    { lo:25, hi:35, color:'rgba(249,115,22,.08)' },
+    { lo:35, hi:100,color:'rgba(239,68,68,.1)' },
+  ];
+  zones.forEach(function(z) {
+    const y1 = pad.top + cH - (Math.min(z.hi, maxV) / maxV) * cH;
+    const y2 = pad.top + cH - (Math.max(z.lo, 0) / maxV) * cH;
+    ctx.fillStyle = z.color;
+    ctx.fillRect(pad.left, y1, cW, y2 - y1);
+  });
+
+  // Horizontal level lines
+  [12, 15, 20, 25, 35].forEach(function(lv) {
+    const y = pad.top + cH - (lv / maxV) * cH;
+    ctx.strokeStyle = 'rgba(255,255,255,.12)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([3, 5]);
+    ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(pad.left+cW, y); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = 'rgba(255,255,255,.35)';
+    ctx.font = '9px monospace';
+    ctx.textAlign = 'right';
+    ctx.fillText(lv, pad.left - 3, y + 3);
+  });
+
+  // VIX line — color segment by regime
+  const zoneColors = [
+    { threshold:12, color:'#22d3ee' },
+    { threshold:15, color:'#4ade80' },
+    { threshold:20, color:'#86efac' },
+    { threshold:25, color:'#fbbf24' },
+    { threshold:35, color:'#f97316' },
+    { threshold:999,color:'#ef4444' },
+  ];
+  function getColor(v) {
+    for (let i=0; i<zoneColors.length; i++) {
+      if (v < zoneColors[i].threshold) return zoneColors[i].color;
+    }
+    return '#ef4444';
+  }
+
+  for (let i = 1; i < closes.length; i++) {
+    const x1 = pad.left + ((i-1) / (closes.length-1)) * cW;
+    const x2 = pad.left + (i / (closes.length-1)) * cW;
+    const y1 = pad.top + cH - (closes[i-1] / maxV) * cH;
+    const y2 = pad.top + cH - (closes[i] / maxV) * cH;
+    ctx.strokeStyle = getColor((closes[i-1]+closes[i])/2);
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+  }
+
+  // Current value dot
+  const lastX = pad.left + cW;
+  const lastY = pad.top + cH - (closes[closes.length-1] / maxV) * cH;
+  ctx.beginPath(); ctx.arc(lastX, lastY, 4, 0, Math.PI*2);
+  ctx.fillStyle = getColor(closes[closes.length-1]);
+  ctx.fill();
+
+  // X axis labels (dates, every ~20 bars)
+  ctx.fillStyle = 'rgba(255,255,255,.3)';
+  ctx.font = '9px monospace';
+  ctx.textAlign = 'center';
+  const step = Math.floor(closes.length / 5);
+  for (let i=0; i<closes.length; i+=step) {
+    const t = histData[i].time * 1000;
+    const d = new Date(t);
+    const lbl = (d.getMonth()+1)+'/'+ d.getDate();
+    const x = pad.left + (i / (closes.length-1)) * cW;
+    ctx.fillText(lbl, x, H - 5);
+  }
+}
+
+// Signal cards
+function buildSignals(vix, termVals) {
+  const regime = vixRegime(vix);
+  const v9d  = termVals[0], v30 = termVals[1], v3m = termVals[2];
+  const isBackward = v9d !== null && v30 !== null && v9d > v30;
+  const frontSlope = (v3m !== null && v9d !== null) ? v3m - v9d : 0;
+
+  const signals = [
+    {
+      title: '0DTE Strategy',
+      badge: isBackward ? 'Caution' : (vix < 20 ? 'Sell Premium' : 'Buy Premium'),
+      badgeStyle: isBackward ? 'background:rgba(239,68,68,.15);color:#f87171;border:1px solid rgba(239,68,68,.3);'
+                : (vix < 20 ? 'background:rgba(74,222,128,.15);color:#4ade80;border:1px solid rgba(74,222,128,.3);'
+                             : 'background:rgba(251,191,36,.15);color:#fbbf24;border:1px solid rgba(251,191,36,.3);'),
+      desc: isBackward
+        ? 'Term structure in backwardation — short-term fear exceeds long-term. Avoid selling premium; buy ATM options with small size. Watch for VIX failure at intraday high as reversal trigger.'
+        : vix < 15
+          ? 'Low VIX + contango = ideal premium-selling environment. Sell iron condors centered at today\'s open. Target ±0.3% range. Exit at 50% max profit or 21-delta breach.'
+          : vix < 20
+            ? 'Normal vol with ' + (frontSlope > 0 ? 'steep' : 'flat') + ' contango. Use ES futures pre-market for directional bias. Sell spreads in the direction of resistance/support.'
+            : 'Elevated VIX — options expensive. ATM debit spreads in ES-confirmed direction. Max 25% normal size. Stop at 2× credit / debit paid.'
+    },
+    {
+      title: '1DTE Strategy',
+      badge: vix < 20 ? 'Credit Spreads' : 'Long Straddle',
+      badgeStyle: vix < 20
+        ? 'background:rgba(34,211,238,.15);color:#22d3ee;border:1px solid rgba(34,211,238,.3);'
+        : 'background:rgba(249,115,22,.15);color:#fb923c;border:1px solid rgba(249,115,22,.3);',
+      desc: vix < 15
+        ? 'Sell 10-delta credit spreads at end of day for next expiry. Low VIX means premium decays quickly overnight. Target 0.30–0.50 credit, $5-wide spreads.'
+        : vix < 20
+          ? 'ATM debit spreads in trend direction entered after 3pm ET. Capture overnight drift with defined risk. Exit within first 30 min of next session.'
+          : vix < 28
+            ? 'Long ATM straddle on elevated VIX. Overnight moves large enough to profit on either side. Enter 3:45pm ET, exit both legs within 30 min of open.'
+            : 'Long far OTM put spread as tail-risk hedge only. High VIX puts may be overpriced — check if backwardation resolving before entering.'
+    },
+    {
+      title: '5DTE Strategy',
+      badge: vix > 25 ? 'Mean Reversion' : (vix < 15 ? 'Calendar Spread' : 'Diagonal'),
+      badgeStyle: vix > 25
+        ? 'background:rgba(167,139,250,.15);color:#a78bfa;border:1px solid rgba(167,139,250,.3);'
+        : 'background:rgba(74,222,128,.15);color:#4ade80;border:1px solid rgba(74,222,128,.3);',
+      desc: vix < 15
+        ? 'VIX near lows = cheap vol. Buy 5DTE ATM straddle, sell 1DTE ATM straddle (calendar). Profit if VIX rises toward 15–18 by expiry. Max risk = net debit.'
+        : vix < 20
+          ? 'Diagonal spreads in trend direction. Buy 5DTE ITM, sell 1DTE OTM same direction. Roll short leg daily. EUR/USD + TLT divergence confirms macro trend.'
+          : vix < 28
+            ? 'VIX elevated over 5 days historically precedes SPX recovery. Watch for second green SPX day + VIX close below 5-day high as entry trigger for 5DTE calls.'
+            : 'VIX > 28 extreme — long SPX calls on exhaustion only. Wait for VIX close below prior day high for 2 consecutive days. Use small size. SPX 5DTE calls 2% OTM.'
+    },
+    {
+      title: 'Volatility Regime Signal',
+      badge: regime.label,
+      badgeStyle: 'background:rgba(239,68,68,.1);color:'+regime.color+';border:1px solid '+regime.color+'55;',
+      desc: 'Current VIX: ' + fmt2(vix) + '. ' +
+        (isBackward
+          ? 'Term structure INVERTED (backwardation) — short-term fear is dominant. High probability of mean-reversion within 1–5 sessions. VIX failure to make new high while SPX makes new low = bullish divergence signal.'
+          : 'Term structure in CONTANGO (normal). Front slope: ' + frontSlope.toFixed(2) + ' points (9D→3M). ' +
+            (frontSlope > 3 ? 'Steep contango favors premium sellers and calm trending environment.'
+                            : 'Flat contango — neutral; follow ES futures and SPX/VIX intraday divergence for direction.')
+        )
+    },
+  ];
+
+  const grid = document.getElementById('signal-grid');
+  grid.innerHTML = signals.map(function(s) {
+    return '<div class="sig-card">' +
+      '<div class="sig-hdr">' +
+        '<span class="sig-title">'+s.title+'</span>' +
+        '<span class="sig-badge" style="'+s.badgeStyle+'">'+s.badge+'</span>' +
+      '</div>' +
+      '<div class="sig-desc">'+s.desc+'</div>' +
+    '</div>';
+  }).join('');
+}
+
+async function loadAll() {
+  document.getElementById('last-update').textContent = 'Refreshing…';
+
+  // Load all term structure tickers + SPX in parallel
+  const [arr9d, arr30, arr3m, arr6m, arr1y, arrSpx] = await Promise.all([
+    fetchLast('^VIX9D'),
+    fetchLast('^VIX'),
+    fetchLast('^VIX3M'),
+    fetchLast('^VIX6M'),
+    fetchLast('^VIX1Y'),
+    fetchLast('^GSPC'),
+  ]);
+
+  const arrs = [arr9d, arr30, arr3m, arr6m, arr1y];
+  const syms = TERM_SYMS;
+
+  arrs.forEach(function(arr, i) {
+    const s = syms[i];
+    updateSnapCard(s.cardId, s.label, s.name, arr);
+    if (arr && arr.length > 0) termVals[i] = arr[arr.length-1].close;
+  });
+
+  // SPX snap card
+  if (arrSpx && arrSpx.length > 0) {
+    const last = arrSpx[arrSpx.length-1].close;
+    const prev = arrSpx.length >= 2 ? arrSpx[arrSpx.length-2].close : last;
+    const chg = (last - prev) / prev * 100;
+    const cls = chg >= 0 ? 'pos' : 'neg';
+    const sign = chg >= 0 ? '+' : '';
+    document.getElementById('sc-spx').innerHTML =
+      '<div class="snap-sym">SPX</div>' +
+      '<div class="snap-name">S&P 500 Index</div>' +
+      '<div class="snap-price">' + fmtPrice(last) + '</div>' +
+      '<div class="snap-chg '+cls+'">' + sign + fmt2(chg) + '%</div>';
+    spxVal = last;
+  }
+
+  vixVal = termVals[1] || 0;
+
+  // Update regime + expected move
+  if (vixVal) {
+    updateRegime(vixVal);
+    updateExpectedMove(vixVal, spxVal);
+  }
+
+  // Term structure curve
+  drawTermStructure(termVals);
+
+  // Load VIX history for chart
+  const histData = await fetchHistory('^VIX', '90d');
+  if (histData) drawHistory(histData);
+
+  // Build signals
+  if (vixVal) buildSignals(vixVal, termVals);
+
+  document.getElementById('last-update').textContent =
+    'Last updated: ' + new Date().toLocaleTimeString() + ' (15–20 min delayed)';
+}
+
+// Redraw charts on resize
+let resizeTimer;
+window.addEventListener('resize', function() {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(function() {
+    drawTermStructure(termVals);
+    fetchHistory('^VIX', '90d').then(function(d){ if(d) drawHistory(d); });
+  }, 250);
+});
+
+document.getElementById('refresh-btn').addEventListener('click', loadAll);
+loadAll();
+</script>
+</body>
+</html>
