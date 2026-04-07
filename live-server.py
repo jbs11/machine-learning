@@ -3391,7 +3391,10 @@ def _gex_row(symbol: str, group: str, nocache: bool = False) -> dict | None:
             except Exception:
                 spot = 0.0
         if not spot or spot <= 0:
-            return _no_data_row(0.0)
+            if not _is_futures:
+                return _no_data_row(0.0)
+            # For futures, spot may be unavailable via yfinance — let the proxy
+            # section below supply both spot (scaled) and options data.
 
         # ── Options expiries — futures always go to proxy first ────────────────
         expiries = []
@@ -3415,6 +3418,10 @@ def _gex_row(symbol: str, group: str, nocache: bool = False) -> dict | None:
                             ph = proxy_tk.history(period='2d')
                             proxy_spot = float(ph['Close'].iloc[-1]) if not ph.empty else 0.0
                         if proxy_spot > 0:
+                            # If futures spot was unavailable, derive from proxy × known multiplier
+                            if not spot or spot <= 0:
+                                mult = FUTURES_MULTIPLIERS.get(symbol, 10)
+                                spot = proxy_spot * mult
                             scale = spot / proxy_spot   # e.g., ES=F/SPY ≈ 10×
                             today  = datetime.now().date()
                             R      = 0.05
@@ -3649,11 +3656,26 @@ def gamma_exposure_endpoint():
     all_items = [(sym, grp) for grp, syms in _GEX_GROUPS for sym in syms]
     rows = []
     with ThreadPoolExecutor(max_workers=4) as pool:
-        futs = {pool.submit(_gex_row, sym, grp, nocache): sym for sym, grp in all_items}
+        futs = {pool.submit(_gex_row, sym, grp, nocache): (sym, grp) for sym, grp in all_items}
         for fut in as_completed(futs):
-            r = fut.result()
+            sym, grp = futs[fut]
+            try:
+                r = fut.result()
+            except Exception as e:
+                print(f'[gex-endpoint] {sym}: {e}')
+                r = None
             if r:
                 rows.append(r)
+            else:
+                # Always include a minimal row so every symbol appears in the UI
+                rows.append({
+                    'symbol': sym, 'label': SYMBOL_LABELS.get(sym, sym),
+                    'group': grp, 'asset_type': _asset_type_for(sym),
+                    'spot': 0.0, 'strikes': [], 'gex': [], 'call_oi': [], 'put_oi': [],
+                    'total_gex_m': 0.0, 'gamma_wall': None, 'put_wall': None,
+                    'call_wall': None, 'flip_level': None, 'regime': 'No Data',
+                    'pcr': None, 'expiries': [], 'no_options': True,
+                })
 
     grp_ord = {g: i for i, (g, _) in enumerate(_GEX_GROUPS)}
     rows.sort(key=lambda r: (grp_ord.get(r['group'], 99), r['symbol']))

@@ -175,6 +175,8 @@ if (window.location.search.indexOf('_v=') === -1) {
 const API = '';
 let gexData = [];
 let candleCache = {};
+// Proxy ETF for futures GEX zones (mirrors live-server.py _FUTURES_PROXY_MAP)
+const FUTURES_PROXY = {'ES=F':'SPY','NQ=F':'QQQ','CL=F':'USO','GC=F':'GLD','SI=F':'SLV','ZB=F':'TLT'};
 let activeGroup = 'all';
 let activeTF = '1d';
 
@@ -192,7 +194,7 @@ async function loadGex() {
     const res = await fetch(API + '/api/gamma-exposure', { cache:'no-store' });
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const d = await res.json();
-    gexData = (d.assets || []).filter(function(a) { return !a.no_options; });
+    gexData = d.assets || [];  // show all assets; no_options handled per card
     renderGrid();
   } catch(e) {
     document.getElementById('ghm-grid').innerHTML =
@@ -203,9 +205,10 @@ async function loadGex() {
 function getFiltered() {
   return gexData.filter(function(a) {
     if (activeGroup === 'all')     return true;
-    if (activeGroup === 'etf')     return a.asset_type === 'etf';
-    if (activeGroup === 'stock')   return a.asset_type === 'stock';
-    if (activeGroup === 'futures') return a.asset_type === 'futures';
+    if (activeGroup === 'etf')     return (a.group || '').toLowerCase().indexOf('etf') >= 0;
+    if (activeGroup === 'stock')   return (a.group || '').toLowerCase().indexOf('etf') < 0
+                                       && (a.group || '').toLowerCase().indexOf('futures') < 0;
+    if (activeGroup === 'futures') return (a.group || '').toLowerCase().indexOf('futures') >= 0;
     return true;
   });
 }
@@ -245,8 +248,29 @@ function renderGrid() {
   // Add legend after last row if odd number of cards
   if (cardCount % 2 !== 0) html += rowLegend;
   grid.innerHTML = html;
+  // Patch futures card levels using proxy ETF data (scaled)
+  filtered.forEach(function(a) {
+    if (a.no_options && FUTURES_PROXY[a.symbol]) {
+      // Show proxy ETF GEX levels in card header (proxy price space)
+      var proxyData = gexData.find(function(p){ return p.symbol === FUTURES_PROXY[a.symbol]; });
+      if (!proxyData) return;
+      var card = document.querySelector('.ghm-card[data-sym="' + a.symbol + '"]');
+      if (!card) return;
+      var lvs = card.querySelectorAll('.ghm-lv span');
+      var fmtL = function(v) { return v >= 1000 ? v.toLocaleString(undefined,{maximumFractionDigits:1}) : v.toFixed(2); };
+      if (proxyData.gamma_wall && lvs[0]) lvs[0].textContent = fmtL(proxyData.gamma_wall);
+      if (proxyData.flip_level  && lvs[1]) lvs[1].textContent = fmtL(proxyData.flip_level);
+      if (proxyData.put_wall    && lvs[2]) lvs[2].textContent = fmtL(proxyData.put_wall);
+    }
+  });
   // Load candles for each card
-  filtered.forEach(function(a) { loadCandles(a); });
+  filtered.forEach(function(a) {
+    if (!a.no_options || FUTURES_PROXY[a.symbol]) {
+      // Load candles: futures use their own symbol (ES=F candles return real prices)
+      // GEX lines only draw if gamma_wall/flip_level/put_wall are non-null on the asset
+      loadCandles(a);
+    }
+  });
 }
 
 function buildCard(a) {
@@ -270,9 +294,20 @@ function buildCard(a) {
       '<div class="ghm-lv" style="color:#f87171">Put Wall <span>' + fmt(pwall) + '</span></div>' +
     '</div>' +
     '<div class="ghm-canvas-wrap">' +
-      '<div class="ghm-loading" id="load-' + a.symbol + '"><div class="ghm-spinner"></div><span>Loading candles...</span></div>' +
-      '<div class="ghm-chart" id="cv-' + a.symbol + '" style="display:none;"></div>' +
-      '<div class="ghm-cvd" id="cvd-' + a.symbol + '" style="display:none;height:80px;"></div>' +
+      (a.no_options && FUTURES_PROXY[a.symbol]
+        ? '<div style="font-size:.65rem;color:rgba(148,163,184,0.7);padding:.2rem .7rem;background:rgba(255,255,255,0.03);border-bottom:1px solid rgba(255,255,255,0.06);letter-spacing:.02em;">&#9432; Futures price chart &nbsp;&middot;&nbsp; No options chain available &mdash; GEX zones not shown</div>' +
+          '<div class="ghm-loading" id="load-' + a.symbol + '"><div class="ghm-spinner"></div><span>Loading candles...</span></div>' +
+          '<div class="ghm-chart" id="cv-' + a.symbol + '" style="display:none;"></div>' +
+          '<div class="ghm-cvd" id="cvd-' + a.symbol + '" style="display:none;height:80px;"></div>'
+        : (a.no_options
+            ? '<div style="display:flex;align-items:center;justify-content:center;height:160px;color:var(--muted);font-size:.8rem;flex-direction:column;gap:.4rem;">' +
+                '<span style="font-size:1.4rem;">&#128683;</span>' +
+                '<span>No options chain data</span>' +
+                '<span style="font-size:.7rem;">Options chain unavailable — spot data only</span>' +
+              '</div>'
+            : '<div class="ghm-loading" id="load-' + a.symbol + '"><div class="ghm-spinner"></div><span>Loading candles...</span></div>' +
+              '<div class="ghm-chart" id="cv-' + a.symbol + '" style="display:none;"></div>' +
+              '<div class="ghm-cvd" id="cvd-' + a.symbol + '" style="display:none;height:80px;"></div>')) +
     '</div></div>';
 }
 
@@ -293,15 +328,16 @@ function destroyAllCharts() {
 
 async function loadCandles(a) {
   const cfg     = TF_CONFIG[activeTF];
-  const key     = a.symbol + '_' + activeTF;
-  const instKey = key;
+  var fetchSym0 = a.candleSymbol || a.symbol;
+  const key     = fetchSym0 + '_' + activeTF;
+  const instKey = a.symbol + '_' + activeTF;
   var container    = document.getElementById('cv-'  + a.symbol);
   var ld           = document.getElementById('load-'+ a.symbol);
   var cvdContainer = document.getElementById('cvd-' + a.symbol);
   try {
     let candles = candleCache[key];
     if (!candles) {
-      const url = API + '/api/candles/' + encodeURIComponent(a.symbol) +
+      const url = API + '/api/candles/' + encodeURIComponent(fetchSym0) +
                   '?interval=' + cfg.interval + '&period=' + cfg.period;
       const res = await fetch(url, { cache:'no-store' });
       if (!res.ok) throw new Error('HTTP ' + res.status);
@@ -507,6 +543,7 @@ document.querySelectorAll('.filter-pill').forEach(function(btn) {
     document.querySelectorAll('.filter-pill').forEach(function(b){ b.classList.remove('active'); });
     btn.classList.add('active');
     activeGroup = btn.dataset.group;
+    destroyAllCharts();
     renderGrid();
   });
 });

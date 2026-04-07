@@ -1,0 +1,954 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Morning Decision Brief — ML Trading Dashboard</title>
+  <link rel="preload" href="style.css" as="style" fetchpriority="high">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    /* ── Layout ─────────────────────────────────────────────── */
+    .brief-wrap { max-width:1500px; margin:0 auto; padding:0 1.5rem 6rem; }
+
+    /* ── Hero ───────────────────────────────────────────────── */
+    .brief-hero {
+      padding:3rem 1.5rem 2rem; text-align:center;
+      background:radial-gradient(ellipse 80% 55% at 50% -5%,rgba(34,211,238,.1) 0%,transparent 65%), var(--bg);
+      border-bottom:1px solid var(--border);
+    }
+    .brief-hero h1 {
+      font-size:clamp(1.8rem,4vw,3.2rem); font-weight:900;
+      letter-spacing:-.04em; line-height:1.1; margin-bottom:.6rem;
+      background:linear-gradient(135deg,#22d3ee 0%,#a78bfa 40%,#f97316 75%,#fbbf24 100%);
+      -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+    }
+    .brief-hero p { color:var(--muted); font-size:1rem; max-width:720px; margin:0 auto .8rem; line-height:1.7; }
+    .hero-meta { display:flex; align-items:center; justify-content:center; gap:1rem; flex-wrap:wrap; margin-top:.8rem; }
+    .hero-badge {
+      display:inline-flex; align-items:center; gap:.4rem; padding:.25rem .9rem;
+      background:rgba(34,211,238,.1); border:1px solid rgba(34,211,238,.3);
+      border-radius:999px; color:#22d3ee; font-size:.75rem; font-weight:700;
+      letter-spacing:.08em; text-transform:uppercase;
+    }
+    .refresh-btn {
+      background:transparent; border:1px solid var(--border); color:var(--muted);
+      padding:.35rem 1rem; border-radius:6px; cursor:pointer; font-size:.82rem;
+      font-family:inherit; transition:border-color .2s,color .2s;
+    }
+    .refresh-btn:hover { border-color:#22d3ee; color:#22d3ee; }
+    .last-upd { font-size:.75rem; color:var(--muted); }
+    .spinner { display:inline-block; width:14px; height:14px; border:2px solid rgba(255,255,255,.1);
+      border-top-color:#22d3ee; border-radius:50%; animation:spin .7s linear infinite; vertical-align:middle; margin-right:.3rem; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+
+    /* ── Section labels ─────────────────────────────────────── */
+    .sec-label {
+      display:flex; align-items:center; gap:.7rem;
+      font-size:.72rem; font-weight:800; letter-spacing:.12em; text-transform:uppercase;
+      color:var(--muted); margin:2rem 0 .8rem;
+    }
+    .sec-label::after { content:''; flex:1; height:1px; background:var(--border); }
+    .sec-label-icon { font-size:1rem; }
+    .sec-link {
+      font-size:.7rem; font-weight:700; letter-spacing:.04em;
+      color:var(--accent); text-decoration:none; padding:.15rem .55rem;
+      border:1px solid rgba(34,211,238,.25); border-radius:4px;
+      transition:background .15s;
+    }
+    .sec-link:hover { background:rgba(34,211,238,.08); }
+
+    /* ── KPI strip ──────────────────────────────────────────── */
+    .kpi-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:1rem; margin-bottom:.5rem; }
+    @media(max-width:900px) { .kpi-grid { grid-template-columns:repeat(2,1fr); } }
+    @media(max-width:500px) { .kpi-grid { grid-template-columns:1fr; } }
+    .kpi-card {
+      background:var(--surface); border:1px solid var(--border); border-radius:12px;
+      padding:1.1rem 1.2rem; position:relative; overflow:hidden;
+    }
+    .kpi-card::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; background:var(--kc,var(--border)); }
+    .kpi-lbl { font-size:.68rem; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); margin-bottom:.35rem; }
+    .kpi-val { font-size:1.7rem; font-weight:900; line-height:1; margin-bottom:.3rem; }
+    .kpi-sub { font-size:.72rem; color:var(--muted); }
+    .kpi-bar { height:6px; background:rgba(255,255,255,.06); border-radius:3px; overflow:hidden; margin-top:.6rem; }
+    .kpi-bar-fill { height:100%; border-radius:3px; transition:width .5s; }
+    .c-bull { color:#4ade80; --kc:#4ade80; }
+    .c-bear { color:#f87171; --kc:#f87171; }
+    .c-neut { color:#fbbf24; --kc:#fbbf24; }
+    .c-info { color:#22d3ee; --kc:#22d3ee; }
+    .c-purp { color:#a78bfa; --kc:#a78bfa; }
+
+    /* ── EDGE 3-layer cards ─────────────────────────────────── */
+    .edge-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:1rem; }
+    @media(max-width:750px) { .edge-grid { grid-template-columns:1fr; } }
+    .edge-card {
+      background:var(--surface); border:1px solid var(--border); border-radius:12px;
+      padding:1.3rem; border-left:4px solid var(--ec,var(--border));
+    }
+    .ec-layer { font-size:.65rem; font-weight:800; text-transform:uppercase; letter-spacing:.1em;
+      color:var(--ec,var(--muted)); margin-bottom:.4rem; }
+    .ec-name { font-size:1rem; font-weight:900; margin-bottom:.5rem; }
+    .ec-verdict { font-size:1.4rem; font-weight:900; margin-bottom:.3rem; }
+    .ec-desc { font-size:.75rem; color:var(--muted); line-height:1.55; }
+    .ec-score { font-size:.8rem; font-weight:700; margin-top:.6rem; }
+    .edge-action {
+      background:var(--surface); border:2px solid var(--border); border-radius:12px;
+      padding:1.1rem 1.4rem; margin-top:1rem;
+      display:flex; align-items:center; gap:1.2rem; flex-wrap:wrap;
+    }
+    .ea-label { font-size:.72rem; font-weight:800; text-transform:uppercase; letter-spacing:.1em; color:var(--muted); }
+    .ea-action { font-size:1.2rem; font-weight:900; }
+    .ea-size { font-size:.88rem; font-weight:700; color:var(--muted); margin-left:auto; }
+    .ea-note { font-size:.75rem; color:var(--muted); width:100%; }
+
+    /* ── Asset Signal Matrix ────────────────────────────────── */
+    .matrix-scroll { overflow-x:auto; }
+    table.sig-matrix {
+      width:100%; border-collapse:collapse; font-size:.8rem;
+      background:var(--surface); border-radius:12px; overflow:hidden;
+    }
+    table.sig-matrix th {
+      padding:.6rem .9rem; text-align:left;
+      font-size:.65rem; font-weight:800; text-transform:uppercase; letter-spacing:.08em;
+      color:var(--muted); background:rgba(255,255,255,.03); border-bottom:1px solid var(--border);
+      white-space:nowrap;
+    }
+    table.sig-matrix td { padding:.6rem .9rem; border-bottom:1px solid rgba(255,255,255,.04); vertical-align:middle; }
+    table.sig-matrix tr:last-child td { border-bottom:none; }
+    table.sig-matrix tr:hover td { background:rgba(255,255,255,.025); }
+    .sig-sym { font-weight:800; font-size:.85rem; }
+    .sig-name { font-size:.68rem; color:var(--muted); }
+    .sig-pill {
+      display:inline-block; padding:.18rem .55rem; border-radius:4px; font-size:.68rem;
+      font-weight:700; text-transform:uppercase; letter-spacing:.06em; white-space:nowrap;
+    }
+    .pill-bull { background:rgba(74,222,128,.12); color:#4ade80; }
+    .pill-bear { background:rgba(248,113,113,.12); color:#f87171; }
+    .pill-neut { background:rgba(251,191,36,.12); color:#fbbf24; }
+    .pill-hold { background:rgba(255,255,255,.06); color:var(--muted); }
+    .verdict-strong-buy { color:#4ade80; font-weight:900; font-size:.82rem; }
+    .verdict-buy { color:#86efac; font-weight:700; font-size:.82rem; }
+    .verdict-strong-sell { color:#f87171; font-weight:900; font-size:.82rem; }
+    .verdict-sell { color:#fca5a5; font-weight:700; font-size:.82rem; }
+    .verdict-neut { color:#fbbf24; font-weight:700; font-size:.82rem; }
+    .verdict-skip { color:var(--muted); font-size:.82rem; }
+    .action-txt { font-size:.72rem; color:var(--muted); min-width:480px; white-space:normal; word-break:break-word; line-height:1.5; }
+
+    /* ── Top Setups ─────────────────────────────────────────── */
+    .setups-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:1rem; }
+    @media(max-width:900px) { .setups-grid { grid-template-columns:1fr; } }
+    .setup-col { background:var(--surface); border:1px solid var(--border); border-radius:12px; overflow:hidden; }
+    .setup-col-hdr {
+      padding:.7rem 1rem; font-size:.7rem; font-weight:800; text-transform:uppercase;
+      letter-spacing:.1em; border-bottom:1px solid var(--border);
+    }
+    .setup-item { padding:.75rem 1rem; border-bottom:1px solid rgba(255,255,255,.04); }
+    .setup-item:last-child { border-bottom:none; }
+    .si-sym { font-weight:800; font-size:.9rem; margin-bottom:.15rem; }
+    .si-strat { font-size:.73rem; color:var(--muted); margin-bottom:.1rem; }
+    .si-why { font-size:.7rem; color:var(--muted); line-height:1.5; }
+    .si-size { font-size:.72rem; font-weight:700; margin-top:.2rem; }
+    .empty-col { padding:1.5rem 1rem; text-align:center; color:var(--muted); font-size:.8rem; }
+
+    /* ── Strategy cards ─────────────────────────────────────── */
+    .strat-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:1rem; }
+    .strat-card {
+      background:var(--surface); border:1px solid var(--border); border-radius:12px;
+      padding:1.1rem; border-left:3px solid var(--sc,var(--border));
+    }
+    .sc-header { display:flex; align-items:center; gap:.6rem; margin-bottom:.6rem; }
+    .sc-sym { font-weight:900; font-size:1rem; }
+    .sc-dir { font-size:.68rem; font-weight:700; text-transform:uppercase; letter-spacing:.07em;
+      padding:.15rem .5rem; border-radius:4px; }
+    .sc-strat { font-size:.75rem; font-weight:700; color:var(--sc,var(--muted)); margin-bottom:.4rem; }
+    .sc-legs { font-size:.72rem; color:var(--muted); line-height:1.6; }
+    .sc-spot { margin-left:auto; font-size:.8rem; font-weight:700; color:var(--muted); }
+    .sc-meta { display:flex; gap:.8rem; margin-top:.5rem; font-size:.7rem; color:var(--muted); }
+    .sc-meta span { font-weight:700; color:var(--text); }
+
+    /* ── 0DTE ───────────────────────────────────────────────── */
+    .dte-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:1rem; }
+    .dte-card {
+      background:var(--surface); border:1px solid var(--border); border-radius:12px;
+      padding:1rem; border-left:3px solid rgba(251,191,36,.5);
+    }
+    .dte-sym { font-weight:900; font-size:1rem; margin-bottom:.3rem; }
+    .dte-bias { font-size:.72rem; font-weight:700; margin-bottom:.4rem; }
+    .dte-row { display:flex; justify-content:space-between; font-size:.72rem; color:var(--muted); padding:.15rem 0; }
+    .dte-row span { font-weight:700; color:var(--text); }
+    .dte-note { font-size:.7rem; color:var(--muted); margin-top:.5rem; line-height:1.5; }
+    .dte-empty { padding:1.5rem; text-align:center; color:var(--muted); font-size:.82rem; background:var(--surface); border:1px solid var(--border); border-radius:12px; }
+
+    /* ── World Events ───────────────────────────────────────── */
+    .events-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(360px,1fr)); gap:1rem; }
+    .event-card {
+      background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:1.1rem;
+    }
+    .ev-type { font-size:.65rem; font-weight:800; text-transform:uppercase; letter-spacing:.1em;
+      color:var(--muted); margin-bottom:.35rem; }
+    .ev-title { font-size:.88rem; font-weight:700; margin-bottom:.4rem; }
+    .ev-body { font-size:.73rem; color:var(--muted); line-height:1.6; margin-bottom:.5rem; }
+    .ev-action { font-size:.72rem; font-weight:700; color:#22d3ee; }
+    .ev-action::before { content:'→ '; }
+    .events-empty { padding:1.5rem; text-align:center; color:var(--muted); font-size:.82rem;
+      background:var(--surface); border:1px solid var(--border); border-radius:12px; }
+
+    /* ── Commentary ─────────────────────────────────────────── */
+    .commentary-box {
+      background:var(--surface); border:1px solid var(--border); border-radius:12px;
+      padding:1.2rem 1.4rem; font-size:.82rem; line-height:1.8; color:var(--muted);
+    }
+    .commentary-box strong { color:var(--text); }
+
+    /* ── Quick links ─────────────────────────────────────────── */
+    .quicklinks { display:flex; flex-wrap:wrap; gap:.5rem; margin:1.5rem 0 0; }
+    .ql-chip {
+      padding:.3rem .85rem; border:1px solid var(--border); border-radius:6px;
+      color:var(--muted); text-decoration:none; font-size:.75rem; font-weight:600;
+      transition:border-color .15s,color .15s;
+    }
+    .ql-chip:hover { border-color:var(--accent); color:var(--accent); }
+
+    /* ── Loading skeleton ───────────────────────────────────── */
+    .skel { background:rgba(255,255,255,.05); border-radius:6px; animation:skel .9s ease-in-out infinite alternate; }
+    @keyframes skel { to { background:rgba(255,255,255,.1); } }
+    .loading-msg { padding:2rem; text-align:center; color:var(--muted); font-size:.85rem; }
+  </style>
+</head>
+<body>
+
+<!-- ── Top Navigation ──────────────────────────────────────────────────────── -->
+<nav class="page-nav">
+  <a href="live-trading.html">&#8592; Live Trading</a> |
+  <a href="market-summary.html">&#128202; Market Summary</a> |
+  <a href="the-edge.html">&#9889; The EDGE</a> |
+  <a href="gamma-exposure.html">&#915; GEX</a> |
+  <a href="option-flows.html">&#127756; Flows</a> |
+  <a href="options-strategy.html">&#127919; Strategy</a> |
+  <a href="0dte-options.html">&#9651; 0DTE</a> |
+  <a href="vix-dashboard.html">&#128200; VIX</a> |
+  <a href="report-ms.html" target="_blank" style="background:#22d3ee;color:var(--bg);padding:.22rem .75rem;border-radius:5px;font-weight:700;text-decoration:none;font-size:.82rem;">&#128202; Market Report</a>
+  <span class="page-nav-sep">|</span>
+  <a href="report-tg.html" target="_blank" style="background:#a78bfa;color:var(--bg);padding:.22rem .75rem;border-radius:5px;font-weight:700;text-decoration:none;font-size:.82rem;">&#128214; Trading Guide</a>
+</nav>
+
+<!-- ── Hero ───────────────────────────────────────────────────────────────── -->
+<div class="brief-hero">
+  <div class="hero-badge">&#127775; Morning Decision Brief</div>
+  <h1>Web Page Summaries</h1>
+  <p>All signals consolidated — ML models, GEX, option flows, strategies, 0DTE &amp; macro events.<br>
+  One page to make your morning options trading decision.</p>
+  <div class="hero-meta">
+    <button class="refresh-btn" onclick="refreshAll()">&#8635; Refresh All Data</button>
+    <span class="last-upd" id="last-upd">Loading…</span>
+  </div>
+</div>
+
+<!-- ── Body ───────────────────────────────────────────────────────────────── -->
+<div class="brief-wrap">
+
+  <!-- ─── SECTION 1: Market KPIs ─────────────────────────────────────────── -->
+  <div class="sec-label">
+    <span class="sec-label-icon">&#128202;</span> Market Status
+    <a class="sec-link" href="market-summary.html">&#8594; Full Summary</a>
+  </div>
+
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="kpi-lbl">Market Direction</div>
+      <div class="kpi-val c-neut" id="kpi-direction">—</div>
+      <div class="kpi-sub" id="kpi-dir-sub">ML signal across all assets</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-lbl">Breadth — Bull vs Bear</div>
+      <div class="kpi-val" id="kpi-breadth">—</div>
+      <div class="kpi-sub" id="kpi-breadth-sub">% assets signaling BUY vs SELL</div>
+      <div class="kpi-bar"><div class="kpi-bar-fill" id="kpi-bar-fill" style="width:50%;background:#4ade80;"></div></div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-lbl">Avg Magnitude / 4H Bar</div>
+      <div class="kpi-val c-info" id="kpi-mag">—</div>
+      <div class="kpi-sub">ML predicted avg move size</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-lbl">Top ML Ranked Asset</div>
+      <div class="kpi-val c-purp" id="kpi-top">—</div>
+      <div class="kpi-sub" id="kpi-top-sub">Highest conviction signal</div>
+    </div>
+  </div>
+
+  <!-- ─── SECTION 2: THE EDGE 3-Layer Verdict ────────────────────────────── -->
+  <div class="sec-label">
+    <span class="sec-label-icon">&#9889;</span> The EDGE — 3-Layer Verdict
+    <a class="sec-link" href="the-edge.html">&#8594; Full Framework</a>
+  </div>
+
+  <div class="edge-grid">
+    <div class="edge-card" id="edge-l1" style="--ec:#22d3ee">
+      <div class="ec-layer">Layer 1 · Regime (GEX)</div>
+      <div class="ec-name">Market Regime</div>
+      <div class="ec-verdict" id="el1-verdict">Loading…</div>
+      <div class="ec-desc" id="el1-desc">Analyzing GEX data…</div>
+      <div class="ec-score" id="el1-score"></div>
+    </div>
+    <div class="edge-card" id="edge-l2" style="--ec:#a78bfa">
+      <div class="ec-layer">Layer 2 · Trigger (ML + Flow)</div>
+      <div class="ec-name">Entry Signal</div>
+      <div class="ec-verdict" id="el2-verdict">Loading…</div>
+      <div class="ec-desc" id="el2-desc">Analyzing ML signals…</div>
+      <div class="ec-score" id="el2-score"></div>
+    </div>
+    <div class="edge-card" id="edge-l3" style="--ec:#f97316">
+      <div class="ec-layer">Layer 3 · Magnitude (Vol)</div>
+      <div class="ec-name">Position Sizing</div>
+      <div class="ec-verdict" id="el3-verdict">Loading…</div>
+      <div class="ec-desc" id="el3-desc">Analyzing volatility…</div>
+      <div class="ec-score" id="el3-score"></div>
+    </div>
+  </div>
+
+  <div class="edge-action" id="edge-action">
+    <div>
+      <div class="ea-label">Combined Action</div>
+      <div class="ea-action" id="ea-action">Calculating…</div>
+    </div>
+    <div>
+      <div class="ea-label">Suggested Size</div>
+      <div class="ea-action" id="ea-size">—</div>
+    </div>
+    <div class="ea-size" id="ea-rule">All 3 layers must agree for full size</div>
+    <div class="ea-note" id="ea-note"></div>
+  </div>
+
+  <!-- ─── SECTION 3: Asset Signal Matrix ─────────────────────────────────── -->
+  <div class="sec-label">
+    <span class="sec-label-icon">&#127919;</span> Asset Signal Matrix
+    <a class="sec-link" href="ml-trading.html">&#8594; ML Trading</a>
+  </div>
+
+  <div class="matrix-scroll">
+    <table class="sig-matrix">
+      <thead>
+        <tr>
+          <th>Asset</th>
+          <th>Spot</th>
+          <th>ML Signal</th>
+          <th>ML Prob↑</th>
+          <th>GEX Regime</th>
+          <th>Gamma Wall</th>
+          <th>Flip Level</th>
+          <th>Option Flow</th>
+          <th>Verdict</th>
+          <th>Options Action / Notes</th>
+        </tr>
+      </thead>
+      <tbody id="matrix-body">
+        <tr><td colspan="10" class="loading-msg"><span class="spinner"></span> Loading signals…</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ─── SECTION 4: Top Setups ───────────────────────────────────────────── -->
+  <div class="sec-label">
+    <span class="sec-label-icon">&#128293;</span> Top Setups Today
+    <a class="sec-link" href="options-strategy.html">&#8594; Full Strategies</a>
+  </div>
+
+  <div class="setups-grid">
+    <div class="setup-col">
+      <div class="setup-col-hdr" style="background:rgba(74,222,128,.08);color:#4ade80;">&#8679; Long Setups</div>
+      <div id="longs-body"><div class="empty-col"><span class="spinner"></span></div></div>
+    </div>
+    <div class="setup-col">
+      <div class="setup-col-hdr" style="background:rgba(248,113,113,.08);color:#f87171;">&#8681; Short Setups</div>
+      <div id="shorts-body"><div class="empty-col"><span class="spinner"></span></div></div>
+    </div>
+    <div class="setup-col">
+      <div class="setup-col-hdr" style="background:rgba(251,191,36,.08);color:#fbbf24;">&#9878; Hedge / Premium Sell</div>
+      <div id="hedges-body"><div class="empty-col"><span class="spinner"></span></div></div>
+    </div>
+  </div>
+
+  <!-- ─── SECTION 5: Options Strategy ────────────────────────────────────── -->
+  <div class="sec-label">
+    <span class="sec-label-icon">&#128203;</span> Options Strategy Cards
+    <a class="sec-link" href="options-strategy.html">&#8594; Full Page</a>
+  </div>
+  <div class="strat-grid" id="strat-grid">
+    <div class="loading-msg"><span class="spinner"></span> Loading strategies…</div>
+  </div>
+
+  <!-- ─── SECTION 6: 0DTE Setups ──────────────────────────────────────────── -->
+  <div class="sec-label">
+    <span class="sec-label-icon">&#9651;</span> 0DTE Setups
+    <a class="sec-link" href="0dte-options.html">&#8594; Full Page</a>
+  </div>
+  <div class="dte-grid" id="dte-grid">
+    <div class="loading-msg"><span class="spinner"></span> Loading 0DTE data…</div>
+  </div>
+
+  <!-- ─── SECTION 7: World Events ─────────────────────────────────────────── -->
+  <div class="sec-label">
+    <span class="sec-label-icon">&#127758;</span> World Events &amp; Macro
+    <a class="sec-link" href="world-events.html">&#8594; Full Page</a>
+  </div>
+  <div class="events-grid" id="events-grid">
+    <div class="loading-msg"><span class="spinner"></span> Loading events…</div>
+  </div>
+
+  <!-- ─── SECTION 8: ML Commentary ────────────────────────────────────────── -->
+  <div class="sec-label">
+    <span class="sec-label-icon">&#128221;</span> ML Market Commentary
+    <a class="sec-link" href="market-summary.html">&#8594; Market Summary</a>
+  </div>
+  <div class="commentary-box" id="commentary">Analyzing market conditions…</div>
+
+  <!-- ─── Quick Links ──────────────────────────────────────────────────────── -->
+  <div class="sec-label" style="margin-top:2.5rem;">
+    <span class="sec-label-icon">&#128279;</span> All Dashboard Pages
+  </div>
+  <div class="quicklinks">
+    <a class="ql-chip" href="live-trading.html">&#128200; Live Trading</a>
+    <a class="ql-chip" href="market-summary.html">&#128202; Market Summary</a>
+    <a class="ql-chip" href="the-edge.html">&#9889; The EDGE</a>
+    <a class="ql-chip" href="gamma-exposure.html">&#915; Gamma Exposure</a>
+    <a class="ql-chip" href="gex-heatmap.html">&#128293; GEX Heatmap</a>
+    <a class="ql-chip" href="option-flows.html">&#127756; Option Flows</a>
+    <a class="ql-chip" href="options-strategy.html">&#127919; Options Strategy</a>
+    <a class="ql-chip" href="options-summary.html">&#128203; Options Summary</a>
+    <a class="ql-chip" href="0dte-options.html">&#9651; 0DTE</a>
+    <a class="ql-chip" href="vix-dashboard.html">&#128200; VIX Dashboard</a>
+    <a class="ql-chip" href="spx-correlations.html">&#128279; SPX Correlations</a>
+    <a class="ql-chip" href="ml-trading.html">&#129302; ML Trading</a>
+    <a class="ql-chip" href="ml-key-assets.html">&#127919; ML Key Assets</a>
+    <a class="ql-chip" href="forecast.html">&#128200; Forecast</a>
+    <a class="ql-chip" href="fundamentals.html">&#128196; Fundamentals</a>
+    <a class="ql-chip" href="world-events.html">&#127758; World Events</a>
+    <a class="ql-chip" href="real-time-news.html">&#128240; News</a>
+    <a class="ql-chip" href="institutional-buyers.html">&#127970; Institutional</a>
+    <a class="ql-chip" href="hedging-impact.html">&#129519; Hedging</a>
+    <a class="ql-chip" href="futures-trading.html">&#128194; Futures</a>
+    <a class="ql-chip" href="market-preparation.html">&#9989; Prep Checklist</a>
+    <a class="ql-chip" href="algorithms-bots.html">&#129302; Algo Bots</a>
+    <a class="ql-chip" href="neural-networks.html">&#129504; Neural Nets</a>
+  </div>
+
+</div><!-- /brief-wrap -->
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     JAVASCRIPT
+═══════════════════════════════════════════════════════════════════════════ -->
+<script>
+'use strict';
+
+/* ── Helpers ───────────────────────────────────────────────────────────────── */
+function fmt$(n) {
+  if (n == null || isNaN(n)) return '—';
+  if (n >= 1000) return '$' + n.toLocaleString(undefined, {maximumFractionDigits: 0});
+  return '$' + (+n).toFixed(2);
+}
+function fmtPct(n) {
+  if (n == null || isNaN(n)) return '—';
+  return (n >= 0 ? '+' : '') + (+n).toFixed(2) + '%';
+}
+function sigClass(s) {
+  if (!s) return 'pill-hold';
+  const u = s.toUpperCase();
+  if (u === 'BUY' || u === 'BULLISH') return 'pill-bull';
+  if (u === 'SELL' || u === 'BEARISH') return 'pill-bear';
+  return 'pill-neut';
+}
+function sigLabel(s) {
+  if (!s) return '—';
+  const u = s.toUpperCase();
+  if (u === 'BUY') return 'BUY';
+  if (u === 'SELL') return 'SELL';
+  if (u === 'HOLD') return 'HOLD';
+  return s;
+}
+function dirClass(d) {
+  if (!d) return '';
+  const u = d.toUpperCase();
+  if (u.includes('BULL')) return 'c-bull';
+  if (u.includes('BEAR')) return 'c-bear';
+  return 'c-neut';
+}
+function regimeClass(r) {
+  if (!r) return 'pill-hold';
+  const u = r.toUpperCase();
+  if (u.includes('BULL') || u === 'POSITIVE') return 'pill-bull';
+  if (u.includes('BEAR') || u === 'NEGATIVE') return 'pill-bear';
+  return 'pill-neut';
+}
+
+/* ── Verdict logic: combine ML + GEX + Flow ────────────────────────────────── */
+function computeVerdict(mlSig, gexRegime, flowSent) {
+  let score = 0;
+  const toScore = v => {
+    if (!v) return 0;
+    const u = v.toUpperCase();
+    if (u === 'BUY' || u.includes('BULL') || u === 'POSITIVE') return 1;
+    if (u === 'SELL' || u.includes('BEAR') || u === 'NEGATIVE') return -1;
+    return 0;
+  };
+  score += toScore(mlSig);
+  score += toScore(gexRegime);
+  score += toScore(flowSent);
+
+  if (score === 3)  return { label: '★ STRONG BUY',  cls: 'verdict-strong-buy', action: 'Long calls / Bull call spread',   size: '75–100%' };
+  if (score === 2)  return { label: '▲ BUY',          cls: 'verdict-buy',        action: 'Bull call spread / long calls',  size: '50–60%'  };
+  if (score === -3) return { label: '★ STRONG SELL', cls: 'verdict-strong-sell', action: 'Long puts / Bear put spread',    size: '75–100%' };
+  if (score === -2) return { label: '▼ SELL',         cls: 'verdict-sell',       action: 'Bear put spread / long puts',    size: '40–50%'  };
+  if (score === 0)  return { label: '— NEUTRAL',      cls: 'verdict-neut',       action: 'Iron condor / skip',             size: '25% max' };
+  if (score === 1)  return { label: '◎ LEAN BULL',    cls: 'verdict-buy',        action: 'Small debit call spread',        size: '25%'     };
+  if (score === -1) return { label: '◎ LEAN BEAR',    cls: 'verdict-sell',       action: 'Small debit put spread',         size: '25%'     };
+  return { label: 'SKIP', cls: 'verdict-skip', action: '—', size: '0%' };
+}
+
+/* ── Options action tooltip ─────────────────────────────────────────────────── */
+function verdictTooltip(v, gexWall, gexFlip, spot) {
+  if (!v || v.action === '—') return 'No aligned signal — wait for setup';
+  let note = v.action;
+  if (gexWall && spot) {
+    const wallDist = ((gexWall - spot) / spot * 100).toFixed(1);
+    note += ` | Gamma wall ${wallDist > 0 ? '+' : ''}${wallDist}% away`;
+  }
+  if (gexFlip && spot) {
+    const flipDist = ((gexFlip - spot) / spot * 100).toFixed(1);
+    note += ` | Flip level ${flipDist > 0 ? '+' : ''}${flipDist}%`;
+  }
+  return note;
+}
+
+/* ── Build matrix row HTML ──────────────────────────────────────────────────── */
+function buildMatrixRow(sym, label, spot, mlSig, mlProb, gexRegime, gexWall, gexFlip, flowSent) {
+  const v = computeVerdict(mlSig, gexRegime, flowSent);
+  const probTxt = mlProb != null ? (mlProb * 100).toFixed(0) + '%' : '—';
+  const wallTxt = gexWall ? fmt$(gexWall) : '—';
+  const flipTxt = gexFlip ? fmt$(gexFlip) : '—';
+  const spotTxt = spot    ? fmt$(spot)    : '—';
+  const actionTxt = verdictTooltip(v, gexWall, gexFlip, spot);
+
+  return `<tr>
+    <td><div class="sig-sym">${sym}</div><div class="sig-name">${label}</div></td>
+    <td>${spotTxt}</td>
+    <td><span class="sig-pill ${sigClass(mlSig)}">${sigLabel(mlSig)}</span></td>
+    <td style="color:${mlProb >= 0.6 ? '#4ade80' : mlProb <= 0.4 ? '#f87171' : 'var(--muted)'}; font-weight:700;">${probTxt}</td>
+    <td><span class="sig-pill ${regimeClass(gexRegime)}">${gexRegime || '—'}</span></td>
+    <td style="font-size:.78rem;">${wallTxt}</td>
+    <td style="font-size:.78rem;">${flipTxt}</td>
+    <td><span class="sig-pill ${sigClass(flowSent)}">${flowSent || '—'}</span></td>
+    <td><span class="${v.cls}">${v.label}</span></td>
+    <td class="action-txt">${actionTxt}</td>
+  </tr>`;
+}
+
+/* ── EDGE Layer derivation ──────────────────────────────────────────────────── */
+function deriveEdgeLayers(ms, gex, flows) {
+  // Layer 1: Regime from GEX (SPY, QQQ, IWM weighted)
+  const indexSyms = ['SPY', 'QQQ', 'IWM', 'DIA'];
+  const gexAssets = gex ? gex.assets || [] : [];
+  let l1Scores = 0, l1Count = 0;
+  for (const a of gexAssets) {
+    if (indexSyms.includes(a.symbol)) {
+      const r = (a.regime || '').toUpperCase();
+      if (r.includes('BULL') || r === 'POSITIVE') l1Scores++;
+      else if (r.includes('BEAR') || r === 'NEGATIVE') l1Scores--;
+      l1Count++;
+    }
+  }
+  const l1Score = l1Count > 0 ? l1Scores / l1Count : 0;
+  let l1Verdict = 'NEUTRAL', l1Cls = 'c-neut', l1Desc = 'Mixed GEX signals across index ETFs.';
+  if (l1Score > 0.3) {
+    l1Verdict = 'BULLISH'; l1Cls = 'c-bull';
+    l1Desc = 'Positive GEX regime — dealers are long gamma. Market pinning behavior expected. Moves above gamma wall will face resistance, but overall supports bullish positioning.';
+  } else if (l1Score < -0.3) {
+    l1Verdict = 'BEARISH'; l1Cls = 'c-bear';
+    l1Desc = 'Negative GEX regime — dealers are short gamma. Market may amplify moves, especially to the downside. Volatility risk elevated, reduce size and widen stops.';
+  } else {
+    l1Desc = 'Neutral GEX across index ETFs — mixed dealer hedging. Sideways or choppy price action likely. Favor non-directional spreads.';
+  }
+
+  // Layer 2: Trigger from ML direction + flow
+  const dir = (ms ? ms.market_direction || '' : '').toUpperCase();
+  const bullPct = ms ? (ms.sentiment || {}).bull_pct || 0 : 0;
+  const bearPct = ms ? (ms.sentiment || {}).bear_pct || 0 : 0;
+  let flowsBullCt = 0, flowsBearCt = 0;
+  for (const a of (flows ? flows.assets || [] : [])) {
+    const fs = (a.flow_sentiment || '').toUpperCase();
+    if (fs.includes('BULL')) flowsBullCt++;
+    else if (fs.includes('BEAR')) flowsBearCt++;
+  }
+  const l2Score = (bullPct - bearPct) / 100;
+  let l2Verdict = 'NOT FIRED', l2Cls = 'c-neut', l2Desc = '';
+  if (dir.includes('BULL') && bullPct >= 50 && flowsBullCt > flowsBearCt) {
+    l2Verdict = 'FIRED — BULL'; l2Cls = 'c-bull';
+    l2Desc = `ML breadth: ${bullPct.toFixed(0)}% BUY | Options flow: ${flowsBullCt} bull vs ${flowsBearCt} bear. Both layers agree — bullish entry signal is active.`;
+  } else if (dir.includes('BEAR') && bearPct >= 50 && flowsBearCt > flowsBullCt) {
+    l2Verdict = 'FIRED — BEAR'; l2Cls = 'c-bear';
+    l2Desc = `ML breadth: ${bearPct.toFixed(0)}% SELL | Options flow: ${flowsBearCt} bear vs ${flowsBullCt} bull. Both layers agree — bearish entry signal is active.`;
+  } else if (bullPct >= 55) {
+    l2Verdict = 'PARTIAL BULL'; l2Cls = 'c-bull';
+    l2Desc = `ML breadth leans bullish (${bullPct.toFixed(0)}% BUY) but option flow confirmation is mixed. Reduce size until flows align.`;
+  } else if (bearPct >= 55) {
+    l2Verdict = 'PARTIAL BEAR'; l2Cls = 'c-bear';
+    l2Desc = `ML breadth leans bearish (${bearPct.toFixed(0)}% SELL) but option flow confirmation is mixed. Reduce size until flows align.`;
+  } else {
+    l2Desc = `ML breadth: ${bullPct.toFixed(0)}% bull / ${bearPct.toFixed(0)}% bear. No clear trigger fired. Wait for ≥55% breadth alignment with option flows.`;
+  }
+
+  // Layer 3: Magnitude from avg magnitude
+  const avgMag = ms ? ms.avg_magnitude_pct || 0 : 0;
+  let l3Verdict = 'NORMAL', l3Cls = 'c-info', l3Desc = '', l3Size = '75%';
+  if (Math.abs(avgMag) > 0.5) {
+    l3Verdict = 'HIGH VOL'; l3Cls = 'c-bear'; l3Size = '40–50%';
+    l3Desc = `Average 4H predicted move: ${fmtPct(avgMag)}. Elevated magnitude — use wider stops (1.5× ATR), reduce position size proportionally. IV is likely elevated — consider credit spreads.`;
+  } else if (Math.abs(avgMag) > 0.25) {
+    l3Verdict = 'ELEVATED'; l3Cls = 'c-neut'; l3Size = '60–70%';
+    l3Desc = `Average 4H predicted move: ${fmtPct(avgMag)}. Moderate volatility — use standard stops (1× ATR). Debit spreads or defined-risk plays preferred.`;
+  } else {
+    l3Verdict = 'CALM'; l3Cls = 'c-bull'; l3Size = '100%';
+    l3Desc = `Average 4H predicted move: ${fmtPct(avgMag)}. Low volatility environment — premiums are cheap. Favor debit spreads or long options for convex upside.`;
+  }
+
+  // Combined action
+  const l1Bull = l1Score > 0.3;
+  const l1Bear = l1Score < -0.3;
+  const l2Bull = l2Verdict.includes('BULL');
+  const l2Bear = l2Verdict.includes('BEAR');
+  let action = 'WAIT — Layers Not Aligned', actionColor = '#fbbf24', size = '0%';
+  let edgeNote = 'All 3 layers must agree before committing full size.';
+
+  if (l1Bull && l2Bull) {
+    action = 'BUY CALLS / BULL SPREAD'; actionColor = '#4ade80'; size = l3Size;
+    edgeNote = `Regime ✓ + Trigger ✓ + ${l3Verdict} vol → ${size} size. Use bull call spreads at 30–40 DTE.`;
+  } else if (l1Bear && l2Bear) {
+    action = 'BUY PUTS / BEAR SPREAD'; actionColor = '#f87171'; size = l3Size;
+    edgeNote = `Regime ✓ + Trigger ✓ + ${l3Verdict} vol → ${size} size. Use bear put spreads at 30–40 DTE.`;
+  } else if (l2Bull && !l1Bear) {
+    action = 'LEAN BULL — PARTIAL SIZE'; actionColor = '#86efac'; size = '25–40%';
+    edgeNote = 'Trigger fired bullish but GEX regime neutral. Use small debit spreads only.';
+  } else if (l2Bear && !l1Bull) {
+    action = 'LEAN BEAR — PARTIAL SIZE'; actionColor = '#fca5a5'; size = '25–40%';
+    edgeNote = 'Trigger fired bearish but GEX regime neutral. Use small debit put spreads only.';
+  } else if (!l2Bull && !l2Bear) {
+    action = 'SELL PREMIUM / WAIT'; actionColor = '#fbbf24'; size = '25% max';
+    edgeNote = 'No trigger fired. If IV is elevated, sell iron condors. Otherwise stand aside and wait.';
+  }
+
+  return { l1: { verdict: l1Verdict, cls: l1Cls, desc: l1Desc, score: l1Score },
+           l2: { verdict: l2Verdict, cls: l2Cls, desc: l2Desc, score: l2Score },
+           l3: { verdict: l3Verdict, cls: l3Cls, desc: l3Desc, size: l3Size },
+           action, actionColor, size, edgeNote };
+}
+
+/* ── Strategy card HTML ─────────────────────────────────────────────────────── */
+function buildStratCard(a) {
+  const dir = (a.direction || 'NEUTRAL').toUpperCase();
+  const sc = dir === 'BULLISH' ? '#4ade80' : dir === 'BEARISH' ? '#f87171' : '#fbbf24';
+  const dirPillBg = dir === 'BULLISH' ? 'rgba(74,222,128,.15)' : dir === 'BEARISH' ? 'rgba(248,113,113,.15)' : 'rgba(251,191,36,.15)';
+  const strat = a.strategy || {};
+  const stratName = strat.name || strat.type || 'N/A';
+
+  let legsHtml = '';
+  if (strat.legs && strat.legs.length) {
+    const legsInfo = strat.legs.map(l =>
+      `${l.action} ${l.type} @${fmt$(l.strike)} (${l.dte}d) IV:${l.iv}%`
+    ).join('<br>');
+    legsHtml = `<div class="sc-legs">${legsInfo}</div>`;
+  } else if (a.no_options) {
+    legsHtml = `<div class="sc-legs" style="color:var(--muted)">No listed options available</div>`;
+  }
+
+  const maxProfit = strat.max_profit != null ? `$${(+strat.max_profit).toFixed(0)}` : '—';
+  const maxLoss   = strat.max_loss   != null ? `$${Math.abs(+strat.max_loss).toFixed(0)}` : '—';
+  const breakeven = strat.breakeven  != null ? fmt$(strat.breakeven) : '—';
+
+  return `<div class="strat-card" style="--sc:${sc}">
+    <div class="sc-header">
+      <div class="sc-sym">${a.symbol}</div>
+      <div class="sc-dir" style="background:${dirPillBg};color:${sc}">${dir}</div>
+      <div class="sc-spot">${fmt$(a.spot)}</div>
+    </div>
+    <div class="sc-strat">${stratName}</div>
+    ${legsHtml}
+    <div class="sc-meta">
+      <div>Max Profit: <span>${maxProfit}</span></div>
+      <div>Max Loss: <span>${maxLoss}</span></div>
+      <div>B/E: <span>${breakeven}</span></div>
+    </div>
+  </div>`;
+}
+
+/* ── 0DTE card HTML ──────────────────────────────────────────────────────────── */
+function buildDteCard(a) {
+  const bias = (a.bias || a.flow_sentiment || '').toUpperCase();
+  const bc = bias.includes('BULL') ? '#4ade80' : bias.includes('BEAR') ? '#f87171' : '#fbbf24';
+
+  const rows = [
+    ['Spot', fmt$(a.spot)],
+    ['Call Vol', a.call_0dte_vol ? a.call_0dte_vol.toLocaleString() : '—'],
+    ['Put Vol',  a.put_0dte_vol  ? a.put_0dte_vol.toLocaleString()  : '—'],
+    ['P/C Ratio', a.put_call_0dte ? (+a.put_call_0dte).toFixed(2) : '—'],
+    ['Activity Score', a.activity_score != null ? (+a.activity_score).toFixed(1) : '—'],
+  ].map(([k,v]) => `<div class="dte-row">${k}: <span>${v}</span></div>`).join('');
+
+  return `<div class="dte-card">
+    <div class="dte-sym">${a.symbol} <span style="font-size:.75rem;color:var(--muted);font-weight:400;">${a.label || ''}</span></div>
+    <div class="dte-bias" style="color:${bc}">Bias: ${bias || '—'}</div>
+    ${rows}
+    <div class="dte-note">${a.note || a.commentary || '0DTE activity detected. Monitor intraday for entry.'}</div>
+  </div>`;
+}
+
+/* ── Top Setups builder ──────────────────────────────────────────────────────── */
+function buildSetups(matrixData, stratAssets) {
+  const longs = [], shorts = [], hedges = [];
+
+  for (const row of matrixData) {
+    const v = computeVerdict(row.mlSig, row.gexRegime, row.flowSent);
+    const sc = row.sc;
+    const item = { sym: row.sym, label: row.label, spot: row.spot, verdict: v, sc };
+
+    if (v.label.includes('STRONG BUY') || v.label.includes('★')) {
+      if (row.mlSig === 'BUY') longs.unshift(item);
+      else longs.push(item);
+    } else if (v.label.includes('BUY') || v.label.includes('BULL')) {
+      longs.push(item);
+    } else if (v.label.includes('STRONG SELL') || (v.label.includes('SELL') && v.label.includes('★'))) {
+      shorts.unshift(item);
+    } else if (v.label.includes('SELL') || v.label.includes('BEAR')) {
+      shorts.push(item);
+    }
+  }
+
+  // Hedges from strategy assets that are bearish or neutral
+  for (const a of (stratAssets || [])) {
+    const dir = (a.direction || '').toUpperCase();
+    const sn = (a.strategy || {}).name || '';
+    if (dir === 'NEUTRAL' || sn.toLowerCase().includes('condor') || sn.toLowerCase().includes('strangle') || sn.toLowerCase().includes('put spread')) {
+      if (hedges.length < 4) hedges.push({ sym: a.symbol, label: a.label || '', spot: a.spot, stratName: sn, dir });
+    }
+  }
+
+  function setupHtml(items, type) {
+    if (!items.length) return `<div class="empty-col">No clear ${type} setups — wait for alignment</div>`;
+    return items.slice(0, 4).map(it => {
+      const sc = it.sc || {};
+      const stratName = sc.name || it.verdict.action || '—';
+      const why = it.verdict.label;
+      return `<div class="setup-item">
+        <div class="si-sym">${it.sym} <span style="font-size:.72rem;color:var(--muted);font-weight:400;">${it.label}</span></div>
+        <div class="si-strat">${stratName}</div>
+        <div class="si-why">${why}</div>
+        <div class="si-size" style="color:${type==='longs'?'#4ade80':type==='shorts'?'#f87171':'#fbbf24'}">Size: ${it.verdict.size}</div>
+      </div>`;
+    }).join('');
+  }
+
+  function hedgeHtml(items) {
+    if (!items.length) return `<div class="empty-col">No hedge setups — all assets directional</div>`;
+    return items.slice(0, 4).map(it => `<div class="setup-item">
+      <div class="si-sym">${it.sym} <span style="font-size:.72rem;color:var(--muted);font-weight:400;">${it.label}</span></div>
+      <div class="si-strat">${it.stratName || 'Premium selling'}</div>
+      <div class="si-why">${it.dir} — elevated IV opportunity</div>
+      <div class="si-size" style="color:#fbbf24">Size: 25–30%</div>
+    </div>`).join('');
+  }
+
+  document.getElementById('longs-body').innerHTML  = setupHtml(longs,  'longs');
+  document.getElementById('shorts-body').innerHTML = setupHtml(shorts, 'shorts');
+  document.getElementById('hedges-body').innerHTML = hedgeHtml(hedges);
+}
+
+/* ── Shared state — each API populates its slot, then triggers re-renders ──── */
+const _data = { ms: null, gex: null, flows: null, strat: null, dte: null };
+let _loaded = 0, _total = 5;
+
+function _tick(key, val) {
+  _data[key] = val;
+  _loaded++;
+  const upd = document.getElementById('last-upd');
+  upd.innerHTML = `<span class="spinner"></span> Loading… (${_loaded}/${_total} complete)`;
+  renderSections();
+  if (_loaded >= _total) upd.textContent = 'Updated ' + new Date().toLocaleTimeString();
+}
+
+/* ── Render each section independently with whatever data is available ──────── */
+function renderSections() {
+  const { ms, gex, flows, strat, dte } = _data;
+
+  /* KPIs + commentary + events — from market-summary alone */
+  if (ms) {
+    const dir  = ms.market_direction || '—';
+    const sent = ms.sentiment || {};
+    const bull = sent.bull_pct || 0;
+    const bear = sent.bear_pct || 0;
+
+    document.getElementById('kpi-direction').className = 'kpi-val ' + dirClass(dir);
+    document.getElementById('kpi-direction').textContent = dir;
+    document.getElementById('kpi-dir-sub').textContent =
+      `${sent.buy || 0} BUY · ${sent.sell || 0} SELL · ${sent.hold || 0} HOLD`;
+
+    document.getElementById('kpi-breadth').textContent = `${bull.toFixed(0)}% / ${bear.toFixed(0)}%`;
+    document.getElementById('kpi-breadth').className = 'kpi-val ' + (bull > bear ? 'c-bull' : bull < bear ? 'c-bear' : 'c-neut');
+    document.getElementById('kpi-breadth-sub').textContent = `Bull ${bull.toFixed(0)}% vs Bear ${bear.toFixed(0)}%`;
+    const barFill = document.getElementById('kpi-bar-fill');
+    barFill.style.width = bull + '%';
+    barFill.style.background = bull > bear ? '#4ade80' : '#f87171';
+
+    const avgMag = ms.avg_magnitude_pct || 0;
+    document.getElementById('kpi-mag').textContent = fmtPct(avgMag);
+    document.getElementById('kpi-mag').className = 'kpi-val ' + (avgMag > 0 ? 'c-bull' : avgMag < 0 ? 'c-bear' : 'c-info');
+
+    const topRank = ms.ml_ranking && ms.ml_ranking[0];
+    if (topRank) {
+      document.getElementById('kpi-top').textContent = topRank.symbol || '—';
+      document.getElementById('kpi-top-sub').textContent =
+        `Signal: ${topRank.signal || '—'} | P(up): ${topRank.prob_up != null ? (topRank.prob_up * 100).toFixed(0) + '%' : '—'}`;
+    }
+
+    document.getElementById('commentary').innerHTML = ms.market_commentary ||
+      `<span style="color:var(--muted)">No commentary available.</span>`;
+
+    /* World Events — lives in market-summary */
+    const events = ms.world_events || [];
+    if (events.length) {
+      document.getElementById('events-grid').innerHTML = events.slice(0, 6).map(ev => `
+        <div class="event-card">
+          <div class="ev-type">${ev.type || 'Market Event'}</div>
+          <div class="ev-title">${ev.title || '—'}</div>
+          <div class="ev-body">${ev.body || ev.description || ev.detail || ''}</div>
+          ${ev.action ? `<div class="ev-action">${ev.action}</div>` : ''}
+        </div>`).join('');
+    } else {
+      document.getElementById('events-grid').innerHTML =
+        '<div class="events-empty">No world events detected. Check <a href="world-events.html" style="color:var(--accent)">World Events</a> page for details.</div>';
+    }
+  }
+
+  /* EDGE — update as each of ms/gex/flows arrives */
+  if (ms || gex || flows) {
+    const edge = deriveEdgeLayers(ms, gex, flows);
+    document.getElementById('el1-verdict').textContent = edge.l1.verdict;
+    document.getElementById('el1-verdict').className = 'ec-verdict ' + edge.l1.cls;
+    document.getElementById('el1-desc').textContent = edge.l1.desc;
+    document.getElementById('el1-score').textContent = `Score: ${edge.l1.score.toFixed(2)} (−1=bear, +1=bull)`;
+    document.getElementById('el2-verdict').textContent = edge.l2.verdict;
+    document.getElementById('el2-verdict').className = 'ec-verdict ' + edge.l2.cls;
+    document.getElementById('el2-desc').textContent = edge.l2.desc;
+    document.getElementById('el3-verdict').textContent = edge.l3.verdict;
+    document.getElementById('el3-verdict').className = 'ec-verdict ' + edge.l3.cls;
+    document.getElementById('el3-desc').textContent = edge.l3.desc;
+    document.getElementById('el3-score').textContent = `Max size this regime: ${edge.l3.size}`;
+    document.getElementById('ea-action').textContent = edge.action;
+    document.getElementById('ea-action').style.color = edge.actionColor;
+    document.getElementById('ea-size').textContent = edge.size;
+    document.getElementById('ea-size').style.color = edge.actionColor;
+    document.getElementById('ea-note').textContent = edge.edgeNote;
+  }
+
+  /* Asset Signal Matrix + Top Setups — update whenever any of ms/gex/flows/strat arrives */
+  if (ms || gex || flows) {
+    const gexMap = {};
+    for (const a of (gex ? gex.assets || [] : [])) gexMap[a.symbol] = a;
+    const flowMap = {};
+    for (const a of (flows ? flows.assets || [] : [])) flowMap[a.symbol] = a;
+    const stratMap = {};
+    for (const a of (strat ? strat.assets || [] : [])) stratMap[a.symbol] = a;
+
+    const PRIORITY = ['SPY','QQQ','IWM','DIA','AAPL','MSFT','NVDA','AMZN','META','GOOGL','TSLA','JPM','V','JNJ','XOM','BAC','WMT','UNH','HD','CVX','BRK-B'];
+    const seenSyms = new Set();
+    const matrixSymbols = [];
+    for (const sym of PRIORITY) {
+      if (!seenSyms.has(sym)) { seenSyms.add(sym); matrixSymbols.push(sym); }
+    }
+    for (const a of (gex ? gex.assets || [] : [])) {
+      if (!seenSyms.has(a.symbol)) { seenSyms.add(a.symbol); matrixSymbols.push(a.symbol); }
+    }
+
+    const mlMap = {};
+    for (const r of (ms ? ms.ml_ranking    || [] : [])) mlMap[r.symbol] = r;
+    for (const r of (ms ? ms.top_magnitude || [] : [])) if (!mlMap[r.symbol]) mlMap[r.symbol] = r;
+    for (const r of (ms ? ms.top_activity  || [] : [])) if (!mlMap[r.symbol]) mlMap[r.symbol] = r;
+
+    const matrixData = [];
+    let rowHtml = '';
+    for (const sym of matrixSymbols) {
+      const ml = mlMap[sym] || {};
+      const g  = gexMap[sym] || {};
+      const f  = flowMap[sym] || {};
+      const s  = stratMap[sym] || {};
+      const spot     = g.spot || ml.close || s.spot || null;
+      const mlSig    = ml.signal || null;
+      const mlProb   = ml.prob_up != null ? ml.prob_up : null;
+      const gexReg   = g.regime || null;
+      const gexWall  = g.gamma_wall || null;
+      const gexFlip  = g.flip_level || null;
+      const flowSent = f.flow_sentiment || null;
+      const label    = ml.symbol_label || g.label || s.label || '';
+      matrixData.push({ sym, label, spot, mlSig, mlProb, gexRegime: gexReg, gexWall, gexFlip, flowSent, sc: s.strategy });
+      rowHtml += buildMatrixRow(sym, label, spot, mlSig, mlProb, gexReg, gexWall, gexFlip, flowSent);
+    }
+    document.getElementById('matrix-body').innerHTML = rowHtml ||
+      '<tr><td colspan="10" style="text-align:center;color:var(--muted);padding:1.5rem;">No data available</td></tr>';
+
+    buildSetups(matrixData, strat ? strat.assets || [] : []);
+  }
+
+  /* Strategy Cards — from options-strategy alone */
+  if (strat) {
+    const stratAssets = strat.assets || [];
+    if (stratAssets.length) {
+      const sorted = [...stratAssets].sort((a, b) => {
+        const order = { BULLISH: 0, BEARISH: 1, NEUTRAL: 2 };
+        return (order[a.direction] || 2) - (order[b.direction] || 2);
+      });
+      document.getElementById('strat-grid').innerHTML = sorted.slice(0, 12).map(buildStratCard).join('');
+    } else {
+      document.getElementById('strat-grid').innerHTML = '<div class="loading-msg">No strategy data — ensure server is running</div>';
+    }
+  }
+
+  /* 0DTE — from 0dte alone */
+  if (dte) {
+    const dteAssets = dte.assets || [];
+    if (dteAssets.length) {
+      document.getElementById('dte-grid').innerHTML = dteAssets.slice(0, 8).map(buildDteCard).join('');
+    } else {
+      document.getElementById('dte-grid').innerHTML =
+        '<div class="dte-empty">No 0DTE activity detected today — market may be closed or no unusual 0DTE volume found.</div>';
+    }
+  }
+}
+
+/* ── MAIN refresh — fire all 5 fetches independently ──────────────────────── */
+function refreshAll() {
+  // Reset state
+  _loaded = 0;
+  Object.keys(_data).forEach(k => _data[k] = null);
+  const upd = document.getElementById('last-upd');
+  upd.innerHTML = '<span class="spinner"></span> Loading… (0/5 complete)';
+
+  document.getElementById('matrix-body').innerHTML =
+    '<tr><td colspan="10" class="loading-msg"><span class="spinner"></span> Loading…</td></tr>';
+  document.getElementById('strat-grid').innerHTML =
+    '<div class="loading-msg"><span class="spinner"></span> Loading strategies…</div>';
+  document.getElementById('dte-grid').innerHTML =
+    '<div class="loading-msg"><span class="spinner"></span> Loading 0DTE data…</div>';
+  document.getElementById('events-grid').innerHTML =
+    '<div class="loading-msg"><span class="spinner"></span> Loading events…</div>';
+
+  fetch('/api/market-summary').then(r => r.json()).then(d => _tick('ms', d)).catch(() => _tick('ms', null));
+  fetch('/api/gamma-exposure').then(r => r.json()).then(d => _tick('gex', d)).catch(() => _tick('gex', null));
+  fetch('/api/option-flows').then(r => r.json()).then(d => _tick('flows', d)).catch(() => _tick('flows', null));
+  fetch('/api/options-strategy').then(r => r.json()).then(d => _tick('strat', d)).catch(() => _tick('strat', null));
+  fetch('/api/0dte').then(r => r.json()).then(d => _tick('dte', d)).catch(() => _tick('dte', null));
+}
+
+/* ── Auto-start ──────────────────────────────────────────────────────────────── */
+refreshAll();
+</script>
+
+<script src="search.js" defer></script>
+</body>
+</html>
