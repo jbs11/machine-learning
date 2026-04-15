@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Overnight Markets — Global Session Tracker</title>
+  <script src="lightweight-charts.min.js"></script>
+  <link rel="preload" href="style.css" as="style" fetchpriority="high">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .om-wrap { max-width:1700px; margin:0 auto; padding:0 1.5rem 6rem; }
+
+    /* Hero */
+    .om-hero {
+      padding:2.8rem 1.5rem 1.8rem; text-align:center;
+      background:radial-gradient(ellipse 80% 50% at 50% -5%, rgba(167,139,250,.14) 0%, transparent 65%), var(--bg);
+      border-bottom:1px solid var(--border);
+    }
+    .om-badge {
+      display:inline-flex; align-items:center; gap:.5rem; padding:.28rem .95rem;
+      background:rgba(167,139,250,.1); border:1px solid rgba(167,139,250,.28); border-radius:999px;
+      color:#a78bfa; font-size:.76rem; font-weight:600; letter-spacing:.08em;
+      text-transform:uppercase; margin-bottom:.8rem;
+    }
+    .om-hero h1 {
+      font-size:clamp(1.7rem,3.8vw,2.8rem); font-weight:900; letter-spacing:-.03em;
+      line-height:1.15; margin-bottom:.6rem;
+      background:linear-gradient(135deg, #a78bfa 0%, #22d3ee 55%, #fff 90%);
+      -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+    }
+    .om-hero p { color:var(--muted); font-size:.95rem; max-width:760px; margin:0 auto; line-height:1.7; }
+
+    /* Market clocks strip */
+    .om-clocks {
+      display:flex; flex-wrap:wrap; gap:0; background:var(--border);
+      border-top:1px solid var(--border); border-bottom:1px solid var(--border);
+    }
+    .om-clock {
+      flex:1; min-width:130px; background:var(--surface); padding:.65rem 1rem;
+      text-align:center; border-right:1px solid var(--border);
+    }
+    .om-clock:last-child { border-right:none; }
+    .om-clock-city  { font-size:.62rem; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); margin-bottom:.18rem; }
+    .om-clock-time  { font-size:1.15rem; font-weight:900; font-family:Consolas,monospace; line-height:1; }
+    .om-clock-date  { font-size:.62rem; color:var(--muted); margin-top:.1rem; }
+    .om-clock-status{ font-size:.62rem; font-weight:700; padding:.1rem .45rem; border-radius:4px; margin-top:.25rem; display:inline-block; letter-spacing:.04em; }
+    .status-open  { background:rgba(34,197,94,.15);  color:#4ade80; border:1px solid rgba(34,197,94,.3);  }
+    .status-closed{ background:rgba(148,163,184,.1); color:var(--muted); border:1px solid var(--border); }
+    .status-pre   { background:rgba(251,191,36,.12); color:#fbbf24; border:1px solid rgba(251,191,36,.25); }
+
+    /* TF bar */
+    .om-tf-bar { display:flex; align-items:center; gap:.4rem; padding:.7rem 0 .3rem; }
+    .om-tf-btn {
+      padding:.22rem .6rem; border-radius:5px; border:1px solid var(--border);
+      background:transparent; color:var(--muted); font-size:.72rem; font-weight:700; cursor:pointer; transition:all .12s;
+    }
+    .om-tf-btn.active { background:#a78bfa; border-color:#a78bfa; color:#000; }
+
+    /* Overall sentiment banner */
+    .om-sentiment {
+      display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap;
+      gap:.8rem; padding:.75rem 1.2rem; border-radius:10px; margin:.9rem 0;
+      border:1px solid;
+    }
+    .os-bull { background:rgba(34,197,94,.07);  border-color:rgba(34,197,94,.3);  }
+    .os-bear { background:rgba(239,68,68,.07);  border-color:rgba(239,68,68,.3);  }
+    .os-neut { background:rgba(167,139,250,.07);border-color:rgba(167,139,250,.3); }
+    .om-sent-left  { display:flex; align-items:center; gap:.9rem; }
+    .om-sent-icon  { font-size:2rem; line-height:1; }
+    .om-sent-rating{ font-size:1.35rem; font-weight:900; line-height:1.1; }
+    .om-sent-sub   { font-size:.77rem; color:var(--muted); max-width:580px; line-height:1.5; margin-top:.15rem; }
+    .om-sent-right { display:flex; gap:1.5rem; }
+    .om-sent-stat  { text-align:center; }
+    .om-sent-stat-val { font-size:1.1rem; font-weight:900; font-family:Consolas,monospace; }
+    .om-sent-stat-lbl { font-size:.62rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); }
+
+    /* Section headers */
+    .om-sec-hdr {
+      display:flex; align-items:center; gap:.7rem;
+      margin:2rem 0 .9rem; padding-bottom:.45rem; border-bottom:2px solid var(--border);
+    }
+    .om-sec-icon  { font-size:1.2rem; }
+    .om-sec-title { font-size:1.05rem; font-weight:800; }
+    .om-sec-sub   { font-size:.73rem; color:var(--muted); margin-left:.2rem; }
+    .om-sec-right { margin-left:auto; font-size:.7rem; color:var(--muted); }
+
+    /* Index / futures grid */
+    .om-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(480px,1fr)); gap:1.1rem; margin-bottom:1.2rem; }
+    @media(max-width:560px){ .om-grid{ grid-template-columns:1fr; } }
+
+    .om-card { background:var(--surface); border:1px solid var(--border); border-radius:10px; overflow:hidden; transition:border-color .2s; }
+    .om-card:hover { border-color:rgba(167,139,250,.3); }
+
+    .om-card-hdr {
+      display:flex; align-items:center; justify-content:space-between;
+      padding:.65rem 1rem .5rem; border-bottom:1px solid var(--border);
+    }
+    .om-card-sym   { font-size:1.05rem; font-weight:900; font-family:Consolas,monospace; color:var(--text); }
+    .om-card-name  { font-size:.7rem; color:var(--muted); margin-top:.05rem; }
+    .om-card-right { display:flex; flex-direction:column; align-items:flex-end; gap:.15rem; }
+    .om-card-price { font-size:1.1rem; font-weight:900; font-family:Consolas,monospace; }
+    .om-card-chg   { font-size:.8rem; font-weight:700; }
+
+    .om-card-meta {
+      display:flex; gap:.5rem; align-items:center; padding:.35rem 1rem;
+      border-bottom:1px solid var(--border); background:rgba(0,0,0,0.15); flex-wrap:wrap;
+    }
+    .om-dir-badge {
+      font-size:.65rem; font-weight:700; padding:.15rem .5rem; border-radius:4px;
+      letter-spacing:.05em; text-transform:uppercase;
+    }
+    .dir-bull { background:rgba(34,197,94,.15);  color:#4ade80; border:1px solid rgba(34,197,94,.3);  }
+    .dir-bear { background:rgba(239,68,68,.15);  color:#f87171; border:1px solid rgba(239,68,68,.3);  }
+    .dir-neut { background:rgba(167,139,250,.12);color:#a78bfa; border:1px solid rgba(167,139,250,.25);}
+    .om-mag-badge {
+      font-size:.65rem; font-weight:700; padding:.15rem .5rem; border-radius:4px;
+      letter-spacing:.04em; text-transform:uppercase;
+    }
+    .mag-low  { background:rgba(148,163,184,.1); color:var(--muted); border:1px solid var(--border); }
+    .mag-med  { background:rgba(251,191,36,.1);  color:#fbbf24; border:1px solid rgba(251,191,36,.25); }
+    .mag-high { background:rgba(239,68,68,.1);   color:#f87171; border:1px solid rgba(239,68,68,.25);  }
+    .om-impact-badge {
+      font-size:.65rem; font-weight:700; padding:.15rem .5rem; border-radius:4px;
+      letter-spacing:.04em; text-transform:uppercase; margin-left:auto;
+    }
+    .imp-pos { background:rgba(34,197,94,.1);  color:#4ade80; border:1px solid rgba(34,197,94,.25);  }
+    .imp-neg { background:rgba(239,68,68,.1);  color:#f87171; border:1px solid rgba(239,68,68,.25);  }
+    .imp-neu { background:rgba(148,163,184,.08);color:var(--muted); border:1px solid var(--border);  }
+
+    .om-chart-wrap { position:relative; background:#070d18; }
+    .om-chart-ohlc {
+      display:flex; gap:.75rem; padding:.28rem .8rem; background:#070d18;
+      border-top:1px solid var(--border); font-size:.7rem; font-family:Consolas,monospace;
+    }
+
+    @keyframes spin { to { transform:rotate(360deg); } }
+    .om-spinner { width:22px; height:22px; border:3px solid var(--border); border-top-color:#a78bfa; border-radius:50%; animation:spin .8s linear infinite; }
+    .om-loading { display:flex; align-items:center; justify-content:center; gap:.5rem; height:140px; color:var(--muted); font-size:.8rem; }
+
+    /* News / world events */
+    .om-events-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(340px,1fr)); gap:.9rem; margin-bottom:1.2rem; }
+    .om-event-card  { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:.85rem 1rem; }
+    .om-event-cat   { font-size:.62rem; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); margin-bottom:.35rem; }
+    .om-event-desc  { font-size:.82rem; color:var(--text); line-height:1.6; margin-bottom:.45rem; }
+    .om-event-footer{ display:flex; gap:.4rem; flex-wrap:wrap; align-items:center; }
+    .om-event-tag   { font-size:.63rem; font-weight:700; padding:.12rem .45rem; border-radius:4px; }
+    .tag-bull { background:rgba(34,197,94,.12);  color:#4ade80; border:1px solid rgba(34,197,94,.25);  }
+    .tag-bear { background:rgba(239,68,68,.12);  color:#f87171; border:1px solid rgba(239,68,68,.25);  }
+    .tag-neut { background:rgba(167,139,250,.1); color:#a78bfa; border:1px solid rgba(167,139,250,.25);}
+    .om-event-action{ font-size:.72rem; color:var(--muted); line-height:1.5; margin-top:.3rem; border-top:1px solid var(--border); padding-top:.3rem; }
+
+    /* Futures impact summary table */
+    .om-impact-table-wrap { background:var(--surface); border:1px solid var(--border); border-radius:10px; overflow:hidden; margin-bottom:1.2rem; }
+    .om-impact-table { width:100%; border-collapse:collapse; font-size:.82rem; }
+    .om-impact-table th { background:rgba(0,0,0,.2); color:var(--muted); padding:.45rem .9rem; text-align:left; border-bottom:1px solid var(--border); font-size:.68rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; }
+    .om-impact-table td { padding:.45rem .9rem; border-bottom:1px solid rgba(36,48,88,.35); font-family:Consolas,monospace; vertical-align:middle; }
+    .om-impact-table tr:last-child td { border-bottom:none; }
+    .om-impact-table tr:hover td { background:rgba(255,255,255,.02); }
+  </style>
+</head>
+<body>
+
+<nav class="nav">
+  <a href="index.html" class="nav-logo">
+    <img src="images/steve.jpg" class="nav-logo-photo" alt="Stephen Borick">
+    <div class="nav-logo-text">
+      <span class="nav-company">Artificial Intelligence</span>
+      <span class="nav-name">Solutions, Inc.</span>
+    </div>
+  </a>
+  <ul class="nav-links">
+    <li><a href="index.html">Home</a></li>
+    <li><a href="machine-learning.html">Machine Learning</a></li>
+    <li><a href="ml-trading.html">ML in Trading</a></li>
+    <li><a href="stock-trading.html">Stock Trading</a></li>
+    <li><a href="options-trading.html">Options</a></li>
+    <li><a href="futures-trading.html">Futures</a></li>
+    <li><a href="brokers.html">Brokers</a></li>
+    <li><a href="algorithms-bots.html" style="color:#4ade80;font-weight:700;">&#129302; Algo Bots</a></li>
+    <li><a href="asset-algorithms.html" style="color:#22d3ee;font-weight:700;">&#128200; Asset Algos</a></li>
+    <li><a href="live-trading.html">Live Trading</a></li>
+    <li><a href="market-preparation.html">&#128204; Market Prep</a></li>
+    <li><a href="world-events.html">&#127758; World Events</a></li>
+    <li><a href="overnight-markets.html" style="color:#a78bfa;font-weight:700;" class="active">&#127761; Overnight Markets</a></li>
+    <li><a href="gex-heatmap.html" style="color:#22d3ee;font-weight:700;">&#127777; GEX Heat Maps</a></li>
+    <li><a href="gex-profile.html" style="color:#22d3ee;font-weight:700;">&#128200; GEX Profile</a></li>
+    <li><a href="spx-correlations.html" style="color:#a78bfa;font-weight:700;">&#128202; SPX Correlations</a></li>
+    <li><a href="vix-dashboard.html" style="color:#f87171;font-weight:700;">&#128293; VIX Dashboard</a></li>
+    <li><a href="the-edge.html" style="color:#fbbf24;font-weight:700;">&#9889; The EDGE</a></li>
+    <li><a href="real-time-news.html" style="color:#4ade80;font-weight:700;">&#128240; Real-Time News</a></li>
+    <li><a href="course.html" style="background:#f59e0b;color:#0a0f1e;padding:.28rem .85rem;border-radius:5px;font-weight:700;letter-spacing:.02em;">&#128218; ML Course</a></li>
+    <li><a href="report-ms.html" target="_blank" style="background:#22d3ee;color:var(--bg);padding:.28rem .85rem;border-radius:5px;font-weight:700;letter-spacing:.02em;">&#128202; Market Report</a></li>
+    <li><a href="report-tg.html" target="_blank" style="background:#a78bfa;color:var(--bg);padding:.28rem .85rem;border-radius:5px;font-weight:700;letter-spacing:.02em;">&#128214; Trading Guide</a></li>
+  </ul>
+</nav>
+
+<!-- Hero -->
+<div class="om-hero">
+  <div class="om-badge">&#127761; Global Session Monitor</div>
+  <h1>Overnight Markets</h1>
+  <p>Live candlestick charts for Asian and European equity indices, global futures, and overnight news impact. Assess direction, magnitude, and sentiment before the US session opens.</p>
+</div>
+
+<!-- Market clocks -->
+<div class="om-clocks" id="om-clocks">
+  <!-- populated by JS -->
+</div>
+
+<div class="om-wrap">
+
+  <!-- Overall overnight sentiment -->
+  <div class="om-sentiment os-neut" id="om-sentiment">
+    <div class="om-sent-left">
+      <div class="om-sent-icon" id="om-sent-icon">&#9866;</div>
+      <div>
+        <div class="om-sent-rating" id="om-sent-rating" style="color:#a78bfa">Loading overnight data&hellip;</div>
+        <div class="om-sent-sub"   id="om-sent-sub">Calculating global session direction and futures impact&hellip;</div>
+      </div>
+    </div>
+    <div class="om-sent-right">
+      <div class="om-sent-stat">
+        <div class="om-sent-stat-val" id="os-bull-pct" style="color:#4ade80">--%</div>
+        <div class="om-sent-stat-lbl">Bull</div>
+      </div>
+      <div class="om-sent-stat">
+        <div class="om-sent-stat-val" id="os-bear-pct" style="color:#f87171">--%</div>
+        <div class="om-sent-stat-lbl">Bear</div>
+      </div>
+      <div class="om-sent-stat">
+        <div class="om-sent-stat-val" id="os-mkt-dir">--</div>
+        <div class="om-sent-stat-lbl">US Direction</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TF selector -->
+  <div class="om-tf-bar">
+    <span style="font-size:.69rem;color:var(--muted);font-weight:700;margin-right:.3rem;">TIMEFRAME:</span>
+    <button class="om-tf-btn" data-interval="15m" data-period="2d"  onclick="changeTF(this)">15m</button>
+    <button class="om-tf-btn active" data-interval="1h" data-period="5d"  onclick="changeTF(this)">1H</button>
+    <button class="om-tf-btn" data-interval="4h" data-period="30d" onclick="changeTF(this)">4H</button>
+    <button class="om-tf-btn" data-interval="1d" data-period="90d" onclick="changeTF(this)">1D</button>
+    <span style="margin-left:auto;font-size:.7rem;color:var(--muted);" id="om-updated">--</span>
+  </div>
+
+  <!-- Asia-Pacific -->
+  <div class="om-sec-hdr">
+    <div class="om-sec-icon">&#127761;</div>
+    <div class="om-sec-title">Asia-Pacific</div>
+    <div class="om-sec-sub">Japan &middot; Hong Kong &middot; China</div>
+    <div class="om-sec-right" id="asia-summary">--</div>
+  </div>
+  <div class="om-grid" id="asia-grid">
+    <!-- cards injected -->
+  </div>
+
+  <!-- Europe -->
+  <div class="om-sec-hdr">
+    <div class="om-sec-icon">&#127963;</div>
+    <div class="om-sec-title">Europe</div>
+    <div class="om-sec-sub">Germany &middot; UK &middot; France</div>
+    <div class="om-sec-right" id="europe-summary">--</div>
+  </div>
+  <div class="om-grid" id="europe-grid">
+    <!-- cards injected -->
+  </div>
+
+  <!-- US Futures -->
+  <div class="om-sec-hdr">
+    <div class="om-sec-icon">&#9889;</div>
+    <div class="om-sec-title">US Futures</div>
+    <div class="om-sec-sub">Equity &middot; Rates &middot; Commodities</div>
+    <div class="om-sec-right" id="futures-summary">--</div>
+  </div>
+  <div class="om-grid" id="futures-grid">
+    <!-- cards injected -->
+  </div>
+
+  <!-- Overnight futures impact table -->
+  <div class="om-sec-hdr">
+    <div class="om-sec-icon">&#128200;</div>
+    <div class="om-sec-title">Overnight Impact on US Open</div>
+    <div class="om-sec-sub">How global overnight performance signals next-session bias</div>
+  </div>
+  <div class="om-impact-table-wrap">
+    <table class="om-impact-table">
+      <thead>
+        <tr>
+          <th>Market</th>
+          <th>Overnight Chg</th>
+          <th>Direction</th>
+          <th>Magnitude</th>
+          <th>US Futures Impact</th>
+          <th>Correlation</th>
+        </tr>
+      </thead>
+      <tbody id="om-impact-body">
+        <tr><td colspan="6" style="color:var(--muted);text-align:center;padding:1.5rem;">Loading impact analysis&hellip;</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- World events / news -->
+  <div class="om-sec-hdr">
+    <div class="om-sec-icon">&#128240;</div>
+    <div class="om-sec-title">Overnight News &amp; Events</div>
+    <div class="om-sec-sub">Global catalysts and their directional impact</div>
+  </div>
+  <div class="om-events-grid" id="om-events-grid">
+    <div style="color:var(--muted);padding:1.5rem;font-size:.85rem;">Loading news events&hellip;</div>
+  </div>
+
+</div><!-- /om-wrap -->
+
+<script>
+'use strict';
+var API = '';
+var currentInterval = '1h';
+var currentPeriod   = '5d';
+
+// ── Market definitions ────────────────────────────────────────────────────────
+var MARKETS = {
+  asia: [
+    { sym:'^N225',    name:'Nikkei 225',        country:'Japan',       tz:'Asia/Tokyo',
+      open:'09:00', close:'15:30', utcOff:9,  correlUS:0.65 },
+    { sym:'^HSI',     name:'Hang Seng',          country:'Hong Kong',   tz:'Asia/Hong_Kong',
+      open:'09:30', close:'16:00', utcOff:8,  correlUS:0.55 },
+    { sym:'000001.SS',name:'Shanghai Comp.',     country:'China',       tz:'Asia/Shanghai',
+      open:'09:30', close:'15:00', utcOff:8,  correlUS:0.40 },
+  ],
+  europe: [
+    { sym:'^GDAXI',   name:'DAX 40',             country:'Germany',     tz:'Europe/Berlin',
+      open:'09:00', close:'17:30', utcOff:2,  correlUS:0.82 },
+    { sym:'^FTSE',    name:'FTSE 100',            country:'UK',          tz:'Europe/London',
+      open:'08:00', close:'16:30', utcOff:1,  correlUS:0.76 },
+    { sym:'^FCHI',    name:'CAC 40',              country:'France',      tz:'Europe/Paris',
+      open:'09:00', close:'17:30', utcOff:2,  correlUS:0.79 },
+  ],
+  futures: [
+    { sym:'ES=F',     name:'S&P 500 Futures',    country:'CME',         correlUS:1.00 },
+    { sym:'NQ=F',     name:'Nasdaq 100 Futures', country:'CME',         correlUS:0.97 },
+    { sym:'YM=F',     name:'Dow Futures',         country:'CME',         correlUS:0.95 },
+    { sym:'RTY=F',    name:'Russell 2000 Futs',  country:'CME',         correlUS:0.88 },
+    { sym:'GC=F',     name:'Gold Futures',        country:'COMEX',       correlUS:-0.30 },
+    { sym:'CL=F',     name:'Crude Oil WTI',       country:'NYMEX',       correlUS:0.45 },
+    { sym:'ZB=F',     name:'US 30Y T-Bond',       country:'CBOT',        correlUS:-0.55 },
+  ],
+};
+
+// Merge all for quick lookup
+var ALL_MARKETS = [].concat(MARKETS.asia, MARKETS.europe, MARKETS.futures);
+
+// Cache of { price, prevClose, pct, candles }
+var marketData = {};
+
+// Chart instances
+var chartInstances = {};
+
+// ── Utilities ─────────────────────────────────────────────────────────────────
+var _fetchCache = {};
+function cachedFetch(url) {
+  if (_fetchCache[url]) return Promise.resolve(_fetchCache[url]);
+  return fetch(url, { cache:'no-store' })
+    .then(function(r){ if (!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
+    .then(function(d){ _fetchCache[url]=d; return d; });
+}
+
+function fmt(v, dec) {
+  if (v==null||isNaN(v)) return '--';
+  dec = dec==null ? 2 : dec;
+  return v >= 10000 ? v.toLocaleString('en-US',{minimumFractionDigits:dec,maximumFractionDigits:dec})
+       : v >= 1000  ? v.toLocaleString('en-US',{minimumFractionDigits:dec,maximumFractionDigits:dec})
+       : v.toFixed(dec);
+}
+function pct(v){ return v!=null&&!isNaN(v)?(v>=0?'+':'')+v.toFixed(2)+'%':'--'; }
+
+function dirClass(p){ return p>0.25?'dir-bull':p<-0.25?'dir-bear':'dir-neut'; }
+function dirText(p) { return p>0.25?'BULLISH':p<-0.25?'BEARISH':'NEUTRAL'; }
+function dirColor(p){ return p>0.25?'#4ade80':p<-0.25?'#f87171':'#a78bfa'; }
+
+function magClass(p){
+  var a=Math.abs(p||0);
+  return a>1.5?'mag-high':a>0.6?'mag-med':'mag-low';
+}
+function magText(p){
+  var a=Math.abs(p||0);
+  return a>1.5?'HIGH':a>0.6?'MEDIUM':'LOW';
+}
+
+function impactText(pct_chg, corr) {
+  // positive corr + positive chg = bullish US impact; negative corr + positive chg = bearish
+  var impact = (pct_chg||0) * corr;
+  if (impact > 0.5)  return { text:'BULLISH', cls:'imp-pos' };
+  if (impact < -0.5) return { text:'BEARISH', cls:'imp-neg' };
+  return { text:'NEUTRAL', cls:'imp-neu' };
+}
+
+// ── Market open/closed status ─────────────────────────────────────────────────
+function getMarketStatus(m) {
+  if (!m.open) return 'open'; // futures = always open (roughly)
+  var now = new Date();
+  var utcH = now.getUTCHours();
+  var utcM = now.getUTCMinutes();
+  var localH = (utcH + m.utcOff) % 24;
+  var localM = utcM;
+  var localTotal = localH * 60 + localM;
+  var openParts  = m.open.split(':').map(Number);
+  var closeParts = m.close.split(':').map(Number);
+  var openMin  = openParts[0]  * 60 + openParts[1];
+  var closeMin = closeParts[0] * 60 + closeParts[1];
+  // Pre-market: 30 min before open
+  if (localTotal >= openMin - 30 && localTotal < openMin)  return 'pre';
+  if (localTotal >= openMin && localTotal < closeMin)       return 'open';
+  return 'closed';
+}
+
+// ── Market clocks ─────────────────────────────────────────────────────────────
+var CLOCKS = [
+  { city:'Tokyo',     utcOff:9,  dst:false },
+  { city:'Hong Kong', utcOff:8,  dst:false },
+  { city:'Frankfurt', utcOff:2,  dst:true  },
+  { city:'London',    utcOff:1,  dst:true  },
+  { city:'New York',  utcOff:-4, dst:true  },
+  { city:'Chicago',   utcOff:-5, dst:true  },
+];
+
+function updateClocks() {
+  var now = new Date();
+  var html = CLOCKS.map(function(c) {
+    var ms  = now.getTime() + (now.getTimezoneOffset() * 60000) + (c.utcOff * 3600000);
+    var d   = new Date(ms);
+    var hh  = String(d.getHours()).padStart(2,'0');
+    var mm  = String(d.getMinutes()).padStart(2,'0');
+    var ss  = String(d.getSeconds()).padStart(2,'0');
+    var dd  = d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+    // simple open check for major markets
+    var mkt = ALL_MARKETS.find(function(m){ return m.country===c.city || m.tz===c.city; });
+    // just show the clock without status for simplicity
+    return '<div class="om-clock">' +
+      '<div class="om-clock-city">' + c.city + '</div>' +
+      '<div class="om-clock-time">' + hh + ':' + mm + '<span style="font-size:.75rem;opacity:.6">:' + ss + '</span></div>' +
+      '<div class="om-clock-date">' + dd + '</div>' +
+      '</div>';
+  }).join('');
+  document.getElementById('om-clocks').innerHTML = html;
+}
+updateClocks();
+setInterval(updateClocks, 1000);
+
+// ── TF controls ───────────────────────────────────────────────────────────────
+function changeTF(btn) {
+  document.querySelectorAll('.om-tf-btn').forEach(function(b){ b.classList.remove('active'); });
+  btn.classList.add('active');
+  currentInterval = btn.dataset.interval;
+  currentPeriod   = btn.dataset.period;
+  _fetchCache = {};
+  // Destroy existing charts
+  Object.keys(chartInstances).forEach(function(k){
+    try{ chartInstances[k].remove(); }catch(_e){}
+  });
+  chartInstances = {};
+  loadAllMarkets();
+}
+
+// ── Build card HTML ───────────────────────────────────────────────────────────
+function buildCard(m) {
+  var d    = marketData[m.sym] || {};
+  var price= d.price || 0;
+  var p    = d.pct || 0;
+  var status = m.open ? getMarketStatus(m) : 'open';
+  var statusHtml = status==='open'   ? '<span class="om-clock-status status-open">OPEN</span>'
+                 : status==='pre'    ? '<span class="om-clock-status status-pre">PRE</span>'
+                 : '<span class="om-clock-status status-closed">CLOSED</span>';
+  var imp  = impactText(p, m.correlUS||0);
+
+  return '<div class="om-card" id="card-' + m.sym.replace(/[\^=\.]/g,'_') + '">' +
+    '<div class="om-card-hdr">' +
+      '<div>' +
+        '<div class="om-card-sym">' + m.sym.replace('^','') + ' ' + statusHtml + '</div>' +
+        '<div class="om-card-name">' + m.name + ' &middot; ' + m.country + '</div>' +
+      '</div>' +
+      '<div class="om-card-right">' +
+        '<div class="om-card-price" id="price-'+m.sym.replace(/[\^=\.]/g,'_')+'" style="color:' + dirColor(p) + '">' +
+          (price ? fmt(price,2) : '--') + '</div>' +
+        '<div class="om-card-chg" style="color:' + dirColor(p) + '" id="chg-'+m.sym.replace(/[\^=\.]/g,'_')+'">' +
+          pct(p) + '</div>' +
+      '</div>' +
+    '</div>' +
+    '<div class="om-card-meta">' +
+      '<span class="om-dir-badge ' + dirClass(p) + '" id="dir-'+m.sym.replace(/[\^=\.]/g,'_')+'">' + dirText(p) + '</span>' +
+      '<span class="om-mag-badge ' + magClass(p) + '" id="mag-'+m.sym.replace(/[\^=\.]/g,'_')+'">' + magText(p) + ' MOVE</span>' +
+      (m.correlUS < 1 ? '<span class="om-impact-badge ' + imp.cls + '" id="imp-'+m.sym.replace(/[\^=\.]/g,'_')+'">US IMPACT: ' + imp.text + '</span>' : '') +
+    '</div>' +
+    '<div class="om-chart-wrap">' +
+      '<div class="om-loading" id="load-'+m.sym.replace(/[\^=\.]/g,'_')+'"><div class="om-spinner"></div><span>Loading&hellip;</span></div>' +
+      '<div id="cv-'+m.sym.replace(/[\^=\.]/g,'_')+'" style="display:none;height:200px;background:#070d18;"></div>' +
+    '</div>' +
+    '<div class="om-chart-ohlc">' +
+      '<span id="oo-'+m.sym.replace(/[\^=\.]/g,'_')+'" style="color:var(--muted)">O --</span>' +
+      '<span id="oh-'+m.sym.replace(/[\^=\.]/g,'_')+'" style="color:#4ade80">H --</span>' +
+      '<span id="ol-'+m.sym.replace(/[\^=\.]/g,'_')+'" style="color:#f87171">L --</span>' +
+      '<span id="oc-'+m.sym.replace(/[\^=\.]/g,'_')+'" style="color:#22d3ee;font-weight:700">C --</span>' +
+    '</div>' +
+  '</div>';
+}
+
+function safeId(sym){ return sym.replace(/[\^=\.]/g,'_'); }
+
+// ── Load candles for a market ─────────────────────────────────────────────────
+async function loadChart(m) {
+  var id  = safeId(m.sym);
+  var cvEl = document.getElementById('cv-' + id);
+  var ldEl = document.getElementById('load-' + id);
+  if (!cvEl) return;
+
+  try {
+    var url = API + '/api/candles/' + encodeURIComponent(m.sym) +
+              '?interval=' + currentInterval + '&period=' + currentPeriod;
+    var raw  = await cachedFetch(url);
+    var candles = raw.candles || raw;
+    if (!Array.isArray(candles) || !candles.length) throw new Error('No data');
+
+    var mapped = candles
+      .map(function(c){ return { time:c.time||c.timestamp, open:c.open, high:c.high, low:c.low, close:c.close }; })
+      .filter(function(c){ return c.time && c.open && c.close; });
+    if (!mapped.length) throw new Error('Empty');
+
+    // Update price from last candle
+    var last = mapped[mapped.length-1];
+    var prev = mapped.length >= 2 ? mapped[mapped.length-2] : null;
+    var p    = prev ? ((last.close - prev.close) / prev.close * 100) : 0;
+    marketData[m.sym] = { price: last.close, prevClose: prev ? prev.close : last.close, pct: p, candles: mapped };
+    updateCardStats(m, last, p);
+
+    // Build chart
+    if (ldEl) ldEl.style.display = 'none';
+    cvEl.style.display = 'block';
+    var w = cvEl.parentElement.clientWidth || 480;
+
+    var upColor   = dirColor(p);
+    var downColor = p >= 0 ? '#f87171' : '#22c55e'; // reverse if overall bearish
+
+    var chart = LightweightCharts.createChart(cvEl, {
+      width:w, height:200,
+      layout:{ background:{color:'#070d18'}, textColor:'rgba(226,232,240,0.85)' },
+      grid:{ vertLines:{color:'rgba(36,48,88,.35)'}, horzLines:{color:'rgba(36,48,88,.35)'} },
+      crosshair:{ mode:LightweightCharts.CrosshairMode.Normal },
+      rightPriceScale:{ borderColor:'rgba(255,255,255,0.12)' },
+      timeScale:{ borderColor:'rgba(255,255,255,0.12)', timeVisible:true, secondsVisible:false, rightOffset:3, barSpacing:6 },
+      handleScroll:{ mouseWheel:true, pressedMouseMove:true },
+      handleScale:{ mouseWheel:true, pinch:true },
+    });
+
+    var cs = chart.addCandlestickSeries({
+      upColor:'#22c55e', downColor:'#ef4444',
+      borderUpColor:'#22c55e', borderDownColor:'#ef4444',
+      wickUpColor:'#22c55e', wickDownColor:'#ef4444',
+    });
+    cs.setData(mapped);
+    chart.timeScale().fitContent();
+
+    chartInstances[m.sym] = chart;
+    window.addEventListener('resize', function(){ chart.applyOptions({width:cvEl.parentElement.clientWidth}); });
+
+    // OHLC display
+    chart.subscribeCrosshairMove(function(pt){
+      if (!pt.seriesData||!pt.seriesData.size) return;
+      var d=pt.seriesData.values().next().value; if (!d) return;
+      document.getElementById('oo-'+id).textContent='O '+fmt(d.open,2);
+      document.getElementById('oh-'+id).textContent='H '+fmt(d.high,2);
+      document.getElementById('ol-'+id).textContent='L '+fmt(d.low,2);
+      document.getElementById('oc-'+id).textContent='C '+fmt(d.close,2);
+    });
+    document.getElementById('oo-'+id).textContent='O '+fmt(last.open,2);
+    document.getElementById('oh-'+id).textContent='H '+fmt(last.high,2);
+    document.getElementById('ol-'+id).textContent='L '+fmt(last.low,2);
+    document.getElementById('oc-'+id).textContent='C '+fmt(last.close,2);
+
+  } catch(e) {
+    if (ldEl) ldEl.innerHTML = '<span style="color:var(--muted);font-size:.78rem;">Data unavailable: '+e.message+'</span>';
+  }
+}
+
+function updateCardStats(m, last, p) {
+  var id = safeId(m.sym);
+  var priceEl = document.getElementById('price-'+id);
+  var chgEl   = document.getElementById('chg-'+id);
+  var dirEl   = document.getElementById('dir-'+id);
+  var magEl   = document.getElementById('mag-'+id);
+  var impEl   = document.getElementById('imp-'+id);
+  var col     = dirColor(p);
+  if (priceEl) { priceEl.textContent = fmt(last.close,2); priceEl.style.color = col; }
+  if (chgEl)   { chgEl.textContent   = pct(p);             chgEl.style.color   = col; }
+  if (dirEl)   { dirEl.textContent = dirText(p); dirEl.className = 'om-dir-badge ' + dirClass(p); }
+  if (magEl)   { magEl.textContent = magText(p) + ' MOVE'; magEl.className = 'om-mag-badge ' + magClass(p); }
+  if (impEl) {
+    var imp = impactText(p, m.correlUS||0);
+    impEl.textContent = 'US IMPACT: ' + imp.text;
+    impEl.className   = 'om-impact-badge ' + imp.cls;
+  }
+}
+
+// ── Build section grids ───────────────────────────────────────────────────────
+function buildGrids() {
+  document.getElementById('asia-grid').innerHTML    = MARKETS.asia.map(buildCard).join('');
+  document.getElementById('europe-grid').innerHTML  = MARKETS.europe.map(buildCard).join('');
+  document.getElementById('futures-grid').innerHTML = MARKETS.futures.map(buildCard).join('');
+}
+
+// ── Load all market charts ────────────────────────────────────────────────────
+function loadAllMarkets() {
+  buildGrids();
+  ALL_MARKETS.forEach(function(m){ loadChart(m); });
+  setTimeout(updateImpactTable,  3000);
+  setTimeout(updateSectionSummaries, 3000);
+  document.getElementById('om-updated').textContent = 'Updated ' + new Date().toLocaleTimeString();
+}
+
+// ── Impact table (builds after prices loaded) ─────────────────────────────────
+function updateImpactTable() {
+  var rows = ALL_MARKETS
+    .filter(function(m){ return marketData[m.sym]; })
+    .map(function(m){
+      var d   = marketData[m.sym];
+      var p   = d.pct || 0;
+      var imp = impactText(p, m.correlUS||0);
+      var corrLabel = m.correlUS>=0.8 ? 'Very High'
+                    : m.correlUS>=0.6 ? 'High'
+                    : m.correlUS>=0.4 ? 'Moderate'
+                    : m.correlUS>=0 ?  'Low'
+                    : 'Inverse';
+      return '<tr>' +
+        '<td style="color:var(--text);font-weight:700;">' + m.name + ' <span style="color:var(--muted);font-size:.72rem;">(' + m.sym.replace('^','') + ')</span></td>' +
+        '<td style="color:' + dirColor(p) + ';font-weight:700;">' + pct(p) + '</td>' +
+        '<td><span class="om-dir-badge ' + dirClass(p) + '" style="font-size:.62rem;">' + dirText(p) + '</span></td>' +
+        '<td><span class="om-mag-badge ' + magClass(p) + '" style="font-size:.62rem;">' + magText(p) + '</span></td>' +
+        '<td><span class="om-impact-badge ' + imp.cls + '" style="font-size:.62rem;">'+imp.text+'</span></td>' +
+        '<td style="color:var(--muted);">' + corrLabel + ' (' + (m.correlUS>=0?'+':'') + m.correlUS.toFixed(2) + ')</td>' +
+        '</tr>';
+    }).join('');
+  document.getElementById('om-impact-body').innerHTML = rows || '<tr><td colspan="6" style="color:var(--muted);text-align:center;">No data yet</td></tr>';
+}
+
+// ── Section summaries ─────────────────────────────────────────────────────────
+function updateSectionSummaries() {
+  function sectionSummary(markets, elId) {
+    var count = 0, bullCount = 0, totalPct = 0;
+    markets.forEach(function(m){
+      var d = marketData[m.sym];
+      if (!d) return;
+      count++;
+      if (d.pct > 0.25) bullCount++;
+      totalPct += d.pct || 0;
+    });
+    if (!count) return;
+    var avgPct  = totalPct / count;
+    var majority = bullCount > count/2 ? 'BULLISH' : 'BEARISH';
+    var col = majority==='BULLISH' ? '#4ade80' : '#f87171';
+    document.getElementById(elId).innerHTML =
+      '<span style="color:'+col+';font-weight:700;">'+majority+'</span>' +
+      '<span style="color:var(--muted);margin-left:.5rem;">' + bullCount + '/' + count + ' up &middot; avg ' + (avgPct>=0?'+':'') + avgPct.toFixed(2) + '%</span>';
+  }
+  sectionSummary(MARKETS.asia,    'asia-summary');
+  sectionSummary(MARKETS.europe,  'europe-summary');
+  sectionSummary(MARKETS.futures, 'futures-summary');
+  updateOverallSentiment();
+}
+
+// ── Overall overnight sentiment banner ───────────────────────────────────────
+function updateOverallSentiment() {
+  // Weight international indices + futures together
+  var allLoaded = ALL_MARKETS.filter(function(m){ return marketData[m.sym]; });
+  if (!allLoaded.length) return;
+
+  var bullCount = 0, bearCount = 0, totalPct = 0;
+  allLoaded.forEach(function(m){
+    var p = marketData[m.sym].pct || 0;
+    totalPct += p;
+    if (p > 0.25) bullCount++;
+    else if (p < -0.25) bearCount++;
+  });
+  var avgPct = totalPct / allLoaded.length;
+  var bullPct = Math.round(bullCount / allLoaded.length * 100);
+  var bearPct = Math.round(bearCount / allLoaded.length * 100);
+
+  document.getElementById('os-bull-pct').textContent = bullPct + '%';
+  document.getElementById('os-bear-pct').textContent = bearPct + '%';
+
+  var banner  = document.getElementById('om-sentiment');
+  var icon    = document.getElementById('om-sent-icon');
+  var rating  = document.getElementById('om-sent-rating');
+  var sub     = document.getElementById('om-sent-sub');
+  banner.className = 'om-sentiment';
+
+  if (avgPct > 0.5) {
+    banner.classList.add('os-bull');
+    icon.innerHTML = '&#128994;'; rating.style.color = '#4ade80';
+    rating.textContent = 'BULLISH OVERNIGHT \u2014 ' + (avgPct>0?'+':'') + avgPct.toFixed(2) + '% avg';
+    sub.textContent = bullCount + ' of ' + allLoaded.length + ' global markets advancing. Asian and European strength signals positive bias for US open. ES futures tracking the move.';
+  } else if (avgPct < -0.5) {
+    banner.classList.add('os-bear');
+    icon.innerHTML = '&#128308;'; rating.style.color = '#f87171';
+    rating.textContent = 'BEARISH OVERNIGHT \u2014 ' + avgPct.toFixed(2) + '% avg';
+    sub.textContent = bearCount + ' of ' + allLoaded.length + ' global markets declining. Broad overnight weakness likely to pressure US futures at open. Watch ES/NQ for overnight low holds.';
+  } else {
+    banner.classList.add('os-neut');
+    icon.innerHTML = '&#9866;'; rating.style.color = '#a78bfa';
+    rating.textContent = 'MIXED OVERNIGHT \u2014 ' + (avgPct>=0?'+':'') + avgPct.toFixed(2) + '% avg';
+    sub.textContent = 'No clear directional bias from global overnight session. US futures showing mixed signals. Watch for early European session direction to set the tone for the US open.';
+  }
+}
+
+// ── World events / news ───────────────────────────────────────────────────────
+async function loadWorldEvents() {
+  try {
+    var data = await cachedFetch(API + '/api/market-summary');
+    var events = data.world_events || [];
+    var dir    = data.market_direction || '';
+    var sent   = data.sentiment || {};
+
+    // Overall US direction
+    document.getElementById('os-mkt-dir').textContent = dir || '--';
+    document.getElementById('os-mkt-dir').style.color = dir.indexOf('BULL')>=0 ? '#4ade80' : dir.indexOf('BEAR')>=0 ? '#f87171' : '#a78bfa';
+
+    if (sent.bull_pct != null) {
+      document.getElementById('os-bull-pct').textContent = sent.bull_pct.toFixed(0) + '%';
+      document.getElementById('os-bear-pct').textContent = sent.bear_pct.toFixed(0) + '%';
+    }
+
+    if (!events.length) {
+      document.getElementById('om-events-grid').innerHTML =
+        '<div style="color:var(--muted);padding:1.5rem;font-size:.85rem;grid-column:1/-1;">No world events available from server.</div>';
+      return;
+    }
+
+    var html = events.map(function(ev) {
+      var isBull = (ev.impact||ev.sentiment||'').toUpperCase().indexOf('BULL') >= 0
+                || (ev.direction||'').toUpperCase().indexOf('BULL') >= 0
+                || (ev.category||'').indexOf('+') >= 0;
+      var isBear = (ev.impact||ev.sentiment||'').toUpperCase().indexOf('BEAR') >= 0
+                || (ev.direction||'').toUpperCase().indexOf('BEAR') >= 0;
+      var tagCls = isBull ? 'tag-bull' : isBear ? 'tag-bear' : 'tag-neut';
+      var tagTxt = isBull ? 'BULLISH' : isBear ? 'BEARISH' : 'NEUTRAL';
+      var affected = (ev.affected || []).join(', ');
+
+      return '<div class="om-event-card">' +
+        '<div class="om-event-cat">' + (ev.category||'MARKET') + '</div>' +
+        '<div class="om-event-desc">' + (ev.description||ev.event||'') + '</div>' +
+        '<div class="om-event-footer">' +
+          '<span class="om-event-tag ' + tagCls + '">' + tagTxt + '</span>' +
+          (affected ? '<span class="om-event-tag tag-neut">' + affected + '</span>' : '') +
+        '</div>' +
+        (ev.action ? '<div class="om-event-action"><strong style="color:var(--text);">Action:</strong> ' + ev.action + '</div>' : '') +
+      '</div>';
+    }).join('');
+    document.getElementById('om-events-grid').innerHTML = html;
+
+  } catch(e) {
+    document.getElementById('om-events-grid').innerHTML =
+      '<div style="color:var(--muted);padding:1.5rem;font-size:.85rem;">News events unavailable: ' + e.message + '</div>';
+  }
+}
+
+// ── Auto-refresh every 5 minutes ──────────────────────────────────────────────
+function refresh() {
+  _fetchCache = {};
+  Object.keys(chartInstances).forEach(function(k){ try{ chartInstances[k].remove(); }catch(_e){} });
+  chartInstances = {};
+  loadAllMarkets();
+  loadWorldEvents();
+  document.getElementById('om-updated').textContent = 'Updated ' + new Date().toLocaleTimeString();
+}
+setInterval(refresh, 5 * 60 * 1000);
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+loadAllMarkets();
+loadWorldEvents();
+</script>
+</body>
+</html>

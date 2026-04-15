@@ -687,7 +687,7 @@ async function loadGex() {
     // Draw overlay + price lines if chart ready
     if (chartCS) {
       applyGexLines(gwall, pwall, flip);
-      requestAnimationFrame(drawGexOverlay);
+      scheduleOverlayDraw();
     }
 
   } catch(e) {
@@ -772,6 +772,39 @@ function roundRect(ctx, x, y, w, h, r) {
   ctx.closePath();
 }
 var PRICE_AX_W = 65;   // LWC price axis width px
+
+// ── Reliable overlay draw with retry (handles priceToCoordinate not-ready) ──
+var _overlayTimer = null;
+var _overlayAttempts = 0;
+
+function scheduleOverlayDraw() {
+  if (_overlayTimer) { clearTimeout(_overlayTimer); _overlayTimer = null; }
+  _overlayAttempts = 0;
+  _tryOverlayDraw();
+}
+
+function _tryOverlayDraw() {
+  _overlayTimer = null;
+  if (!gexOverlayCanvas || !chartCS || !chartInst || !gexProfileData) {
+    // Not ready yet — retry
+    if (_overlayAttempts++ < 25) {
+      _overlayTimer = setTimeout(_tryOverlayDraw, 120);
+    }
+    return;
+  }
+  requestAnimationFrame(function() {
+    // Test if priceToCoordinate is returning real values yet
+    var testY = null;
+    try { testY = chartCS.priceToCoordinate(gexProfileData.spot || gexProfileData.strikes[0]); } catch(_e){}
+    if (testY === null && _overlayAttempts++ < 25) {
+      _overlayTimer = setTimeout(_tryOverlayDraw, 120);
+      return;
+    }
+    drawGexOverlay();
+    // One extra draw 400ms later to catch any final layout settle
+    _overlayTimer = setTimeout(function(){ requestAnimationFrame(drawGexOverlay); }, 400);
+  });
+}
 
 function drawGexOverlay() {
   if (!gexOverlayCanvas || !chartCS || !chartInst || !gexProfileData) return;
@@ -996,15 +1029,8 @@ async function loadCandles() {
       requestAnimationFrame(drawGexOverlay);
     });
 
-    // Draw immediately if GEX data already available
-    if (gexProfileData) {
-      applyGexLines(gexProfileData.gwall, gexProfileData.pwall, gexProfileData.flip);
-      requestAnimationFrame(drawGexOverlay);
-    }
-
-    // Also schedule a deferred draw to catch async GEX data
-    setTimeout(function(){ if (gexProfileData) requestAnimationFrame(drawGexOverlay); }, 800);
-    setTimeout(function(){ if (gexProfileData) requestAnimationFrame(drawGexOverlay); }, 2000);
+    // Draw overlay — retry until priceToCoordinate() returns real values
+    scheduleOverlayDraw();
 
   } catch(e) {
     document.getElementById('gp-chart-container').innerHTML =
