@@ -104,6 +104,7 @@
     <div class="sdot loading" id="sdot"></div>
     <span class="smsg" id="smsg">Polling live-flow…</span>
     <button class="rbtn" onclick="loadOnce(true)">↻ Refresh</button>
+    <span class="muted" id="axisTz" style="margin-left:.75rem;font-size:.75rem;"></span>
     <span class="muted" id="lastTs" style="margin-left:auto;font-size:.75rem;"></span>
   </div>
 
@@ -111,10 +112,30 @@
     <div class="ph">
       <div>
         <div class="ph-title">Symbols</div>
-        <div class="small">SPX uses SPY proxy (yfinance limitation).</div>
+        <div class="small">Indices use proxies (SPX→SPY, NDX→QQQ, RUT→IWM, VIX→VXX).</div>
       </div>
       <div class="chips" id="symChips"></div>
-      <div class="small" style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;justify-content:flex-end;">  <span>Auto-poll: <b>10s</b></span>  <span style="opacity:.5;">|</span>  <label>Chart range</label>  <select id="rangeSel" class="chip" style="cursor:pointer;">    <option value="15m">15m</option>    <option value="1h" selected>1h</option>    <option value="3h">3h</option>    <option value="session">session</option>  </select>  <span class="muted">(tape fills after 2+ polls)</span></div>
+      <div class="small" style="display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;justify-content:flex-end;">
+        <span>Auto-poll: <b>10s</b></span>
+        <span style="opacity:.5;">|</span>
+        <label>Chart range</label>
+        <select id="rangeSel" class="chip" style="cursor:pointer;">
+          <option value="15m">15m</option>
+          <option value="1h" selected>1h</option>
+          <option value="3h">3h</option>
+          <option value="session">session</option>
+        </select>
+        <label>Time</label>
+        <select id="tzSel" class="chip" style="cursor:pointer;">
+          <option value="local" selected>Local</option>
+          <option value="ET">ET</option>
+        </select>
+        <label style="display:inline-flex;align-items:center;gap:.35rem;">
+          <input id="openReset" type="checkbox" checked style="transform:translateY(1px);">
+          <span>Session starts at 09:30 ET</span>
+        </label>
+        <span class="muted">(select up to 8 symbols)</span>
+      </div>
     </div>
     <div class="grid" style="padding:1rem;">
       <div class="panel" style="margin:0;">
@@ -210,9 +231,45 @@
 <script>
 const API = window.location.origin;
 const SYMS = ['SPX','NDX','RUT','VIX','SPY','QQQ','IWM','VXX','ES=F','NQ=F','AAPL','MSFT','NVDA','AMZN','META','TSLA','JPM','BAC','XOM','CVX','WMT','HD'];
-let _sym = 'SPX';
+let _sel = new Set(['SPX','QQQ','AAPL','MSFT','NVDA']);
 let _chart = null, _call = null, _put = null;
 let _lastMeta = { requested: null, proxy: null };
+let _lastAssets = [];
+let _lastEtDay = null;
+
+const LS_KEY = 'liveFlowPage:v1';
+
+function lsLoad() {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (!raw) return;
+    const obj = JSON.parse(raw);
+    if (obj && Array.isArray(obj.sel)) {
+      _sel = new Set(obj.sel.filter(x => SYMS.includes(x)));
+    }
+    const r = document.getElementById('rangeSel');
+    if (r && obj && typeof obj.range === 'string') r.value = obj.range;
+    const tz = document.getElementById('tzSel');
+    if (tz && obj && typeof obj.tz === 'string') tz.value = obj.tz;
+    const cb = document.getElementById('openReset');
+    if (cb && obj && typeof obj.openReset === 'boolean') cb.checked = obj.openReset;
+  } catch (e) {}
+}
+
+function lsSave() {
+  try {
+    const r = document.getElementById('rangeSel');
+    const tz = document.getElementById('tzSel');
+    const cb = document.getElementById('openReset');
+    const obj = {
+      sel: Array.from(_sel),
+      range: r ? r.value : '1h',
+      tz: tz ? tz.value : 'local',
+      openReset: cb ? !!cb.checked : true
+    };
+    localStorage.setItem(LS_KEY, JSON.stringify(obj));
+  } catch (e) {}
+}
 
 function setStatus(state, msg) {
   const d = document.getElementById('sdot');
@@ -235,11 +292,23 @@ function initChips() {
   wrap.innerHTML = '';
   SYMS.forEach(s => {
     const b = document.createElement('button');
-    b.className = 'chip' + (s===_sym ? ' active':'');
+    b.className = 'chip' + (_sel.has(s) ? ' active':'');
     b.textContent = s;
-    b.onclick = () => { _sym = s; document.querySelectorAll('.chip').forEach(x=>x.classList.remove('active')); b.classList.add('active'); renderEmpty(); loadOnce(true); };
+    b.onclick = () => {
+      if (_sel.has(s)) _sel.delete(s); else _sel.add(s);
+      b.classList.toggle('active');
+      lsSave();
+      renderEmpty();
+      loadOnce(true);
+    };
     wrap.appendChild(b);
   });
+}
+
+function selectedSymbols() {
+  // keep order as shown in chips
+  const syms = SYMS.filter(s => _sel.has(s));
+  return syms.slice(0, 8);
 }
 
 function renderEmpty() {
@@ -251,11 +320,28 @@ function renderEmpty() {
 function initChart() {
   if (!window.LightweightCharts) return;
   const el = document.getElementById('flowChart');
+  function fmtAxisTime(sec) {
+    try {
+      const d = new Date(Number(sec) * 1000);
+      const tz = (document.getElementById('tzSel') || {}).value || 'local';
+      const opts = { hour:'2-digit', minute:'2-digit' };
+      if (tz === 'ET') opts.timeZone = 'America/New_York';
+      return new Intl.DateTimeFormat('en-US', opts).format(d);
+    } catch (e) { return ''; }
+  }
   _chart = LightweightCharts.createChart(el, {
     layout: { background: { color:'#070d18' }, textColor:'rgba(226,232,240,.85)' },
     grid: { vertLines: { color:'rgba(255,255,255,.06)' }, horzLines: { color:'rgba(255,255,255,.06)' } },
     rightPriceScale: { borderColor:'rgba(255,255,255,.08)' },
-    timeScale: { borderColor:'rgba(255,255,255,.08)', timeVisible:true, secondsVisible:false },
+    localization: {
+      timeFormatter: (t) => fmtAxisTime(t)
+    },
+    timeScale: {
+      borderColor:'rgba(255,255,255,.08)',
+      timeVisible:true,
+      secondsVisible:false,
+      tickMarkFormatter: (t) => fmtAxisTime(t)
+    },
     crosshair: { mode: 1 },
     handleScale: true,
     handleScroll: true,
@@ -263,6 +349,36 @@ function initChart() {
   });
   _call = _chart.addHistogramSeries({ color:'rgba(34,197,94,.55)', priceFormat:{type:'volume'} });
   _put  = _chart.addHistogramSeries({ color:'rgba(248,113,113,.55)', priceFormat:{type:'volume'} });
+}
+
+function renderAxisLabel() {
+  const el = document.getElementById('axisTz');
+  const tz = (document.getElementById('tzSel') || {}).value || 'local';
+  if (!el) return;
+  if (tz === 'ET') {
+    el.textContent = 'Axis: ET';
+  } else {
+    try {
+      const name = Intl.DateTimeFormat('en-US', { timeZoneName:'short' }).format(new Date()).split(' ').pop();
+      el.textContent = `Axis: Local (${name})`;
+    } catch (e) {
+      el.textContent = 'Axis: Local';
+    }
+  }
+}
+
+function _etDayKeyFromMs(tsMs) {
+  try {
+    const d = new Date(tsMs || Date.now());
+    const parts = new Intl.DateTimeFormat('en-US', { timeZone:'America/New_York', year:'numeric', month:'2-digit', day:'2-digit' }).formatToParts(d);
+    const y = parts.find(p=>p.type==='year').value;
+    const m = parts.find(p=>p.type==='month').value;
+    const da = parts.find(p=>p.type==='day').value;
+    return `${y}-${m}-${da}`;
+  } catch (e) {
+    const d = new Date(tsMs || Date.now());
+    return d.toISOString().slice(0,10);
+  }
 }
 
 function typeClass(t) {
@@ -279,21 +395,68 @@ function fmtStrike(x) {
   return v >= 1000 ? v.toLocaleString('en-US',{maximumFractionDigits:0}) : v.toFixed(0);
 }
 
+function _marketOpenEtTsMs(tsMs) {
+  // Best-effort: derive today's 09:30 ET cutoff for "session" filtering.
+  try {
+    const d = new Date(tsMs || Date.now());
+    const parts = new Intl.DateTimeFormat('en-US', { timeZone:'America/New_York', year:'numeric', month:'2-digit', day:'2-digit' }).formatToParts(d);
+    const y = parts.find(p=>p.type==='year').value;
+    const m = parts.find(p=>p.type==='month').value;
+    const da = parts.find(p=>p.type==='day').value;
+    const etIso = `${y}-${m}-${da}T09:30:00`;
+    const guess = new Date(etIso);
+    return guess.getTime();
+  } catch (e) {
+    return 0;
+  }
+}
+
+function _applyOpenFilter(events, series) {
+  const cb = document.getElementById('openReset');
+  const on = cb ? cb.checked : false;
+  if (!on) return { events, series };
+  const cut = _marketOpenEtTsMs(Date.now());
+  const ev2 = (events||[]).filter(e => (e.ts_ms || 0) >= cut);
+  const s2  = (series||[]).filter(x => (x.ts_ms || 0) >= cut);
+  return { events: ev2, series: s2 };
+}
+
+function mergeAssets(assets) {
+  const ev = [];
+  const buckets = new Map(); // 10s bucket -> {ts_ms, call_prem_k, put_prem_k}
+  (assets||[]).forEach(a => {
+    const req = (a.requested_symbol || a.symbol || '').toString();
+    const px  = (a.proxy_symbol || '').toString();
+    const disp = px ? `${req} (${px})` : req;
+    (a.events||[]).forEach(e => {
+      ev.push({ ...e, display_symbol: disp });
+    });
+    (a.series||[]).forEach(x => {
+      const t = Math.floor((x.ts_ms || 0) / 10000) * 10000;
+      const cur = buckets.get(t) || { ts_ms: t, call_prem_k: 0, put_prem_k: 0 };
+      cur.call_prem_k += Number(x.call_prem_k || 0);
+      cur.put_prem_k  += Number(x.put_prem_k || 0);
+      buckets.set(t, cur);
+    });
+  });
+  ev.sort((a,b)=>(b.ts_ms||0)-(a.ts_ms||0));
+  const ser = Array.from(buckets.values()).sort((a,b)=>a.ts_ms-b.ts_ms);
+  return { events: ev, series: ser };
+}
+
 function renderTape(events) {
   const body = document.getElementById('tapeBody');
   if (!events || !events.length) {
     body.innerHTML = `<tr><td colspan="9" class="muted" style="text-align:center;padding:1rem;">No new flow yet — wait for the next poll(s).</td></tr>`;
     return;
   }
-  const symDisp = (_lastMeta.requested || _sym || '').toString();
-  const proxy   = (_lastMeta.proxy || '').toString();
   body.innerHTML = events.slice(0, 120).map(e => {
     const sideCls = e.side === 'CALL' ? 'call' : 'put';
     const typCls = typeClass(e.type);
     const prem = (e.premium_k != null) ? Number(e.premium_k).toFixed(1) : '—';
     return `<tr>
       <td style="text-align:left;font-family:inherit;">${e.time || ''}</td>
-      <td style="text-align:left;font-family:inherit;" class="sym">${symDisp}${proxy ? ` <span class="muted" style="font-weight:700;">(${proxy})</span>` : ''}</td>
+      <td style="text-align:left;font-family:inherit;" class="sym">${e.display_symbol || (e.symbol||'')}</td>
       <td>${(e.expiry||'').slice(0,10)}</td>
       <td>${e.dte ?? ''}</td>
       <td>${fmtStrike(e.strike)}</td>
@@ -324,6 +487,9 @@ function _fmtK(x) {
 }
 
 function renderSummary(events, series) {
+  const filtered = _applyOpenFilter(events, series);
+  events = filtered.events;
+  series = filtered.series;
   const rs = document.getElementById('rangeSel');
   const r  = rs ? (rs.value || '1h') : '1h';
   const bucketsPerMin = 6;
@@ -397,6 +563,17 @@ function renderSummary(events, series) {
 
 function renderSeries(series) {
   if (!_call || !_put) return;
+  const filtered = _applyOpenFilter([], series);
+  series = filtered.series;
+  if (series && series.length) {
+    const dayKey = _etDayKeyFromMs(series[series.length - 1].ts_ms || Date.now());
+    if (_lastEtDay && dayKey !== _lastEtDay) {
+      // New day: clear chart to avoid visual carryover
+      _call.setData([]);
+      _put.setData([]);
+    }
+    _lastEtDay = dayKey;
+  }
   const rs = document.getElementById('rangeSel');
   const r  = rs ? (rs.value || '1h') : '1h';
   const bucketsPerMin = 6; // 10s poll
@@ -418,28 +595,38 @@ function renderSeries(series) {
 async function loadOnce(nocache=false) {
   setStatus('loading', 'Polling live-flow…');
   try {
-    const url = `${API}/api/live-flow?symbols=${encodeURIComponent(_sym)}${nocache ? '&nocache=1' : ''}`;
+    const syms = selectedSymbols();
+    if (!syms.length) throw new Error('Select at least one symbol');
+    const url = `${API}/api/live-flow?symbols=${encodeURIComponent(syms.join(','))}${nocache ? '&nocache=1' : ''}`;
     const data = await fetchJson(url, 30000);
-    const a = (data.assets || [])[0] || {};
-    _lastMeta = { requested: a.requested_symbol || _sym, proxy: a.proxy_symbol || null };
-    renderTape(a.events || []);
-    renderSeries(a.series || []);
-    renderSummary(a.events || [], a.series || []);
+    const assets = (data.assets || []);
+    _lastAssets = assets;
+    const merged = mergeAssets(assets);
+    renderTape(merged.events || []);
+    renderSeries(merged.series || []);
+    renderSummary(merged.events || [], merged.series || []);
     const ts = data.timestamp ? new Date(data.timestamp).toLocaleTimeString() : '';
     document.getElementById('lastTs').textContent = ts ? ('Last update: ' + ts) : '';
-    const proxyNote = a.proxy_symbol ? ` via ${a.proxy_symbol}` : '';
-    setStatus('ok', `${_sym}${proxyNote} loaded · tape ${((a.events||[]).length)} events · charts ${(a.series||[]).length} buckets`);
+    const label = syms.join(', ');
+    setStatus('ok', `${label} loaded · tape ${((merged.events||[]).length)} events · charts ${(merged.series||[]).length} buckets`);
   } catch (e) {
     setStatus('error', `Server error: ${e.message}`);
   }
 }
 
 window.addEventListener('load', () => {
+  lsLoad();
   initChips();
   initChart();
+  renderAxisLabel();
   renderEmpty();
   const rs = document.getElementById('rangeSel');
   if (rs) rs.addEventListener('change', () => loadOnce(false));
+  const tz = document.getElementById('tzSel');
+  if (tz) tz.addEventListener('change', () => { lsSave(); renderAxisLabel(); loadOnce(false); });
+  const cb = document.getElementById('openReset');
+  if (cb) cb.addEventListener('change', () => { lsSave(); loadOnce(false); });
+  if (rs) rs.addEventListener('change', () => lsSave());
   loadOnce(true);
   setInterval(() => { if (!document.hidden) loadOnce(false); }, 10 * 1000);
 });

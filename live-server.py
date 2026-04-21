@@ -56,6 +56,7 @@ from sklearn.ensemble import (GradientBoostingClassifier, GradientBoostingRegres
 from sklearn.model_selection import TimeSeriesSplit, cross_val_score
 from sklearn.preprocessing import StandardScaler
 from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 
 app = Flask(__name__)
 # Gzip compression — reduces JSON payloads 60-80%, JS/HTML 40-60%
@@ -256,6 +257,7 @@ _yf_lock = threading.Lock()   # serialize yf.download() — not thread-safe
 _LIVE_FLOW_LAST: dict[str, dict] = {}  # symbol -> {contractSymbol -> snapshot}
 _LIVE_FLOW_EVENTS: dict[str, deque] = defaultdict(lambda: deque(maxlen=2000))  # symbol -> recent events
 _LIVE_FLOW_SERIES: dict[str, deque] = defaultdict(lambda: deque(maxlen=6000))  # symbol -> time buckets (supports multi-hour ranges)
+_LIVE_FLOW_LAST_RESET_ET: dict[str, str] = {}  # symbol -> YYYY-MM-DD (ET) after 09:30 reset
 _LIVE_FLOW_LOCK = threading.Lock()
 
 # Map yfinance futures symbols → (IBKR symbol, exchange)
@@ -4650,6 +4652,17 @@ def _classify_flow(delta_vol: int, premium_k: float) -> str:
 
 
 def _poll_live_flow(symbol: str, nocache: bool = False) -> dict:
+    # Auto-reset at US cash market open (09:30 ET) once per day.
+    # This keeps "session" totals meaningful for day trading.
+    try:
+        now_et = datetime.now(ZoneInfo("America/New_York"))
+        open_et = now_et.replace(hour=9, minute=30, second=0, microsecond=0)
+        et_day = now_et.date().isoformat()
+    except Exception:
+        now_et = None
+        open_et = None
+        et_day = datetime.now().date().isoformat()
+
     with _yf_lock:
         tk = yf.Ticker(symbol)
 
@@ -4734,6 +4747,14 @@ def _poll_live_flow(symbol: str, nocache: bool = False) -> dict:
                 }
 
     with _LIVE_FLOW_LOCK:
+        if open_et is not None:
+            last_reset = _LIVE_FLOW_LAST_RESET_ET.get(symbol)
+            if last_reset != et_day and now_et >= open_et:
+                _LIVE_FLOW_LAST[symbol] = {}
+                _LIVE_FLOW_EVENTS[symbol].clear()
+                _LIVE_FLOW_SERIES[symbol].clear()
+                _LIVE_FLOW_LAST_RESET_ET[symbol] = et_day
+
         prev = _LIVE_FLOW_LAST.get(symbol, {})
         for cs, cur in snapshot.items():
             p = prev.get(cs)

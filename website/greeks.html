@@ -39,10 +39,55 @@
     th { position:sticky; top:0; background:rgba(8,13,26,.95); backdrop-filter: blur(6px); z-index:2; }
     th, td { padding:.5rem .6rem; border-bottom:1px solid var(--border); text-align:right; font-family:'Consolas', monospace; white-space:nowrap; }
     th:first-child, td:first-child { text-align:left; font-family:inherit; }
+
+    /* Sticky first column (symbol) for horizontal scrolling */
+    th:first-child, td:first-child {
+      position: sticky;
+      left: 0;
+      z-index: 3;
+      background: rgba(8,13,26,.98);
+      box-shadow: 1px 0 0 rgba(255,255,255,.06);
+    }
+    thead th:first-child { z-index: 5; }
     .sym { font-weight:900; color:var(--text); }
     .k { color:var(--muted); font-family:inherit; font-size:.75rem; }
     .pos { color:#22c55e; font-weight:900; }
     .neg { color:#f87171; font-weight:900; }
+    .comment {
+      text-align:left;
+      font-family:inherit;
+      color:var(--muted);
+      font-size:.78rem;
+      line-height:1.55;
+      min-width:360px;
+      max-width:520px;
+      white-space:normal;       /* override table nowrap */
+      word-break:break-word;
+    }
+    .comment b { color:var(--text); }
+    .pill { display:inline-block; font-size:.62rem; font-weight:900; letter-spacing:.08em; text-transform:uppercase;
+      padding:.12rem .45rem; border-radius:999px; border:1px solid rgba(255,255,255,.10); margin-right:.4rem; }
+    .p-dir { color:#22d3ee; background:rgba(34,211,238,.10); border-color:rgba(34,211,238,.18); }
+    .p-gam { color:#a78bfa; background:rgba(167,139,250,.10); border-color:rgba(167,139,250,.18); }
+    .p-the { color:#fbbf24; background:rgba(251,191,36,.10); border-color:rgba(251,191,36,.18); }
+    .p-veg { color:#38bdf8; background:rgba(56,189,248,.10); border-color:rgba(56,189,248,.18); }
+
+    /* Risk tags (quick scan) */
+    .tags { margin-top:.25rem; display:flex; gap:.35rem; flex-wrap:wrap; }
+    .tag { display:inline-block; font-size:.58rem; font-weight:900; letter-spacing:.08em; text-transform:uppercase;
+      padding:.1rem .45rem; border-radius:999px; border:1px solid rgba(255,255,255,.10); }
+    .t-gamma { color:#a78bfa; background:rgba(167,139,250,.10); border-color:rgba(167,139,250,.18); }
+    .t-theta { color:#fbbf24; background:rgba(251,191,36,.10); border-color:rgba(251,191,36,.18); }
+    .t-vega  { color:#38bdf8; background:rgba(56,189,248,.10); border-color:rgba(56,189,248,.18); }
+    .t-iv    { color:#f87171; background:rgba(248,113,113,.10); border-color:rgba(248,113,113,.18); }
+    .t-dte   { color:#94a3b8; background:rgba(148,163,184,.10); border-color:rgba(148,163,184,.18); }
+
+    /* Compare-mode highlights */
+    .hi { border-radius:6px; padding:.12rem .35rem; display:inline-block; }
+    .hi-gamma { background:rgba(167,139,250,.14); border:1px solid rgba(167,139,250,.25); color:#ddd6fe; }
+    .hi-theta { background:rgba(251,191,36,.12); border:1px solid rgba(251,191,36,.22); color:#fde68a; }
+    .hi-vega  { background:rgba(56,189,248,.12); border:1px solid rgba(56,189,248,.22); color:#bae6fd; }
+
   </style>
 </head>
 <body>
@@ -88,6 +133,25 @@
         <div class="small">Auto-refresh: <b>60s</b></div>
       </div>
       <div class="chips" id="symChips"></div>
+      <div class="chips" style="justify-content:flex-end;">
+        <span class="small" style="font-weight:800;">Sort</span>
+        <select id="sortKey" class="chip">
+          <option value="none" selected>None</option>
+          <option value="iv">IV%</option>
+          <option value="gamma">Gamma</option>
+          <option value="theta">Theta/day (C)</option>
+          <option value="vega">Vega</option>
+          <option value="dte">DTE</option>
+        </select>
+        <select id="sortDir" class="chip">
+          <option value="desc" selected>High → Low</option>
+          <option value="asc">Low → High</option>
+        </select>
+        <label class="small" style="display:inline-flex;align-items:center;gap:.35rem;margin-left:.25rem;">
+          <input id="compareMode" type="checkbox" style="transform:translateY(1px);">
+          <span>Compare mode (highlight top 3 Γ/Θ/ν)</span>
+        </label>
+      </div>
     </div>
     <div class="tblwrap">
       <table>
@@ -105,12 +169,34 @@
             <th>Vega</th>
             <th>Theta/day (C)</th>
             <th>Theta/day (P)</th>
+            <th style="text-align:left;min-width:420px;">Commentary</th>
           </tr>
         </thead>
         <tbody id="rows">
-          <tr><td colspan="12" class="k" style="text-align:center;padding:1rem;">Loading…</td></tr>
+          <tr><td colspan="13" class="k" style="text-align:center;padding:1rem;">Loading…</td></tr>
         </tbody>
       </table>
+    </div>
+  </div>
+
+  <div style="margin-top:1.1rem;color:var(--muted);font-size:.8rem;line-height:1.75;">
+    <div style="font-size:.72rem;font-weight:900;letter-spacing:.1em;text-transform:uppercase;margin-bottom:.35rem;">Abbreviations</div>
+    <div>
+      <b style="color:var(--text);">IV%</b> = implied volatility (annualized).&nbsp;
+      <b style="color:var(--text);">DTE</b> = days to expiration.&nbsp;
+      <b style="color:var(--text);">ATM</b> = at-the-money strike (closest to spot).&nbsp;
+      <b style="color:var(--text);">Δ</b> (Delta) = directional sensitivity.&nbsp;
+      <b style="color:var(--text);">Γ</b> (Gamma) = how fast delta changes.&nbsp;
+      <b style="color:var(--text);">ν</b> (Vega) = sensitivity to IV changes (shown per 1% IV in this table).&nbsp;
+      <b style="color:var(--text);">Θ</b> (Theta/day) = estimated daily time decay (per share; ×100 ≈ per contract).&nbsp;
+      <b style="color:var(--text);">C / P</b> = call / put.
+    </div>
+    <div style="margin-top:.5rem;">
+      <span class="tag t-gamma">High Γ</span> / <span class="tag t-gamma">Med Γ</span> = faster/slower acceleration risk.&nbsp;
+      <span class="tag t-theta">Fast Θ</span> / <span class="tag t-theta">Med Θ</span> = faster/slower carry cost.&nbsp;
+      <span class="tag t-vega">High ν</span> / <span class="tag t-vega">Med ν</span> = higher/lower volatility exposure.&nbsp;
+      <span class="tag t-iv">High IV</span> / <span class="tag t-iv">Low IV</span> = expensive/cheap implied volatility.&nbsp;
+      <span class="tag t-dte">Short DTE</span> / <span class="tag t-dte">Long DTE</span> = nearer/further expiry context.
     </div>
   </div>
 </div>
@@ -119,6 +205,47 @@
 const API = window.location.origin;
 const SYMS = ['SPX','NDX','RUT','VIX','SPY','QQQ','IWM','VXX','ES=F','NQ=F','AAPL','MSFT','NVDA','AMZN','META','TSLA','JPM','BAC','XOM','CVX','WMT','HD'];
 let _sel = new Set(['SPX','SPY','QQQ','AAPL','MSFT','NVDA','AMZN','META','TSLA','JPM','BAC','XOM','CVX','WMT','HD','ES=F','NQ=F','RUT','VIX']);
+let _lastAssets = [];
+
+const LS_KEY = 'greeksPage:v1';
+
+function lsLoad() {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (!raw) return;
+    const obj = JSON.parse(raw);
+    if (obj && Array.isArray(obj.sel)) {
+      _sel = new Set(obj.sel.filter(x => SYMS.includes(x)));
+    }
+    if (obj && typeof obj.sortKey === 'string') {
+      const sk = document.getElementById('sortKey');
+      if (sk) sk.value = obj.sortKey;
+    }
+    if (obj && typeof obj.sortDir === 'string') {
+      const sd = document.getElementById('sortDir');
+      if (sd) sd.value = obj.sortDir;
+    }
+    if (obj && typeof obj.compareMode === 'boolean') {
+      const cm = document.getElementById('compareMode');
+      if (cm) cm.checked = obj.compareMode;
+    }
+  } catch (e) {}
+}
+
+function lsSave() {
+  try {
+    const sk = document.getElementById('sortKey');
+    const sd = document.getElementById('sortDir');
+    const cm = document.getElementById('compareMode');
+    const obj = {
+      sel: Array.from(_sel),
+      sortKey: sk ? sk.value : 'none',
+      sortDir: sd ? sd.value : 'desc',
+      compareMode: cm ? !!cm.checked : false
+    };
+    localStorage.setItem(LS_KEY, JSON.stringify(obj));
+  } catch (e) {}
+}
 
 function setStatus(state, msg) {
   const d = document.getElementById('sdot');
@@ -146,6 +273,7 @@ function initChips() {
     b.onclick = () => {
       if (_sel.has(s)) _sel.delete(s); else _sel.add(s);
       b.classList.toggle('active');
+      lsSave();
       load(true);
     };
     wrap.appendChild(b);
@@ -164,27 +292,172 @@ function clsDelta(v) {
   return n >= 0 ? 'pos' : 'neg';
 }
 
+
+
+function greekCommentary(a, c, p, iv) {
+  const dte = Number(a.dte ?? 0);
+  const spot = Number(a.spot ?? 0);
+  const dc = Number(c.delta);
+  const gp = Number(c.gamma);
+  const vg = Number(c.vega);
+  const thC = Number(c.theta);
+
+  const parts = [];
+
+  // Directional (Delta)
+  if (isFinite(dc)) {
+    const dir = dc >= 0.55 ? 'Directional (ATM call behaves like ' + Math.round(dc*100) + ' shares)' :
+                dc >= 0.45 ? 'Balanced (ATM call ~' + Math.round(dc*100) + ' shares)' :
+                             'Lower delta (less directional)';
+    parts.push(`<span class="pill p-dir">Δ</span><b>${dir}</b>`);
+  }
+
+  // Gamma sensitivity (Gamma)
+  if (isFinite(gp)) {
+    const gTag = gp >= 0.02 ? 'High gamma: delta can change fast on small moves' :
+                 gp >= 0.01 ? 'Moderate gamma: watch acceleration near ATM' :
+                              'Lower gamma: less acceleration';
+    parts.push(`<span class="pill p-gam">Γ</span>${gTag}`);
+  }
+
+  // Theta carry (Theta/day per contract)
+  if (isFinite(thC)) {
+    const thPerContract = thC * 100;
+    const thAbs = Math.abs(thPerContract);
+    const thTag = thAbs >= 35 ? 'Fast decay' : thAbs >= 15 ? 'Moderate decay' : 'Slow decay';
+    parts.push(`<span class="pill p-the">Θ</span>${thTag}: ~${thPerContract.toFixed(1)} /day per contract (ATM call)`);
+  }
+
+  // Vega exposure (Vega per 1% IV, per contract)
+  if (isFinite(vg)) {
+    const vgPerContract = vg * 100;
+    const vgTag = vgPerContract >= 12 ? 'High vol exposure' : vgPerContract >= 6 ? 'Moderate vol exposure' : 'Lower vol exposure';
+    parts.push(`<span class="pill p-veg">ν</span>${vgTag}: ~${vgPerContract.toFixed(2)} per 1% IV (ATM)`);
+  }
+
+  // Context line: IV + DTE
+  const ctx = [];
+  if (iv != null && isFinite(Number(iv))) ctx.push(`IV ~${Number(iv).toFixed(1)}%`);
+  if (isFinite(dte) && dte) ctx.push(`${dte} DTE`);
+  if (isFinite(spot) && spot) ctx.push(`Spot ${spot.toFixed(2)}`);
+  if (ctx.length) parts.push(`<span class="k">${ctx.join(' · ')}</span>`);
+
+  return parts.join('<br>');
+}
+
+function riskTags(a, c, iv) {
+  const tags = [];
+  const dte = Number(a.dte ?? 0);
+  const g = Number(c.gamma);
+  const th = Number(c.theta);
+  const vg = Number(c.vega);
+  const ivn = (iv == null) ? NaN : Number(iv);
+
+  if (isFinite(g)) {
+    if (g >= 0.02) tags.push({cls:'t-gamma', txt:'High Γ'});
+    else if (g >= 0.01) tags.push({cls:'t-gamma', txt:'Med Γ'});
+  }
+  if (isFinite(th)) {
+    const thPer = Math.abs(th * 100);
+    if (thPer >= 35) tags.push({cls:'t-theta', txt:'Fast Θ'});
+    else if (thPer >= 15) tags.push({cls:'t-theta', txt:'Med Θ'});
+  }
+  if (isFinite(vg)) {
+    const vgPer = vg * 100;
+    if (vgPer >= 12) tags.push({cls:'t-vega', txt:'High ν'});
+    else if (vgPer >= 6) tags.push({cls:'t-vega', txt:'Med ν'});
+  }
+  if (isFinite(ivn)) {
+    if (ivn >= 45) tags.push({cls:'t-iv', txt:'High IV'});
+    else if (ivn <= 18) tags.push({cls:'t-iv', txt:'Low IV'});
+  }
+  if (isFinite(dte) && dte) {
+    if (dte <= 7) tags.push({cls:'t-dte', txt:'Short DTE'});
+    else if (dte >= 45) tags.push({cls:'t-dte', txt:'Long DTE'});
+  }
+
+  if (!tags.length) return '';
+  return `<div class="tags">` + tags.slice(0, 4).map(t => `<span class="tag ${t.cls}">${t.txt}</span>`).join('') + `</div>`;
+}
+
+function _num(x) {
+  const v = Number(x);
+  return isFinite(v) ? v : NaN;
+}
+
+function sortAssets(assets) {
+  const keyEl = document.getElementById('sortKey');
+  const dirEl = document.getElementById('sortDir');
+  const key = keyEl ? keyEl.value : 'none';
+  const dir = dirEl ? dirEl.value : 'desc';
+  if (!assets || key === 'none') return assets;
+
+  const sgn = (dir === 'asc') ? 1 : -1;
+  const getVal = (a) => {
+    const c = (a.atm && a.atm.call) ? a.atm.call : {};
+    const p = (a.atm && a.atm.put) ? a.atm.put : {};
+    const iv = (c.iv != null ? c.iv : (p.iv != null ? p.iv : null));
+    if (key === 'iv') return _num(iv);
+    if (key === 'gamma') return _num(c.gamma);
+    if (key === 'theta') return Math.abs(_num(c.theta) * 100);
+    if (key === 'vega') return _num(c.vega) * 100;
+    if (key === 'dte') return _num(a.dte);
+    return NaN;
+  };
+
+  return assets.slice().sort((a, b) => {
+    if (a.no_options && !b.no_options) return 1;
+    if (b.no_options && !a.no_options) return -1;
+    const av = getVal(a);
+    const bv = getVal(b);
+    const aN = isNaN(av), bN = isNaN(bv);
+    if (aN && bN) return String(a.symbol || '').localeCompare(String(b.symbol || ''));
+    if (aN) return 1;
+    if (bN) return -1;
+    if (av === bv) return String(a.symbol || '').localeCompare(String(b.symbol || ''));
+    return (av < bv ? -1 : 1) * sgn;
+  });
+}
+
+function _topNBy(assets, valFn, n=3) {
+  const rows = (assets||[]).filter(a => a && !a.no_options);
+  const scored = rows.map(a => ({ a, v: valFn(a) })).filter(x => isFinite(x.v));
+  scored.sort((x,y) => y.v - x.v);
+  return new Set(scored.slice(0, n).map(x => x.a.symbol));
+}
+
 function render(assets) {
   const tb = document.getElementById('rows');
   if (!assets || !assets.length) {
-    tb.innerHTML = `<tr><td colspan="12" class="k" style="text-align:center;padding:1rem;">No data.</td></tr>`;
+    tb.innerHTML = `<tr><td colspan="13" class="k" style="text-align:center;padding:1rem;">No data.</td></tr>`;
     return;
   }
-  tb.innerHTML = assets.map(a => {
+  const cm = document.getElementById('compareMode');
+  const compareOn = cm ? !!cm.checked : false;
+  const topGamma = compareOn ? _topNBy(assets, a => _num(((a.atm||{}).call||{}).gamma), 3) : new Set();
+  const topTheta = compareOn ? _topNBy(assets, a => Math.abs(_num(((a.atm||{}).call||{}).theta) * 100), 3) : new Set();
+  const topVega  = compareOn ? _topNBy(assets, a => (_num(((a.atm||{}).call||{}).vega) * 100), 3) : new Set();
+
+  const sorted = sortAssets(assets);
+  tb.innerHTML = sorted.map(a => {
     const req = a.requested_symbol || a.symbol || '';
     const proxy = a.proxy_symbol || null;
     if (a.no_options) {
       return `<tr>
         <td style="text-align:left;" class="sym">${req}${proxy ? ` <span class="k">(proxy: ${proxy})</span>` : ''} <span class="k">(no options)</span></td>
         <td>${a.spot != null ? fmt(a.spot,2) : '—'}</td>
-        <td colspan="10" class="k" style="text-align:left;">Options data unavailable for selected symbol.</td>
+        <td colspan="11" class="k" style="text-align:left;">Options data unavailable for selected symbol.</td>
       </tr>`;
     }
     const c = (a.atm && a.atm.call) ? a.atm.call : {};
     const p = (a.atm && a.atm.put)  ? a.atm.put  : {};
     const iv = (c.iv != null ? c.iv : (p.iv != null ? p.iv : null));
+    const sym = a.symbol || '';
+    const gHi = compareOn && topGamma.has(sym);
+    const tHi = compareOn && topTheta.has(sym);
+    const vHi = compareOn && topVega.has(sym);
     return `<tr>
-      <td style="text-align:left;" class="sym">${req}${proxy ? ` <span class="k">(proxy: ${proxy})</span>` : ''}</td>
+      <td style="text-align:left;" class="sym">${req}${proxy ? ` <span class="k">(proxy: ${proxy})</span>` : ''}${riskTags(a, c, iv)}</td>
       <td>${fmt(a.spot,2)}</td>
       <td>${(a.expiry||'').slice(0,10)}</td>
       <td>${a.dte ?? ''}</td>
@@ -192,10 +465,11 @@ function render(assets) {
       <td>${iv != null ? fmt(iv,1) : '—'}</td>
       <td class="${clsDelta(c.delta)}">${c.delta != null ? fmt(c.delta,3) : '—'}</td>
       <td class="${clsDelta(p.delta)}">${p.delta != null ? fmt(p.delta,3) : '—'}</td>
-      <td>${c.gamma != null ? fmt(c.gamma,6) : '—'}</td>
-      <td>${c.vega != null ? fmt(c.vega,4) : '—'}</td>
-      <td>${c.theta != null ? fmt(c.theta,5) : '—'}</td>
+      <td>${c.gamma != null ? (gHi ? `<span class="hi hi-gamma">${fmt(c.gamma,6)}</span>` : fmt(c.gamma,6)) : '—'}</td>
+      <td>${c.vega != null ? (vHi ? `<span class="hi hi-vega">${fmt(c.vega,4)}</span>` : fmt(c.vega,4)) : '—'}</td>
+      <td>${c.theta != null ? (tHi ? `<span class="hi hi-theta">${fmt(c.theta,5)}</span>` : fmt(c.theta,5)) : '—'}</td>
       <td>${p.theta != null ? fmt(p.theta,5) : '—'}</td>
+      <td class="comment">${greekCommentary(a, c, p, iv)}</td>
     </tr>`;
   }).join('');
 }
@@ -207,7 +481,8 @@ async function load(nocache=false) {
   try {
     const url = `${API}/api/greeks?symbols=${encodeURIComponent(syms.join(','))}${nocache ? '&nocache=1' : ''}`;
     const data = await fetchJson(url);
-    render(data.assets || []);
+    _lastAssets = data.assets || [];
+    render(_lastAssets);
     const ts = data.timestamp ? new Date(data.timestamp).toLocaleTimeString() : '';
     document.getElementById('lastTs').textContent = ts ? ('Last update: ' + ts) : '';
     setStatus('ok', `${(data.count||0)} assets · ${ts}`);
@@ -217,7 +492,15 @@ async function load(nocache=false) {
 }
 
 window.addEventListener('load', () => {
+  // Restore persisted user preferences (symbols + sorting)
+  lsLoad();
   initChips();
+  const sk = document.getElementById('sortKey');
+  const sd = document.getElementById('sortDir');
+  const cm = document.getElementById('compareMode');
+  if (sk) sk.addEventListener('change', () => { lsSave(); render(_lastAssets); });
+  if (sd) sd.addEventListener('change', () => { lsSave(); render(_lastAssets); });
+  if (cm) cm.addEventListener('change', () => { lsSave(); render(_lastAssets); });
   load(true);
   setInterval(() => { if (!document.hidden) load(false); }, 60*1000);
 });
