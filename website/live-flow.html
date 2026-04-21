@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Live Options Flow — Tape + Charts</title>
+  <link rel="preload" href="style.css" as="style" fetchpriority="high">
+  <link rel="preload" href="lightweight-charts.min.js" as="script">
+  <script src="lightweight-charts.min.js"></script>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .wrap { max-width: 1600px; margin: 0 auto; padding: 0 1.5rem 6rem; }
+    .hero {
+      padding: 3.2rem 1.5rem 2.2rem; text-align: center;
+      background: radial-gradient(ellipse 80% 55% at 50% -5%, rgba(56,189,248,.12) 0%, transparent 65%), var(--bg);
+      border-bottom: 1px solid var(--border);
+    }
+    .hero h1 {
+      font-size: clamp(1.8rem, 4vw, 3rem); font-weight: 900;
+      letter-spacing: -.03em; line-height: 1.15; margin-bottom: .8rem;
+      background: linear-gradient(135deg, #38bdf8 0%, #a78bfa 50%, #fff 85%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    .badge {
+      display: inline-flex; align-items: center; gap: .5rem;
+      padding: .3rem 1rem; background: rgba(56,189,248,.1);
+      border: 1px solid rgba(56,189,248,.25); border-radius: 999px;
+      color: #38bdf8; font-size: .78rem; font-weight: 600;
+      letter-spacing: .08em; text-transform: uppercase; margin-bottom: 1rem;
+    }
+
+    .panel { background:var(--surface); border:1px solid var(--border); border-radius:12px; overflow:hidden; margin:1.1rem 0; }
+    .ph { display:flex; gap:.8rem; flex-wrap:wrap; align-items:center; justify-content:space-between; padding:.75rem 1rem; border-bottom:1px solid var(--border); }
+    .ph-title { font-size:.9rem; font-weight:900; }
+    .chips { display:flex; gap:.5rem; flex-wrap:wrap; align-items:center; }
+    .chip { padding:.25rem .6rem; border-radius:8px; border:1px solid var(--border); background:transparent; color:var(--muted); font-size:.75rem; font-weight:800; cursor:pointer; }
+    .chip.active { color:#38bdf8; border-color:rgba(56,189,248,.35); background:rgba(56,189,248,.12); }
+    .small { font-size:.72rem; color:var(--muted); }
+    .chart { height:220px; background:#070d18; }
+    #flowChart { height:220px; }
+
+    .grid { display:grid; grid-template-columns: 1.1fr .9fr; gap:1rem; }
+    @media(max-width:1100px){ .grid{ grid-template-columns:1fr; } }
+
+    .tblwrap { overflow:auto; }
+    table { width:100%; border-collapse:collapse; font-size:.78rem; }
+    th { position:sticky; top:0; background:rgba(8,13,26,.95); backdrop-filter: blur(6px); z-index:2; }
+    th, td { padding:.45rem .55rem; border-bottom:1px solid var(--border); text-align:right; font-family:'Consolas', monospace; }
+    th:first-child, td:first-child { text-align:left; font-family:inherit; }
+    .sym { font-weight:900; color:var(--text); }
+    .call { color:#22c55e; font-weight:900; }
+    .put  { color:#f87171; font-weight:900; }
+    .tape-type { font-weight:900; letter-spacing:.04em; font-size:.72rem; }
+    .sw { color:#fbbf24; } .sp { color:#a78bfa; } .bl { color:#38bdf8; } .pr { color:#94a3b8; }
+    .muted { color:var(--muted); font-family:inherit; }
+    .sum { padding:.85rem 1rem; border-top:1px solid var(--border); }
+    .sumgrid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:.6rem; }
+    @media(max-width:900px){ .sumgrid{ grid-template-columns:1fr; } }
+    .sumcard { background:rgba(255,255,255,.02); border:1px solid rgba(255,255,255,.06); border-radius:10px; padding:.65rem .75rem; }
+    .sumlbl { font-size:.62rem; letter-spacing:.09em; text-transform:uppercase; color:var(--muted); font-weight:800; }
+    .sumval { font-family:'Consolas', monospace; font-weight:900; font-size:1.05rem; margin-top:.15rem; }
+    .sumpos { color:#22c55e; } .sumneg { color:#f87171; } .sumnet { color:#a78bfa; }
+    .mini { margin-top:.75rem; display:grid; grid-template-columns:1fr 1fr; gap:.75rem; }
+    @media(max-width:1100px){ .mini{ grid-template-columns:1fr; } }
+    .mini h3 { margin:.1rem 0 .45rem; font-size:.7rem; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); }
+    .mini table { font-size:.74rem; }
+    .mini td, .mini th { padding:.35rem .45rem; }
+    .mini th { text-align:right; }
+    .mini th:first-child, .mini td:first-child { text-align:left; font-family:inherit; }
+
+  </style>
+</head>
+<body>
+
+<nav class="nav">
+  <a href="index.html" class="nav-logo">
+    <img src="images/steve.jpg" class="nav-logo-photo" alt="Stephen Borick">
+    <div class="nav-logo-text">
+      <span class="nav-company">Artificial Intelligence</span>
+      <span class="nav-name">Solutions, Inc.</span>
+    </div>
+  </a>
+  <ul class="nav-links">
+    <li><a href="live-trading.html">Live Trading</a></li>
+    <li><a href="option-flows.html">Option Flows</a></li>
+    <li><a href="gamma-exposure.html">GEX</a></li>
+    <li><a href="greeks.html">Greeks</a></li>
+    <li><a href="index.html">Home</a></li>
+  </ul>
+</nav>
+
+<section class="hero">
+  <div class="badge">⚡ Live-ish Flow · Snapshot Delta Tape · Premium + Type</div>
+  <h1>Live Options Flow<br>Tape + Summary Charts</h1>
+  <p style="color:var(--muted);max-width:860px;margin:0 auto;line-height:1.7;">
+    This is a <strong style="color:var(--text);">derived tape</strong>: we poll the options chain and detect
+    <strong style="color:var(--text);">volume deltas per contract</strong>. It’s not a true exchange feed, but it provides a
+    fast visual of where premium is showing up during the session.
+  </p>
+</section>
+
+<div class="wrap">
+  <div class="server-bar">
+    <div class="sdot loading" id="sdot"></div>
+    <span class="smsg" id="smsg">Polling live-flow…</span>
+    <button class="rbtn" onclick="loadOnce(true)">↻ Refresh</button>
+    <span class="muted" id="lastTs" style="margin-left:auto;font-size:.75rem;"></span>
+  </div>
+
+  <div class="panel">
+    <div class="ph">
+      <div>
+        <div class="ph-title">Symbols</div>
+        <div class="small">SPX uses SPY proxy (yfinance limitation).</div>
+      </div>
+      <div class="chips" id="symChips"></div>
+      <div class="small" style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;justify-content:flex-end;">  <span>Auto-poll: <b>10s</b></span>  <span style="opacity:.5;">|</span>  <label>Chart range</label>  <select id="rangeSel" class="chip" style="cursor:pointer;">    <option value="15m">15m</option>    <option value="1h" selected>1h</option>    <option value="3h">3h</option>    <option value="session">session</option>  </select>  <span class="muted">(tape fills after 2+ polls)</span></div>
+    </div>
+    <div class="grid" style="padding:1rem;">
+      <div class="panel" style="margin:0;">
+        <div class="ph" style="border-bottom:1px solid var(--border);">
+          <div class="ph-title">Premium delta (rolling)</div>
+          <div class="small"><span style="color:#22c55e;font-weight:900;">Calls</span> vs <span style="color:#f87171;font-weight:900;">Puts</span> (per poll bucket)</div>
+        </div>
+        <div class="chart" id="flowChart"></div>
+        <div class="sum">
+          <div class="sumgrid">
+            <div class="sumcard">
+              <div class="sumlbl">Calls premium (k)</div>
+              <div class="sumval sumpos" id="sumCalls">—</div>
+              <div class="small" id="sumCallsNote">Range: —</div>
+            </div>
+            <div class="sumcard">
+              <div class="sumlbl">Puts premium (k)</div>
+              <div class="sumval sumneg" id="sumPuts">—</div>
+              <div class="small" id="sumPutsNote">Range: —</div>
+            </div>
+            <div class="sumcard">
+              <div class="sumlbl">Net premium (k)</div>
+              <div class="sumval sumnet" id="sumNet">—</div>
+              <div class="small" id="sumNetNote">Calls − Puts</div>
+            </div>
+          </div>
+
+          <div class="mini">
+            <div class="sumcard">
+              <h3>Top prints (by premium)</h3>
+              <div class="tblwrap" style="max-height:220px;">
+                <table>
+                  <thead>
+                    <tr><th style="text-align:left;">Time</th><th style="text-align:left;">Side</th><th>Strike</th><th>Prem(k)</th><th>Type</th></tr>
+                  </thead>
+                  <tbody id="topPrints">
+                    <tr><td colspan="5" class="muted" style="text-align:center;padding:.8rem;">—</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div class="sumcard">
+              <h3>Top strikes (accum premium)</h3>
+              <div class="tblwrap" style="max-height:220px;">
+                <table>
+                  <thead>
+                    <tr><th style="text-align:left;">Strike</th><th style="text-align:left;">Bias</th><th>Calls(k)</th><th>Puts(k)</th><th>Net(k)</th></tr>
+                  </thead>
+                  <tbody id="topStrikes">
+                    <tr><td colspan="5" class="muted" style="text-align:center;padding:.8rem;">—</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="panel" style="margin:0;">
+        <div class="ph" style="border-bottom:1px solid var(--border);">
+          <div class="ph-title">Tape</div>
+          <div class="small">Newest events at top</div>
+        </div>
+        <div class="tblwrap" style="max-height:520px;">
+          <table>
+            <thead>
+              <tr>
+                <th style="min-width:82px;text-align:left;">Time</th>
+                <th style="min-width:66px;text-align:left;">Sym</th>
+                <th style="min-width:96px;">Expiry</th>
+                <th style="min-width:62px;">DTE</th>
+                <th style="min-width:78px;">Strike</th>
+                <th style="min-width:58px;">Side</th>
+                <th style="min-width:92px;">Contracts</th>
+                <th style="min-width:92px;">Prem (k)</th>
+                <th style="min-width:72px;text-align:left;">Type</th>
+              </tr>
+            </thead>
+            <tbody id="tapeBody">
+              <tr><td colspan="9" class="muted" style="text-align:center;padding:1rem;">Waiting for flow…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-top:1.2rem;color:var(--muted);font-size:.8rem;line-height:1.7;">
+    <b>Note:</b> “SWEEP / SPLIT / BLOCK” are <b>heuristics</b> based on premium and contract deltas. For a true tape,
+    you’d need a dedicated options flow data provider.
+  </div>
+</div>
+
+<script>
+const API = window.location.origin;
+const SYMS = ['SPX','NDX','RUT','VIX','SPY','QQQ','IWM','VXX','ES=F','NQ=F','AAPL','MSFT','NVDA','AMZN','META','TSLA','JPM','BAC','XOM','CVX','WMT','HD'];
+let _sym = 'SPX';
+let _chart = null, _call = null, _put = null;
+let _lastMeta = { requested: null, proxy: null };
+
+function setStatus(state, msg) {
+  const d = document.getElementById('sdot');
+  d.className = 'sdot ' + (state === 'ok' ? 'on' : state === 'loading' ? 'loading' : '');
+  document.getElementById('smsg').textContent = msg;
+}
+
+async function fetchJson(url, timeoutMs=20000) {
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), timeoutMs);
+  try {
+    const r = await fetch(url, {cache:'no-store', signal: ctrl.signal});
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    return await r.json();
+  } finally { clearTimeout(t); }
+}
+
+function initChips() {
+  const wrap = document.getElementById('symChips');
+  wrap.innerHTML = '';
+  SYMS.forEach(s => {
+    const b = document.createElement('button');
+    b.className = 'chip' + (s===_sym ? ' active':'');
+    b.textContent = s;
+    b.onclick = () => { _sym = s; document.querySelectorAll('.chip').forEach(x=>x.classList.remove('active')); b.classList.add('active'); renderEmpty(); loadOnce(true); };
+    wrap.appendChild(b);
+  });
+}
+
+function renderEmpty() {
+  document.getElementById('tapeBody').innerHTML = `<tr><td colspan="9" class="muted" style="text-align:center;padding:1rem;">Waiting for flow…</td></tr>`;
+  if (_call) _call.setData([]);
+  if (_put)  _put.setData([]);
+}
+
+function initChart() {
+  if (!window.LightweightCharts) return;
+  const el = document.getElementById('flowChart');
+  _chart = LightweightCharts.createChart(el, {
+    layout: { background: { color:'#070d18' }, textColor:'rgba(226,232,240,.85)' },
+    grid: { vertLines: { color:'rgba(255,255,255,.06)' }, horzLines: { color:'rgba(255,255,255,.06)' } },
+    rightPriceScale: { borderColor:'rgba(255,255,255,.08)' },
+    timeScale: { borderColor:'rgba(255,255,255,.08)', timeVisible:true, secondsVisible:false },
+    crosshair: { mode: 1 },
+    handleScale: true,
+    handleScroll: true,
+    height: 220
+  });
+  _call = _chart.addHistogramSeries({ color:'rgba(34,197,94,.55)', priceFormat:{type:'volume'} });
+  _put  = _chart.addHistogramSeries({ color:'rgba(248,113,113,.55)', priceFormat:{type:'volume'} });
+}
+
+function typeClass(t) {
+  if (t === 'SWEEP') return 'tape-type sw';
+  if (t === 'SPLIT') return 'tape-type sp';
+  if (t === 'BLOCK') return 'tape-type bl';
+  return 'tape-type pr';
+}
+
+function fmtStrike(x) {
+  if (x == null) return '—';
+  const v = Number(x);
+  if (!isFinite(v)) return '—';
+  return v >= 1000 ? v.toLocaleString('en-US',{maximumFractionDigits:0}) : v.toFixed(0);
+}
+
+function renderTape(events) {
+  const body = document.getElementById('tapeBody');
+  if (!events || !events.length) {
+    body.innerHTML = `<tr><td colspan="9" class="muted" style="text-align:center;padding:1rem;">No new flow yet — wait for the next poll(s).</td></tr>`;
+    return;
+  }
+  const symDisp = (_lastMeta.requested || _sym || '').toString();
+  const proxy   = (_lastMeta.proxy || '').toString();
+  body.innerHTML = events.slice(0, 120).map(e => {
+    const sideCls = e.side === 'CALL' ? 'call' : 'put';
+    const typCls = typeClass(e.type);
+    const prem = (e.premium_k != null) ? Number(e.premium_k).toFixed(1) : '—';
+    return `<tr>
+      <td style="text-align:left;font-family:inherit;">${e.time || ''}</td>
+      <td style="text-align:left;font-family:inherit;" class="sym">${symDisp}${proxy ? ` <span class="muted" style="font-weight:700;">(${proxy})</span>` : ''}</td>
+      <td>${(e.expiry||'').slice(0,10)}</td>
+      <td>${e.dte ?? ''}</td>
+      <td>${fmtStrike(e.strike)}</td>
+      <td class="${sideCls}">${e.side || ''}</td>
+      <td>${(e.contracts||0).toLocaleString()}</td>
+      <td>${prem}</td>
+      <td style="text-align:left;font-family:inherit;" class="${typCls}">${e.type || ''}</td>
+    </tr>`;
+  }).join('');
+}
+
+
+
+function _rangeLabel() {
+  const rs = document.getElementById('rangeSel');
+  const r  = rs ? (rs.value || '1h') : '1h';
+  if (r === '15m') return '15m';
+  if (r === '1h')  return '1h';
+  if (r === '3h')  return '3h';
+  return 'session';
+}
+
+function _fmtK(x) {
+  const v = Number(x || 0);
+  if (!isFinite(v)) return '—';
+  if (Math.abs(v) >= 1000) return (v/1000).toFixed(2) + 'M';
+  return v.toFixed(1) + 'k';
+}
+
+function renderSummary(events, series) {
+  const rs = document.getElementById('rangeSel');
+  const r  = rs ? (rs.value || '1h') : '1h';
+  const bucketsPerMin = 6;
+  let maxPts = 360;
+  if (r === '15m') maxPts = 15 * bucketsPerMin;
+  if (r === '3h')  maxPts = 180 * bucketsPerMin;
+  if (r === 'session') maxPts = 999999;
+
+  const s2 = (series||[]).slice(Math.max(0, (series||[]).length - maxPts));
+  const callsK = s2.reduce((a,x)=>a+Number(x.call_prem_k||0),0);
+  const putsK  = s2.reduce((a,x)=>a+Number(x.put_prem_k||0),0);
+  const netK   = callsK - putsK;
+
+  const rl = _rangeLabel();
+  document.getElementById('sumCalls').textContent = _fmtK(callsK);
+  document.getElementById('sumPuts').textContent  = _fmtK(putsK);
+  document.getElementById('sumNet').textContent   = _fmtK(netK);
+  document.getElementById('sumCallsNote').textContent = 'Range: ' + rl;
+  document.getElementById('sumPutsNote').textContent  = 'Range: ' + rl;
+
+  // Top prints: use the last ~800 events we receive, but show top 10 by premium
+  const ev = (events||[]).slice(0, 800).filter(e => e && e.premium_k != null);
+  const top = ev.slice().sort((a,b)=>Number(b.premium_k||0)-Number(a.premium_k||0)).slice(0, 10);
+  const tp = document.getElementById('topPrints');
+  if (!top.length) {
+    tp.innerHTML = `<tr><td colspan="5" class="muted" style="text-align:center;padding:.8rem;">No prints yet</td></tr>`;
+  } else {
+    tp.innerHTML = top.map(e => {
+      const sideCls = e.side === 'CALL' ? 'call' : 'put';
+      const prem = Number(e.premium_k||0).toFixed(1);
+      return `<tr>
+        <td style="text-align:left;font-family:inherit;">${e.time||''}</td>
+        <td style="text-align:left;font-family:inherit;" class="${sideCls}">${e.side||''}</td>
+        <td>${fmtStrike(e.strike)}</td>
+        <td>${prem}</td>
+        <td style="text-align:left;font-family:inherit;" class="${typeClass(e.type)}">${e.type||''}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  // Top strikes: accumulate call/put premium by strike over received events
+  const byK = new Map();
+  ev.forEach(e => {
+    const k = fmtStrike(e.strike);
+    if (!k || k === '—') return;
+    const cur = byK.get(k) || {call:0, put:0};
+    const pk = Number(e.premium_k||0);
+    if (e.side === 'CALL') cur.call += pk; else cur.put += pk;
+    byK.set(k, cur);
+  });
+  const arr = Array.from(byK.entries()).map(([k,v]) => ({k, call:v.call, put:v.put, net:(v.call - v.put)}));
+  arr.sort((a,b)=>Math.abs(b.net)-Math.abs(a.net));
+  const ts = document.getElementById('topStrikes');
+  const topK = arr.slice(0, 12);
+  if (!topK.length) {
+    ts.innerHTML = `<tr><td colspan="5" class="muted" style="text-align:center;padding:.8rem;">No strikes yet</td></tr>`;
+  } else {
+    ts.innerHTML = topK.map(x => {
+      const bias = x.net >= 0 ? 'CALL' : 'PUT';
+      const biasCls = x.net >= 0 ? 'call' : 'put';
+      return `<tr>
+        <td style="text-align:left;font-family:inherit;">${x.k}</td>
+        <td style="text-align:left;font-family:inherit;" class="${biasCls}">${bias}</td>
+        <td>${Number(x.call).toFixed(1)}</td>
+        <td>${Number(x.put).toFixed(1)}</td>
+        <td>${Number(x.net).toFixed(1)}</td>
+      </tr>`;
+    }).join('');
+  }
+}
+
+function renderSeries(series) {
+  if (!_call || !_put) return;
+  const rs = document.getElementById('rangeSel');
+  const r  = rs ? (rs.value || '1h') : '1h';
+  const bucketsPerMin = 6; // 10s poll
+  let maxPts = 360; // 1h default
+  if (r === '15m') maxPts = 15 * bucketsPerMin;
+  if (r === '3h')  maxPts = 180 * bucketsPerMin;
+  if (r === 'session') maxPts = 999999;
+  const s2 = (series||[]).slice(Math.max(0, (series||[]).length - maxPts));
+  const toPoint = (x, field, sign=1) => ({
+    time: Math.floor((x.ts_ms || Date.now()) / 1000),
+    value: sign * Number(x[field] || 0)
+  });
+  _call.setData(s2.map(x => toPoint(x, 'call_prem_k', 1)));
+  // plot puts as negative for easy visual netting
+  _put.setData(s2.map(x => toPoint(x, 'put_prem_k', -1)));
+  _chart.timeScale().fitContent();
+}
+
+async function loadOnce(nocache=false) {
+  setStatus('loading', 'Polling live-flow…');
+  try {
+    const url = `${API}/api/live-flow?symbols=${encodeURIComponent(_sym)}${nocache ? '&nocache=1' : ''}`;
+    const data = await fetchJson(url, 30000);
+    const a = (data.assets || [])[0] || {};
+    _lastMeta = { requested: a.requested_symbol || _sym, proxy: a.proxy_symbol || null };
+    renderTape(a.events || []);
+    renderSeries(a.series || []);
+    renderSummary(a.events || [], a.series || []);
+    const ts = data.timestamp ? new Date(data.timestamp).toLocaleTimeString() : '';
+    document.getElementById('lastTs').textContent = ts ? ('Last update: ' + ts) : '';
+    const proxyNote = a.proxy_symbol ? ` via ${a.proxy_symbol}` : '';
+    setStatus('ok', `${_sym}${proxyNote} loaded · tape ${((a.events||[]).length)} events · charts ${(a.series||[]).length} buckets`);
+  } catch (e) {
+    setStatus('error', `Server error: ${e.message}`);
+  }
+}
+
+window.addEventListener('load', () => {
+  initChips();
+  initChart();
+  renderEmpty();
+  const rs = document.getElementById('rangeSel');
+  if (rs) rs.addEventListener('change', () => loadOnce(false));
+  loadOnce(true);
+  setInterval(() => { if (!document.hidden) loadOnce(false); }, 10 * 1000);
+});
+</script>
+</body>
+</html>

@@ -40,6 +40,9 @@ import warnings
 warnings.filterwarnings('ignore')
 
 import threading
+import time
+import math
+from collections import deque, defaultdict
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from flask import Flask, jsonify, request, send_from_directory
 from flask_compress import Compress
@@ -246,6 +249,14 @@ _ib_lock = threading.Lock()
 _ib_connected = False
 _ib_error = ''
 _yf_lock = threading.Lock()   # serialize yf.download() — not thread-safe
+
+# ── Live Flow (snapshot-delta derived) ───────────────────────────────────────
+# NOTE: This is NOT a true options tape. We approximate "flow" by polling option
+# chains and looking for volume deltas per contract between snapshots.
+_LIVE_FLOW_LAST: dict[str, dict] = {}  # symbol -> {contractSymbol -> snapshot}
+_LIVE_FLOW_EVENTS: dict[str, deque] = defaultdict(lambda: deque(maxlen=2000))  # symbol -> recent events
+_LIVE_FLOW_SERIES: dict[str, deque] = defaultdict(lambda: deque(maxlen=6000))  # symbol -> time buckets (supports multi-hour ranges)
+_LIVE_FLOW_LOCK = threading.Lock()
 
 # Map yfinance futures symbols → (IBKR symbol, exchange)
 FUTURES_IB_MAP = {
@@ -3351,6 +3362,13 @@ def _gex_row(symbol: str, group: str, nocache: bool = False) -> dict | None:
             return cached
 
     _is_futures = symbol in SYMBOLS.get('futures', [])
+    def _safe_int(x) -> int:
+        try:
+            if x is None or (isinstance(x, float) and np.isnan(x)) or (hasattr(pd, "isna") and pd.isna(x)):
+                return 0
+            return int(x)
+        except Exception:
+            return 0
 
     def _no_data_row(spot):
         """Return a minimal row so the symbol shows in the UI."""
@@ -3377,16 +3395,21 @@ def _gex_row(symbol: str, group: str, nocache: bool = False) -> dict | None:
                     return _result
 
     try:
-        ticker = yf.Ticker(symbol)
+        # yfinance is not reliably thread-safe under concurrent option_chain calls.
+        # We guard network-bound yfinance operations with the shared lock.
+        with _yf_lock:
+            ticker = yf.Ticker(symbol)
 
         # ── Spot price ─────────────────────────────────────────────────────────
         try:
-            spot = float(ticker.fast_info.last_price)
+            with _yf_lock:
+                spot = float(ticker.fast_info.last_price)
         except Exception:
             spot = 0.0
         if not spot or spot <= 0:
             try:
-                h = ticker.history(period='5d')
+                with _yf_lock:
+                    h = ticker.history(period='5d')
                 spot = float(h['Close'].iloc[-1]) if not h.empty else 0.0
             except Exception:
                 spot = 0.0
@@ -3400,7 +3423,8 @@ def _gex_row(symbol: str, group: str, nocache: bool = False) -> dict | None:
         expiries = []
         if not _is_futures:
             try:
-                expiries = ticker.options
+                with _yf_lock:
+                    expiries = ticker.options
             except Exception:
                 expiries = []
 
@@ -3409,13 +3433,72 @@ def _gex_row(symbol: str, group: str, nocache: bool = False) -> dict | None:
             proxy_sym = _FUTURES_PROXY_MAP.get(symbol)
             if proxy_sym:
                 try:
-                    proxy_tk = yf.Ticker(proxy_sym)
-                    proxy_expiries = proxy_tk.options
+                    with _yf_lock:
+                        proxy_tk = yf.Ticker(proxy_sym)
+                        proxy_expiries = proxy_tk.options
+                    # yfinance can intermittently return [] without raising; retry once.
+                    if not proxy_expiries:
+                        try:
+                            time.sleep(0.25)
+                        except Exception:
+                            pass
+                        with _yf_lock:
+                            proxy_tk = yf.Ticker(proxy_sym)
+                            proxy_expiries = proxy_tk.options
+                    if not proxy_expiries:
+                        # Fallback: compute proxy GEX directly (non-futures path) and rescale.
+                        # This avoids intermittent empty `Ticker.options` responses for proxies.
+                        proxy_row = _gex_row(proxy_sym, 'ETFs', nocache=nocache)
+                        if proxy_row and (not proxy_row.get('no_options')) and (proxy_row.get('strikes') or []):
+                            pspot = float(proxy_row.get('spot') or 0.0)
+                            if pspot > 0:
+                                if not spot or spot <= 0:
+                                    mult = FUTURES_MULTIPLIERS.get(symbol, 10)
+                                    spot = pspot * mult
+                                scale = spot / pspot if pspot else 1.0
+                                def _sc(v):
+                                    try:
+                                        return round(float(v) * scale, 2)
+                                    except Exception:
+                                        return None
+                                strikes_sc = [_sc(k) for k in proxy_row.get('strikes', [])]
+                                gex_sc     = []
+                                for v in proxy_row.get('gex', []):
+                                    try:
+                                        gex_sc.append(round(float(v) * scale, 3))
+                                    except Exception:
+                                        gex_sc.append(0.0)
+                                row_out = {
+                                    'symbol':       symbol,
+                                    'label':        SYMBOL_LABELS.get(symbol, symbol),
+                                    'group':        group,
+                                    'asset_type':   _asset_type_for(symbol),
+                                    'spot':         round(spot, 4),
+                                    'strikes':      strikes_sc,
+                                    'gex':          gex_sc,
+                                    'call_oi':      proxy_row.get('call_oi', []),
+                                    'put_oi':       proxy_row.get('put_oi', []),
+                                    'total_gex_m':  round(float(proxy_row.get('total_gex_m') or 0.0) * scale, 2),
+                                    'gamma_wall':   _sc(proxy_row.get('gamma_wall')) if proxy_row.get('gamma_wall') else None,
+                                    'put_wall':     _sc(proxy_row.get('put_wall'))   if proxy_row.get('put_wall')   else None,
+                                    'call_wall':    _sc(proxy_row.get('call_wall'))  if proxy_row.get('call_wall')  else None,
+                                    'flip_level':   _sc(proxy_row.get('flip_level')) if proxy_row.get('flip_level') else None,
+                                    'regime':       proxy_row.get('regime'),
+                                    'pcr':          proxy_row.get('pcr'),
+                                    'expiries':     proxy_row.get('expiries', []),
+                                    'no_options':   False,
+                                    'proxy_symbol': proxy_sym,
+                                    'proxy_label':  SYMBOL_LABELS.get(proxy_sym, proxy_sym),
+                                }
+                                cache_set(ck, row_out)
+                                return row_out
                     if proxy_expiries:
                         try:
-                            proxy_spot = float(proxy_tk.fast_info.last_price)
+                            with _yf_lock:
+                                proxy_spot = float(proxy_tk.fast_info.last_price)
                         except Exception:
-                            ph = proxy_tk.history(period='2d')
+                            with _yf_lock:
+                                ph = proxy_tk.history(period='2d')
                             proxy_spot = float(ph['Close'].iloc[-1]) if not ph.empty else 0.0
                         if proxy_spot > 0:
                             # If futures spot was unavailable, derive from proxy × known multiplier
@@ -3429,11 +3512,12 @@ def _gex_row(symbol: str, group: str, nocache: bool = False) -> dict | None:
                             for exp in proxy_expiries:
                                 try:
                                     dte = (datetime.strptime(exp, '%Y-%m-%d').date() - today).days
-                                    if 0 < dte <= 60:
+                                    # Prefer weekly/monthly expiries for proxy chains (daily expiries can have sparse/NaN OI early in session)
+                                    if 7 <= dte <= 60:
                                         p_tgt.append((exp, max(dte, 1)))
                                 except Exception:
                                     continue
-                                if len(p_tgt) >= 3:
+                                if len(p_tgt) >= 10:
                                     break
                             if not p_tgt and proxy_expiries:
                                 p_tgt = [(proxy_expiries[0], 1)]
@@ -3443,7 +3527,8 @@ def _gex_row(symbol: str, group: str, nocache: bool = False) -> dict | None:
                                 for exp, dte in p_tgt:
                                     T = max(dte / 365.0, 1 / 365.0)
                                     try:
-                                        chain = proxy_tk.option_chain(exp)
+                                        with _yf_lock:
+                                            chain = proxy_tk.option_chain(exp)
                                     except Exception:
                                         continue
                                     calls, puts = chain.calls.copy(), chain.puts.copy()
@@ -3452,7 +3537,7 @@ def _gex_row(symbol: str, group: str, nocache: bool = False) -> dict | None:
                                         K = float(crow['strike']) * scale
                                         if not (lo <= K <= hi):
                                             continue
-                                        OI = int(crow.get('openInterest') or 0)
+                                        OI = _safe_int(crow.get('openInterest'))
                                         IV = float(crow.get('impliedVolatility') or 0)
                                         if OI <= 0 or IV <= 0 or IV > IV_MAX:
                                             continue
@@ -3463,7 +3548,7 @@ def _gex_row(symbol: str, group: str, nocache: bool = False) -> dict | None:
                                         K = float(prow['strike']) * scale
                                         if not (lo <= K <= hi):
                                             continue
-                                        OI = int(prow.get('openInterest') or 0)
+                                        OI = _safe_int(prow.get('openInterest'))
                                         IV = float(prow.get('impliedVolatility') or 0)
                                         if OI <= 0 or IV <= 0 or IV > IV_MAX:
                                             continue
@@ -3516,7 +3601,8 @@ def _gex_row(symbol: str, group: str, nocache: bool = False) -> dict | None:
                                     cache_set(ck, row_out)
                                     return row_out
                 except Exception as e:
-                    print(f'[gex proxy] {symbol} → {proxy_sym}: {e}')
+                    # NOTE: Keep log lines ASCII-only (Windows console cp1252 can choke on Unicode)
+                    print(f'[gex proxy] {symbol} -> {proxy_sym}: {e}')
             # Proxy failed or no proxy — return minimal no_options row
             return _no_data_row(spot)
 
@@ -3543,7 +3629,8 @@ def _gex_row(symbol: str, group: str, nocache: bool = False) -> dict | None:
         for exp, dte in target:
             T = max(dte / 365.0, 1 / 365.0)
             try:
-                chain = ticker.option_chain(exp)
+                with _yf_lock:
+                    chain = ticker.option_chain(exp)
             except Exception:
                 continue
             calls, puts = chain.calls.copy(), chain.puts.copy()
@@ -3557,7 +3644,7 @@ def _gex_row(symbol: str, group: str, nocache: bool = False) -> dict | None:
             IV_MAX = 10.0
             for _, row in calls.iterrows():
                 K  = float(row['strike'])
-                OI = int(row.get('openInterest') or 0)
+                OI = _safe_int(row.get('openInterest'))
                 IV = float(row.get('impliedVolatility') or 0)
                 if OI <= 0 or IV <= 0 or IV > IV_MAX:
                     continue
@@ -3567,7 +3654,7 @@ def _gex_row(symbol: str, group: str, nocache: bool = False) -> dict | None:
 
             for _, row in puts.iterrows():
                 K  = float(row['strike'])
-                OI = int(row.get('openInterest') or 0)
+                OI = _safe_int(row.get('openInterest'))
                 IV = float(row.get('impliedVolatility') or 0)
                 if OI <= 0 or IV <= 0 or IV > IV_MAX:
                     continue
@@ -3711,6 +3798,34 @@ def _bs_delta(S, K, T, r, sigma, opt_type='call'):
         return float(norm.cdf(d1)) if opt_type == 'call' else float(norm.cdf(d1) - 1.0)
     except Exception:
         return 0.5 if opt_type == 'call' else -0.5
+
+
+def _bs_vega(S: float, K: float, T: float, r: float, sigma: float) -> float:
+    """Black-Scholes vega (per 1.00 vol, not per 1%)."""
+    from scipy.stats import norm
+    if T <= 1e-6 or sigma <= 1e-6 or S <= 0 or K <= 0:
+        return 0.0
+    try:
+        d1 = (np.log(S / K) + (r + 0.5 * sigma ** 2) * T) / (sigma * np.sqrt(T))
+        return float(S * norm.pdf(d1) * np.sqrt(T))
+    except Exception:
+        return 0.0
+
+
+def _bs_theta(S: float, K: float, T: float, r: float, sigma: float, opt_type: str = 'call') -> float:
+    """Black-Scholes theta (per year)."""
+    from scipy.stats import norm
+    if T <= 1e-6 or sigma <= 1e-6 or S <= 0 or K <= 0:
+        return 0.0
+    try:
+        d1 = (np.log(S / K) + (r + 0.5 * sigma ** 2) * T) / (sigma * np.sqrt(T))
+        d2 = d1 - sigma * np.sqrt(T)
+        term1 = -(S * norm.pdf(d1) * sigma) / (2 * np.sqrt(T))
+        if opt_type == 'call':
+            return float(term1 - r * K * np.exp(-r * T) * norm.cdf(d2))
+        return float(term1 + r * K * np.exp(-r * T) * norm.cdf(-d2))
+    except Exception:
+        return 0.0
 
 
 def _opt_strategy_row(symbol: str, group: str, nocache: bool = False) -> dict | None:
@@ -4340,6 +4455,367 @@ def option_flows_endpoint():
     result = {'assets': rows, 'count': len(rows), 'timestamp': datetime.now().isoformat()}
     cache_set(ck, result)
     return jsonify(result)
+
+
+# ── Greeks (ATM + key strikes) ───────────────────────────────────────────────
+def _pick_expiry(expiries: list[str], target_dte: int = 30, lo: int = 2, hi: int = 60) -> tuple[str | None, int | None]:
+    if not expiries:
+        return None, None
+    today = datetime.now().date()
+    best = None
+    best_d = None
+    for exp in expiries:
+        try:
+            dte = (datetime.strptime(exp, '%Y-%m-%d').date() - today).days
+        except Exception:
+            continue
+        if not (lo <= dte <= hi):
+            continue
+        if best is None or abs(dte - target_dte) < abs(best_d - target_dte):
+            best, best_d = exp, dte
+    if best is None:
+        # fallback to first future expiry
+        for exp in expiries:
+            try:
+                dte = (datetime.strptime(exp, '%Y-%m-%d').date() - today).days
+                if dte >= 1:
+                    return exp, dte
+            except Exception:
+                continue
+        return expiries[0], 0
+    return best, best_d
+
+
+def _greeks_for_symbol(symbol: str, nocache: bool = False) -> dict:
+    ck = cache_key(symbol, 'greeks')
+    if not nocache:
+        cached = cache_get(ck)
+        if cached:
+            return cached
+
+    # Schwab (if available) would be best; for now, use yfinance chain.
+    with _yf_lock:
+        tk = yf.Ticker(symbol)
+
+    # Spot
+    spot = 0.0
+    try:
+        with _yf_lock:
+            spot = float(tk.fast_info.last_price or 0)
+    except Exception:
+        spot = 0.0
+    if spot <= 0:
+        try:
+            with _yf_lock:
+                h = tk.history(period='5d')
+            spot = float(h['Close'].iloc[-1]) if (h is not None and not h.empty) else 0.0
+        except Exception:
+            spot = 0.0
+
+    # Expiry
+    try:
+        with _yf_lock:
+            expiries = list(tk.options or [])
+    except Exception:
+        expiries = []
+    exp, dte = _pick_expiry(expiries)
+    if not exp or spot <= 0:
+        out = {
+            'symbol': symbol,
+            'label': SYMBOL_LABELS.get(symbol, symbol),
+            'spot': round(spot, 4),
+            'no_options': True,
+        }
+        cache_set(ck, out)
+        return out
+
+    # Chain
+    try:
+        with _yf_lock:
+            ch = tk.option_chain(exp)
+    except Exception:
+        ch = None
+    if ch is None:
+        out = {'symbol': symbol, 'label': SYMBOL_LABELS.get(symbol, symbol), 'spot': round(spot, 4), 'no_options': True}
+        cache_set(ck, out)
+        return out
+
+    calls = ch.calls.copy()
+    puts = ch.puts.copy()
+    if calls.empty or puts.empty:
+        out = {'symbol': symbol, 'label': SYMBOL_LABELS.get(symbol, symbol), 'spot': round(spot, 4), 'no_options': True}
+        cache_set(ck, out)
+        return out
+
+    # ATM strike
+    calls['dist'] = (calls['strike'] - spot).abs()
+    puts['dist'] = (puts['strike'] - spot).abs()
+    c_atm = calls.loc[calls['dist'].idxmin()]
+    p_atm = puts.loc[puts['dist'].idxmin()]
+    K = float(c_atm['strike'])
+
+    def _iv(row) -> float:
+        try:
+            v = float(row.get('impliedVolatility') or 0)
+            return v if 0.001 < v < 10 else 0.0
+        except Exception:
+            return 0.0
+
+    iv_c = _iv(c_atm)
+    iv_p = _iv(p_atm)
+    iv = iv_c or iv_p or 0.25
+    T = max((dte or 1) / 365.0, 1 / 365.0)
+    R = 0.05
+
+    greeks_call = {
+        'iv': round(iv_c * 100, 2) if iv_c else None,
+        'delta': round(_bs_delta(spot, K, T, R, iv, 'call'), 4),
+        'gamma': round(_bs_gamma(spot, K, T, R, iv), 6),
+        'vega': round(_bs_vega(spot, K, T, R, iv) / 100.0, 4),   # per 1% IV
+        'theta': round(_bs_theta(spot, K, T, R, iv, 'call') / 365.0, 6),  # per day
+    }
+    greeks_put = {
+        'iv': round(iv_p * 100, 2) if iv_p else None,
+        'delta': round(_bs_delta(spot, K, T, R, iv, 'put'), 4),
+        'gamma': round(_bs_gamma(spot, K, T, R, iv), 6),
+        'vega': round(_bs_vega(spot, K, T, R, iv) / 100.0, 4),
+        'theta': round(_bs_theta(spot, K, T, R, iv, 'put') / 365.0, 6),
+    }
+
+    # Key strikes around spot (closest 9 strikes combined)
+    strikes = sorted(set([float(x) for x in calls['strike'].tolist()] + [float(x) for x in puts['strike'].tolist()]))
+    strikes_sorted = sorted(strikes, key=lambda x: abs(x - spot))[:9]
+    strikes_sorted = sorted(strikes_sorted)
+
+    out = {
+        'symbol': symbol,
+        'label': SYMBOL_LABELS.get(symbol, symbol),
+        'spot': round(spot, 4),
+        'expiry': exp,
+        'dte': int(dte or 0),
+        'atm_strike': round(K, 2),
+        'atm': {'call': greeks_call, 'put': greeks_put},
+        'near_strikes': [round(x, 2) for x in strikes_sorted],
+        'no_options': False,
+        'timestamp': datetime.now().isoformat(),
+    }
+    cache_set(ck, out)
+    return out
+
+
+@app.route('/api/greeks')
+def greeks_endpoint():
+    """
+    Greeks endpoint: ATM greeks + nearby strikes for quick risk view.
+    Query: /api/greeks?symbols=SPY,QQQ,AAPL
+    """
+    nocache = request.args.get('nocache', '0') == '1'
+    sym_s = (request.args.get('symbols') or 'SPY,QQQ').strip()
+    symbols = [s.strip() for s in sym_s.split(',') if s.strip()]
+    symbols = symbols[:12]
+
+    rows = []
+    for s in symbols:
+        requested = s
+        # indices have limited/no options in yfinance; map to liquid ETF proxies
+        u = requested.upper()
+        if u in ('SPX', '^SPX', '^GSPC', '^SPXW'):
+            s = 'SPY'
+        elif u in ('NDX', '^NDX', '^IXIC', 'NASDAQ'):
+            s = 'QQQ'
+        elif u in ('RUT', '^RUT', 'RUSSELL', 'RUSSELL2000'):
+            s = 'IWM'
+        elif u in ('VIX', '^VIX'):
+            s = 'VXX'
+        row = _greeks_for_symbol(s, nocache=nocache)
+        # Preserve what the user asked for so the UI can label proxies clearly
+        if requested.upper() != s.upper():
+            row = dict(row)
+            row['requested_symbol'] = requested
+            row['proxy_symbol'] = s
+        rows.append(row)
+    return jsonify({'assets': rows, 'count': len(rows), 'timestamp': datetime.now().isoformat()})
+
+
+# ── Live Flow (snapshot deltas) ──────────────────────────────────────────────
+def _classify_flow(delta_vol: int, premium_k: float) -> str:
+    # Heuristic labels to mimic "Sweep/Split" vibes. Not a true tape classification.
+    if premium_k >= 750 and delta_vol >= 500:
+        return 'SWEEP'
+    if premium_k >= 250 and delta_vol >= 200:
+        return 'SPLIT'
+    if premium_k >= 100 and delta_vol >= 100:
+        return 'BLOCK'
+    return 'PRINT'
+
+
+def _poll_live_flow(symbol: str, nocache: bool = False) -> dict:
+    with _yf_lock:
+        tk = yf.Ticker(symbol)
+
+    # Spot
+    spot = 0.0
+    try:
+        with _yf_lock:
+            spot = float(tk.fast_info.last_price or 0)
+    except Exception:
+        spot = 0.0
+
+    # Expiries: focus 0–7 DTE
+    try:
+        with _yf_lock:
+            expiries = list(tk.options or [])
+    except Exception:
+        expiries = []
+    today = datetime.now().date()
+    targets: list[tuple[str, int]] = []
+    for exp in expiries[:25]:
+        try:
+            dte = (datetime.strptime(exp, '%Y-%m-%d').date() - today).days
+        except Exception:
+            continue
+        if 0 <= dte <= 7:
+            targets.append((exp, dte))
+    if not targets:
+        exp, dte = _pick_expiry(expiries, target_dte=7, lo=0, hi=14)
+        if exp:
+            targets = [(exp, int(dte or 0))]
+
+    snapshot: dict[str, dict] = {}
+    now = datetime.now()
+    ts_ms = int(now.timestamp() * 1000)
+    new_events: list[dict] = []
+
+    def _mid(row_):
+        b = float(row_.get('bid', 0) or 0)
+        a = float(row_.get('ask', 0) or 0)
+        if b > 0 and a > 0:
+            return (b + a) / 2
+        lp = float(row_.get('lastPrice', 0) or 0)
+        return lp
+
+    for exp, dte in targets[:3]:
+        try:
+            with _yf_lock:
+                ch = tk.option_chain(exp)
+        except Exception:
+            continue
+        calls = ch.calls.copy()
+        puts = ch.puts.copy()
+        if calls is None or puts is None:
+            continue
+        lo, hi = (spot * 0.85, spot * 1.15) if spot > 0 else (0, float('inf'))
+        try:
+            calls = calls[(calls['strike'] >= lo) & (calls['strike'] <= hi)]
+            puts  = puts [(puts['strike']  >= lo) & (puts['strike']  <= hi)]
+        except Exception:
+            pass
+
+        for side, df in (('CALL', calls), ('PUT', puts)):
+            if df is None or df.empty:
+                continue
+            for _, r in df.iterrows():
+                cs = str(r.get('contractSymbol', '') or '')
+                if not cs:
+                    continue
+                _v = r.get('volume', 0)
+                vol = 0 if (_v is None or (_v != _v)) else int(float(_v or 0))
+                strike = float(r.get('strike') or 0)
+                mid = float(_mid(r) or 0.0)
+                snapshot[cs] = {
+                    'ts_ms': ts_ms,
+                    'symbol': symbol,
+                    'expiry': exp,
+                    'dte': int(dte),
+                    'side': side,
+                    'strike': round(strike, 2),
+                    'vol': vol,
+                    'mid': round(mid, 4),
+                }
+
+    with _LIVE_FLOW_LOCK:
+        prev = _LIVE_FLOW_LAST.get(symbol, {})
+        for cs, cur in snapshot.items():
+            p = prev.get(cs)
+            if not p:
+                continue
+            dv = int(cur.get('vol', 0) - (p.get('vol', 0) or 0))
+            if dv <= 0:
+                continue
+            prem_k = round(dv * float(cur.get('mid') or 0.0) * 100.0 / 1000.0, 2)
+            typ = _classify_flow(dv, prem_k)
+            new_events.append({
+                'ts_ms': ts_ms,
+                'time': now.strftime('%H:%M:%S'),
+                'symbol': symbol,
+                'expiry': cur.get('expiry'),
+                'dte': cur.get('dte'),
+                'strike': cur.get('strike'),
+                'side': cur.get('side'),
+                'contracts': dv,
+                'premium_k': prem_k,
+                'type': typ,
+                'contract': cs,
+            })
+
+        # persist
+        if snapshot:
+            _LIVE_FLOW_LAST[symbol] = snapshot
+
+        # keep event tape
+        for ev in sorted(new_events, key=lambda x: x['premium_k'], reverse=True)[:250]:
+            _LIVE_FLOW_EVENTS[symbol].appendleft(ev)
+
+        # rollup bucket for charts
+        call_k = sum(e['premium_k'] for e in new_events if e['side'] == 'CALL')
+        put_k  = sum(e['premium_k'] for e in new_events if e['side'] == 'PUT')
+        _LIVE_FLOW_SERIES[symbol].append({'ts_ms': ts_ms, 'call_prem_k': round(call_k, 2), 'put_prem_k': round(put_k, 2)})
+
+        # Send more history than the UI table shows so we can build "session" summaries.
+        tape = list(_LIVE_FLOW_EVENTS[symbol])[:800]
+        series = list(_LIVE_FLOW_SERIES[symbol])[-3600:]
+
+    return {'symbol': symbol, 'spot': round(spot, 4), 'events': tape, 'series': series}
+
+
+@app.route('/api/live-flow')
+def live_flow_endpoint():
+    """
+    Live-ish flow tape from snapshot deltas.
+    Query: /api/live-flow?symbols=SPY,QQQ&nocache=1
+    """
+    nocache = request.args.get('nocache', '0') == '1'
+    sym_s = (request.args.get('symbols') or 'SPY').strip()
+    symbols = [s.strip() for s in sym_s.split(',') if s.strip()][:8]
+    # Index proxies
+    mapped: list[tuple[str, str]] = []  # (requested, proxy)
+    for s in symbols:
+        requested = s
+        u = requested.upper()
+        if u in ('SPX', '^SPX', '^GSPC', '^SPXW'):
+            mapped.append((requested, 'SPY'))
+        elif u in ('NDX', '^NDX', '^IXIC', 'NASDAQ'):
+            mapped.append((requested, 'QQQ'))
+        elif u in ('RUT', '^RUT', 'RUSSELL', 'RUSSELL2000'):
+            mapped.append((requested, 'IWM'))
+        elif u in ('VIX', '^VIX'):
+            mapped.append((requested, 'VXX'))
+        else:
+            mapped.append((requested, requested))
+
+    rows = []
+    for requested, proxy in mapped:
+        try:
+            a = _poll_live_flow(proxy, nocache=nocache)
+            if requested.upper() != proxy.upper():
+                a = dict(a)
+                a['requested_symbol'] = requested
+                a['proxy_symbol'] = proxy
+            rows.append(a)
+        except Exception as e:
+            rows.append({'symbol': proxy, 'requested_symbol': requested, 'proxy_symbol': (proxy if requested.upper()!=proxy.upper() else None),
+                         'error': str(e), 'events': [], 'series': []})
+    return jsonify({'assets': rows, 'count': len(rows), 'timestamp': datetime.now().isoformat()})
 
 
 # ── 0DTE Analysis ─────────────────────────────────────────────────────────────

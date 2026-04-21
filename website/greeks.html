@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Greeks — SPX Proxy + Key Assets</title>
+  <link rel="preload" href="style.css" as="style" fetchpriority="high">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .wrap { max-width: 1400px; margin: 0 auto; padding: 0 1.5rem 6rem; }
+    .hero {
+      padding: 3.2rem 1.5rem 2.2rem; text-align: center;
+      background: radial-gradient(ellipse 80% 55% at 50% -5%, rgba(167,139,250,.12) 0%, transparent 65%), var(--bg);
+      border-bottom: 1px solid var(--border);
+    }
+    .hero h1 {
+      font-size: clamp(1.8rem, 4vw, 3rem); font-weight: 900;
+      letter-spacing: -.03em; line-height: 1.15; margin-bottom: .8rem;
+      background: linear-gradient(135deg, #a78bfa 0%, #38bdf8 50%, #fff 85%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    .badge {
+      display: inline-flex; align-items: center; gap: .5rem;
+      padding: .3rem 1rem; background: rgba(167,139,250,.1);
+      border: 1px solid rgba(167,139,250,.25); border-radius: 999px;
+      color: #a78bfa; font-size: .78rem; font-weight: 600;
+      letter-spacing: .08em; text-transform: uppercase; margin-bottom: 1rem;
+    }
+    .panel { background:var(--surface); border:1px solid var(--border); border-radius:12px; overflow:hidden; margin:1.1rem 0; }
+    .ph { display:flex; gap:.8rem; flex-wrap:wrap; align-items:center; justify-content:space-between; padding:.75rem 1rem; border-bottom:1px solid var(--border); }
+    .ph-title { font-size:.9rem; font-weight:900; }
+    .small { font-size:.72rem; color:var(--muted); }
+    .chips { display:flex; gap:.5rem; flex-wrap:wrap; align-items:center; }
+    .chip { padding:.25rem .6rem; border-radius:8px; border:1px solid var(--border); background:transparent; color:var(--muted); font-size:.75rem; font-weight:800; cursor:pointer; }
+    .chip.active { color:#a78bfa; border-color:rgba(167,139,250,.35); background:rgba(167,139,250,.12); }
+
+    .tblwrap { overflow:auto; }
+    table { width:100%; border-collapse:collapse; font-size:.82rem; }
+    th { position:sticky; top:0; background:rgba(8,13,26,.95); backdrop-filter: blur(6px); z-index:2; }
+    th, td { padding:.5rem .6rem; border-bottom:1px solid var(--border); text-align:right; font-family:'Consolas', monospace; white-space:nowrap; }
+    th:first-child, td:first-child { text-align:left; font-family:inherit; }
+    .sym { font-weight:900; color:var(--text); }
+    .k { color:var(--muted); font-family:inherit; font-size:.75rem; }
+    .pos { color:#22c55e; font-weight:900; }
+    .neg { color:#f87171; font-weight:900; }
+  </style>
+</head>
+<body>
+
+<nav class="nav">
+  <a href="index.html" class="nav-logo">
+    <img src="images/steve.jpg" class="nav-logo-photo" alt="Stephen Borick">
+    <div class="nav-logo-text">
+      <span class="nav-company">Artificial Intelligence</span>
+      <span class="nav-name">Solutions, Inc.</span>
+    </div>
+  </a>
+  <ul class="nav-links">
+    <li><a href="live-trading.html">Live Trading</a></li>
+    <li><a href="live-flow.html">Live Flow</a></li>
+    <li><a href="option-flows.html">Option Flows</a></li>
+    <li><a href="gamma-exposure.html">GEX</a></li>
+    <li><a href="index.html">Home</a></li>
+  </ul>
+</nav>
+
+<section class="hero">
+  <div class="badge">Δ Γ ν Θ · ATM Greeks · Risk View</div>
+  <h1>Greeks<br>SPX Proxy + Key Assets</h1>
+  <p style="color:var(--muted);max-width:860px;margin:0 auto;line-height:1.7;">
+    Quick, at-a-glance <strong style="color:var(--text);">ATM Greeks</strong> for the selected expiry.
+    <strong style="color:var(--text);">SPX</strong> uses <strong style="color:var(--text);">SPY proxy</strong> when needed.
+  </p>
+</section>
+
+<div class="wrap">
+  <div class="server-bar">
+    <div class="sdot loading" id="sdot"></div>
+    <span class="smsg" id="smsg">Loading greeks…</span>
+    <button class="rbtn" onclick="load(true)">↻ Refresh</button>
+    <span class="k" id="lastTs" style="margin-left:auto;"></span>
+  </div>
+
+  <div class="panel">
+    <div class="ph">
+      <div>
+        <div class="ph-title">Symbols</div>
+        <div class="small">Auto-refresh: <b>60s</b></div>
+      </div>
+      <div class="chips" id="symChips"></div>
+    </div>
+    <div class="tblwrap">
+      <table>
+        <thead>
+          <tr>
+            <th style="min-width:110px;text-align:left;">Symbol</th>
+            <th>Spot</th>
+            <th>Expiry</th>
+            <th>DTE</th>
+            <th>ATM</th>
+            <th>IV%</th>
+            <th>Δ (C)</th>
+            <th>Δ (P)</th>
+            <th>Γ</th>
+            <th>Vega</th>
+            <th>Theta/day (C)</th>
+            <th>Theta/day (P)</th>
+          </tr>
+        </thead>
+        <tbody id="rows">
+          <tr><td colspan="12" class="k" style="text-align:center;padding:1rem;">Loading…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = window.location.origin;
+const SYMS = ['SPX','NDX','RUT','VIX','SPY','QQQ','IWM','VXX','ES=F','NQ=F','AAPL','MSFT','NVDA','AMZN','META','TSLA','JPM','BAC','XOM','CVX','WMT','HD'];
+let _sel = new Set(['SPX','SPY','QQQ','AAPL','MSFT','NVDA','AMZN','META','TSLA','JPM','BAC','XOM','CVX','WMT','HD','ES=F','NQ=F','RUT','VIX']);
+
+function setStatus(state, msg) {
+  const d = document.getElementById('sdot');
+  d.className = 'sdot ' + (state === 'ok' ? 'on' : state === 'loading' ? 'loading' : '');
+  document.getElementById('smsg').textContent = msg;
+}
+
+async function fetchJson(url, timeoutMs=25000) {
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), timeoutMs);
+  try {
+    const r = await fetch(url, {cache:'no-store', signal: ctrl.signal});
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    return await r.json();
+  } finally { clearTimeout(t); }
+}
+
+function initChips() {
+  const wrap = document.getElementById('symChips');
+  wrap.innerHTML = '';
+  SYMS.forEach(s => {
+    const b = document.createElement('button');
+    b.className = 'chip' + (_sel.has(s) ? ' active':'');
+    b.textContent = s;
+    b.onclick = () => {
+      if (_sel.has(s)) _sel.delete(s); else _sel.add(s);
+      b.classList.toggle('active');
+      load(true);
+    };
+    wrap.appendChild(b);
+  });
+}
+
+function fmt(x, d=4) {
+  const v = Number(x);
+  if (!isFinite(v)) return '—';
+  return v.toFixed(d);
+}
+
+function clsDelta(v) {
+  const n = Number(v);
+  if (!isFinite(n)) return '';
+  return n >= 0 ? 'pos' : 'neg';
+}
+
+function render(assets) {
+  const tb = document.getElementById('rows');
+  if (!assets || !assets.length) {
+    tb.innerHTML = `<tr><td colspan="12" class="k" style="text-align:center;padding:1rem;">No data.</td></tr>`;
+    return;
+  }
+  tb.innerHTML = assets.map(a => {
+    const req = a.requested_symbol || a.symbol || '';
+    const proxy = a.proxy_symbol || null;
+    if (a.no_options) {
+      return `<tr>
+        <td style="text-align:left;" class="sym">${req}${proxy ? ` <span class="k">(proxy: ${proxy})</span>` : ''} <span class="k">(no options)</span></td>
+        <td>${a.spot != null ? fmt(a.spot,2) : '—'}</td>
+        <td colspan="10" class="k" style="text-align:left;">Options data unavailable for selected symbol.</td>
+      </tr>`;
+    }
+    const c = (a.atm && a.atm.call) ? a.atm.call : {};
+    const p = (a.atm && a.atm.put)  ? a.atm.put  : {};
+    const iv = (c.iv != null ? c.iv : (p.iv != null ? p.iv : null));
+    return `<tr>
+      <td style="text-align:left;" class="sym">${req}${proxy ? ` <span class="k">(proxy: ${proxy})</span>` : ''}</td>
+      <td>${fmt(a.spot,2)}</td>
+      <td>${(a.expiry||'').slice(0,10)}</td>
+      <td>${a.dte ?? ''}</td>
+      <td>${a.atm_strike != null ? fmt(a.atm_strike,0) : '—'}</td>
+      <td>${iv != null ? fmt(iv,1) : '—'}</td>
+      <td class="${clsDelta(c.delta)}">${c.delta != null ? fmt(c.delta,3) : '—'}</td>
+      <td class="${clsDelta(p.delta)}">${p.delta != null ? fmt(p.delta,3) : '—'}</td>
+      <td>${c.gamma != null ? fmt(c.gamma,6) : '—'}</td>
+      <td>${c.vega != null ? fmt(c.vega,4) : '—'}</td>
+      <td>${c.theta != null ? fmt(c.theta,5) : '—'}</td>
+      <td>${p.theta != null ? fmt(p.theta,5) : '—'}</td>
+    </tr>`;
+  }).join('');
+}
+
+async function load(nocache=false) {
+  const syms = Array.from(_sel);
+  if (!syms.length) return;
+  setStatus('loading', 'Loading greeks…');
+  try {
+    const url = `${API}/api/greeks?symbols=${encodeURIComponent(syms.join(','))}${nocache ? '&nocache=1' : ''}`;
+    const data = await fetchJson(url);
+    render(data.assets || []);
+    const ts = data.timestamp ? new Date(data.timestamp).toLocaleTimeString() : '';
+    document.getElementById('lastTs').textContent = ts ? ('Last update: ' + ts) : '';
+    setStatus('ok', `${(data.count||0)} assets · ${ts}`);
+  } catch (e) {
+    setStatus('error', 'Server error: ' + e.message);
+  }
+}
+
+window.addEventListener('load', () => {
+  initChips();
+  load(true);
+  setInterval(() => { if (!document.hidden) load(false); }, 60*1000);
+});
+</script>
+</body>
+</html>
