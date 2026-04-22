@@ -178,6 +178,36 @@
       top: auto !important;
       left: auto !important;
     }
+
+    /* ── Live Asset Signal Table: sticky header + Asset col ───────────────── */
+    .asset-live-scroll {
+      overflow: auto;
+      -webkit-overflow-scrolling: touch;
+      max-height: 70vh;
+      border-radius: 12px;
+      background: var(--surface);
+    }
+    .asset-live-scroll table {
+      border-collapse: separate !important;
+      border-spacing: 0 !important;
+      width: max-content;
+      min-width: 100%;
+    }
+    .asset-live-scroll thead th {
+      position: sticky !important;
+      top: 0 !important;
+      z-index: 3;
+      background: var(--surface) !important;
+    }
+    .asset-live-scroll th:first-child,
+    .asset-live-scroll td:first-child {
+      position: sticky !important;
+      left: 0 !important;
+      z-index: 2;
+      background: var(--surface) !important;
+      box-shadow: 10px 0 14px -14px rgba(0, 0, 0, .7);
+    }
+    .asset-live-scroll thead th:first-child { z-index: 4; }
   </style>
 </head>
 <body>
@@ -688,7 +718,7 @@ if (window.location.search.indexOf('_v=') === -1) {
     <div class="sec-hdr-badge" id="asset-table-ts" style="background:rgba(34,211,238,.1);color:#22d3ee;border:1px solid rgba(34,211,238,.25);">Live</div>
   </div>
 
-  <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow-x:auto;margin-bottom:1rem;">
+  <div class="asset-live-scroll" style="border:1px solid var(--border);margin-bottom:1rem;">
     <table class="matrix-table" id="asset-live-table" style="width:100%;min-width:900px;">
       <thead>
         <tr>
