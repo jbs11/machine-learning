@@ -197,6 +197,16 @@
       z-index: 5;
       background: var(--surface) !important;
     }
+    /* Sticky Asset column (first column) for indicator table */
+    .ind-scroll table th:first-child,
+    .ind-scroll table td:first-child {
+      position: sticky !important;
+      left: 0 !important;
+      z-index: 4;
+      background: var(--surface) !important;
+      box-shadow: 10px 0 14px -14px rgba(0, 0, 0, .7);
+    }
+    .ind-scroll thead tr:first-child th:first-child { z-index: 6; }
     /* Ensure the second header row scrolls normally */
     .ind-scroll thead tr:nth-child(2) th {
       position: static !important;
