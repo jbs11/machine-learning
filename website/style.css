@@ -616,3 +616,71 @@ a:hover { text-decoration: underline; }
   color: var(--primary);
   background: var(--accent-subtle);
 }
+
+/* ── Sticky first column for horizontally scrollable tables ─────────────── */
+/* Works for common wrappers + inline overflow-x:auto containers used across pages. */
+.matrix-scroll table,
+.os-legs table,
+.cm-wrap table,
+.tbl-wrap table,
+.tbl-outer table,
+.vf-table-wrap table,
+.vd-matrix-grid table,
+div[style*="overflow-x:auto"] table,
+div[style*="overflow-x: auto"] table {
+  /* Sticky table headers/cols are unreliable with border-collapse:collapse */
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+}
+
+.matrix-scroll table th:first-child,
+.matrix-scroll table td:first-child,
+.os-legs table th:first-child,
+.os-legs table td:first-child,
+.cm-wrap table th:first-child,
+.cm-wrap table td:first-child,
+.tbl-wrap table th:first-child,
+.tbl-wrap table td:first-child,
+.tbl-outer table th:first-child,
+.tbl-outer table td:first-child,
+.vf-table-wrap table th:first-child,
+.vf-table-wrap table td:first-child,
+.vd-matrix-grid table th:first-child,
+.vd-matrix-grid table td:first-child,
+div[style*="overflow-x:auto"] table th:first-child,
+div[style*="overflow-x:auto"] table td:first-child,
+div[style*="overflow-x: auto"] table th:first-child,
+div[style*="overflow-x: auto"] table td:first-child {
+  position: sticky !important;
+  left: 0 !important;
+  z-index: 2;
+  background: var(--surface) !important;
+  box-shadow: 10px 0 14px -14px rgba(0, 0, 0, .7);
+}
+
+.matrix-scroll table thead th,
+.os-legs table thead th,
+.cm-wrap table thead th,
+.tbl-wrap table thead th,
+.tbl-outer table thead th,
+.vf-table-wrap table thead th,
+.vd-matrix-grid table thead th,
+div[style*="overflow-x:auto"] table thead th,
+div[style*="overflow-x: auto"] table thead th {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 3;
+  background: var(--surface) !important;
+}
+
+.matrix-scroll table thead th:first-child,
+.os-legs table thead th:first-child,
+.cm-wrap table thead th:first-child,
+.tbl-wrap table thead th:first-child,
+.tbl-outer table thead th:first-child,
+.vf-table-wrap table thead th:first-child,
+.vd-matrix-grid table thead th:first-child,
+div[style*="overflow-x:auto"] table thead th:first-child,
+div[style*="overflow-x: auto"] table thead th:first-child {
+  z-index: 4;
+}
