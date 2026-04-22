@@ -179,6 +179,29 @@
       left: auto !important;
     }
 
+    /* Full Indicator Breakdown: sticky *top header row only* */
+    .ind-scroll {
+      overflow: auto;
+      -webkit-overflow-scrolling: touch;
+      max-height: 75vh;
+      border-radius: 12px;
+      background: var(--surface);
+    }
+    .ind-scroll table {
+      border-collapse: separate !important;
+      border-spacing: 0 !important;
+    }
+    .ind-scroll thead tr:first-child th {
+      position: sticky !important;
+      top: 0 !important;
+      z-index: 5;
+      background: var(--surface) !important;
+    }
+    /* Ensure the second header row scrolls normally */
+    .ind-scroll thead tr:nth-child(2) th {
+      position: static !important;
+    }
+
     /* ── Live Asset Signal Table: sticky header + Asset col ───────────────── */
     .asset-live-scroll {
       overflow: auto;
@@ -673,7 +696,7 @@ if (window.location.search.indexOf('_v=') === -1) {
     <div class="sec-hdr-badge" id="ind-table-ts" style="background:rgba(251,191,36,.1);color:#fbbf24;border:1px solid rgba(251,191,36,.25);">Loading…</div>
   </div>
 
-  <div class="no-sticky-table" style="background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow-x:auto;margin-bottom:1rem;">
+  <div class="ind-scroll no-sticky-table" style="border:1px solid var(--border);margin-bottom:1rem;">
     <table id="ind-table" style="width:100%;border-collapse:collapse;font-size:.75rem;min-width:1400px;">
       <thead>
         <tr style="background:rgba(255,255,255,.03);">
