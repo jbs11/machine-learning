@@ -34,7 +34,7 @@
     .chip { padding:.25rem .6rem; border-radius:8px; border:1px solid var(--border); background:transparent; color:var(--muted); font-size:.75rem; font-weight:800; cursor:pointer; }
     .chip.active { color:#a78bfa; border-color:rgba(167,139,250,.35); background:rgba(167,139,250,.12); }
 
-    .tblwrap { overflow:auto; }
+    .tblwrap { overflow:auto; max-height: 75vh; -webkit-overflow-scrolling: touch; }
     table { width:100%; border-collapse:collapse; font-size:.82rem; }
     th { position:sticky; top:0; background:rgba(8,13,26,.95); backdrop-filter: blur(6px); z-index:2; }
     th, td { padding:.5rem .6rem; border-bottom:1px solid var(--border); text-align:right; font-family:'Consolas', monospace; white-space:nowrap; }
