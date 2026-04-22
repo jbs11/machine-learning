@@ -150,6 +150,34 @@
     .last-update { font-size:.72rem; color:var(--muted); }
     @keyframes spin { to { transform:rotate(360deg); } }
     .spinner { width:14px; height:14px; border:2px solid var(--border); border-top-color:#fbbf24; border-radius:50%; animation:spin .7s linear infinite; display:inline-block; vertical-align:middle; }
+
+    /* ── Full Indicator: sticky title only ───────────────────── */
+    .sticky-sec-hdr {
+      position: sticky;
+      top: 64px; /* main nav height */
+      z-index: 180;
+      background: color-mix(in oklab, var(--bg) 92%, transparent);
+      backdrop-filter: blur(10px);
+      padding-top: .75rem;
+      margin-top: 1.75rem !important;
+    }
+    .sticky-sec-hdr::before {
+      content: '';
+      position: absolute;
+      left: -9999px;
+      right: -9999px;
+      top: 0;
+      bottom: 0;
+      background: inherit;
+      z-index: -1;
+    }
+    .no-sticky-table thead th,
+    .no-sticky-table th:first-child,
+    .no-sticky-table td:first-child {
+      position: static !important;
+      top: auto !important;
+      left: auto !important;
+    }
   </style>
 </head>
 <body>
@@ -606,7 +634,7 @@ if (window.location.search.indexOf('_v=') === -1) {
   <!-- ═══════════════════════════════════════════
        FULL INDICATOR TABLE
   ═══════════════════════════════════════════ -->
-  <div class="sec-hdr" style="margin-top:2.5rem;border-bottom-color:rgba(251,191,36,.3);">
+  <div class="sec-hdr sticky-sec-hdr" style="margin-top:2.5rem;border-bottom-color:rgba(251,191,36,.3);">
     <div class="sec-hdr-num" style="background:rgba(251,191,36,.12);color:#fbbf24;border:1px solid rgba(251,191,36,.3);">&#128200;</div>
     <div class="sec-hdr-text">
       <h2>Full Indicator Breakdown — All Assets</h2>
@@ -615,7 +643,7 @@ if (window.location.search.indexOf('_v=') === -1) {
     <div class="sec-hdr-badge" id="ind-table-ts" style="background:rgba(251,191,36,.1);color:#fbbf24;border:1px solid rgba(251,191,36,.25);">Loading…</div>
   </div>
 
-  <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow-x:auto;margin-bottom:1rem;">
+  <div class="no-sticky-table" style="background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow-x:auto;margin-bottom:1rem;">
     <table id="ind-table" style="width:100%;border-collapse:collapse;font-size:.75rem;min-width:1400px;">
       <thead>
         <tr style="background:rgba(255,255,255,.03);">
