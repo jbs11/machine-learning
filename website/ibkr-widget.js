@@ -55,6 +55,8 @@
       position: relative; z-index: 1;
       background: #1e293b; border: 1px solid #334155;
       border-radius: 14px; padding: 1.6rem; width: 440px; max-width: 95vw;
+      max-height: calc(100vh - 2rem);
+      overflow: auto;
       box-shadow: 0 24px 70px rgba(0,0,0,.7);
       animation: ibkr-pop .15s ease-out;
     }
