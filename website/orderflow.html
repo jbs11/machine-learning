@@ -70,6 +70,7 @@
   <a href="live-trading.html">&#8592; Live Trading</a> |
   <a href="live-flow.html">Live Flow</a> |
   <a href="greeks.html">Greeks</a> |
+  <a href="brokers.html">Brokers</a> |
   <a href="the-edge.html">The EDGE</a>
 </nav>
 
@@ -162,6 +163,7 @@ const SYMS = ['SPY','QQQ','IWM','DIA','AAPL','MSFT','NVDA','AMZN','META','GOOGL'
 let _sel = new Set(['SPY','QQQ','AAPL','MSFT','NVDA','TSLA']);
 let _assets = {}; // symbol -> {quote,tape,series}
 let _es = null;
+let _quoteTimer = null;
 
 const LS_KEY = 'orderflowPage:v1';
 
@@ -398,9 +400,11 @@ async function refresh() {
     const ok = (data.status && data.status.success);
     document.getElementById('lastTs').textContent = 'Snapshot ' + new Date().toLocaleTimeString();
     if (!ok) {
-      setStatus('error', 'Orderflow requires IBKR: connect TWS/Gateway (see Live Trading)');
+      setStatus('error', 'IBKR not connected — running quotes-only fallback (Finnhub/Schwab if connected).');
+      startQuoteFallback();
     } else {
       setStatus('ok', 'IBKR real-time orderflow · streaming');
+      stopQuoteFallback();
     }
     render();
     openStream();
@@ -409,14 +413,54 @@ async function refresh() {
   }
 }
 
+function stopQuoteFallback() {
+  if (_quoteTimer) { clearInterval(_quoteTimer); _quoteTimer = null; }
+}
+
+async function quoteOnce() {
+  const focus = document.getElementById('focus');
+  const sym = focus.value;
+  if (!sym) return;
+  try {
+    const q = await fetchJson(`/api/quote/${encodeURIComponent(sym)}`, 12000);
+    if (!_assets[sym]) _assets[sym] = {symbol:sym, quote:{}, tape:[], series:[]};
+    _assets[sym].quote = {
+      symbol: sym,
+      ts: Date.now()/1000,
+      bid: q.bid,
+      ask: q.ask,
+      bidSize: q.bidSize,
+      askSize: q.askSize,
+      last: q.price,
+      source: q.source
+    };
+    document.getElementById('tapeMeta').textContent =
+      `Source ${q.source || '—'} · Bid ${q.bid!=null?fmt(q.bid,2):'—'} · Ask ${q.ask!=null?fmt(q.ask,2):'—'} · Last ${q.price!=null?fmt(q.price,2):'—'}`;
+    document.getElementById('lastTs').textContent = 'Quote ' + new Date().toLocaleTimeString();
+    // In quotes-only mode, KPIs are not meaningful; render() will show zeros/no prints
+    render();
+  } catch(e) {
+    // keep quiet; user can connect IBKR
+  }
+}
+
+function startQuoteFallback() {
+  if (_quoteTimer) return;
+  quoteOnce();
+  _quoteTimer = setInterval(() => { if (!document.hidden) quoteOnce(); }, 5000);
+}
+
 window.addEventListener('load', () => {
   lsLoad();
   initChips();
   rebuildFocus();
-  document.getElementById('focus').addEventListener('change', () => { lsSave(); render(); });
+  document.getElementById('focus').addEventListener('change', () => { lsSave(); render(); quoteOnce(); });
   document.getElementById('btnRefresh').addEventListener('click', refresh);
+  // If the IBKR widget is present, refresh orderflow after a successful connect
+  window.ibkrOnConnect = () => refresh();
   refresh();
 });
 </script>
+<script src="ibkr-widget.js" defer></script>
 </body>
 </html>

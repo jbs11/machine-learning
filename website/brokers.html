@@ -186,6 +186,29 @@ h1{font-size:1.7rem;font-weight:800;color:var(--accent);margin-bottom:.3rem;}
       <div class="status-msg" id="msg-schwab">Connect your Schwab Individual Trader API for real-time data</div>
     </div>
 
+    <!-- IBKR -->
+    <div class="broker-card" id="card-ibkr">
+      <div class="status-dot" id="dot-ibkr"></div>
+      <div class="broker-hdr">
+        <div class="broker-logo" style="background:rgba(34,197,94,.10);color:var(--green);font-size:1rem;">IB</div>
+        <div>
+          <div class="broker-name">Interactive Brokers</div>
+          <div class="broker-tagline">TWS / IB Gateway &mdash; real-time prints + bid/ask</div>
+        </div>
+      </div>
+      <div class="features">
+        <span class="feat green">Real-time</span>
+        <span class="feat">Quotes</span>
+        <span class="feat">Prints / Tape</span>
+        <span class="feat amber">Requires TWS/Gateway</span>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-connect" onclick="openIBKR()">Open IBKR Login</button>
+        <button class="btn btn-disconnect" style="display:none" id="disc-ibkr" onclick="disconnectIBKR()">Disconnect</button>
+      </div>
+      <div class="status-msg" id="msg-ibkr">Uses your local TWS / IB Gateway API socket (paper: 7497, live: 7496)</div>
+    </div>
+
   </div>
 
   <!-- Comparison Table -->
@@ -280,6 +303,17 @@ window.addEventListener('load', async () => {
       }
     }
   } catch(e){ /* server not running — ignore */ }
+
+  // IBKR status (separate endpoint)
+  try {
+    const r3 = await fetch(API + '/api/ibkr-status');
+    const d3 = await r3.json();
+    if(d3 && d3.connected){
+      setStatus('ibkr','ok','IBKR connected ✓ (' + (d3.connection && d3.connection.port ? ('port ' + d3.connection.port) : 'real-time') + ')');
+    } else {
+      setStatus('ibkr','', 'IBKR not connected — click “Open IBKR Login”');
+    }
+  } catch(e) {}
 });
 
 function loadCreds(broker){
@@ -468,7 +502,32 @@ async function disconnectBroker(broker){
   }
 }
 
+function openIBKR(){
+  if(window.ibkrWidget && typeof window.ibkrWidget.open === 'function'){
+    window.ibkrWidget.open();
+    setStatus('ibkr','loading','Opening IBKR login…');
+  } else {
+    setStatus('ibkr','err','IBKR widget not loaded — refresh page');
+  }
+}
+
+async function disconnectIBKR(){
+  setStatus('ibkr','loading','Disconnecting…');
+  try {
+    const r = await fetch(API + '/api/ibkr-disconnect', {method:'POST'});
+    const d = await r.json();
+    if(d && d.success){
+      setStatus('ibkr','', 'Disconnected');
+    } else {
+      setStatus('ibkr','err', (d && d.error) ? d.error : 'Disconnect failed');
+    }
+  } catch(e){
+    setStatus('ibkr','err','Server error: ' + e.message);
+  }
+}
+
 </script>
+<script src="ibkr-widget.js" defer></script>
 <script src="search.js" defer></script>
 </body>
 </html>

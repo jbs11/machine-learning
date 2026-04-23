@@ -5703,6 +5703,10 @@ def quote_endpoint(symbol):
             'prev_close': q.get('pc'),
             'change': round(q.get('c', 0) - q.get('pc', 0), 4) if q.get('pc') else None,
             'change_pct': round((q.get('c', 0) - q.get('pc', 0)) / q.get('pc', 1) * 100, 3) if q.get('pc') else None,
+            'bid': None,
+            'ask': None,
+            'bidSize': None,
+            'askSize': None,
             'source': 'finnhub',
             'timestamp': datetime.now().isoformat(),
         })
@@ -5720,6 +5724,10 @@ def quote_endpoint(symbol):
             'prev_close': pc,
             'change': round(lp - pc, 4) if pc else None,
             'change_pct': round((lp - pc) / pc * 100, 3) if pc else None,
+            'bid': sq.get('bidPrice'),
+            'ask': sq.get('askPrice'),
+            'bidSize': sq.get('bidSize'),
+            'askSize': sq.get('askSize'),
             'source': 'schwab',
             'timestamp': datetime.now().isoformat(),
         })
@@ -5732,6 +5740,10 @@ def quote_endpoint(symbol):
         return jsonify({
             'symbol': symbol,
             'price':  price,
+            'bid': None,
+            'ask': None,
+            'bidSize': None,
+            'askSize': None,
             'source': 'yfinance',
             'timestamp': datetime.now().isoformat(),
         })
