@@ -90,6 +90,7 @@
   <div class="server-bar">
     <div class="sdot loading" id="sdot"></div>
     <span class="smsg" id="smsg">Loading orderflow…</span>
+    <span class="k" id="srcBadge" style="margin-left:.35rem;padding:.16rem .55rem;border-radius:999px;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.04);font-weight:800;">Source: —</span>
     <button class="rbtn" id="btnRefresh">↻ Snapshot</button>
     <span class="k" id="lastTs" style="margin-left:auto;"></span>
   </div>
@@ -190,6 +191,23 @@ function setStatus(state, msg) {
   const d = document.getElementById('sdot');
   d.className = 'sdot ' + (state === 'ok' ? 'on' : state === 'loading' ? 'loading' : '');
   document.getElementById('smsg').textContent = msg;
+}
+
+function setSourceBadge(source, mode) {
+  const el = document.getElementById('srcBadge');
+  if (!el) return;
+  const src = (source || '—').toUpperCase();
+  const m = mode ? String(mode) : '';
+  el.textContent = `Source: ${src}${m ? ' · ' + m : ''}`;
+
+  let c = 'rgba(255,255,255,.10)', bg = 'rgba(255,255,255,.04)', fg = 'var(--muted)';
+  if (src.includes('IBKR')) { c = 'rgba(74,222,128,.30)'; bg='rgba(74,222,128,.10)'; fg='#4ade80'; }
+  else if (src.includes('SCHWAB')) { c = 'rgba(34,211,238,.30)'; bg='rgba(34,211,238,.10)'; fg='#22d3ee'; }
+  else if (src.includes('FINNHUB')) { c = 'rgba(167,139,250,.30)'; bg='rgba(167,139,250,.10)'; fg='#a78bfa'; }
+  else if (src.includes('YFINANCE')) { c = 'rgba(251,191,36,.30)'; bg='rgba(251,191,36,.10)'; fg='#fbbf24'; }
+  el.style.borderColor = c;
+  el.style.background = bg;
+  el.style.color = fg;
 }
 
 function fmt(n, d=2) {
@@ -401,9 +419,11 @@ async function refresh() {
     document.getElementById('lastTs').textContent = 'Snapshot ' + new Date().toLocaleTimeString();
     if (!ok) {
       setStatus('error', 'IBKR not connected — running quotes-only fallback (Finnhub/Schwab if connected).');
+      setSourceBadge((data.status && (data.status.data_source || data.status.error)) || '—', 'quotes-only');
       startQuoteFallback();
     } else {
       setStatus('ok', 'IBKR real-time orderflow · streaming');
+      setSourceBadge('IBKR', 'orderflow');
       stopQuoteFallback();
     }
     render();
@@ -437,6 +457,7 @@ async function quoteOnce() {
     document.getElementById('tapeMeta').textContent =
       `Source ${q.source || '—'} · Bid ${q.bid!=null?fmt(q.bid,2):'—'} · Ask ${q.ask!=null?fmt(q.ask,2):'—'} · Last ${q.price!=null?fmt(q.price,2):'—'}`;
     document.getElementById('lastTs').textContent = 'Quote ' + new Date().toLocaleTimeString();
+    setSourceBadge(q.source || '—', 'quotes-only');
     // In quotes-only mode, KPIs are not meaningful; render() will show zeros/no prints
     render();
   } catch(e) {
