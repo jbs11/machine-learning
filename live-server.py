@@ -2281,7 +2281,7 @@ def orderflow_stream():
         last_id = 0
 
     def _fmt_sse(event_id: int | None, event_name: str, data_obj: dict) -> str:
-        payload = json.dumps(data_obj, separators=(",", ":"), ensure_ascii=False)
+        payload = _json.dumps(data_obj, separators=(",", ":"), ensure_ascii=False)
         lines = []
         if event_id is not None:
             lines.append(f"id: {event_id}")
