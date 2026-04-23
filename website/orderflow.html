@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Orderflow — Tape + CVD</title>
+  <link rel="preload" href="style.css" as="style" fetchpriority="high">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .wrap { max-width: 1500px; margin: 0 auto; padding: 0 1.5rem 6rem; }
+    .hero {
+      padding: 3rem 1.5rem 2.2rem; text-align: center;
+      background: radial-gradient(ellipse 80% 55% at 50% -5%, rgba(34,211,238,.10) 0%, transparent 65%), var(--bg);
+      border-bottom: 1px solid var(--border);
+    }
+    .hero h1 {
+      font-size: clamp(1.8rem, 4vw, 3.2rem);
+      font-weight: 900;
+      letter-spacing: -.03em;
+      line-height: 1.1;
+      margin-bottom: .8rem;
+      background: linear-gradient(135deg, #22d3ee 0%, #a78bfa 55%, #fbbf24 95%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    .sub { color: var(--muted); max-width: 920px; margin: 0 auto; line-height: 1.75; }
+
+    .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin: 1.1rem 0; }
+    .ph { display:flex; gap:.8rem; flex-wrap:wrap; align-items:center; justify-content:space-between; padding:.75rem 1rem; border-bottom:1px solid var(--border); }
+    .ph-title { font-size:.92rem; font-weight:900; }
+    .small { font-size:.72rem; color:var(--muted); }
+    .chips { display:flex; gap:.5rem; flex-wrap:wrap; align-items:center; }
+    .chip { padding:.25rem .6rem; border-radius:8px; border:1px solid var(--border); background:transparent; color:var(--muted); font-size:.75rem; font-weight:800; cursor:pointer; }
+    .chip.active { color:#22d3ee; border-color:rgba(34,211,238,.35); background:rgba(34,211,238,.12); }
+    select.chip { cursor:pointer; }
+
+    .grid { display:grid; grid-template-columns: 430px 1fr; gap: 1rem; align-items: start; }
+    @media (max-width: 1100px) { .grid { grid-template-columns: 1fr; } }
+
+    .kpis { display:grid; grid-template-columns: repeat(4, 1fr); gap: .8rem; }
+    @media (max-width: 900px) { .kpis { grid-template-columns: repeat(2, 1fr); } }
+    .kpi {
+      background: rgba(255,255,255,.02);
+      border: 1px solid rgba(255,255,255,.06);
+      border-radius: 12px;
+      padding: .8rem .9rem;
+    }
+    .kpi .lbl { font-size:.65rem; font-weight:800; text-transform:uppercase; letter-spacing:.1em; color:var(--muted); }
+    .kpi .val { font-size:1.2rem; font-weight:900; margin-top:.25rem; }
+    .kpi .sub { font-size:.7rem; color:var(--muted); margin-top:.1rem; }
+
+    .tapeWrap { overflow:auto; max-height: 70vh; }
+    table { width:100%; border-collapse:collapse; font-size:.82rem; }
+    th { position:sticky; top:0; background:rgba(8,13,26,.95); backdrop-filter: blur(6px); z-index:2; }
+    th, td { padding:.45rem .55rem; border-bottom:1px solid rgba(255,255,255,.05); text-align:right; white-space:nowrap; }
+    th:first-child, td:first-child { text-align:left; }
+    .sideBuy { color:#4ade80; font-weight:900; }
+    .sideSell { color:#f87171; font-weight:900; }
+    .sideUnk { color:var(--muted); font-weight:900; }
+
+    .chartCard { padding: .9rem 1rem; }
+    .chartTitle { font-size:.72rem; font-weight:900; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); margin-bottom:.6rem; display:flex; justify-content:space-between; gap:.7rem; flex-wrap:wrap; }
+    canvas { width: 100%; height: 220px; display:block; background: rgba(255,255,255,.02); border:1px solid rgba(255,255,255,.06); border-radius: 12px; }
+    .hint { font-size:.72rem; color:var(--muted); line-height:1.7; }
+    .warn { color:#fbbf24; font-weight:800; }
+  </style>
+</head>
+<body>
+
+<nav class="page-nav">
+  <a href="live-trading.html">&#8592; Live Trading</a> |
+  <a href="live-flow.html">Live Flow</a> |
+  <a href="greeks.html">Greeks</a> |
+  <a href="the-edge.html">The EDGE</a>
+</nav>
+
+<section class="hero">
+  <div class="badge" style="display:inline-flex;align-items:center;gap:.5rem;padding:.3rem 1rem;border-radius:999px;border:1px solid rgba(34,211,238,.25);background:rgba(34,211,238,.08);color:#22d3ee;font-size:.78rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:1rem;">
+    Tape · Bid/Ask Interaction · Cumulative Delta
+  </div>
+  <h1>Orderflow</h1>
+  <p class="sub">
+    Real-time buy/sell pressure from <strong style="color:var(--text);">prints</strong> classified vs the
+    <strong style="color:var(--text);">bid/ask</strong>. Requires <strong style="color:var(--text);">IBKR</strong> connection.
+    If IBKR is disconnected, the page will show a fallback message.
+  </p>
+</section>
+
+<div class="wrap">
+  <div class="server-bar">
+    <div class="sdot loading" id="sdot"></div>
+    <span class="smsg" id="smsg">Loading orderflow…</span>
+    <button class="rbtn" id="btnRefresh">↻ Snapshot</button>
+    <span class="k" id="lastTs" style="margin-left:auto;"></span>
+  </div>
+
+  <div class="panel">
+    <div class="ph">
+      <div>
+        <div class="ph-title">Symbols</div>
+        <div class="small">Stream updates via SSE · max <b>8</b></div>
+      </div>
+      <div class="chips" id="symChips"></div>
+      <div class="chips" style="justify-content:flex-end;">
+        <span class="small" style="font-weight:800;">Focus</span>
+        <select id="focus" class="chip"></select>
+      </div>
+    </div>
+
+    <div style="padding: .9rem 1rem;">
+      <div class="kpis">
+        <div class="kpi"><div class="lbl">Net Delta</div><div class="val" id="kNet">—</div><div class="sub" id="kNetSub">CVD (size-signed)</div></div>
+        <div class="kpi"><div class="lbl">Buy Vol</div><div class="val" id="kBuy">—</div><div class="sub">Window</div></div>
+        <div class="kpi"><div class="lbl">Sell Vol</div><div class="val" id="kSell">—</div><div class="sub">Window</div></div>
+        <div class="kpi"><div class="lbl">Imbalance</div><div class="val" id="kImb">—</div><div class="sub" id="kImbSub">buy/sell</div></div>
+      </div>
+    </div>
+
+    <div class="grid" style="padding: 0 1rem 1rem;">
+      <div class="panel" style="margin:0;">
+        <div class="ph"><div class="ph-title">Time &amp; Sales (prints)</div><div class="small" id="tapeMeta">—</div></div>
+        <div class="tapeWrap">
+          <table>
+            <thead>
+              <tr>
+                <th style="text-align:left;">Time</th>
+                <th>Price</th>
+                <th>Size</th>
+                <th style="text-align:left;">Side</th>
+                <th>Bid</th>
+                <th>Ask</th>
+              </tr>
+            </thead>
+            <tbody id="tapeBody">
+              <tr><td colspan="6" class="k" style="text-align:center;padding:1rem;">Loading…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="panel" style="margin:0;">
+        <div class="chartCard">
+          <div class="chartTitle">
+            <span>Cumulative Delta (CVD)</span>
+            <span class="small" id="cvdMeta">—</span>
+          </div>
+          <canvas id="cvd" width="1200" height="260"></canvas>
+          <div class="hint" style="margin-top:.7rem;">
+            <span class="warn">Note:</span> Aggressor side is inferred from price vs bid/ask (heuristic).
+            For full Bookmap-style heatmaps (L2/DOM), we can add Phase 2 market depth subscriptions.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+const API = window.location.origin;
+const SYMS = ['SPY','QQQ','IWM','DIA','AAPL','MSFT','NVDA','AMZN','META','GOOGL','TSLA','JPM','BAC','XOM','CVX','WMT','HD','ES=F','NQ=F','CL=F','GC=F','SI=F','ZB=F'];
+let _sel = new Set(['SPY','QQQ','AAPL','MSFT','NVDA','TSLA']);
+let _assets = {}; // symbol -> {quote,tape,series}
+let _es = null;
+
+const LS_KEY = 'orderflowPage:v1';
+
+function lsLoad() {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (!raw) return;
+    const obj = JSON.parse(raw);
+    if (obj && Array.isArray(obj.sel)) {
+      _sel = new Set(obj.sel.filter(x => SYMS.includes(x)));
+    }
+    const focus = document.getElementById('focus');
+    if (obj && typeof obj.focus === 'string' && focus) focus.value = obj.focus;
+  } catch(e) {}
+}
+function lsSave() {
+  try {
+    const focus = document.getElementById('focus');
+    localStorage.setItem(LS_KEY, JSON.stringify({ sel: Array.from(_sel), focus: focus ? focus.value : '' }));
+  } catch(e) {}
+}
+
+function setStatus(state, msg) {
+  const d = document.getElementById('sdot');
+  d.className = 'sdot ' + (state === 'ok' ? 'on' : state === 'loading' ? 'loading' : '');
+  document.getElementById('smsg').textContent = msg;
+}
+
+function fmt(n, d=2) {
+  const v = Number(n);
+  if (!isFinite(v)) return '—';
+  return v.toFixed(d);
+}
+function fmtInt(n) {
+  const v = Number(n);
+  if (!isFinite(v)) return '—';
+  return Math.round(v).toLocaleString();
+}
+function fmtTime(ts) {
+  const ms = ts > 2e12 ? ts : ts*1000;
+  const d = new Date(ms);
+  return d.toLocaleTimeString();
+}
+
+function initChips() {
+  const wrap = document.getElementById('symChips');
+  wrap.innerHTML = '';
+  SYMS.forEach(s => {
+    const b = document.createElement('button');
+    b.className = 'chip' + (_sel.has(s) ? ' active':'');
+    b.textContent = s;
+    b.onclick = () => {
+      if (_sel.has(s)) _sel.delete(s); else _sel.add(s);
+      b.classList.toggle('active');
+      rebuildFocus();
+      lsSave();
+      refresh();
+    };
+    wrap.appendChild(b);
+  });
+}
+
+function rebuildFocus() {
+  const focus = document.getElementById('focus');
+  const cur = focus.value;
+  focus.innerHTML = '';
+  Array.from(_sel).slice(0, 8).forEach(s => {
+    const o = document.createElement('option');
+    o.value = s; o.textContent = s;
+    focus.appendChild(o);
+  });
+  if (cur && _sel.has(cur)) focus.value = cur;
+  if (!focus.value && focus.options.length) focus.value = focus.options[0].value;
+}
+
+async function fetchJson(url, timeoutMs=20000) {
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), timeoutMs);
+  try {
+    const r = await fetch(url, { cache:'no-store', signal: ctrl.signal });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    return await r.json();
+  } finally { clearTimeout(t); }
+}
+
+function mergeSnapshot(data) {
+  const assets = data.assets || [];
+  assets.forEach(a => {
+    _assets[a.symbol] = a;
+  });
+}
+
+function applyEvents(events) {
+  (events || []).forEach(ev => {
+    if (ev.type !== 'print') return;
+    const sym = ev.symbol;
+    if (!_assets[sym]) _assets[sym] = {symbol:sym, quote:{}, tape:[], series:[]};
+    const a = _assets[sym];
+    a.quote = a.quote || {};
+    a.quote.bid = ev.bid;
+    a.quote.ask = ev.ask;
+    a.quote.last = ev.price;
+    a.quote.lastSize = ev.size;
+    a.quote.ts = ev.ts;
+    a.tape = a.tape || [];
+    a.tape.push(ev);
+    if (a.tape.length > 500) a.tape.splice(0, a.tape.length - 500);
+    // series is built server-side in snapshot; we keep it simple client-side
+  });
+}
+
+function render() {
+  const focus = document.getElementById('focus');
+  const sym = focus.value;
+  const a = _assets[sym] || {};
+  const tape = (a.tape || []).slice().reverse().slice(0, 250);
+
+  // KPIs from tape window
+  let buy = 0, sell = 0, net = 0;
+  tape.forEach(ev => {
+    const sz = Number(ev.size) || 0;
+    if (ev.side === 'BUY') { buy += sz; net += sz; }
+    else if (ev.side === 'SELL') { sell += sz; net -= sz; }
+  });
+  document.getElementById('kBuy').textContent = fmtInt(buy);
+  document.getElementById('kSell').textContent = fmtInt(sell);
+  document.getElementById('kNet').textContent = (net >= 0 ? '+' : '') + fmtInt(net);
+  document.getElementById('kNet').style.color = net > 0 ? '#4ade80' : net < 0 ? '#f87171' : 'var(--muted)';
+  const imb = sell > 0 ? (buy / sell) : (buy > 0 ? 99 : 1);
+  document.getElementById('kImb').textContent = isFinite(imb) ? imb.toFixed(2) + '×' : '—';
+  document.getElementById('kImbSub').textContent = `buy/sell · window ${tape.length} prints`;
+
+  // Tape
+  const tb = document.getElementById('tapeBody');
+  if (!tape.length) {
+    tb.innerHTML = `<tr><td colspan="6" class="k" style="text-align:center;padding:1rem;">No prints yet. If IBKR is connected, wait a moment.</td></tr>`;
+  } else {
+    tb.innerHTML = tape.map(ev => {
+      const sideCls = ev.side === 'BUY' ? 'sideBuy' : ev.side === 'SELL' ? 'sideSell' : 'sideUnk';
+      return `<tr>
+        <td style="text-align:left;">${fmtTime(ev.ts)}</td>
+        <td>${fmt(ev.price, 2)}</td>
+        <td>${fmtInt(ev.size)}</td>
+        <td style="text-align:left;" class="${sideCls}">${ev.side}</td>
+        <td>${ev.bid != null ? fmt(ev.bid, 2) : '—'}</td>
+        <td>${ev.ask != null ? fmt(ev.ask, 2) : '—'}</td>
+      </tr>`;
+    }).join('');
+  }
+  const q = a.quote || {};
+  document.getElementById('tapeMeta').textContent = `Bid ${q.bid!=null?fmt(q.bid,2):'—'} · Ask ${q.ask!=null?fmt(q.ask,2):'—'} · Last ${q.last!=null?fmt(q.last,2):'—'}`;
+  document.getElementById('cvdMeta').textContent = `Focus: ${sym} · Window prints: ${tape.length}`;
+
+  drawCvdChart(sym, tape);
+}
+
+function drawCvdChart(sym, tapeNewestFirst) {
+  const canvas = document.getElementById('cvd');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle = 'rgba(0,0,0,0)';
+  ctx.fillRect(0,0,W,H);
+
+  // build oldest->newest
+  const tape = tapeNewestFirst.slice().reverse();
+  if (!tape.length) return;
+  let cvd = 0;
+  const pts = tape.map((ev, i) => {
+    const sz = Number(ev.size) || 0;
+    if (ev.side === 'BUY') cvd += sz;
+    else if (ev.side === 'SELL') cvd -= sz;
+    return cvd;
+  });
+  const min = Math.min(...pts), max = Math.max(...pts);
+  const pad = 18;
+  const xStep = (W - pad*2) / Math.max(1, pts.length - 1);
+  const scaleY = (v) => {
+    if (max === min) return H/2;
+    return (H - pad) - (v - min) / (max - min) * (H - pad*2);
+  };
+
+  // grid
+  ctx.strokeStyle = 'rgba(255,255,255,.06)';
+  ctx.lineWidth = 1;
+  for (let i=0;i<5;i++){
+    const y = pad + i*(H-pad*2)/4;
+    ctx.beginPath(); ctx.moveTo(pad,y); ctx.lineTo(W-pad,y); ctx.stroke();
+  }
+
+  // line
+  const end = pts[pts.length-1];
+  ctx.strokeStyle = end >= 0 ? 'rgba(74,222,128,.9)' : 'rgba(248,113,113,.9)';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  pts.forEach((v, i) => {
+    const x = pad + i*xStep;
+    const y = scaleY(v);
+    if (i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+  });
+  ctx.stroke();
+
+  // label
+  ctx.fillStyle = 'rgba(127,163,190,.9)';
+  ctx.font = '12px Segoe UI, sans-serif';
+  ctx.fillText(`CVD ${sym}: ${Math.round(end).toLocaleString()}`, pad, 16);
+}
+
+function openStream() {
+  if (_es) { try { _es.close(); } catch(e) {} }
+  const syms = Array.from(_sel).slice(0, 8);
+  const qs = encodeURIComponent(syms.join(','));
+  _es = new EventSource(`/api/orderflow/stream?symbols=${qs}`);
+  _es.addEventListener('batch', (e) => {
+    try {
+      const d = JSON.parse(e.data);
+      applyEvents(d.events || []);
+      render();
+    } catch(err) {}
+  });
+  _es.onerror = () => {
+    setStatus('error', 'Stream disconnected — check IBKR connection');
+  };
+}
+
+async function refresh() {
+  const syms = Array.from(_sel).slice(0, 8);
+  if (!syms.length) return;
+  setStatus('loading', 'Loading snapshot…');
+  try {
+    const qs = encodeURIComponent(syms.join(','));
+    const data = await fetchJson(`/api/orderflow/snapshot?symbols=${qs}`);
+    mergeSnapshot(data);
+    const ok = (data.status && data.status.success);
+    document.getElementById('lastTs').textContent = 'Snapshot ' + new Date().toLocaleTimeString();
+    if (!ok) {
+      setStatus('error', 'Orderflow requires IBKR: connect TWS/Gateway (see Live Trading)');
+    } else {
+      setStatus('ok', 'IBKR real-time orderflow · streaming');
+    }
+    render();
+    openStream();
+  } catch(e) {
+    setStatus('error', 'Server error: ' + e.message);
+  }
+}
+
+window.addEventListener('load', () => {
+  lsLoad();
+  initChips();
+  rebuildFocus();
+  document.getElementById('focus').addEventListener('change', () => { lsSave(); render(); });
+  document.getElementById('btnRefresh').addEventListener('click', refresh);
+  refresh();
+});
+</script>
+</body>
+</html>

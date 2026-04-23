@@ -44,7 +44,7 @@ import time
 import math
 from collections import deque, defaultdict
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from flask import Flask, jsonify, request, send_from_directory
+from flask import Flask, jsonify, request, send_from_directory, Response, stream_with_context
 from flask_compress import Compress
 from flask_cors import CORS
 import yfinance as yf
@@ -278,6 +278,258 @@ STOCK_IB_MAP = {
 
 # Stores the host:port used by the most recent successful connection
 _ib_connection_info: dict = {}
+
+
+# ── Orderflow (IBKR L1 tape + bid/ask classification) ─────────────────────────
+# This is an MVP-style orderflow view:
+# - Subscribes to L1 quotes + last trades from IBKR (when connected)
+# - Classifies prints as buy/sell/unknown using bid/ask or mid
+# - Maintains a rolling buffer for UI (tape + cumulative delta)
+_ORDERFLOW_LOCK = threading.Lock()
+_ORDERFLOW_SUBS: dict[str, dict] = {}   # symbol -> {'contract':..., 'md':Ticker, 'tbt':Ticker, 'last_seen':(price,size,ts)}
+_ORDERFLOW_QUOTES: dict[str, dict] = defaultdict(dict)  # symbol -> {bid,ask,bidSize,askSize,last,lastSize,ts}
+_ORDERFLOW_TAPE: dict[str, deque] = defaultdict(lambda: deque(maxlen=4000))  # symbol -> recent prints
+_ORDERFLOW_SERIES: dict[str, deque] = defaultdict(lambda: deque(maxlen=3000))  # symbol -> time buckets for CVD
+_ORDERFLOW_EVENTS: deque = deque(maxlen=8000)  # global event stream for SSE (multi-symbol)
+_ORDERFLOW_EVENT_ID = 0
+
+
+def _is_finite(x) -> bool:
+    try:
+        return x is not None and math.isfinite(float(x))
+    except Exception:
+        return False
+
+
+def _now_ts() -> float:
+    return time.time()
+
+
+def _classify_print(price: float, bid: float | None, ask: float | None) -> str:
+    """
+    Classify a print as BUY/SELL/UNKNOWN using NBBO (bid/ask).
+    This is heuristic; IBKR does not provide an explicit aggressor side in L1.
+    """
+    if not _is_finite(price):
+        return "UNKNOWN"
+    if _is_finite(bid) and _is_finite(ask) and float(ask) >= float(bid):
+        b = float(bid)
+        a = float(ask)
+        p = float(price)
+        # small epsilon relative to spread
+        eps = max(1e-6, (a - b) * 0.15)
+        if p >= a - eps:
+            return "BUY"
+        if p <= b + eps:
+            return "SELL"
+        mid = (a + b) / 2.0
+        if p > mid + eps:
+            return "BUY"
+        if p < mid - eps:
+            return "SELL"
+    return "UNKNOWN"
+
+
+def _orderflow_add_event(evt: dict):
+    global _ORDERFLOW_EVENT_ID
+    with _ORDERFLOW_LOCK:
+        _ORDERFLOW_EVENT_ID += 1
+        evt = dict(evt)
+        evt["id"] = _ORDERFLOW_EVENT_ID
+        _ORDERFLOW_EVENTS.append(evt)
+
+
+def _orderflow_update_series(symbol: str, ts: float, side: str, size: float, price: float | None):
+    """
+    Maintain a per-symbol 1-second bucketed series for CVD/pressure charts.
+    """
+    if not _is_finite(ts):
+        ts = _now_ts()
+    sec = int(float(ts))
+    signed = float(size) if side == "BUY" else (-float(size) if side == "SELL" else 0.0)
+
+    dq = _ORDERFLOW_SERIES[symbol]
+    if dq and dq[-1]["t"] == sec:
+        dq[-1]["delta"] += signed
+        dq[-1]["vol"] += float(size)
+        dq[-1]["buyVol"] += float(size) if side == "BUY" else 0.0
+        dq[-1]["sellVol"] += float(size) if side == "SELL" else 0.0
+        dq[-1]["lastPrice"] = float(price) if _is_finite(price) else dq[-1].get("lastPrice")
+    else:
+        # carry-forward cvd for simple charting
+        prev_cvd = dq[-1]["cvd"] if dq else 0.0
+        cvd = prev_cvd + signed
+        dq.append({
+            "t": sec,
+            "delta": signed,
+            "vol": float(size),
+            "buyVol": float(size) if side == "BUY" else 0.0,
+            "sellVol": float(size) if side == "SELL" else 0.0,
+            "cvd": cvd,
+            "lastPrice": float(price) if _is_finite(price) else None,
+        })
+    # update last cvd for current bucket too
+    if dq:
+        # recompute latest cvd by carrying from previous
+        if len(dq) == 1:
+            dq[-1]["cvd"] = dq[-1]["delta"]
+        else:
+            dq[-1]["cvd"] = dq[-2]["cvd"] + dq[-1]["delta"]
+
+
+def _orderflow_on_ticker_update(ticker):
+    """
+    Called on ticker.updateEvent. Captures quote changes + new prints.
+    """
+    try:
+        c = getattr(ticker, "contract", None)
+        sym = getattr(c, "symbol", None) if c else None
+        if not sym:
+            return
+        # Normalize IBKR symbol formatting back to our keys
+        symbol = sym
+        # reverse-map for BRK B
+        for yf_sym, ib_sym in STOCK_IB_MAP.items():
+            if ib_sym == symbol:
+                symbol = yf_sym
+                break
+
+        ts = getattr(ticker, "timestamp", None) or _now_ts()
+        bid = getattr(ticker, "bid", None)
+        ask = getattr(ticker, "ask", None)
+        bidSize = getattr(ticker, "bidSize", None)
+        askSize = getattr(ticker, "askSize", None)
+        last = getattr(ticker, "last", None)
+        lastSize = getattr(ticker, "lastSize", None)
+
+        with _ORDERFLOW_LOCK:
+            _ORDERFLOW_QUOTES[symbol] = {
+                "symbol": symbol,
+                "ts": float(ts),
+                "bid": float(bid) if _is_finite(bid) else None,
+                "ask": float(ask) if _is_finite(ask) else None,
+                "bidSize": float(bidSize) if _is_finite(bidSize) else None,
+                "askSize": float(askSize) if _is_finite(askSize) else None,
+                "last": float(last) if _is_finite(last) else None,
+                "lastSize": float(lastSize) if _is_finite(lastSize) else None,
+            }
+
+            sub = _ORDERFLOW_SUBS.get(symbol)
+            if not sub:
+                return
+            prev = sub.get("last_seen")
+            cur = (float(last) if _is_finite(last) else None,
+                   float(lastSize) if _is_finite(lastSize) else None,
+                   float(ts))
+            # consider a new print when last price/size changes (best-effort)
+            if cur[0] is None or cur[1] is None:
+                return
+            if prev and prev[0] == cur[0] and prev[1] == cur[1]:
+                return
+            sub["last_seen"] = cur
+
+        # classify outside lock
+        side = _classify_print(cur[0], bid, ask)
+        evt = {
+            "type": "print",
+            "symbol": symbol,
+            "ts": float(ts),
+            "price": float(cur[0]),
+            "size": float(cur[1]),
+            "side": side,
+            "bid": float(bid) if _is_finite(bid) else None,
+            "ask": float(ask) if _is_finite(ask) else None,
+        }
+        with _ORDERFLOW_LOCK:
+            _ORDERFLOW_TAPE[symbol].append(evt)
+        _orderflow_update_series(symbol, float(ts), side, float(cur[1]), float(cur[0]))
+        _orderflow_add_event(evt)
+    except Exception:
+        # avoid crashing ib event loop
+        return
+
+
+def orderflow_start(symbols: list[str]) -> dict:
+    """
+    Ensure subscriptions are running for requested symbols.
+    Returns a status dict for the API response.
+    """
+    ib = get_ib_connection(auto_probe=False)
+    if ib is None or not ib.isConnected():
+        return {"success": False, "error": "IBKR not connected", "data_source": "yfinance (no orderflow)"}
+
+    started = []
+    with _ORDERFLOW_LOCK:
+        # clean symbol list
+        uniq = []
+        seen = set()
+        for s in symbols:
+            if not s:
+                continue
+            s = s.strip()
+            if not s:
+                continue
+            if s in INDEX_SYMBOLS:
+                continue  # no IBKR contract
+            if s not in seen:
+                seen.add(s)
+                uniq.append(s)
+        symbols = uniq[:8]  # hard cap for MVP
+
+    for symbol in symbols:
+        with _ORDERFLOW_LOCK:
+            if symbol in _ORDERFLOW_SUBS:
+                continue
+        try:
+            contract = ib_symbol_to_contract(symbol)
+            ib.qualifyContracts(contract)
+            md = ib.reqMktData(contract, snapshot=False)
+            # ensure update callback hooked
+            md.updateEvent += _orderflow_on_ticker_update
+            # tick-by-tick provides more granular prints for many products
+            try:
+                tbt = ib.reqTickByTickData(contract, tickType="Last", numberOfTicks=0, ignoreSize=False)
+                tbt.updateEvent += _orderflow_on_ticker_update
+            except Exception:
+                tbt = None
+            with _ORDERFLOW_LOCK:
+                _ORDERFLOW_SUBS[symbol] = {
+                    "contract": contract,
+                    "md": md,
+                    "tbt": tbt,
+                    "last_seen": None,
+                }
+            started.append(symbol)
+        except Exception as e:
+            print(f"[ORDERFLOW] start({symbol}) failed: {e}")
+
+    return {"success": True, "started": started, "subscribed": symbols, "data_source": "IBKR real-time"}
+
+
+def orderflow_stop_all():
+    """Cancel all orderflow subscriptions and clear current subs map."""
+    ib = get_ib_connection(auto_probe=False)
+    with _ORDERFLOW_LOCK:
+        subs = list(_ORDERFLOW_SUBS.items())
+        _ORDERFLOW_SUBS.clear()
+    if ib is None or not subs:
+        return
+    for symbol, sub in subs:
+        try:
+            md = sub.get("md")
+            tbt = sub.get("tbt")
+            if md:
+                try: md.updateEvent -= _orderflow_on_ticker_update
+                except Exception: pass
+                try: ib.cancelMktData(md.contract)
+                except Exception: pass
+            if tbt:
+                try: tbt.updateEvent -= _orderflow_on_ticker_update
+                except Exception: pass
+                try: ib.cancelTickByTickData(tbt.contract, "Last")
+                except Exception: pass
+        except Exception:
+            pass
 
 
 def get_ib_connection(auto_probe: bool = True):
@@ -1922,6 +2174,11 @@ def ibkr_disconnect():
     """Disconnect from IBKR and fall back to yfinance."""
     global _ib, _ib_connected, _ib_error, _ib_connection_info
     with _ib_lock:
+        # stop any real-time stream subscriptions that depend on IBKR
+        try:
+            orderflow_stop_all()
+        except Exception:
+            pass
         if _ib is not None:
             try: _ib.disconnect()
             except Exception: pass
@@ -1965,6 +2222,112 @@ def clear_cache():
     _cache.clear()
     _api_resp_cache.clear()
     return jsonify({'cleared': count, 'time': datetime.now().isoformat()})
+
+
+# ── Orderflow API ─────────────────────────────────────────────────────────────
+@app.route('/api/orderflow/snapshot')
+def orderflow_snapshot():
+    """
+    Snapshot for orderflow UI.
+    Query: /api/orderflow/snapshot?symbols=SPY,QQQ
+    """
+    sym_s = (request.args.get('symbols') or 'SPY').strip()
+    symbols = [s.strip() for s in sym_s.split(',') if s.strip()]
+    status = orderflow_start(symbols)
+
+    # Build snapshot (even if not connected; UI can show status)
+    out_assets = []
+    with _ORDERFLOW_LOCK:
+        for sym in symbols[:8]:
+            q = _ORDERFLOW_QUOTES.get(sym) or {"symbol": sym}
+            tape = list(_ORDERFLOW_TAPE.get(sym) or [])[-400:]
+            series = list(_ORDERFLOW_SERIES.get(sym) or [])[-900:]
+            out_assets.append({
+                "symbol": sym,
+                "quote": q,
+                "tape": tape,
+                "series": series,
+                "subscribed": sym in _ORDERFLOW_SUBS,
+            })
+        last_id = _ORDERFLOW_EVENT_ID
+
+    return jsonify({
+        "success": bool(status.get("success")),
+        "status": status,
+        "assets": out_assets,
+        "last_event_id": last_id,
+        "timestamp": datetime.now().isoformat(),
+    })
+
+
+@app.route('/api/orderflow/stream')
+def orderflow_stream():
+    """
+    Server-Sent Events (SSE) stream for orderflow updates.
+    Query: /api/orderflow/stream?symbols=SPY,QQQ
+    """
+    sym_s = (request.args.get('symbols') or 'SPY').strip()
+    symbols = [s.strip() for s in sym_s.split(',') if s.strip()][:8]
+    sym_set = set(symbols)
+
+    # ensure subscriptions (best-effort)
+    _ = orderflow_start(symbols)
+
+    # support resume
+    last_id_hdr = request.headers.get("Last-Event-ID")
+    try:
+        last_id = int(last_id_hdr) if last_id_hdr else int(request.args.get("since", "0"))
+    except Exception:
+        last_id = 0
+
+    def _fmt_sse(event_id: int | None, event_name: str, data_obj: dict) -> str:
+        payload = json.dumps(data_obj, separators=(",", ":"), ensure_ascii=False)
+        lines = []
+        if event_id is not None:
+            lines.append(f"id: {event_id}")
+        lines.append(f"event: {event_name}")
+        # SSE requires data lines to be prefixed
+        for ln in payload.splitlines() or ["{}"]:
+            lines.append(f"data: {ln}")
+        lines.append("")  # terminator
+        return "\n".join(lines) + "\n"
+
+    @stream_with_context
+    def gen():
+        nonlocal last_id
+        # initial hello
+        yield _fmt_sse(last_id, "hello", {"symbols": symbols, "time": datetime.now().isoformat()})
+        last_ping = _now_ts()
+        while True:
+            try:
+                batch = []
+                with _ORDERFLOW_LOCK:
+                    # copy recent events and filter
+                    for ev in list(_ORDERFLOW_EVENTS):
+                        eid = ev.get("id", 0)
+                        if eid and eid > last_id and (not sym_set or ev.get("symbol") in sym_set):
+                            batch.append(ev)
+                    if batch:
+                        last_id = batch[-1].get("id", last_id)
+                if batch:
+                    yield _fmt_sse(last_id, "batch", {"events": batch, "last_event_id": last_id})
+                # keepalive ping every ~10s
+                now = _now_ts()
+                if now - last_ping >= 10:
+                    last_ping = now
+                    yield ": ping\n\n"
+                time.sleep(0.25)
+            except GeneratorExit:
+                return
+            except Exception:
+                time.sleep(0.5)
+
+    headers = {
+        "Cache-Control": "no-cache",
+        "Content-Type": "text/event-stream",
+        "X-Accel-Buffering": "no",
+    }
+    return Response(gen(), headers=headers)
 
 
 @app.route('/api/symbols')
