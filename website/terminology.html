@@ -875,9 +875,45 @@
       </div>
 
       <div class="term-card">
+        <div class="term-name">0DTE Projection <span class="term-abbr">Seasonality (5m)</span></div>
+        <div class="term-def">A context tool that builds an intraday “expected path” from <strong>historical 5‑minute behavior</strong> for the <strong>same weekday</strong>, segmented by time-of-day buckets. On the SPX Hub it plots <strong>today’s actual path</strong> vs the <strong>seasonality mean</strong> and a typical range band (P25/P75). Use it to classify the day: <strong>mean‑reversion</strong> (inside bands, snapping back) vs <strong>trend/expansion</strong> (outside bands and holding).</div>
+        <div class="term-tags"><span class="term-tag tag-both">Both Pages</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">0DTE Trade Filter <span class="term-abbr">TRADE / CAUTION / NO TRADE</span></div>
+        <div class="term-def"><strong>TRADE (best for short premium):</strong> price is <strong>inside the seasonality bands</strong>, reverting toward mean, and your gamma regime is supportive (inside walls / positive near-spot). Favors <strong>defined‑risk credit spreads</strong> and <strong>wider iron condors</strong>.<br><br><strong>CAUTION:</strong> price is hugging a band edge, IV/skew is rising quickly, or you’re outside walls — trade smaller/wider; avoid tight flies/condors.<br><br><strong>NO TRADE (short premium):</strong> price <strong>breaks outside bands and accelerates</strong> (expansion day). If you trade, prefer a <strong>debit spread</strong> aligned with your confirmation and keep risk strictly defined.</div>
+        <div class="term-tags"><span class="term-tag tag-both">Both Pages</span></div>
+      </div>
+
+      <div class="term-card">
         <div class="term-name">Put Skew</div>
         <div class="term-def">The phenomenon where <strong>OTM puts carry higher implied volatility than OTM calls</strong> at the same distance from the money. Reflects the crash-risk premium in markets — investors pay more to hedge downside than to speculate on upside. <strong>Steep skew</strong> = elevated fear (protective put demand high). <strong>Flat skew</strong> = complacency. <strong>Skew inversion</strong> (calls &gt; puts IV) = rare melt-up panic buying. Monitored via the IV Surface section of Market Preparation.</div>
         <div class="term-tags"><span class="term-tag tag-sum">Market Prep</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">IV Skew Panel <span class="term-abbr">Skew Curve + Term Structure</span></div>
+        <div class="term-def">A visualization of implied volatility differences between puts and calls. The <strong>Skew Curve</strong> plots IV% vs <strong>moneyness</strong> for a selected expiry; the <strong>Term Structure</strong> shows ATM IV% across expiries plus the <strong>skew magnitude</strong> (put IV − call IV). <strong>Steepening skew</strong> often signals rising demand for downside protection (fear) — be more conservative with short put exposure.</div>
+        <div class="term-tags"><span class="term-tag tag-both">Both Pages</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">Intraday ATM IV &amp; Skew <span class="term-abbr">Hours/Minutes</span></div>
+        <div class="term-def">A time-series view (today only) of <strong>ATM IV%</strong> and <strong>ATM skew</strong> in vol points. Use it as a “risk temperature gauge”: rising ATM IV + rising skew = increasing tail risk (short premium needs wider strikes/smaller size). Falling IV/skew often favors premium-selling (condors/flies) if price is also inside walls and gamma is supportive.</div>
+        <div class="term-tags"><span class="term-tag tag-both">Both Pages</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">Reset Intraday</div>
+        <div class="term-def">Clears the stored intraday ATM IV/skew history for today and restarts the session plot from scratch. Useful when you want the intraday chart to reflect a new “from here” baseline (e.g., after the open, after a major headline, or after you step away and come back).</div>
+        <div class="term-tags"><span class="term-tag tag-both">Both Pages</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">SPX Greeks (Proxy) <span class="term-abbr">ATM + Nearby Strikes</span></div>
+        <div class="term-def">A fast risk snapshot showing ATM Greeks (IV, Δ, Γ, V, Θ) and a list of nearby strikes. The dashboard uses a liquid proxy (typically <strong>SPY</strong>) when direct SPX chain data isn’t available. Use Greeks to sanity-check trade selection: <strong>higher gamma</strong> = tighter risk and faster P/L swings (flies/condors become more sensitive); <strong>higher IV</strong> = richer premium but often higher risk; <strong>rising skew</strong> = caution on short puts.</div>
+        <div class="term-tags"><span class="term-tag tag-both">Both Pages</span></div>
       </div>
 
 
@@ -1010,6 +1046,18 @@
         <div class="term-name">Market Breadth</div>
         <div class="term-def">A measure of how many stocks (or assets) are participating in a trend vs. just a few leaders. On the dashboard, computed as the <strong>ratio of BUY to SELL signals</strong> across all tracked assets. Broad BUY breadth = healthy rally; narrow breadth = only a few assets leading (potential warning sign).</div>
         <div class="term-tags"><span class="term-tag tag-sum">Market Summary</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">S&amp;P 500 Treemap <span class="term-abbr">Performance Map</span></div>
+        <div class="term-def">A heatmap-style view of daily performance for S&amp;P 500 constituents. Tiles are colored by <strong>daily % change</strong>. Use it to spot <strong>sector leadership</strong> (where money is flowing) and <strong>breadth warnings</strong> (index green but many tiles red). For SPX options, this helps decide whether to sell premium aggressively (broad participation) or trade smaller/wider (narrow leadership).</div>
+        <div class="term-tags"><span class="term-tag tag-both">Both Pages</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">True Breadth <span class="term-abbr">% Above 50D / 200D</span></div>
+        <div class="term-def">Breadth measured across the <strong>full S&amp;P 500</strong>: the % of stocks above their 50-day and 200-day moving averages. <strong>High breadth</strong> (many stocks above 50D/200D) confirms a healthy trend and typically supports <strong>premium-selling</strong> (condors/credit spreads). <strong>Low breadth</strong> means the index can be held up by a few mega-caps — intraday moves can be more abrupt, and short premium often needs <strong>wider strikes</strong> or smaller size.</div>
+        <div class="term-tags"><span class="term-tag tag-both">Both Pages</span></div>
       </div>
 
       <div class="term-card">

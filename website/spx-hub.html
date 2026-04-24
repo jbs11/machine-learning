@@ -1,0 +1,2144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SPX Hub — Charts, Gamma, Breadth &amp; Volatility</title>
+  <link rel="preload" href="style.css" as="style" fetchpriority="high">
+  <link rel="preload" href="lightweight-charts.min.js" as="script">
+  <script src="lightweight-charts.min.js"></script>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .wrap { max-width: 1600px; margin: 0 auto; padding: 0 1.5rem 6rem; }
+    .hero {
+      padding: 3.5rem 1.5rem 2.4rem; text-align: center;
+      background: radial-gradient(ellipse 80% 55% at 50% -5%, rgba(99,102,241,.14) 0%, transparent 65%), var(--bg);
+      border-bottom: 1px solid var(--border);
+    }
+    .badge {
+      display: inline-flex; align-items: center; gap: .5rem;
+      padding: .3rem 1rem; border-radius: 999px;
+      background: rgba(99,102,241,.12); border: 1px solid rgba(99,102,241,.28);
+      color: #a78bfa; font-size: .78rem; font-weight: 700;
+      letter-spacing: .08em; text-transform: uppercase;
+      margin-bottom: 1rem;
+    }
+    .hero h1 {
+      font-size: clamp(1.9rem, 4vw, 3.2rem); font-weight: 900; letter-spacing: -.03em;
+      line-height: 1.15; margin-bottom: .75rem;
+      background: linear-gradient(135deg, #6366f1 0%, #a78bfa 45%, #22d3ee 90%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    .hero p { color: var(--muted); font-size: 1.05rem; max-width: 920px; margin: 0 auto; line-height: 1.75; }
+
+    .strip { display: flex; flex-wrap: wrap; gap: .7rem; padding: 1.2rem 0; }
+    .card {
+      flex: 1 1 180px;
+      background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+      padding: .9rem 1rem; min-width: 160px;
+    }
+    .k { font-size: .68rem; color: var(--muted); font-weight: 800; text-transform: uppercase; letter-spacing: .08em; }
+    .v { font-size: 1.5rem; font-weight: 900; margin-top: .15rem; font-family: Consolas, monospace; }
+    .s { font-size: .78rem; font-weight: 700; margin-top: .2rem; }
+    .pos { color: #4ade80; }
+    .neg { color: #f87171; }
+    .neu { color: var(--muted); }
+
+    .grid { display: grid; grid-template-columns: 1.2fr .8fr; gap: 1rem; margin-top: .5rem; }
+    @media(max-width: 980px){ .grid{ grid-template-columns: 1fr; } }
+    .panel {
+      background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+      overflow: hidden;
+    }
+    .ph { padding: .75rem 1rem; border-bottom: 1px solid var(--border); display:flex; align-items:center; justify-content:space-between; gap:.7rem; flex-wrap:wrap; }
+    .pt { font-size: .9rem; font-weight: 900; }
+    .ps { font-size: .75rem; color: var(--muted); }
+    .pb { padding: .9rem 1rem 1.1rem; }
+    .statusLine { font-size: .75rem; color: rgba(255,255,255,.72); }
+    .statusLine b { color: var(--text); }
+    .statusLine .ok { color:#4ade80; font-weight:900; }
+    .statusLine .warn { color:#fbbf24; font-weight:900; }
+    .statusLine .bad { color:#f87171; font-weight:900; }
+
+    .links { display:flex; flex-wrap:wrap; gap:.5rem; }
+    .pill {
+      display:inline-flex; align-items:center; gap:.4rem;
+      padding:.35rem .75rem; border-radius:999px;
+      border:1px solid var(--border); background:transparent;
+      color: var(--muted); font-weight: 800; font-size: .75rem;
+      text-decoration:none; transition: all .14s;
+    }
+    .pill:hover { border-color: rgba(99,102,241,.55); color: var(--text); }
+    .pill.hi { border-color: rgba(34,211,238,.35); color:#22d3ee; background: rgba(34,211,238,.08); }
+
+    /* Breadth bars */
+    .barRow { display:flex; align-items:center; justify-content:space-between; gap:.8rem; margin:.55rem 0; }
+    .barLabel { font-size:.75rem; color: var(--muted); font-weight:700; }
+    .barTrack { flex:1; height: 14px; background: rgba(255,255,255,.06); border-radius: 8px; overflow:hidden; border:1px solid rgba(255,255,255,.06); }
+    .barFill { height: 100%; width: 0%; transition: width .6s ease; border-radius: 8px; }
+    .barFill.b50 { background: linear-gradient(90deg, rgba(34,197,94,.9), rgba(34,211,238,.85)); }
+    .barFill.b200{ background: linear-gradient(90deg, rgba(251,191,36,.9), rgba(249,115,22,.85)); }
+    .barVal { font-family: Consolas, monospace; font-weight:900; font-size:.85rem; min-width:60px; text-align:right; }
+
+    /* Treemap */
+    .tmMeta { font-size:.74rem; color: var(--muted); margin-top:.4rem; line-height:1.6; }
+    .tmWrap { margin-top:.8rem; }
+    .tmGrid {
+      display:grid;
+      grid-template-columns: repeat(12, 1fr);
+      grid-auto-rows: 44px;
+      gap: 8px;
+    }
+    .tile {
+      position: relative;
+      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,.08);
+      background: rgba(255,255,255,.04);
+      overflow:hidden;
+      padding: .55rem .7rem;
+      cursor: pointer;
+      transition: transform .12s, border-color .12s;
+    }
+    .tile:hover { transform: translateY(-1px); border-color: rgba(255,255,255,.18); }
+    .tileSym { font-family: Consolas, monospace; font-weight: 900; font-size: .92rem; }
+    .tileLbl { font-size: .65rem; color: rgba(255,255,255,.65); margin-top:.1rem; white-space: nowrap; overflow:hidden; text-overflow: ellipsis; }
+    .tileChg { position:absolute; right:.65rem; top:.55rem; font-family: Consolas, monospace; font-weight:900; font-size:.86rem; }
+    .bgPos { background: linear-gradient(135deg, rgba(34,197,94,.26), rgba(34,211,238,.14)); }
+    .bgNeg { background: linear-gradient(135deg, rgba(248,113,113,.22), rgba(99,102,241,.12)); }
+    .bgNeu { background: rgba(255,255,255,.04); }
+
+    /* Full SP500 map */
+    .sp500Tools{ display:flex; flex-wrap:wrap; gap:.5rem; align-items:center; }
+    .in {
+      height: 34px; padding: .25rem .6rem;
+      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.04);
+      color: var(--text);
+      outline: none;
+      font-weight: 800;
+      font-size: .78rem;
+    }
+    .in::placeholder{ color: rgba(255,255,255,.45); font-weight: 700; }
+    .sp500GridWrap{ margin-top:.7rem; border:1px solid rgba(255,255,255,.08); border-radius: 12px; overflow:hidden; }
+    .sp500Grid{
+      display:grid;
+      grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
+      gap: 6px;
+      padding: 10px;
+      max-height: 520px;
+      overflow:auto;
+      background: rgba(255,255,255,.02);
+    }
+    .sp500Tile{
+      position: relative;
+      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,.08);
+      padding: .5rem .6rem;
+      min-height: 44px;
+      cursor: pointer;
+      overflow:hidden;
+      transition: transform .12s, border-color .12s;
+    }
+    .sp500Tile:hover{ transform: translateY(-1px); border-color: rgba(255,255,255,.18); }
+    .sp500Top{ display:flex; align-items:baseline; justify-content:space-between; gap:.4rem; }
+    .sp500Sym{ font-family: Consolas, monospace; font-weight: 900; font-size: .82rem; }
+    .sp500Chg{ font-family: Consolas, monospace; font-weight: 900; font-size:.78rem; white-space:nowrap; }
+    .sp500Sec{ font-size:.62rem; color: rgba(255,255,255,.55); margin-top:.15rem; white-space:nowrap; overflow:hidden; text-overflow: ellipsis; }
+
+    .footNote { font-size: .74rem; color: var(--muted); margin-top: 1rem; line-height: 1.65; }
+    .error { color: #f87171; font-weight: 800; }
+
+    /* Toast alerts */
+    .toast-wrap { position: fixed; right: 14px; bottom: 14px; z-index: 9999; display:flex; flex-direction:column; gap:.5rem; pointer-events:none; }
+    .toast {
+      pointer-events:none;
+      width:min(420px, calc(100vw - 28px));
+      background: rgba(10,15,30,.92);
+      border: 1px solid rgba(255,255,255,.12);
+      border-left: 4px solid rgba(34,211,238,.6);
+      border-radius: 12px;
+      padding: .75rem .9rem;
+      box-shadow: 0 16px 60px rgba(0,0,0,.35);
+    }
+    .toast.hi { border-left-color: rgba(34,197,94,.7); }
+    .toast.warn { border-left-color: rgba(251,191,36,.8); }
+    .toast.danger { border-left-color: rgba(248,113,113,.8); }
+    .toastTitle { font-weight: 900; font-size: .85rem; margin-bottom:.15rem; }
+    .toastBody { color: var(--muted); font-size: .78rem; line-height:1.55; }
+
+    /* IV skew panel */
+    .ivGrid { display:grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    @media(max-width: 980px){ .ivGrid{ grid-template-columns: 1fr; } }
+    #ivSkewChart { height: 240px; background:#070d18; }
+    #ivTermChart { height: 200px; background:#070d18; }
+    #ivIntraChart { height: 200px; background:#070d18; }
+    .ivStats { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:.55rem; margin-top:.7rem; }
+    .ivStat { background: rgba(255,255,255,.02); border:1px solid rgba(255,255,255,.07); border-radius:10px; padding:.65rem .75rem; }
+    .ivStatK { font-size:.62rem; color: var(--muted); font-weight:800; text-transform:uppercase; letter-spacing:.08em; }
+    .ivStatV { font-family: Consolas, monospace; font-weight:900; font-size: 1rem; margin-top:.18rem; }
+    .ivStatS { font-size:.72rem; color: var(--muted); margin-top:.15rem; line-height:1.45; }
+    .ivAxisHint { display:flex; justify-content:space-between; gap:.6rem; margin-top:.45rem; color:rgba(255,255,255,.55); font-size:.68rem; }
+    .ivAxisHint span { font-family:Consolas, monospace; }
+    .ivLegend { display:flex; gap:.8rem; align-items:center; flex-wrap:wrap; margin-top:.55rem; font-size:.72rem; color:var(--muted); }
+    .ivLeg { display:flex; align-items:center; gap:.35rem; }
+    .ivSw { width:12px; height:4px; border-radius:2px; display:inline-block; }
+    .ivTip {
+      position: fixed;
+      z-index: 9998;
+      pointer-events: none;
+      padding: .45rem .55rem;
+      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,.14);
+      background: rgba(10,15,30,.94);
+      box-shadow: 0 16px 50px rgba(0,0,0,.35);
+      color: rgba(255,255,255,.86);
+      font-size: .72rem;
+      line-height: 1.45;
+      display: none;
+      max-width: 260px;
+    }
+    .ivTip b { color: var(--text); }
+
+    /* Gamma mini-panel */
+    .gexMiniGrid { display:grid; grid-template-columns: 1.15fr .85fr; gap: 1rem; }
+    @media(max-width: 980px){ .gexMiniGrid{ grid-template-columns: 1fr; } }
+    .gexCanvasWrap { background:#070d18; border:1px solid rgba(255,255,255,.07); border-radius:10px; overflow:hidden; }
+    #gexCurve { width:100%; height:260px; display:block; }
+    .lvlGrid { display:grid; grid-template-columns:repeat(auto-fill,minmax(170px,1fr)); gap:.55rem; }
+    .lvlItem { background: rgba(255,255,255,.02); border:1px solid rgba(255,255,255,.07); border-radius:10px; padding:.65rem .75rem; }
+    .lvlK { font-size:.62rem; color: var(--muted); font-weight:800; text-transform:uppercase; letter-spacing:.08em; }
+    .lvlV { font-family: Consolas, monospace; font-weight:900; font-size: 1rem; margin-top:.18rem; }
+    .lvlS { font-size:.72rem; color: var(--muted); margin-top:.15rem; line-height:1.45; }
+    .chipRow { display:flex; gap:.4rem; flex-wrap:wrap; margin-top:.6rem; }
+    .chip { font-size:.65rem; font-weight:800; letter-spacing:.05em; text-transform:uppercase;
+      padding:.18rem .55rem; border-radius:6px; border:1px solid rgba(255,255,255,.12); color:rgba(255,255,255,.75); background:rgba(255,255,255,.04); }
+    .chip.pos { border-color: rgba(34,197,94,.35); color:#4ade80; background:rgba(34,197,94,.08); }
+    .chip.neg { border-color: rgba(248,113,113,.35); color:#f87171; background:rgba(248,113,113,.08); }
+    .chip.neu { border-color: rgba(167,139,250,.35); color:#a78bfa; background:rgba(167,139,250,.08); }
+
+    .btnIcon {
+      display:inline-flex; align-items:center; gap:.4rem;
+      padding:.3rem .75rem; border-radius:8px;
+      border:1px solid var(--border); background:transparent;
+      color: var(--muted); font-weight: 900; font-size: .75rem;
+      cursor:pointer; transition: all .14s;
+    }
+    .btnIcon:hover { border-color: rgba(99,102,241,.55); color: var(--text); }
+    .btnIcon.on { border-color: rgba(34,211,238,.35); color:#22d3ee; background: rgba(34,211,238,.08); }
+
+    .gexExpanded #gexCurve { height: 420px; }
+    .gexExpanded .gexCanvasWrap { border-color: rgba(34,211,238,.22); }
+    .gexExpanded .gexMiniGrid { grid-template-columns: 1.35fr .65fr; }
+    @media(max-width: 980px){ .gexExpanded .gexMiniGrid{ grid-template-columns: 1fr; } }
+
+    /* Time-series mini chart */
+    #gexTsChart { height: 220px; background:#070d18; }
+    /* 0DTE Projection */
+    #dteProjChart { height: 260px; background:#070d18; }
+    .dteTools{ display:flex; flex-wrap:wrap; gap:.5rem; align-items:center; }
+    .gexTsHdr { display:flex; align-items:center; justify-content:space-between; gap:.8rem; flex-wrap:wrap; margin-top:.9rem; }
+    .gexTsTitle { font-size:.78rem; font-weight:900; color: var(--text); }
+    .gexTsSub { font-size:.72rem; color: var(--muted); }
+  </style>
+</head>
+<body>
+<script>
+if (window.location.search.indexOf('_v=') === -1) {
+  window.location.replace(window.location.pathname + '?_v=' + Date.now());
+}
+</script>
+
+<nav class="nav">
+  <a href="index.html" class="nav-logo">
+    <img src="images/steve.jpg" class="nav-logo-photo" alt="Stephen Borick">
+    <div class="nav-logo-text"><span class="nav-company">Artificial Intelligence</span><span class="nav-name">Solutions, Inc.</span></div>
+  </a>
+  <ul class="nav-links">
+    <li><a href="index.html">Home</a></li>
+    <li><a href="machine-learning.html">Machine Learning</a></li>
+    <li><a href="ml-trading.html">ML in Trading</a></li>
+    <li><a href="stock-trading.html">Stock Trading</a></li>
+    <li><a href="options-trading.html">Options</a></li>
+    <li><a href="futures-trading.html">Futures</a></li>
+    <li><a href="live-trading.html">Live Trading</a></li>
+    <li><a href="market-preparation.html">&#128204; Market Prep</a></li>
+    <li><a href="world-events.html">&#127758; World Events</a></li>
+    <li><a href="forecast.html" style="color:#f59e0b;font-weight:700;">&#128200; Forecast</a></li>
+    <li><a href="gex-heatmap.html" style="color:#22d3ee;font-weight:700;">&#127777; GEX Heat Maps</a></li>
+    <li><a href="spx-correlations.html" style="color:#a78bfa;font-weight:700;">&#128202; SPX Correlations</a></li>
+    <li><a href="vix-dashboard.html" style="color:#f87171;font-weight:700;">&#128293; VIX Dashboard</a></li>
+    <li><a href="the-edge.html" style="color:#fbbf24;font-weight:700;">&#9889; The EDGE</a></li>
+    <li><a href="real-time-news.html" style="color:#4ade80;font-weight:700;">&#128240; Real-Time News</a></li>
+  </ul>
+</nav>
+
+<div class="hero">
+  <div class="badge">&#128200; SPX Trader Command Center</div>
+  <h1>SPX Hub</h1>
+  <p>Centralize your SPX workflow: spot + regime context, gamma tools (GEX walls / flip), breadth, and a daily performance “map” of the most important SPX proxy names. This page is designed to be fast, visual, and day-trading friendly.</p>
+</div>
+
+<div class="wrap">
+  <div class="toast-wrap" id="toastWrap"></div>
+  <div class="strip">
+    <div class="card">
+      <div class="k">SPX Spot (Index)</div>
+      <div class="v" id="spxSpot">—</div>
+      <div class="s neu" id="spxChg">Loading…</div>
+    </div>
+    <div class="card">
+      <div class="k">SPY (Proxy)</div>
+      <div class="v" id="spySpot">—</div>
+      <div class="s neu" id="spyChg">Loading…</div>
+    </div>
+    <div class="card">
+      <div class="k">Breadth (Proxy Universe)</div>
+      <div class="v" id="breadthTop">—</div>
+      <div class="s neu" id="breadthSub">—</div>
+    </div>
+    <div class="card">
+      <div class="k">Strategy Suggestion</div>
+      <div class="v" id="stratTitle" style="font-size:1.1rem;line-height:1.25;font-family:inherit;">Loading…</div>
+      <div class="s neu" id="stratSub">—</div>
+      <div class="footNote" id="stratList" style="margin-top:.5rem;display:none;"></div>
+      <div class="chipRow" style="margin-top:.55rem" id="stratChips"></div>
+    </div>
+    <div class="card">
+      <div class="k">Quick Links</div>
+      <div class="links" style="margin-top:.55rem">
+        <a class="pill hi" href="gex-profile.html">&#128200; GEX Profile</a>
+        <a class="pill" href="gamma-exposure.html">&#127919; GEX Charts</a>
+        <a class="pill" href="gex-heatmap.html">&#127777; GEX Heatmap</a>
+        <a class="pill" href="0dte-options.html">&#128293; 0DTE</a>
+        <a class="pill" href="spx-correlations.html">&#128202; Correlations</a>
+        <a class="pill" href="vix-dashboard.html">&#128293; VIX</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="panel">
+      <div class="ph">
+        <div>
+          <div class="pt">S&amp;P Performance Map (Treemap)</div>
+          <div class="ps">Daily % change for a curated SPX proxy universe (fast &amp; useful for day trading)</div>
+        </div>
+        <div class="ps" id="tmStamp">—</div>
+      </div>
+      <div class="pb">
+        <div id="tm" class="tmWrap">
+          <div id="tmGrid" class="tmGrid"></div>
+          <div class="tmMeta" id="tmMeta"></div>
+        </div>
+        <div class="footNote" id="tmNote"></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="ph">
+        <div>
+          <div class="pt">Breadth: % Above 50D / 200D</div>
+          <div class="ps">Trend participation for the same universe (upgradeable to full SPX constituents later)</div>
+        </div>
+        <button id="refreshBtn" class="pill" style="cursor:pointer">Refresh</button>
+      </div>
+      <div class="pb">
+        <div class="barRow">
+          <div class="barLabel">% Above 50D SMA</div>
+          <div class="barTrack"><div id="b50" class="barFill b50"></div></div>
+          <div id="b50v" class="barVal">—</div>
+        </div>
+        <div class="barRow">
+          <div class="barLabel">% Above 200D SMA</div>
+          <div class="barTrack"><div id="b200" class="barFill b200"></div></div>
+          <div id="b200v" class="barVal">—</div>
+        </div>
+        <div class="footNote" id="breadthNote"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel" style="margin-top:1rem">
+    <div class="panel">
+      <div class="ph">
+        <div>
+          <div class="pt">Full S&amp;P 500 Treemap + True Breadth</div>
+          <div class="ps">All constituents (auto-fetched) — scrollable map + true % above 50D/200D across the full index</div>
+        </div>
+        <div class="sp500Tools">
+          <input id="sp500Search" class="in" type="text" placeholder="Search: AAPL, MSFT, NVDA…" />
+          <select id="sp500Sector" class="in">
+            <option value="">All sectors</option>
+          </select>
+          <button id="sp500RefreshBtn" class="pill" style="cursor:pointer">Refresh</button>
+          <div class="ps" id="sp500Stamp">—</div>
+        </div>
+      </div>
+      <div class="pb">
+        <div class="barRow">
+          <div class="barLabel">% Above 50D SMA (SP500)</div>
+          <div class="barTrack"><div id="sp500b50" class="barFill b50"></div></div>
+          <div id="sp500b50v" class="barVal">—</div>
+        </div>
+        <div class="barRow">
+          <div class="barLabel">% Above 200D SMA (SP500)</div>
+          <div class="barTrack"><div id="sp500b200" class="barFill b200"></div></div>
+          <div id="sp500b200v" class="barVal">—</div>
+        </div>
+        <div class="sp500GridWrap">
+          <div id="sp500Grid" class="sp500Grid"></div>
+        </div>
+        <div class="tmMeta" id="sp500Meta"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="panel" style="margin-top:1rem">
+    <div class="ph">
+      <div>
+        <div class="pt">SPX Greeks (proxy) — ATM + Nearby Strikes</div>
+        <div class="ps">Pulls from <code>/api/greeks?symbols=SPX</code> and shows live changes (Δ) each refresh</div>
+      </div>
+      <div class="ps" id="spxGreeksStamp">—</div>
+    </div>
+    <div class="pb">
+      <div class="footNote" id="spxGreeksBody">Loading…</div>
+      <div class="footNote" style="margin-top:.65rem" id="spxGreeksNear"></div>
+    </div>
+  </div>
+
+  <div class="panel" style="margin-top:1rem">
+    <div class="ph">
+      <div>
+        <div class="pt">Net Gamma Curve (SPX Proxy)</div>
+        <div class="ps">SPY options-derived gamma profile with Put/Call Walls + Flip. Use levels as likely support/resistance.</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;">
+        <button id="gexExpandBtn" class="btnIcon" type="button">Expand</button>
+        <button id="gexTimeBtn" class="btnIcon" type="button">Time View</button>
+        <button id="gexTestAlertBtn" class="btnIcon" type="button">Test Alert</button>
+        <div class="ps" id="gexStamp">—</div>
+        <div class="statusLine" id="gexAlertStatus" style="flex-basis:100%;">Spot — · PutWall — · CallWall — · Flip —</div>
+      </div>
+    </div>
+    <div class="pb">
+      <div class="gexMiniGrid">
+        <div>
+          <div class="gexCanvasWrap">
+            <canvas id="gexCurve" width="1200" height="520"></canvas>
+          </div>
+          <div class="footNote" id="gexCurveNote"></div>
+        </div>
+        <div>
+          <div class="lvlGrid" id="gexLevels">
+            <div class="lvlItem"><div class="lvlK">Loading</div><div class="lvlV">—</div><div class="lvlS">Fetching gamma exposure…</div></div>
+          </div>
+          <div class="chipRow" id="gexChips"></div>
+          <div class="footNote" id="gexLevelsNote"></div>
+        </div>
+      </div>
+
+      <div id="gexTimeWrap" style="display:none;">
+        <div class="gexTsHdr">
+          <div>
+            <div class="gexTsTitle">Gamma Over Time (derived)</div>
+            <div class="gexTsSub">Time on x-axis. Built by polling latest SPY gamma snapshot.</div>
+          </div>
+          <div style="display:flex;gap:.45rem;align-items:center;flex-wrap:wrap;">
+            <select id="gexWindowSel" class="pill" style="padding:.28rem .6rem;border-radius:8px;font-weight:900;cursor:pointer;">
+              <option value="15">15m</option>
+              <option value="30">30m</option>
+              <option value="60" selected>60m</option>
+              <option value="180">3h</option>
+            </select>
+            <span id="gexRegimeChip" class="chip neu">Inside Walls</span>
+            <div class="gexTsSub" id="gexTimeMeta">—</div>
+          </div>
+        </div>
+        <div class="gexCanvasWrap" style="margin-top:.55rem;">
+          <div id="gexTsChart"></div>
+        </div>
+        <div class="footNote">This is a <strong>snapshot history</strong> (not true per-trade tape). It tracks how Total GEX / Flip / walls change as OI and spot update.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel" style="margin-top:1rem">
+    <div class="ph">
+      <div>
+        <div class="pt">IV Skew (SPX Proxy)</div>
+        <div class="ps">Puts vs calls IV. Steep skew = higher demand for downside protection (fear).</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;">
+        <select id="ivExpSel" class="pill" style="padding:.28rem .6rem;border-radius:8px;font-weight:900;cursor:pointer;">
+          <option value="">Loading…</option>
+        </select>
+        <div class="ps" id="ivStamp">—</div>
+      </div>
+    </div>
+    <div class="pb">
+      <div class="ivGrid">
+        <div>
+          <div class="gexCanvasWrap">
+            <canvas id="ivSkewCanvas" width="1200" height="520" style="width:100%;height:240px;display:block;"></canvas>
+          </div>
+          <div class="ivTip" id="ivSkewTip"></div>
+          <div class="ivAxisHint">
+            <span>0.80</span><span>0.90</span><span>1.00</span><span>1.10</span><span>1.20</span>
+          </div>
+          <div class="ivLegend">
+            <div class="ivLeg"><span class="ivSw" style="background:rgba(248,113,113,.9)"></span> Puts IV%</div>
+            <div class="ivLeg"><span class="ivSw" style="background:rgba(34,197,94,.9)"></span> Calls IV%</div>
+            <div class="ivLeg"><span class="ivSw" style="background:rgba(255,255,255,.25)"></span> Moneyness (left=puts, right=calls)</div>
+          </div>
+          <div class="footNote" id="ivSkewNote"></div>
+        </div>
+        <div>
+          <div class="gexCanvasWrap">
+            <div id="ivTermChart"></div>
+          </div>
+          <div style="margin-top:.7rem">
+            <div class="ps" style="margin-bottom:.35rem;display:flex;align-items:center;justify-content:space-between;gap:.6rem;flex-wrap:wrap;">
+              <span>Intraday ATM IV &amp; Skew (hours/minutes)</span>
+              <button id="ivIntraResetBtn" class="pill" style="cursor:pointer">Reset intraday</button>
+            </div>
+            <div id="ivIntraChart"></div>
+          </div>
+          <div class="ivStats" id="ivStats"></div>
+          <div class="footNote" id="ivTermNote"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel" style="margin-top:1rem">
+    <div class="ph">
+      <div>
+        <div class="pt">0DTE Projection (Seasonality, 5m)</div>
+        <div class="ps">Intraday “expected path” built from historical 5‑minute behavior for the same weekday (SPX via SPY proxy).</div>
+      </div>
+      <div class="dteTools">
+        <select id="dteLookback" class="pill" style="padding:.28rem .6rem;border-radius:8px;font-weight:900;cursor:pointer;">
+          <option value="6">6 samples</option>
+          <option value="12" selected>12 samples</option>
+          <option value="18">18 samples</option>
+          <option value="24">24 samples</option>
+        </select>
+        <select id="dteWeekday" class="pill" style="padding:.28rem .6rem;border-radius:8px;font-weight:900;cursor:pointer;">
+          <option value="">Today (ET)</option>
+          <option value="0">Mon</option>
+          <option value="1">Tue</option>
+          <option value="2">Wed</option>
+          <option value="3">Thu</option>
+          <option value="4">Fri</option>
+        </select>
+        <button id="dteProjRefresh" class="pill" style="cursor:pointer">Refresh</button>
+        <div class="ps" id="dteProjStamp">—</div>
+      </div>
+    </div>
+    <div class="pb">
+      <div class="gexCanvasWrap">
+        <div id="dteProjChart"></div>
+      </div>
+      <div class="footNote" id="dteProjNote"></div>
+    </div>
+  </div>
+
+  <div class="panel" style="margin-top:1rem" id="terminology">
+    <div class="ph">
+      <div>
+        <div class="pt">Terminology &amp; Trading Guide (quick reference)</div>
+        <div class="ps">Plain-English meanings of the charts/levels/alerts on this page.</div>
+      </div>
+      <a class="pill" href="terminology.html">Full Terminology 📖</a>
+    </div>
+    <div class="pb" style="color:var(--muted);line-height:1.75;font-size:.88rem">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:.9rem;">
+        <div style="background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:1rem 1.1rem;">
+          <div style="font-weight:900;color:var(--text);margin-bottom:.35rem;">Net Gamma Curve (snapshot)</div>
+          <div><strong>Cyan curve</strong>: net gamma exposure by strike (SPY proxy). Above 0 = more stabilizing; below 0 = more “move-amplifying”.</div>
+          <div style="margin-top:.45rem;"><strong>How to use:</strong> premium-selling (condors/flies/credit spreads) tends to work best when price is inside walls and gamma near spot is positive.</div>
+        </div>
+
+        <div style="background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:1rem 1.1rem;">
+          <div style="font-weight:900;color:var(--text);margin-bottom:.35rem;">Key Levels (dashed lines)</div>
+          <div><strong>Put Wall</strong>: big put positioning level (often support).</div>
+          <div><strong>Call Wall</strong>: big call positioning level (often resistance).</div>
+          <div><strong>Flip</strong>: transition level where behavior can change (chop ↔ trend).</div>
+          <div><strong>Gamma Wall</strong>: largest positive gamma strike (often “stabilizing magnet”).</div>
+        </div>
+
+        <div style="background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:1rem 1.1rem;">
+          <div style="font-weight:900;color:var(--text);margin-bottom:.35rem;">Alert Status (live)</div>
+          <div><strong>Inside Walls</strong>: spot between Put/Call walls → usually more premium-seller friendly.</div>
+          <div><strong>Above Call Wall</strong>: upside continuation/tail risk → condors/flies: manage call side.</div>
+          <div><strong>Below Put Wall</strong>: downside continuation/tail risk → be careful with short puts.</div>
+          <div style="margin-top:.45rem;"><strong>Distances</strong> in parentheses show how far spot is from each level.</div>
+        </div>
+
+        <div style="background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:1rem 1.1rem;">
+          <div style="font-weight:900;color:var(--text);margin-bottom:.35rem;">Gamma Over Time (derived)</div>
+          <div><strong>Blue line</strong>: Total GEX ($M) over time (context).</div>
+          <div><strong>Spot/Flip/Walls</strong>: the key levels moving over time.</div>
+          <div><strong>Bottom bar strip</strong>: green=above Call Wall, red=below Put Wall, neutral=inside.</div>
+        </div>
+
+        <div style="background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:1rem 1.1rem;">
+          <div style="font-weight:900;color:var(--text);margin-bottom:.35rem;">IV Skew (two charts)</div>
+          <div><strong>Skew curve</strong>: puts vs calls IV% by moneyness (selected expiry). Puts rich = protection demand.</div>
+          <div><strong>Term structure</strong>: ATM IV% across expiries + skew magnitude bars.</div>
+          <div><strong>Intraday</strong>: tracks today’s ATM IV% and ATM skew (vol points) with an hours/minutes x-axis.</div>
+          <div style="margin-top:.45rem;"><strong>Hover tip:</strong> hover the skew curve to see exact moneyness + put/call IV at the cursor.</div>
+          <div><strong>Reset intraday</strong>: clears today’s stored intraday IV/skew history (useful if you want a fresh session).</div>
+          <div style="margin-top:.45rem;"><strong>How to use:</strong> if skew steepens quickly, be conservative with short put premium (wider strikes / smaller size).</div>
+        </div>
+
+        <div style="background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:1rem 1.1rem;">
+          <div style="font-weight:900;color:var(--text);margin-bottom:.35rem;">Full S&amp;P 500 Treemap + True Breadth</div>
+          <div><strong>Treemap</strong>: shows which parts of the index are leading/lagging today (color = daily % change).</div>
+          <div><strong>Sector filter + search</strong>: isolate leadership (e.g., Tech) or find single tickers fast.</div>
+          <div><strong>% Above 50D / 200D</strong>: “true breadth” across the full S&amp;P 500 — confirms whether the trend is broad or narrow.</div>
+          <div style="margin-top:.45rem;"><strong>How to use:</strong> when breadth is weak (low % above 50/200), be more cautious selling tight premium (condors/flies) because index moves can be dominated by a few names.</div>
+        </div>
+
+        <div style="background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:1rem 1.1rem;">
+          <div style="font-weight:900;color:var(--text);margin-bottom:.35rem;">SPX Greeks (proxy) — ATM + Nearby Strikes</div>
+          <div>Shows <strong>ATM Greeks</strong> (IV, Δ, Γ, V, Θ) and a short list of <strong>nearby strikes</strong> around spot.</div>
+          <div><strong>Δ values</strong> beside Greeks are changes since the last refresh (quick “is risk rising?” read).</div>
+          <div style="margin-top:.45rem;"><strong>How to use:</strong> before entering an iron fly/condor, check if <strong>ATM IV and skew are rising</strong> (tail risk), and if <strong>gamma is increasing</strong> (position becomes more sensitive to spot changes). For credit spreads, rising IV can help premium, but rising skew can warn against short puts.</div>
+        </div>
+
+        <div style="background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:1rem 1.1rem;">
+          <div style="font-weight:900;color:var(--text);margin-bottom:.35rem;">0DTE Projection (Seasonality, 5m)</div>
+          <div><strong>What it is:</strong> an “expected path” for today based on <strong>historical 5‑minute behavior</strong> for the same weekday (SPX via SPY proxy).</div>
+          <div><strong>Mean + bands:</strong> cyan = seasonality mean; green/red = typical range (P75/P25).</div>
+          <div style="margin-top:.45rem;"><strong>When to trade 0DTE (SPX):</strong></div>
+          <div>- <strong>TRADE (best)</strong>: price is <strong>inside the bands</strong> and <strong>reverting toward mean</strong>, while your gamma regime is <strong>Inside Walls / supportive</strong> → favors <strong>defined‑risk premium selling</strong> (conservative credit spreads / wider condors).</div>
+          <div>- <strong>CAUTION</strong>: price is <strong>near a band edge</strong> or skew/IV is rising fast → trade smaller and wider, avoid iron flies unless very stable.</div>
+          <div>- <strong>NO TRADE (short premium)</strong>: price <strong>breaks outside bands and holds / accelerates</strong> → treat as trend/expansion day; if you trade, consider a <strong>debit spread</strong> only with your directional confirmation.</div>
+          <div style="margin-top:.45rem;"><strong>Practical rule:</strong> use this as context, not a signal. Combine with Put/Call Walls + Flip and your risk limits.</div>
+        </div>
+
+        <div style="background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:1rem 1.1rem;">
+          <div style="font-weight:900;color:var(--text);margin-bottom:.35rem;">Strategy Suggestion (rules-based)</div>
+          <div>Uses: (1) inside/outside walls + (2) gamma sign near spot.</div>
+          <div style="margin-top:.45rem;"><strong>Trading translation:</strong> “TRADE” favors your premium-selling structures; “NO TRADE (for short premium)” means consider waiting or using a directional debit spread only with your entry signal.</div>
+        </div>
+      </div>
+
+      <div style="margin-top:1rem;">
+        <strong>Reminder:</strong> these tools describe the current options positioning regime; they’re best used with your normal confirmations (trend, support/resistance, time of day, risk limits).
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+// If you open this HTML via file://, relative /api/* calls will fail.
+// When served by live-server.py (http://127.0.0.1:3000/spx-hub.html) this stays empty.
+const API = (location && location.protocol && location.protocol.startsWith('http'))
+  ? ''
+  : 'http://127.0.0.1:3000';
+
+function fmtNum(x, d=2){
+  if (x === null || x === undefined) return '—';
+  const n = Number(x);
+  if (!isFinite(n)) return '—';
+  return n.toLocaleString(undefined, { maximumFractionDigits:d, minimumFractionDigits:d });
+}
+function fmtPct(x){
+  if (x === null || x === undefined) return '—';
+  const n = Number(x);
+  if (!isFinite(n)) return '—';
+  const s = (n>=0?'+':'') + n.toFixed(2) + '%';
+  return s;
+}
+function clsForPct(p){
+  if (p === null || p === undefined) return 'neu';
+  const n = Number(p);
+  if (!isFinite(n)) return 'neu';
+  return n>0 ? 'pos' : (n<0 ? 'neg' : 'neu');
+}
+
+function esc(s){
+  return String(s ?? '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('\"', '&quot;')
+    .replaceAll("'", '&#39;');
+}
+
+function fmtMaybe(x, d=2){
+  if (x === null || x === undefined) return '—';
+  const n = Number(x);
+  if (!isFinite(n)) return '—';
+  return fmtNum(n, d);
+}
+
+function setQuote(prefix, q){
+  const spotEl = document.getElementById(prefix+'Spot');
+  const chgEl  = document.getElementById(prefix+'Chg');
+  const price = q && (q.price ?? q.last ?? q.close);
+  const chg   = q && (q.change ?? q.chg);
+  const pct   = q && (q.change_pct ?? q.chg_pct);
+
+  spotEl.textContent = fmtNum(price, 2);
+  const p = (pct !== undefined && pct !== null) ? Number(pct) : null;
+  const txt = (chg !== undefined && chg !== null)
+    ? (fmtNum(chg, 2) + ' (' + fmtPct(p) + ')')
+    : (p !== null ? fmtPct(p) : '—');
+  chgEl.textContent = txt;
+  chgEl.className = 's ' + clsForPct(p);
+}
+
+function tileSpan(weight, idx){
+  // Stable, simple spans — larger tiles for a handful of symbols.
+  // (We can later replace with real SPX weights.)
+  const big = {'AAPL':1,'MSFT':1,'NVDA':1,'AMZN':1,'GOOGL':1,'META':1,'TSLA':1,'BRK-B':1,'JPM':1,'XOM':1,'UNH':1,'SPY':1};
+  const sym = idx && idx.symbol ? idx.symbol : null;
+  if (sym && big[sym]) return {c:4,r:2};
+  return {c:3,r:1};
+}
+
+function renderTreemap(items){
+  const grid = document.getElementById('tmGrid');
+  grid.innerHTML = '';
+  const sorted = (items||[]).slice().sort((a,b)=>Math.abs((b.change_pct||0)) - Math.abs((a.change_pct||0)));
+
+  sorted.forEach((it)=>{
+    const p = (it.change_pct === null || it.change_pct === undefined) ? null : Number(it.change_pct);
+    const tile = document.createElement('div');
+    tile.className = 'tile ' + (p>0 ? 'bgPos' : (p<0 ? 'bgNeg' : 'bgNeu'));
+    const span = (['AAPL','MSFT','NVDA','AMZN','GOOGL','META','TSLA','BRK-B','JPM','XOM','UNH','SPY'].indexOf(it.symbol)>=0)
+      ? {c:4,r:2}
+      : {c:3,r:1};
+    tile.style.gridColumn = 'span ' + span.c;
+    tile.style.gridRow = 'span ' + span.r;
+
+    tile.innerHTML =
+      '<div class="tileSym">'+ it.symbol +'</div>'+
+      '<div class="tileLbl">'+ (it.sector || '') +'</div>'+
+      '<div class="tileChg" style="color:'+(p>0?'#4ade80':(p<0?'#f87171':'rgba(255,255,255,.65)'))+'">'+ fmtPct(p) +'</div>';
+
+    tile.title = (it.label || it.symbol) + ' — ' + (it.sector||'') + ' — ' + fmtPct(p);
+    tile.addEventListener('click', ()=> {
+      // Try to jump to an existing asset details page if present; otherwise do nothing.
+      const url = 'asset-' + it.symbol.toLowerCase().replace('=f','f').replace('^','') + '.html';
+      window.location.href = url;
+    });
+    grid.appendChild(tile);
+  });
+}
+
+let _sp500Raw = null;
+let _sp500LastGreeks = null;
+
+function _fillSectorOptions(items){
+  const sel = document.getElementById('sp500Sector');
+  const prev = sel.value || '';
+  const sectors = Array.from(new Set((items||[]).map(x=>x.sector||'Unknown'))).sort();
+  const opts = ['<option value="">All sectors</option>'].concat(sectors.map(s=>'<option value="'+esc(s)+'">'+esc(s)+'</option>'));
+  sel.innerHTML = opts.join('');
+  sel.value = prev;
+}
+
+function renderSp500Breadth(b){
+  const pct50 = b && b.pct_above_50;
+  const pct200 = b && b.pct_above_200;
+  document.getElementById('sp500b50').style.width = Math.max(0, Math.min(100, Number(pct50)||0)) + '%';
+  document.getElementById('sp500b200').style.width = Math.max(0, Math.min(100, Number(pct200)||0)) + '%';
+  document.getElementById('sp500b50v').textContent = (pct50===undefined||pct50===null) ? '—' : (Number(pct50).toFixed(1)+'%');
+  document.getElementById('sp500b200v').textContent = (pct200===undefined||pct200===null) ? '—' : (Number(pct200).toFixed(1)+'%');
+}
+
+function renderSp500Treemap(items){
+  const grid = document.getElementById('sp500Grid');
+  grid.innerHTML = '';
+  const q = (document.getElementById('sp500Search').value || '').trim().toUpperCase();
+  const sec = (document.getElementById('sp500Sector').value || '').trim();
+
+  let rows = (items||[]).slice();
+  if (sec) rows = rows.filter(x => (x.sector||'') === sec);
+  if (q) rows = rows.filter(x => (x.symbol||'').toUpperCase().includes(q) || (x.label||'').toUpperCase().includes(q));
+  rows.sort((a,b)=> (b.change_pct||0) - (a.change_pct||0));
+
+  const maxShow = 520;
+  const shown = rows.slice(0, maxShow);
+  shown.forEach((it)=>{
+    const p = (it.change_pct === null || it.change_pct === undefined) ? null : Number(it.change_pct);
+    const tile = document.createElement('div');
+    tile.className = 'sp500Tile ' + (p>0 ? 'bgPos' : (p<0 ? 'bgNeg' : 'bgNeu'));
+    tile.innerHTML =
+      '<div class="sp500Top">'+
+        '<div class="sp500Sym">'+ esc(it.symbol||'') +'</div>'+
+        '<div class="sp500Chg" style="color:'+(p>0?'#4ade80':(p<0?'#f87171':'rgba(255,255,255,.65)'))+'">'+ fmtPct(p) +'</div>'+
+      '</div>'+
+      '<div class="sp500Sec">'+ esc(it.sector||'') +'</div>';
+    tile.title = (it.label||it.symbol) + ' — ' + (it.sector||'') + ' — ' + fmtPct(p);
+    tile.addEventListener('click', ()=> {
+      // No dedicated page for all tickers; just copy symbol to clipboard for speed.
+      try { navigator.clipboard.writeText(String(it.symbol||'')); } catch(e){}
+      toast('Copied', 'Symbol copied: <b>' + esc(String(it.symbol||'')) + '</b>', {ms: 1400});
+    });
+    grid.appendChild(tile);
+  });
+
+  document.getElementById('sp500Meta').innerHTML =
+    '<b>Showing</b> ' + shown.length + ' of ' + rows.length +
+    (rows.length > maxShow ? (' (top ' + maxShow + ' by daily move shown for performance)') : '') +
+    '. Click any tile to copy ticker.';
+}
+
+function renderSpxGreeks(row){
+  const stamp = document.getElementById('spxGreeksStamp');
+  const body = document.getElementById('spxGreeksBody');
+  const near = document.getElementById('spxGreeksNear');
+
+  if (!row){
+    stamp.textContent = '—';
+    body.innerHTML = '<span class="error">No data.</span>';
+    near.textContent = '';
+    return;
+  }
+
+  if (row.status === 'computing'){
+    stamp.textContent = row.timestamp ? (new Date(row.timestamp).toLocaleTimeString([], {hour:'numeric', minute:'2-digit'})) : '—';
+    body.innerHTML = '<b>Computing Greeks…</b> First run can take ~30–90s. This panel will auto-refresh.';
+    near.textContent = '';
+    return;
+  }
+
+  if (row.no_options){
+    stamp.textContent = row && row.timestamp ? row.timestamp : '—';
+    body.innerHTML = '<span class="error">No options data available.</span>';
+    near.textContent = '';
+    return;
+  }
+
+  const req = row.requested_symbol || row.symbol;
+  const proxy = row.proxy_symbol || row.symbol;
+  const spot = row.spot;
+  const exp = row.expiry;
+  const dte = row.dte;
+  const K = row.atm_strike;
+
+  const call = row.atm && row.atm.call ? row.atm.call : {};
+  const put  = row.atm && row.atm.put ? row.atm.put : {};
+
+  function dlt(path, cur){
+    if (!_sp500LastGreeks) return null;
+    const prev = _sp500LastGreeks[path];
+    if (prev === undefined || prev === null || cur === undefined || cur === null) return null;
+    const dd = Number(cur) - Number(prev);
+    if (!isFinite(dd) || Math.abs(dd) < 1e-9) return 0;
+    return dd;
+  }
+
+  const snap = {
+    'call.iv': call.iv, 'call.delta': call.delta, 'call.gamma': call.gamma, 'call.vega': call.vega, 'call.theta': call.theta,
+    'put.iv': put.iv, 'put.delta': put.delta, 'put.gamma': put.gamma, 'put.vega': put.vega, 'put.theta': put.theta,
+  };
+  _sp500LastGreeks = snap;
+
+  function fmtD(x, dec=4){
+    if (x===undefined||x===null) return '—';
+    const n = Number(x);
+    if (!isFinite(n)) return '—';
+    return n.toFixed(dec);
+  }
+  function fmtDelta(v, dec=4){
+    const dd = dlt(v, snap[v]);
+    if (dd === null) return '';
+    if (dd === 0) return ' <span class="neu">(Δ 0)</span>';
+    const cls = dd > 0 ? 'pos' : 'neg';
+    return ' <span class="'+cls+'">(Δ ' + (dd>0?'+':'') + dd.toFixed(dec) + ')</span>';
+  }
+
+  stamp.textContent = row.timestamp ? (new Date(row.timestamp).toLocaleTimeString([], {hour:'numeric', minute:'2-digit'}) ) : '—';
+  body.innerHTML =
+    '<b>'+ esc(String(req)) +'</b> via <b>'+ esc(String(proxy)) +'</b> · Spot <b>'+ fmtNum(spot,2) +'</b> · Exp <b>'+ esc(String(exp||'—')) +'</b> · DTE <b>'+ esc(String(dte ?? '—')) +'</b> · ATM <b>'+ fmtNum(K,2) +'</b>' +
+    '<div style="margin-top:.6rem">' +
+    '<div class="k">ATM Call</div>' +
+    '<div style="font-family:Consolas,monospace;font-weight:900;line-height:1.6">' +
+      'IV ' + fmtNum(call.iv,2) + '%'+ fmtDelta('call.iv',2) + ' · ' +
+      'Δ ' + fmtD(call.delta,4) + fmtDelta('call.delta',4) + ' · ' +
+      'Γ ' + fmtD(call.gamma,6) + fmtDelta('call.gamma',6) + ' · ' +
+      'V ' + fmtD(call.vega,4) + fmtDelta('call.vega',4) + ' · ' +
+      'Θ ' + fmtD(call.theta,6) + fmtDelta('call.theta',6) +
+    '</div>' +
+    '<div class="k" style="margin-top:.5rem">ATM Put</div>' +
+    '<div style="font-family:Consolas,monospace;font-weight:900;line-height:1.6">' +
+      'IV ' + fmtNum(put.iv,2) + '%'+ fmtDelta('put.iv',2) + ' · ' +
+      'Δ ' + fmtD(put.delta,4) + fmtDelta('put.delta',4) + ' · ' +
+      'Γ ' + fmtD(put.gamma,6) + fmtDelta('put.gamma',6) + ' · ' +
+      'V ' + fmtD(put.vega,4) + fmtDelta('put.vega',4) + ' · ' +
+      'Θ ' + fmtD(put.theta,6) + fmtDelta('put.theta',6) +
+    '</div>' +
+    '</div>';
+
+  const ks = (row.near_strikes || []).map(x=>Number(x)).filter(x=>isFinite(x));
+  near.innerHTML = ks.length
+    ? ('<b>Nearby strikes:</b> ' + ks.map(x=>fmtNum(x,0)).join(', '))
+    : '';
+}
+
+async function loadSp500Map(nocache=false){
+  try{
+    document.getElementById('sp500Stamp').textContent = 'Loading…';
+    const res = await fetch(API + '/api/sp500-map' + (nocache ? '?nocache=1' : ''), { cache:'no-store' });
+    const d = await res.json();
+    _sp500Raw = d;
+    if (d && d.ok){
+      renderSp500Breadth(d.breadth);
+      _fillSectorOptions(d.treemap || []);
+      renderSp500Treemap(d.treemap || []);
+      document.getElementById('sp500Stamp').textContent = 'Updated ' + (new Date(d.timestamp)).toLocaleTimeString([], {hour:'numeric', minute:'2-digit'});
+    } else {
+      const st = d && d.status ? String(d.status) : '';
+      if (st === 'computing'){
+        document.getElementById('sp500Meta').innerHTML =
+          '<b>Computing full SP500 map…</b> First run can take 1–3 minutes. This panel will auto-refresh.';
+        document.getElementById('sp500Stamp').textContent = 'Computing…';
+      } else {
+        document.getElementById('sp500Meta').innerHTML = '<span class="error">' + esc(d && d.error ? d.error : 'Failed to load SP500 map') + '</span>';
+        document.getElementById('sp500Stamp').textContent = '—';
+      }
+    }
+  }catch(e){
+    document.getElementById('sp500Meta').innerHTML = '<span class="error">Failed to load SP500 map.</span>';
+    document.getElementById('sp500Stamp').textContent = '—';
+  }
+}
+
+async function loadSpxGreeks(nocache=false){
+  try{
+    const res = await fetch(API + '/api/greeks?symbols=SPX' + (nocache ? '&nocache=1' : ''), { cache:'no-store' });
+    const d = await res.json();
+    const row = d && d.assets && d.assets[0] ? d.assets[0] : null;
+    renderSpxGreeks(row);
+  }catch(e){
+    document.getElementById('spxGreeksBody').innerHTML = '<span class="error">Failed to load Greeks.</span>';
+  }
+}
+
+function renderBreadth(b){
+  const pct50 = b && b.pct_above_50;
+  const pct200 = b && b.pct_above_200;
+  document.getElementById('b50').style.width = Math.max(0, Math.min(100, Number(pct50)||0)) + '%';
+  document.getElementById('b200').style.width = Math.max(0, Math.min(100, Number(pct200)||0)) + '%';
+  document.getElementById('b50v').textContent = (pct50===undefined||pct50===null) ? '—' : (Number(pct50).toFixed(1)+'%');
+  document.getElementById('b200v').textContent = (pct200===undefined||pct200===null) ? '—' : (Number(pct200).toFixed(1)+'%');
+
+  document.getElementById('breadthTop').textContent =
+    (pct50===undefined||pct50===null||pct200===undefined||pct200===null)
+      ? '—' : (Number(pct50).toFixed(0) + '% / ' + Number(pct200).toFixed(0) + '%');
+  document.getElementById('breadthSub').textContent =
+    (b && b.computed_count !== undefined)
+      ? ('Computed on ' + b.computed_count + ' symbols')
+      : '—';
+}
+
+function drawGammaCurve(canvas, row){
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return;
+  const dpr = window.devicePixelRatio || 1;
+  const cssW = canvas.clientWidth || 600;
+  const cssH = canvas.clientHeight || 260;
+  canvas.width = Math.floor(cssW * dpr);
+  canvas.height = Math.floor(cssH * dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+  // Background
+  ctx.clearRect(0,0,cssW,cssH);
+  ctx.fillStyle = '#070d18';
+  ctx.fillRect(0,0,cssW,cssH);
+
+  const PAD_L=46, PAD_R=14, PAD_T=12, PAD_B=34;
+  const W = cssW, H = cssH;
+  const plotW = W - PAD_L - PAD_R;
+  const plotH = H - PAD_T - PAD_B;
+
+  const strikes = (row && row.strikes) ? row.strikes.map(Number) : [];
+  const gex = (row && row.gex) ? row.gex.map(Number) : [];
+  if (!strikes.length || strikes.length !== gex.length){
+    ctx.fillStyle = 'rgba(255,255,255,.6)';
+    ctx.font = '12px sans-serif';
+    ctx.fillText('No gamma data available', PAD_L, PAD_T + 18);
+    return;
+  }
+
+  const minX = Math.min.apply(null, strikes);
+  const maxX = Math.max.apply(null, strikes);
+  let minY = Math.min.apply(null, gex);
+  let maxY = Math.max.apply(null, gex);
+  if (!isFinite(minY) || !isFinite(maxY) || minY === maxY){
+    minY = -1; maxY = 1;
+  }
+  // Symmetric y-range for easier zero-gamma visual
+  const A = Math.max(Math.abs(minY), Math.abs(maxY)) || 1;
+  minY = -A; maxY = A;
+
+  const xPx = (x)=> PAD_L + ( (x - minX) / (maxX - minX || 1) ) * plotW;
+  const yPx = (y)=> PAD_T + (1 - ( (y - minY) / (maxY - minY || 1) )) * plotH;
+
+  // Grid + axes
+  ctx.strokeStyle = 'rgba(255,255,255,.08)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  for (let i=0;i<=4;i++){
+    const yy = PAD_T + (plotH/4)*i;
+    ctx.moveTo(PAD_L, yy); ctx.lineTo(W-PAD_R, yy);
+  }
+  for (let i=0;i<=5;i++){
+    const xx = PAD_L + (plotW/5)*i;
+    ctx.moveTo(xx, PAD_T); ctx.lineTo(xx, H-PAD_B);
+  }
+  ctx.stroke();
+
+  // Zero line
+  ctx.strokeStyle = 'rgba(167,139,250,.55)';
+  ctx.setLineDash([6,4]);
+  ctx.beginPath();
+  ctx.moveTo(PAD_L, yPx(0)); ctx.lineTo(W-PAD_R, yPx(0));
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Area fill
+  ctx.beginPath();
+  ctx.moveTo(xPx(strikes[0]), yPx(0));
+  for (let i=0;i<strikes.length;i++){
+    ctx.lineTo(xPx(strikes[i]), yPx(gex[i]));
+  }
+  ctx.lineTo(xPx(strikes[strikes.length-1]), yPx(0));
+  ctx.closePath();
+  const grad = ctx.createLinearGradient(0, PAD_T, 0, H-PAD_B);
+  grad.addColorStop(0, 'rgba(34,197,94,.12)');
+  grad.addColorStop(0.5, 'rgba(167,139,250,.06)');
+  grad.addColorStop(1, 'rgba(248,113,113,.12)');
+  ctx.fillStyle = grad;
+  ctx.fill();
+
+  // Curve line
+  ctx.strokeStyle = 'rgba(34,211,238,.95)';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  for (let i=0;i<strikes.length;i++){
+    const xx = xPx(strikes[i]);
+    const yy = yPx(gex[i]);
+    if (i===0) ctx.moveTo(xx,yy); else ctx.lineTo(xx,yy);
+  }
+  ctx.stroke();
+
+  // Helper to draw vertical level lines
+  function vLine(level, color, label){
+    if (level === null || level === undefined) return;
+    const x = xPx(Number(level));
+    if (!isFinite(x)) return;
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([5,4]);
+    ctx.beginPath();
+    ctx.moveTo(x, PAD_T); ctx.lineTo(x, H-PAD_B);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = color;
+    ctx.font = '11px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(label, x, H - 12);
+  }
+
+  vLine(row.flip_level, 'rgba(251,191,36,.95)', 'Flip');
+  vLine(row.put_wall, 'rgba(248,113,113,.95)', 'Put Wall');
+  vLine(row.call_wall, 'rgba(34,197,94,.95)', 'Call Wall');
+  vLine(row.gamma_wall, 'rgba(167,139,250,.95)', 'Gamma Wall');
+
+  // Y labels (top/0/bottom)
+  ctx.fillStyle = 'rgba(255,255,255,.6)';
+  ctx.font = '11px sans-serif';
+  ctx.textAlign = 'right';
+  ctx.fillText((maxY).toFixed(1) + ' $M', PAD_L-6, PAD_T+10);
+  ctx.fillText('0', PAD_L-6, yPx(0)+4);
+  ctx.fillText((minY).toFixed(1) + ' $M', PAD_L-6, H-PAD_B);
+}
+
+function renderGexLevels(row){
+  const el = document.getElementById('gexLevels');
+  const chips = document.getElementById('gexChips');
+  if (!row || row.no_options){
+    el.innerHTML = '<div class="lvlItem"><div class="lvlK">No Options</div><div class="lvlV">—</div><div class="lvlS">Gamma data unavailable for this symbol.</div></div>';
+    chips.innerHTML = '';
+    return;
+  }
+  const levels = [
+    {k:'Spot', v: fmtMaybe(row.spot, 2), s:'Current proxy price'},
+    {k:'Flip', v: fmtMaybe(row.flip_level, 2), s:'Gamma changes sign around here'},
+    {k:'Put Wall', v: fmtMaybe(row.put_wall, 2), s:'Large put OI level (support)'},
+    {k:'Call Wall', v: fmtMaybe(row.call_wall, 2), s:'Large call OI level (resistance)'},
+    {k:'Gamma Wall', v: fmtMaybe(row.gamma_wall, 2), s:'Peak absolute gamma strike'},
+    {k:'Total GEX', v: fmtMaybe(row.total_gex_m, 2) + ' $M', s:'Dealer gamma across strikes'},
+    {k:'PCR', v: (row.pcr===null||row.pcr===undefined) ? '—' : String(row.pcr), s:'Put/Call open-interest ratio'},
+  ];
+  el.innerHTML = levels.map(it =>
+    '<div class="lvlItem"><div class="lvlK">'+it.k+'</div><div class="lvlV">'+it.v+'</div><div class="lvlS">'+it.s+'</div></div>'
+  ).join('');
+
+  chips.innerHTML = '';
+  const regime = (row.regime || '—');
+  const rg = document.createElement('div');
+  rg.className = 'chip ' + (String(regime).toLowerCase().indexOf('long')>=0 ? 'pos' : (String(regime).toLowerCase().indexOf('short')>=0 ? 'neg' : 'neu'));
+  rg.textContent = regime;
+  chips.appendChild(rg);
+
+  const exp = document.createElement('div');
+  exp.className = 'chip neu';
+  const expiries = (row.expiries && row.expiries.length) ? (row.expiries[0] + (row.expiries.length>1 ? (' +' + (row.expiries.length-1)) : '')) : '—';
+  exp.textContent = 'Exp ' + expiries;
+  chips.appendChild(exp);
+}
+
+let _gexTs = {
+  chart:null,
+  seriesGex:null,
+  seriesFlip:null,
+  seriesSpot:null,
+  seriesPut:null,
+  seriesCall:null,
+  seriesReg:null,
+  startedAt:null,
+  points:0,
+  lastT:0,
+  buf:[], // {t,gex,spot,flip,putw,callw,reg}
+};
+
+function _gexStoreKey(){
+  const d = new Date();
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth()+1).padStart(2,'0');
+  const dd = String(d.getDate()).padStart(2,'0');
+  return `spxhub:gexTime:SPY:${yyyy}-${mm}-${dd}`;
+}
+
+function _gexLoadStored(){
+  try{
+    const raw = localStorage.getItem(_gexStoreKey());
+    if (!raw) return [];
+    const arr = JSON.parse(raw);
+    if (!Array.isArray(arr)) return [];
+    // Validate shape lightly
+    return arr.filter(p => p && typeof p.t === 'number' && isFinite(p.t)).slice(-2000);
+  }catch(e){
+    return [];
+  }
+}
+
+function _gexSaveStored(){
+  try{
+    const buf = (_gexTs.buf || []).slice(-2000);
+    localStorage.setItem(_gexStoreKey(), JSON.stringify(buf));
+  }catch(e){
+    // ignore quota / blocked storage
+  }
+}
+
+function _gexWindowSeconds(){
+  const sel = document.getElementById('gexWindowSel');
+  const m = sel ? Number(sel.value) : 60;
+  return Math.max(5, (isFinite(m) ? m : 60) * 60);
+}
+
+function initGexTimeChart(){
+  const el = document.getElementById('gexTsChart');
+  el.innerHTML = '';
+  const _localTz = (() => {
+    try { return Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch(e){ return ''; }
+  })();
+  const _fmtAxisTime = (tsSeconds) => {
+    const ts = Number(tsSeconds);
+    if (!isFinite(ts)) return '';
+    const d = new Date(ts * 1000);
+    // Force a consistent, readable intraday label like "8:00 AM"
+    return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  };
+  const chart = LightweightCharts.createChart(el, {
+    layout: { background: { color:'#070d18' }, textColor:'rgba(255,255,255,.75)' },
+    grid: { vertLines:{ color:'rgba(255,255,255,.06)' }, horzLines:{ color:'rgba(255,255,255,.06)' } },
+    rightPriceScale: { borderColor:'rgba(255,255,255,.12)', visible:true },
+    leftPriceScale:  { borderColor:'rgba(255,255,255,.12)', visible:true },
+    timeScale: {
+      borderColor:'rgba(255,255,255,.12)',
+      timeVisible:true,
+      secondsVisible:false,
+      // Axis tick labels formatter (this is what controls the x-axis).
+      tickMarkFormatter: (time) => {
+        if (typeof time === 'number') return _fmtAxisTime(time);
+        if (time && typeof time === 'object' && 'year' in time && 'month' in time && 'day' in time) {
+          const d = new Date(Number(time.year), Number(time.month) - 1, Number(time.day));
+          return d.toLocaleDateString([], { month: 'short', day: 'numeric' });
+        }
+        return '';
+      },
+    },
+    crosshair: { mode: 1 },
+    localization: {
+      timeFormatter: (time) => {
+        // lightweight-charts passes UNIX timestamp (seconds) for numeric time.
+        const ts = Number(time);
+        if (!isFinite(ts)) return '';
+        return _fmtAxisTime(ts);
+      },
+    },
+  });
+  // Right scale: Total GEX ($M)
+  const sGex  = chart.addLineSeries({ color:'rgba(34,211,238,.95)', lineWidth:2, title:'Total GEX ($M)' });
+  // Left scale: Spot + levels (priced in SPY dollars)
+  const sSpot = chart.addLineSeries({ color:'rgba(255,255,255,.55)', lineWidth:1, title:'Spot', priceScaleId:'left' });
+  const sFlip = chart.addLineSeries({ color:'rgba(251,191,36,.9)', lineWidth:1, lineStyle:2, title:'Flip', priceScaleId:'left' });
+  const sPut  = chart.addLineSeries({ color:'rgba(248,113,113,.8)', lineWidth:1, lineStyle:2, title:'Put Wall', priceScaleId:'left' });
+  const sCall = chart.addLineSeries({ color:'rgba(34,197,94,.8)', lineWidth:1, lineStyle:2, title:'Call Wall', priceScaleId:'left' });
+  // Regime strip (colored bars): -1 below put wall, 0 inside, +1 above call wall
+  const sReg  = chart.addHistogramSeries({
+    priceScaleId: '',
+    priceFormat: { type:'volume' },
+    base: 0,
+  });
+  sReg.priceScale().applyOptions({ scaleMargins: { top: 0.88, bottom: 0.0 } });
+
+  const ro = new ResizeObserver(()=> chart.applyOptions({ width: el.clientWidth, height: el.clientHeight }));
+  ro.observe(el);
+
+  _gexTs.chart = chart;
+  _gexTs.seriesGex = sGex;
+  _gexTs.seriesFlip = sFlip;
+  _gexTs.seriesSpot = sSpot;
+  _gexTs.seriesPut = sPut;
+  _gexTs.seriesCall = sCall;
+  _gexTs.seriesReg = sReg;
+  _gexTs.startedAt = Date.now();
+  _gexTs.points = 0;
+  _gexTs.lastT = 0;
+  _gexTs.buf = [];
+
+  // Show timezone in header meta if available
+  const meta = document.getElementById('gexTimeMeta');
+  if (meta && _localTz) meta.textContent = `Timezone: ${_localTz}`;
+}
+
+function _gexRegime(row){
+  const spot = (row && row.spot !== undefined && row.spot !== null) ? Number(row.spot) : null;
+  const putw = (row && row.put_wall !== undefined && row.put_wall !== null) ? Number(row.put_wall) : null;
+  const callw= (row && row.call_wall !== undefined && row.call_wall !== null) ? Number(row.call_wall) : null;
+  if (spot === null || !isFinite(spot) || putw === null || !isFinite(putw) || callw === null || !isFinite(callw)) return 0;
+  if (spot < putw) return -1;
+  if (spot > callw) return 1;
+  return 0;
+}
+
+function _setRegimeChip(reg){
+  const chip = document.getElementById('gexRegimeChip');
+  if (!chip) return;
+  if (reg === -1){ chip.className = 'chip neg'; chip.textContent = 'Below Put Wall'; return; }
+  if (reg === 1){ chip.className = 'chip pos'; chip.textContent = 'Above Call Wall'; return; }
+  chip.className = 'chip neu'; chip.textContent = 'Inside Walls';
+}
+
+function _rerenderGexTime(){
+  if (!_gexTs.chart) return;
+  const nowT = _gexTs.lastT || Math.floor(Date.now()/1000);
+  const win = _gexWindowSeconds();
+  const minT = nowT - win;
+
+  const buf = (_gexTs.buf || []).filter(p => p.t >= minT);
+  _gexTs.buf = buf;
+
+  const gexData = [];
+  const spotData = [];
+  const flipData = [];
+  const putData = [];
+  const callData = [];
+  const regData = [];
+  for (const p of buf){
+    if (p.gex !== null && isFinite(p.gex)) gexData.push({ time:p.t, value:p.gex });
+    if (p.spot !== null && isFinite(p.spot)) spotData.push({ time:p.t, value:p.spot });
+    if (p.flip !== null && isFinite(p.flip)) flipData.push({ time:p.t, value:p.flip });
+    if (p.putw !== null && isFinite(p.putw)) putData.push({ time:p.t, value:p.putw });
+    if (p.callw !== null && isFinite(p.callw)) callData.push({ time:p.t, value:p.callw });
+
+    const c = (p.reg === -1) ? 'rgba(248,113,113,.65)' : (p.reg === 1) ? 'rgba(34,197,94,.65)' : 'rgba(167,139,250,.28)';
+    regData.push({ time:p.t, value: 1, color: c });
+  }
+
+  _gexTs.seriesGex.setData(gexData);
+  _gexTs.seriesSpot.setData(spotData);
+  _gexTs.seriesFlip.setData(flipData);
+  _gexTs.seriesPut.setData(putData);
+  _gexTs.seriesCall.setData(callData);
+  _gexTs.seriesReg.setData(regData);
+
+  // Fit time scale to data
+  try { _gexTs.chart.timeScale().fitContent(); } catch(e){}
+
+  // Meta: range + outside-walls %
+  if (buf.length){
+    const t0 = buf[0].t;
+    const t1 = buf[buf.length-1].t;
+    const range = `${new Date(t0*1000).toLocaleTimeString([], {hour:'numeric', minute:'2-digit'})}–${new Date(t1*1000).toLocaleTimeString([], {hour:'numeric', minute:'2-digit'})}`;
+    const outside = buf.filter(p => p.reg === -1 || p.reg === 1).length;
+    const outsidePct = (outside / Math.max(1, buf.length)) * 100;
+    // latest gex
+    const last = buf[buf.length-1];
+    const gTxt = (last.gex !== null && isFinite(last.gex)) ? `${Number(last.gex).toFixed(0)} $M` : '—';
+    document.getElementById('gexTimeMeta').textContent =
+      `Range: ${range} · Outside walls: ${outsidePct.toFixed(0)}% · Total GEX: ${gTxt} · Points: ${buf.length}`;
+  }
+}
+
+function pushGexTimePoint(row, t){
+  if (!_gexTs.chart) initGexTimeChart();
+  const tt = Number(t);
+  if (!isFinite(tt) || tt <= 0) return;
+  if (_gexTs.lastT && Math.abs(tt - _gexTs.lastT) < 10) return; // avoid duplicates
+  _gexTs.lastT = tt;
+  const g = (row && row.total_gex_m !== undefined && row.total_gex_m !== null) ? Number(row.total_gex_m) : null;
+  const spot = (row && row.spot !== undefined && row.spot !== null) ? Number(row.spot) : null;
+  const flip = (row && row.flip_level !== undefined && row.flip_level !== null) ? Number(row.flip_level) : null;
+  const putw = (row && row.put_wall !== undefined && row.put_wall !== null) ? Number(row.put_wall) : null;
+  const callw= (row && row.call_wall !== undefined && row.call_wall !== null) ? Number(row.call_wall) : null;
+  const reg = _gexRegime(row);
+
+  _gexTs.buf.push({ t:tt, gex:g, spot, flip, putw, callw, reg });
+  // Keep up to 6 hours of buffer so window switch is instant
+  const minKeep = tt - 6 * 3600;
+  if (_gexTs.buf.length > 2000) _gexTs.buf = _gexTs.buf.slice(-1200);
+  while (_gexTs.buf.length && _gexTs.buf[0].t < minKeep) _gexTs.buf.shift();
+
+  _gexTs.points += 1;
+  _setRegimeChip(reg);
+  _rerenderGexTime();
+  _gexSaveStored();
+}
+
+function _nearSpotGammaSign(row){
+  try{
+    const strikes = (row && row.strikes) ? row.strikes.map(Number) : [];
+    const gex = (row && row.gex) ? row.gex.map(Number) : [];
+    const spot = row && row.spot !== undefined && row.spot !== null ? Number(row.spot) : null;
+    if (!strikes.length || strikes.length !== gex.length || spot === null || !isFinite(spot)) return null;
+    // average of 3 nearest strikes to reduce noise
+    const idxs = strikes
+      .map((k,i)=>({i, d: Math.abs(k-spot)}))
+      .sort((a,b)=>a.d-b.d)
+      .slice(0,3)
+      .map(x=>x.i);
+    const vals = idxs.map(i=>Number(gex[i])).filter(v=>isFinite(v));
+    if (!vals.length) return null;
+    const avg = vals.reduce((a,b)=>a+b,0) / vals.length;
+    if (avg > 0.05) return 1;
+    if (avg < -0.05) return -1;
+    return 0;
+  }catch(e){
+    return null;
+  }
+}
+
+function renderStrategySuggestion(row){
+  const titleEl = document.getElementById('stratTitle');
+  const subEl = document.getElementById('stratSub');
+  const listEl = document.getElementById('stratList');
+  const chipsEl = document.getElementById('stratChips');
+  if (!titleEl || !subEl || !chipsEl || !listEl) return;
+
+  if (!row || row.no_options){
+    titleEl.textContent = 'NO TRADE (gamma unavailable)';
+    subEl.textContent = 'This signal needs a gamma snapshot. Use price action + VIX + levels instead.';
+    subEl.className = 's neg';
+    listEl.style.display = 'block';
+    listEl.innerHTML = '<strong>Suggested:</strong> wait for data or use your usual non-gamma setup rules.';
+    chipsEl.innerHTML = '';
+    return;
+  }
+
+  const reg = _gexRegime(row); // -1 below put wall, 0 inside, +1 above call wall
+  const nearSign = _nearSpotGammaSign(row); // -1 / 0 / 1
+  const regimeLabel = reg === -1 ? 'Below Put Wall' : reg === 1 ? 'Above Call Wall' : 'Inside Walls';
+  const gammaLabel = nearSign === 1 ? 'Pos gamma near spot' : nearSign === -1 ? 'Neg gamma near spot' : 'Mixed gamma near spot';
+
+  // Make it explicit: TRADE / CAUTION / NO TRADE + recommended strategy types.
+  // This is NOT financial advice; it’s a rules-based “environment classifier”.
+  let title = 'CAUTION';
+  let sub = 'Keep risk defined and manage early.';
+  let cls = 's neu';
+  let rec = [];
+  let avoid = [];
+
+  // Helper heuristics for your preferred strategies
+  // - Inside walls + pos gamma near spot: premium-selling favored.
+  // - Outside walls OR neg gamma near spot: avoid tight short-premium (condors/flies).
+  const inside = (reg === 0);
+  const outside = (reg !== 0);
+  const posG = (nearSign === 1);
+  const negG = (nearSign === -1);
+
+  if (inside && posG){
+    title = 'TRADE: premium-selling favored';
+    sub = 'Chop / mean-reversion conditions more likely.';
+    cls = 's pos';
+    rec = [
+      '<strong>Bullish put credit spread</strong> (primary)',
+      '<strong>Iron condor</strong> (wings outside walls)',
+      '<strong>Iron butterfly</strong> (only if spot is stable near a magnet like Flip/Gamma Wall)',
+    ];
+    avoid = [
+      'Very tight wings (risk of quick stop-outs)',
+    ];
+  } else if (outside && posG){
+    title = 'CAUTION: trade selectively';
+    sub = 'Gamma supportive, but being outside walls increases tail risk / continuation.';
+    cls = 's neu';
+    rec = [
+      '<strong>Defined-risk bullish credit spread</strong> (wider, conservative)',
+      '<strong>Debit spread</strong> (if you see clean trend continuation)',
+    ];
+    avoid = [
+      '<strong>Iron butterfly</strong> (too sensitive to expansion)',
+      '<strong>Tight iron condors</strong> (one side already threatened)',
+    ];
+  } else if (inside && negG){
+    title = 'CAUTION: expansion risk';
+    sub = 'Inside walls, but negative gamma near spot can still expand ranges.';
+    cls = 's neg';
+    rec = [
+      '<strong>Bullish credit spread</strong> (wider / smaller size)',
+      '<strong>Debit spread</strong> (if a breakout confirms)',
+    ];
+    avoid = [
+      '<strong>Iron butterfly</strong>',
+      'Tight condors',
+    ];
+  } else if (outside && negG){
+    title = 'NO TRADE (for short premium)';
+    sub = 'Outside walls + negative gamma = higher probability of fast directional moves.';
+    cls = 's neg';
+    rec = [
+      '<strong>Debit spreads</strong> (directional only, if your entry signal triggers)',
+      'Otherwise: <strong>wait</strong> for re-entry inside walls',
+    ];
+    avoid = [
+      '<strong>Credit spreads / condors / iron flies</strong> (tight premium-selling is highest risk here)',
+    ];
+  } else {
+    title = 'CAUTION';
+    sub = 'Mixed signals: use your normal confirmations.';
+    cls = 's neu';
+    rec = [
+      '<strong>Bullish credit spread</strong> (conservative)',
+      'Or <strong>wait</strong> until regime is clearer',
+    ];
+    avoid = [
+      'Very tight premium-selling structures',
+    ];
+  }
+
+  titleEl.textContent = title;
+  subEl.textContent = sub;
+  subEl.className = cls;
+
+  listEl.style.display = 'block';
+  listEl.innerHTML =
+    '<div><strong>Recommended:</strong><br>' + rec.map(x => '• ' + x).join('<br>') + '</div>' +
+    (avoid.length ? ('<div style="margin-top:.45rem"><strong>Avoid:</strong><br>' + avoid.map(x => '• ' + x).join('<br>') + '</div>') : '');
+
+  chipsEl.innerHTML = '';
+  const c1 = document.createElement('div'); c1.className = 'chip ' + (reg===0 ? 'neu' : (reg===1 ? 'pos' : 'neg')); c1.textContent = regimeLabel; chipsEl.appendChild(c1);
+  const c2 = document.createElement('div'); c2.className = 'chip ' + (nearSign===1 ? 'pos' : (nearSign===-1 ? 'neg' : 'neu')); c2.textContent = gammaLabel; chipsEl.appendChild(c2);
+  const c3 = document.createElement('div'); c3.className = 'chip neu'; c3.textContent = 'SPY proxy'; chipsEl.appendChild(c3);
+}
+
+function toast(kind, title, body){
+  const wrap = document.getElementById('toastWrap');
+  if (!wrap) return;
+  const el = document.createElement('div');
+  el.className = 'toast ' + (kind || '');
+  el.innerHTML = `<div class="toastTitle">${title}</div><div class="toastBody">${body}</div>`;
+  wrap.appendChild(el);
+  setTimeout(()=> { try{ el.style.opacity='0'; el.style.transition='opacity .35s'; }catch(e){} }, 3600);
+  setTimeout(()=> { try{ wrap.removeChild(el); }catch(e){} }, 4200);
+}
+
+function _actionLines(type){
+  // Simple “what to do” guidance tailored to your preferred structures.
+  if (type === 'below_put') {
+    return [
+      '<strong>Action:</strong> avoid adding tight short put premium.',
+      'Condors/flys: consider reducing/hedging put side.',
+      'Credit spreads: widen strikes or cut size; watch acceleration risk.',
+    ];
+  }
+  if (type === 'above_call') {
+    return [
+      '<strong>Action:</strong> avoid adding tight short call premium.',
+      'Condors/flys: manage call side first; don’t wait for max pain.',
+      'Debit spreads: only if your trend/entry confirms.',
+    ];
+  }
+  if (type === 'flip') {
+    return [
+      '<strong>Action:</strong> treat as a transition zone.',
+      'Premium selling: prefer smaller size until direction stabilizes.',
+      'Directional: wait for confirmation (break/hold).',
+    ];
+  }
+  if (type === 'inside') {
+    return [
+      '<strong>Action:</strong> environment is more premium‑seller friendly.',
+      'Condors/flies: still keep wings outside walls; take profits early.',
+    ];
+  }
+  return ['<strong>Action:</strong> keep risk defined and manage early.'];
+}
+
+function _gexAlertKey(){ return 'spxhub:gex:lastState:SPY'; }
+
+function renderAlertStatus(row){
+  const el = document.getElementById('gexAlertStatus');
+  if (!el) return;
+  if (!row || row.no_options){
+    el.innerHTML = '<span class="warn">Status</span>: gamma unavailable';
+    return;
+  }
+  const spot = Number(row.spot);
+  const putw = row.put_wall !== null && row.put_wall !== undefined ? Number(row.put_wall) : null;
+  const callw= row.call_wall !== null && row.call_wall !== undefined ? Number(row.call_wall) : null;
+  const flip = row.flip_level !== null && row.flip_level !== undefined ? Number(row.flip_level) : null;
+  const side = _gexRegime(row);
+  const sideLbl = side === 0 ? '<span class="ok">Inside Walls</span>' : (side === 1 ? '<span class="warn">Above Call Wall</span>' : '<span class="bad">Below Put Wall</span>');
+
+  const dPut = (putw !== null && isFinite(putw) && isFinite(spot)) ? (spot - putw) : null;
+  const dCall = (callw !== null && isFinite(callw) && isFinite(spot)) ? (callw - spot) : null;
+  const dFlip = (flip !== null && isFinite(flip) && isFinite(spot)) ? (spot - flip) : null;
+
+  el.innerHTML =
+    `<b>Status</b>: ${sideLbl} · ` +
+    `<b>Spot</b> ${fmtNum(spot,2)} · ` +
+    `<b>PutWall</b> ${putw===null?'—':fmtNum(putw,2)}${dPut===null?'':` (${dPut>=0?'+':''}${fmtNum(dPut,2)})`} · ` +
+    `<b>CallWall</b> ${callw===null?'—':fmtNum(callw,2)}${dCall===null?'':` (${dCall>=0?'+':''}${fmtNum(dCall,2)})`} · ` +
+    `<b>Flip</b> ${flip===null?'—':fmtNum(flip,2)}${dFlip===null?'':` (${dFlip>=0?'+':''}${fmtNum(dFlip,2)})`}`;
+}
+
+function maybeGexAlerts(row){
+  try{
+    if (!row || row.no_options) return;
+    const spot = Number(row.spot);
+    const putw = row.put_wall !== null && row.put_wall !== undefined ? Number(row.put_wall) : null;
+    const callw= row.call_wall !== null && row.call_wall !== undefined ? Number(row.call_wall) : null;
+    const flip = row.flip_level !== null && row.flip_level !== undefined ? Number(row.flip_level) : null;
+    if (!isFinite(spot)) return;
+    const now = Date.now();
+
+    const prevRaw = localStorage.getItem(_gexAlertKey());
+    const prev = prevRaw ? JSON.parse(prevRaw) : null;
+    const prevSpot = prev && isFinite(Number(prev.spot)) ? Number(prev.spot) : null;
+    const prevAt = prev && isFinite(Number(prev.t)) ? Number(prev.t) : 0;
+
+    // throttle to avoid spam on refresh
+    const fresh = (!prevSpot || (now - prevAt) > 12 * 1000);
+
+    const belowPut = (putw !== null && isFinite(putw)) ? (spot < putw) : false;
+    const aboveCall = (callw !== null && isFinite(callw)) ? (spot > callw) : false;
+    const side = belowPut ? -1 : (aboveCall ? 1 : 0);
+
+    if (fresh && prevSpot !== null){
+      if (putw !== null && isFinite(putw)){
+        const wasBelow = prevSpot < putw;
+        if (!wasBelow && spot < putw) toast('danger', 'Crossed below Put Wall',
+          `Spot ${fmtNum(spot,2)} < Put Wall ${fmtNum(putw,2)}.<br>` + _actionLines('below_put').join('<br>'));
+        if (wasBelow && spot >= putw) toast('warn', 'Recovered above Put Wall', `Spot ${fmtNum(spot,2)} back above Put Wall ${fmtNum(putw,2)}.`);
+      }
+      if (callw !== null && isFinite(callw)){
+        const wasAbove = prevSpot > callw;
+        if (!wasAbove && spot > callw) toast('hi', 'Crossed above Call Wall',
+          `Spot ${fmtNum(spot,2)} > Call Wall ${fmtNum(callw,2)}.<br>` + _actionLines('above_call').join('<br>'));
+        if (wasAbove && spot <= callw) toast('warn', 'Fell back below Call Wall', `Spot ${fmtNum(spot,2)} back below Call Wall ${fmtNum(callw,2)}.`);
+      }
+      if (flip !== null && isFinite(flip)){
+        const wasBelowFlip = prevSpot < flip;
+        const isBelowFlip = spot < flip;
+        if (wasBelowFlip !== isBelowFlip) toast('warn', 'Crossed Gamma Flip',
+          `Spot ${fmtNum(spot,2)} crossed Flip ${fmtNum(flip,2)}.<br>` + _actionLines('flip').join('<br>'));
+      }
+      if (prev.side !== undefined && prev.side !== side){
+        const lbl = side === 0 ? 'Inside Walls' : (side === 1 ? 'Above Call Wall' : 'Below Put Wall');
+        const t = side === 0 ? 'inside' : (side === 1 ? 'above_call' : 'below_put');
+        toast(side===0?'warn':(side===1?'hi':'danger'), 'Regime change',
+          `${lbl}.<br>` + _actionLines(t).join('<br>'));
+      }
+    }
+
+    localStorage.setItem(_gexAlertKey(), JSON.stringify({ t: now, spot, side }));
+  }catch(e){
+    // ignore
+  }
+}
+
+let _ivCharts = { term:null, termSkew:null, termAtm:null, intra:null, intraAtm:null, intraSkew:null };
+let _ivIntra = { buf:[], lastT:0 };
+let _ivSkewLast = { calls:[], puts:[] };
+
+let _dteProj = { chart:null, actual:null, mean:null, p25:null, p75:null };
+
+function initIvCharts(){
+  const elTerm = document.getElementById('ivTermChart');
+  const elIntra = document.getElementById('ivIntraChart');
+  if (!elTerm || !elIntra) return;
+  if (_ivCharts.term && _ivCharts.intra) return;
+
+  const mk = (el, height)=> LightweightCharts.createChart(el, {
+    layout: { background: { color:'#070d18' }, textColor:'rgba(255,255,255,.75)' },
+    grid: { vertLines:{ color:'rgba(255,255,255,.06)' }, horzLines:{ color:'rgba(255,255,255,.06)' } },
+    rightPriceScale: { borderColor:'rgba(255,255,255,.12)' },
+    timeScale: {
+      borderColor:'rgba(255,255,255,.12)',
+      timeVisible:true,
+      secondsVisible:false,
+      tickMarkFormatter: (t) => {
+        if (typeof t === 'number'){
+          const d = new Date(Number(t)*1000);
+          return d.toLocaleTimeString([], { hour:'numeric', minute:'2-digit' });
+        }
+        if (t && typeof t === 'object' && 'year' in t && 'month' in t && 'day' in t){
+          const d = new Date(Number(t.year), Number(t.month)-1, Number(t.day));
+          return d.toLocaleDateString([], { month:'short', day:'numeric' });
+        }
+        return '';
+      },
+    },
+    crosshair: { mode: 1 },
+    width: el.clientWidth,
+    height,
+  });
+
+  const c2 = mk(elTerm, 200);
+  const sAtm = c2.addLineSeries({ color:'rgba(34,211,238,.95)', lineWidth:2, title:'ATM IV%' });
+  const sSkew = c2.addHistogramSeries({ priceScaleId:'', priceFormat:{type:'volume'}, base:0 });
+  sSkew.priceScale().applyOptions({ scaleMargins: { top: 0.80, bottom: 0.0 } });
+
+  const ro2 = new ResizeObserver(()=> c2.applyOptions({ width: elTerm.clientWidth, height: elTerm.clientHeight }));
+  ro2.observe(elTerm);
+
+  const c3 = mk(elIntra, 200);
+  const sAtmIn = c3.addLineSeries({ color:'rgba(34,211,238,.95)', lineWidth:2, title:'ATM IV%' });
+  const sSkIn  = c3.addLineSeries({ color:'rgba(248,113,113,.85)', lineWidth:2, title:'ATM Skew (vol pts)' });
+  const ro3 = new ResizeObserver(()=> c3.applyOptions({ width: elIntra.clientWidth, height: elIntra.clientHeight }));
+  ro3.observe(elIntra);
+
+  _ivCharts = { term:c2, termSkew:sSkew, termAtm:sAtm, intra:c3, intraAtm:sAtmIn, intraSkew:sSkIn };
+}
+
+function drawIvSkew(canvas, calls, puts){
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return;
+  const dpr = window.devicePixelRatio || 1;
+  const cssW = canvas.clientWidth || 600;
+  const cssH = canvas.clientHeight || 240;
+  canvas.width = Math.floor(cssW * dpr);
+  canvas.height = Math.floor(cssH * dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+  ctx.clearRect(0,0,cssW,cssH);
+  ctx.fillStyle = '#070d18';
+  ctx.fillRect(0,0,cssW,cssH);
+
+  const PAD_L=46, PAD_R=14, PAD_T=12, PAD_B=32;
+  const plotW = cssW - PAD_L - PAD_R;
+  const plotH = cssH - PAD_T - PAD_B;
+
+  const xs = []
+    .concat((calls||[]).map(p=>Number(p.moneyness)))
+    .concat((puts||[]).map(p=>Number(p.moneyness)))
+    .filter(v=>isFinite(v));
+  const ys = []
+    .concat((calls||[]).map(p=>Number(p.iv)*100))
+    .concat((puts||[]).map(p=>Number(p.iv)*100))
+    .filter(v=>isFinite(v));
+
+  if (!xs.length || !ys.length){
+    ctx.fillStyle='rgba(255,255,255,.7)';
+    ctx.font='12px sans-serif';
+    ctx.fillText('No skew data', PAD_L, PAD_T+18);
+    return;
+  }
+
+  let minX = Math.min(...xs), maxX = Math.max(...xs);
+  minX = Math.max(0.75, Math.min(minX, 0.85));
+  maxX = Math.min(1.30, Math.max(maxX, 1.15));
+  let minY = Math.min(...ys), maxY = Math.max(...ys);
+  if (!isFinite(minY) || !isFinite(maxY) || minY===maxY){ minY = 0; maxY = minY+1; }
+  const padY = (maxY-minY)*0.12;
+  minY = Math.max(0, minY - padY);
+  maxY = maxY + padY;
+
+  const xPx = (x)=> PAD_L + ((x-minX)/(maxX-minX||1))*plotW;
+  const yPx = (y)=> PAD_T + (1-((y-minY)/(maxY-minY||1)))*plotH;
+
+  ctx.strokeStyle = 'rgba(255,255,255,.06)';
+  ctx.lineWidth = 1;
+  for (let i=0;i<=4;i++){
+    const y = PAD_T + (plotH*(i/4));
+    ctx.beginPath(); ctx.moveTo(PAD_L, y); ctx.lineTo(cssW-PAD_R, y); ctx.stroke();
+  }
+  for (let i=0;i<=5;i++){
+    const x = PAD_L + (plotW*(i/5));
+    ctx.beginPath(); ctx.moveTo(x, PAD_T); ctx.lineTo(x, cssH-PAD_B); ctx.stroke();
+  }
+
+  ctx.fillStyle='rgba(255,255,255,.65)';
+  ctx.font='11px sans-serif';
+  ctx.textAlign='right';
+  ctx.fillText(maxY.toFixed(0), PAD_L-6, PAD_T+10);
+  ctx.fillText(minY.toFixed(0), PAD_L-6, cssH-PAD_B);
+  ctx.textAlign='center';
+  for (let i=0;i<=5;i++){
+    const xV = minX + (maxX-minX)*(i/5);
+    ctx.fillText(xV.toFixed(2), xPx(xV), cssH-10);
+  }
+
+  const line = (arr, color)=>{
+    const pts = (arr||[]).slice().sort((a,b)=>a.moneyness-b.moneyness)
+      .map(p=>({x:Number(p.moneyness), y:Number(p.iv)*100}))
+      .filter(p=>isFinite(p.x)&&isFinite(p.y));
+    if (pts.length<2) return;
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(xPx(pts[0].x), yPx(pts[0].y));
+    for (let i=1;i<pts.length;i++) ctx.lineTo(xPx(pts[i].x), yPx(pts[i].y));
+    ctx.stroke();
+  };
+  line(puts, 'rgba(248,113,113,.95)');
+  line(calls,'rgba(34,197,94,.95)');
+
+  const atmX = 1.0;
+  ctx.strokeStyle='rgba(34,211,238,.35)';
+  ctx.setLineDash([4,4]);
+  ctx.beginPath(); ctx.moveTo(xPx(atmX), PAD_T); ctx.lineTo(xPx(atmX), cssH-PAD_B); ctx.stroke();
+  ctx.setLineDash([]);
+}
+
+function _ivSkewNearest(points, m){
+  if (!points || !points.length || m === null || m === undefined) return null;
+  let best = null;
+  let bd = Infinity;
+  for (const p of points){
+    const mm = Number(p.moneyness);
+    if (!isFinite(mm)) continue;
+    const d = Math.abs(mm - m);
+    if (d < bd){ bd = d; best = p; }
+  }
+  return best;
+}
+
+function _ivSkewAttachTooltip(){
+  const cv = document.getElementById('ivSkewCanvas');
+  const tip = document.getElementById('ivSkewTip');
+  if (!cv || !tip) return;
+  if (cv.__tipAttached) return;
+  cv.__tipAttached = true;
+
+  const hide = ()=> { tip.style.display = 'none'; };
+  cv.addEventListener('mouseleave', hide);
+
+  cv.addEventListener('mousemove', (ev)=>{
+    try{
+      const rect = cv.getBoundingClientRect();
+      const x = ev.clientX - rect.left;
+      const w = rect.width || 1;
+      const m = 0.75 + (x / w) * (1.30 - 0.75); // matches drawIvSkew clamp logic
+      const c = _ivSkewNearest(_ivSkewLast.calls || [], m);
+      const p = _ivSkewNearest(_ivSkewLast.puts || [], m);
+      const mv = isFinite(m) ? m.toFixed(3) : '—';
+      const civ = c && c.iv != null ? (Number(c.iv)*100).toFixed(2) + '%' : '—';
+      const piv = p && p.iv != null ? (Number(p.iv)*100).toFixed(2) + '%' : '—';
+
+      tip.innerHTML =
+        '<div><b>Moneyness</b>: ' + mv + '</div>' +
+        '<div style="margin-top:.15rem"><span style="color:#f87171;font-weight:900">Put IV</span>: ' + piv + '</div>' +
+        '<div><span style="color:#4ade80;font-weight:900">Call IV</span>: ' + civ + '</div>';
+
+      tip.style.display = 'block';
+      const pad = 12;
+      const tw = tip.offsetWidth || 220;
+      const th = tip.offsetHeight || 60;
+      let left = ev.clientX + 14;
+      let top = ev.clientY + 14;
+      if (left + tw + pad > window.innerWidth) left = ev.clientX - tw - 14;
+      if (top + th + pad > window.innerHeight) top = ev.clientY - th - 14;
+      tip.style.left = left + 'px';
+      tip.style.top = top + 'px';
+    }catch(e){
+      // ignore
+    }
+  });
+}
+
+function _ivIntraStoreKey(){
+  const d = new Date();
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth()+1).padStart(2,'0');
+  const dd = String(d.getDate()).padStart(2,'0');
+  return `spxhub:ivIntra:SPY:${yyyy}-${mm}-${dd}`;
+}
+function _ivIntraLoad(){
+  try{
+    const raw = localStorage.getItem(_ivIntraStoreKey());
+    if (!raw) return [];
+    const arr = JSON.parse(raw);
+    if (!Array.isArray(arr)) return [];
+    return arr.filter(p=>p && typeof p.t==='number' && isFinite(p.t)).slice(-2000);
+  }catch(e){ return []; }
+}
+function _ivIntraSave(){
+  try{
+    localStorage.setItem(_ivIntraStoreKey(), JSON.stringify((_ivIntra.buf||[]).slice(-2000)));
+  }catch(e){}
+}
+
+function renderIvStats(row, picked){
+  const stats = document.getElementById('ivStats');
+  if (!stats) return;
+  if (!row){
+    stats.innerHTML = '<div class="ivStat"><div class="ivStatK">IV</div><div class="ivStatV">—</div><div class="ivStatS">No data</div></div>';
+    return;
+  }
+  const ts0 = (row.term_structure && row.term_structure.length) ? row.term_structure[0] : null;
+  const s = picked || ts0 || {};
+  const items = [
+    {k:'ATM IV', v: s.atm_iv != null ? (Number(s.atm_iv)*100).toFixed(1)+'%' : '—', s:'Near-term at-the-money implied vol'},
+    {k:'ATM Skew', v: s.skew != null ? (Number(s.skew)*100).toFixed(1)+' vol pts' : '—', s:'Put IV - Call IV (ATM)'},
+    {k:'RR25', v: s.rr25 != null ? (Number(s.rr25)*100).toFixed(1)+' vol pts' : '—', s:'Approx 5% OTM put IV - 5% OTM call IV'},
+    {k:'IV Rank', v: row.iv_rank != null ? String(row.iv_rank)+'%' : '—', s:'Front-month IV position vs surface range'},
+  ];
+  stats.innerHTML = items.map(it => `<div class="ivStat"><div class="ivStatK">${it.k}</div><div class="ivStatV">${it.v}</div><div class="ivStatS">${it.s}</div></div>`).join('');
+}
+
+function updateIvPanel(volAll, symbol){
+  const stamp = document.getElementById('ivStamp');
+  const expSel = document.getElementById('ivExpSel');
+  const note1 = document.getElementById('ivSkewNote');
+  const note2 = document.getElementById('ivTermNote');
+  if (!expSel) return;
+  initIvCharts();
+
+  const row = (volAll && volAll.assets) ? (volAll.assets.find(a=>a && a.symbol===symbol) || null) : null;
+  if (!row){
+    expSel.innerHTML = '<option value=\"\">No data</option>';
+    if (stamp) stamp.textContent = '—';
+    if (note1) note1.innerHTML = '<span class=\"error\">IV skew unavailable.</span>';
+    return;
+  }
+
+  const ts = row.term_structure || [];
+  const cur = expSel.value && expSel.value !== 'Loading…' ? expSel.value : (ts[0] ? ts[0].expiry : '');
+  expSel.innerHTML = ts.map(t => `<option value=\"${t.expiry}\">${t.expiry} (${t.dte}d)</option>`).join('');
+  if (cur) expSel.value = cur;
+
+  const picked = ts.find(t => t.expiry === expSel.value) || ts[0] || null;
+  renderIvStats(row, picked);
+
+  // Skew curve for selected expiry
+  const pts = row.skew_by_exp ? row.skew_by_exp[expSel.value] : null;
+  if (pts){
+    const calls = pts.filter(p=>p.type==='call').sort((a,b)=>a.moneyness-b.moneyness);
+    const puts  = pts.filter(p=>p.type==='put').sort((a,b)=>a.moneyness-b.moneyness);
+    _ivSkewLast = { calls, puts };
+    const cv = document.getElementById('ivSkewCanvas');
+    if (cv) drawIvSkew(cv, calls, puts);
+    _ivSkewAttachTooltip();
+    if (note1) note1.innerHTML = `<strong>Skew curve:</strong> IV% vs moneyness (selected expiry). Left (m&lt;1) emphasizes puts; right (m&gt;1) emphasizes calls.`;
+  } else {
+    if (note1) note1.innerHTML = '<span class=\"error\">No skew points for selected expiry.</span>';
+  }
+
+  // Term structure: ATM IV + skew magnitude bars by expiry date
+  if (_ivCharts.termAtm && _ivCharts.termSkew){
+    const ts2 = ts.filter(t => (t && t.dte !== undefined && t.dte !== null) ? (Number(t.dte) >= 0 && Number(t.dte) <= 365) : true);
+    const atm = ts2.map(t => ({ time: t.expiry, value: Number(t.atm_iv)*100 }));
+    _ivCharts.termAtm.setData(atm);
+    const skewBars = ts2.map(t => {
+      const v = Number(t.skew)*100;
+      const c = v >= 0 ? 'rgba(248,113,113,.55)' : 'rgba(34,197,94,.55)';
+      return { time: t.expiry, value: Math.abs(v), color: c };
+    });
+    _ivCharts.termSkew.setData(skewBars);
+    if (_ivCharts.term) _ivCharts.term.timeScale().fitContent();
+    if (note2) note2.innerHTML = `<strong>Term structure:</strong> ATM IV% (line) and ATM skew magnitude (bars). Red bars = puts richer than calls.`;
+  }
+
+  // Intraday series (hours/minutes)
+  try{
+    const tsPicked = picked || (ts && ts.length ? ts[0] : null);
+    if (tsPicked && _ivCharts.intraAtm && _ivCharts.intraSkew){
+      const rawTs = volAll.timestamp || '';
+      const ms = rawTs ? Date.parse(rawTs) : Date.now();
+      const t = Math.floor(ms/1000);
+      if (t && t !== _ivIntra.lastT){
+        _ivIntra.lastT = t;
+        const atmIv = (tsPicked.atm_iv != null) ? Number(tsPicked.atm_iv)*100 : null;
+        const skew = (tsPicked.skew != null) ? Number(tsPicked.skew)*100 : null;
+        _ivIntra.buf = (_ivIntra.buf || []).concat([{ t, atmIv, skew }]).slice(-2000);
+        _ivIntraSave();
+      }
+
+      if (!_ivIntra.buf || !_ivIntra.buf.length){
+        const pre = _ivIntraLoad();
+        if (pre.length) _ivIntra.buf = pre;
+      }
+
+      const nowT = _ivIntra.lastT || Math.floor(Date.now()/1000);
+      const minT = nowT - (10 * 60 * 60);
+      const buf = (_ivIntra.buf || []).filter(p=>p.t >= minT);
+      _ivIntra.buf = buf;
+      _ivCharts.intraAtm.setData(buf.filter(p=>p.atmIv!=null&&isFinite(p.atmIv)).map(p=>({time:p.t, value:p.atmIv})));
+      _ivCharts.intraSkew.setData(buf.filter(p=>p.skew!=null&&isFinite(p.skew)).map(p=>({time:p.t, value:p.skew})));
+      if (_ivCharts.intra) _ivCharts.intra.timeScale().fitContent();
+    }
+  }catch(e){ /* ignore */ }
+
+  if (stamp) {
+    const rawTs = volAll.timestamp || '';
+    const ms = rawTs ? Date.parse(rawTs) : NaN;
+    const loc = isFinite(ms) ? new Date(ms).toLocaleTimeString([], { hour:'numeric', minute:'2-digit' }) : '';
+    stamp.textContent = rawTs ? ('Updated ' + (loc || rawTs)) : '—';
+    stamp.title = rawTs ? (`server timestamp: ${rawTs}` + (loc ? ` (local: ${loc})` : '')) : '';
+  }
+}
+
+async function loadVol(nocache=false){
+  try{
+    const res = await fetch(API + '/api/volatility-surface' + (nocache ? '?nocache=1' : ''), { cache:'no-store' });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const d = await res.json();
+    window.__volAll = d;
+    updateIvPanel(d, 'SPY');
+  }catch(e){
+    const note1 = document.getElementById('ivSkewNote');
+    if (note1) note1.innerHTML = '<span class=\"error\">Failed to load IV surface:</span> ' + e.message;
+  }
+}
+
+function initDteProjChart(){
+  const el = document.getElementById('dteProjChart');
+  if (!el) return;
+  if (_dteProj.chart) return;
+  el.innerHTML = '';
+  const chart = LightweightCharts.createChart(el, {
+    layout: { background: { color:'#070d18' }, textColor:'rgba(255,255,255,.75)' },
+    grid: { vertLines:{ color:'rgba(255,255,255,.06)' }, horzLines:{ color:'rgba(255,255,255,.06)' } },
+    rightPriceScale: { borderColor:'rgba(255,255,255,.12)' },
+    timeScale: {
+      borderColor:'rgba(255,255,255,.12)',
+      timeVisible:true,
+      secondsVisible:false,
+      tickMarkFormatter: (t) => {
+        if (typeof t === 'number'){
+          const d = new Date(Number(t)*1000);
+          return d.toLocaleTimeString([], { hour:'numeric', minute:'2-digit' });
+        }
+        return '';
+      },
+    },
+    crosshair: { mode: 1 },
+    width: el.clientWidth,
+    height: el.clientHeight || 260,
+  });
+  const sAct = chart.addLineSeries({ color:'rgba(255,255,255,.75)', lineWidth:2, title:'Today' });
+  const sMean = chart.addLineSeries({ color:'rgba(34,211,238,.95)', lineWidth:2, lineStyle:2, title:'Seasonality mean' });
+  const sP25 = chart.addLineSeries({ color:'rgba(248,113,113,.55)', lineWidth:1, lineStyle:3, title:'P25' });
+  const sP75 = chart.addLineSeries({ color:'rgba(34,197,94,.55)', lineWidth:1, lineStyle:3, title:'P75' });
+  const ro = new ResizeObserver(()=> chart.applyOptions({ width: el.clientWidth, height: el.clientHeight }));
+  ro.observe(el);
+  _dteProj = { chart, actual:sAct, mean:sMean, p25:sP25, p75:sP75 };
+}
+
+async function loadDteProjection(nocache=false){
+  initDteProjChart();
+  const stamp = document.getElementById('dteProjStamp');
+  const note = document.getElementById('dteProjNote');
+  try{
+    const lb = Number(document.getElementById('dteLookback')?.value || 12);
+    const wd = document.getElementById('dteWeekday')?.value || '';
+    const qs = `symbol=SPX&lookback=${encodeURIComponent(String(lb))}&rth=1` + (wd!=='' ? `&weekday=${encodeURIComponent(wd)}` : '');
+    if (stamp) stamp.textContent = 'Loading…';
+    const res = await fetch(API + '/api/0dte-projection?' + qs + (nocache ? '&nocache=1' : ''), { cache:'no-store' });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const d = await res.json();
+    if (!d || !d.ok) throw new Error(d && d.error ? d.error : 'Projection unavailable');
+
+    const act = (d.actual || []).map(p => ({ time: p.time, value: Number(p.price) })).filter(x=>isFinite(x.time)&&isFinite(x.value));
+    const proj = (d.projection || []).map(p => ({ time: p.time, mean:Number(p.price_mean), p25:Number(p.price_p25), p75:Number(p.price_p75) }));
+    const mean = proj.filter(p=>isFinite(p.time)&&isFinite(p.mean)).map(p=>({time:p.time, value:p.mean}));
+    const p25 = proj.filter(p=>isFinite(p.time)&&isFinite(p.p25)).map(p=>({time:p.time, value:p.p25}));
+    const p75 = proj.filter(p=>isFinite(p.time)&&isFinite(p.p75)).map(p=>({time:p.time, value:p.p75}));
+
+    _dteProj.actual.setData(act);
+    _dteProj.mean.setData(mean);
+    _dteProj.p25.setData(p25);
+    _dteProj.p75.setData(p75);
+    if (_dteProj.chart) _dteProj.chart.timeScale().fitContent();
+
+    if (stamp){
+      const ms = d.timestamp ? Date.parse(d.timestamp) : NaN;
+      const loc = isFinite(ms) ? new Date(ms).toLocaleTimeString([], { hour:'numeric', minute:'2-digit' }) : '';
+      stamp.textContent = d.timestamp ? ('Updated ' + (loc || d.timestamp)) : '—';
+    }
+    if (note){
+      note.innerHTML =
+        `<strong>How to use:</strong> compare price to the projected mean/bands. When price diverges early and then snaps back, premium-selling can work <em>if</em> gamma regime also supports it. When price breaks outside bands and holds, treat it as trend/expansion risk (condors/flies need wider wings or pause).<br>` +
+        `<strong>Samples:</strong> ${esc(String(d.lookback_days||0))} prior sessions · <strong>Proxy:</strong> ${esc(String(d.symbol||''))} for ${esc(String(d.requested_symbol||''))}.`;
+    }
+  }catch(e){
+    if (stamp) stamp.textContent = '—';
+    if (note) note.innerHTML = '<span class="error">0DTE projection failed:</span> ' + esc(e.message || String(e));
+  }
+}
+
+async function loadGex(nocache=false){
+  const stamp = document.getElementById('gexStamp');
+  const note = document.getElementById('gexLevelsNote');
+  const cn = document.getElementById('gexCurveNote');
+  try{
+    const res = await fetch(API + '/api/gamma-exposure' + (nocache ? '?nocache=1' : ''), { cache:'no-store' });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const d = await res.json();
+    const assets = d.assets || [];
+    const spyRow = assets.find(a => a && a.symbol === 'SPY') || null;
+    renderGexLevels(spyRow);
+    renderStrategySuggestion(spyRow);
+    renderAlertStatus(spyRow);
+    maybeGexAlerts(spyRow);
+    drawGammaCurve(document.getElementById('gexCurve'), spyRow || {});
+    if (document.getElementById('gexTimeWrap').style.display !== 'none') {
+      const ts = d.timestamp ? Date.parse(d.timestamp) : Date.now();
+      pushGexTimePoint(spyRow || {}, Math.floor(ts/1000));
+      // Debug: show raw timestamp + local time conversion
+      const dbgEl = document.getElementById('gexTimeMeta');
+      if (dbgEl && d.timestamp) {
+        const loc = new Date(ts).toLocaleTimeString([], { hour:'numeric', minute:'2-digit' });
+        dbgEl.title = `server timestamp: ${d.timestamp} (local: ${loc})`;
+      }
+    }
+    stamp.textContent = d.timestamp ? ('Snapshot @ ' + new Date(d.timestamp).toLocaleTimeString()) : '—';
+    cn.innerHTML = '<strong>How to read:</strong> Positive gamma zones tend to dampen moves; negative gamma zones can accelerate moves. Use Flip/Walls as levels.';
+    note.innerHTML = '<strong>Source:</strong> /api/gamma-exposure (SPY proxy for SPX).';
+  }catch(e){
+    stamp.textContent = 'Gamma unavailable';
+    note.innerHTML = '<span class="error">Failed to load gamma:</span> ' + e.message;
+  }
+}
+
+async function load(nocache=false){
+  try{
+    const res = await fetch(API + '/api/spx-hub' + (nocache ? '?nocache=1' : ''), { cache:'no-store' });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const d = await res.json();
+    setQuote('spx', d.spx || {});
+    setQuote('spy', d.spy || {});
+    renderTreemap(d.treemap || []);
+    renderBreadth(d.breadth || {});
+    document.getElementById('tmStamp').textContent = d.timestamp ? ('Updated ' + new Date(d.timestamp).toLocaleTimeString()) : '—';
+    document.getElementById('tmMeta').textContent = 'Tap a tile to jump to an asset page (if available).';
+    document.getElementById('tmNote').innerHTML = d.note ? ('<strong>Note:</strong> ' + d.note) : '';
+    document.getElementById('breadthNote').innerHTML = d.note ? ('<strong>Note:</strong> ' + d.note) : '';
+  }catch(e){
+    document.getElementById('spxChg').textContent = 'Failed to load: ' + e.message;
+    document.getElementById('spxChg').className = 's error';
+  }
+}
+
+document.getElementById('refreshBtn').addEventListener('click', ()=> {
+  load(true);
+  loadGex(true);
+  loadVol(true);
+  loadSp500Map(true);
+  loadSpxGreeks(true);
+});
+document.getElementById('ivExpSel').addEventListener('change', ()=> { try{ updateIvPanel(window.__volAll, 'SPY'); }catch(e){} });
+document.getElementById('sp500RefreshBtn').addEventListener('click', ()=> { loadSp500Map(true); });
+document.getElementById('sp500Sector').addEventListener('change', ()=> { try{ renderSp500Treemap((_sp500Raw && _sp500Raw.treemap) ? _sp500Raw.treemap : []); }catch(e){} });
+document.getElementById('sp500Search').addEventListener('input', ()=> {
+  try{ renderSp500Treemap((_sp500Raw && _sp500Raw.treemap) ? _sp500Raw.treemap : []); }catch(e){}
+});
+document.getElementById('ivIntraResetBtn').addEventListener('click', ()=> {
+  try{
+    _ivIntra.buf = [];
+    _ivIntra.lastT = 0;
+    try{ localStorage.removeItem(_ivIntraStoreKey()); }catch(e){}
+    if (_ivCharts.intraAtm) _ivCharts.intraAtm.setData([]);
+    if (_ivCharts.intraSkew) _ivCharts.intraSkew.setData([]);
+    toast('warn', 'Intraday reset', 'Cleared today’s intraday ATM IV & skew history.');
+  }catch(e){
+    // ignore
+  }
+});
+document.getElementById('gexTestAlertBtn').addEventListener('click', ()=> {
+  toast('hi', 'Test Alert', 'Alerts are enabled. You will get notifications when SPY crosses Put Wall / Call Wall / Flip.');
+});
+
+document.getElementById('gexExpandBtn').addEventListener('click', ()=> {
+  const body = document.body;
+  const on = body.classList.toggle('gexExpanded');
+  document.getElementById('gexExpandBtn').classList.toggle('on', on);
+  // redraw with new size
+  setTimeout(()=> loadGex(false), 50);
+});
+
+let _gexTimer = null;
+document.getElementById('gexTimeBtn').addEventListener('click', ()=> {
+  const wrap = document.getElementById('gexTimeWrap');
+  const on = (wrap.style.display === 'none');
+  wrap.style.display = on ? 'block' : 'none';
+  document.getElementById('gexTimeBtn').classList.toggle('on', on);
+  if (on){
+    initGexTimeChart();
+    // Preload today's stored points (so x-axis shows a real intraday scale immediately)
+    const stored = _gexLoadStored();
+    if (stored.length){
+      _gexTs.buf = stored;
+      _gexTs.lastT = stored[stored.length-1].t;
+      _rerenderGexTime();
+    }
+    loadGex(true);
+    if (_gexTimer) clearInterval(_gexTimer);
+    // Faster sampling helps the x-axis show a real intraday scale quickly
+    _gexTimer = setInterval(()=> loadGex(false), 10 * 1000);
+  } else {
+    if (_gexTimer) clearInterval(_gexTimer);
+    _gexTimer = null;
+  }
+});
+
+document.getElementById('gexWindowSel').addEventListener('change', ()=> {
+  _rerenderGexTime();
+});
+
+document.getElementById('dteProjRefresh').addEventListener('click', ()=> { loadDteProjection(true); });
+document.getElementById('dteLookback').addEventListener('change', ()=> { loadDteProjection(true); });
+document.getElementById('dteWeekday').addEventListener('change', ()=> { loadDteProjection(true); });
+
+load(false);
+loadGex(false);
+loadVol(false);
+loadSp500Map(false);
+loadSpxGreeks(false);
+loadDteProjection(false);
+
+// Light background polling (avoids spamming yfinance)
+setInterval(()=> { try{ loadSpxGreeks(false); }catch(e){} }, 60 * 1000);
+setInterval(()=> { try{ loadSp500Map(false); }catch(e){} }, 5 * 60 * 1000);
+setInterval(()=> { try{ loadDteProjection(false); }catch(e){} }, 60 * 1000);
+</script>
+</body>
+</html>
+

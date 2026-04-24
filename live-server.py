@@ -1068,6 +1068,14 @@ def cache_set(key, val):
     _cache[key] = (datetime.now(), val)
 
 
+def iso_now() -> str:
+    """Timezone-aware ISO timestamp for browser parsing."""
+    try:
+        return datetime.now().astimezone().replace(microsecond=0).isoformat()
+    except Exception:
+        return datetime.now().replace(microsecond=0).isoformat()
+
+
 
 @app.after_request
 def add_cache_headers(response):
@@ -3550,7 +3558,685 @@ def market_summary_endpoint():
         'ml_ranking':         ml_ranking,
         'market_commentary':  market_commentary,
         'symbols_computed':   len(results),
-        'timestamp':          datetime.now().isoformat(),
+        'timestamp':          iso_now(),
+    }
+    cache_set(ck, result)
+    return jsonify(result)
+
+
+# ── SPX Hub (SPX-focused dashboard helpers) ───────────────────────────────────
+_SPX_HUB_UNIVERSE: list[tuple[str, str]] = [
+    # (symbol, sector-ish bucket) — used for treemap + breadth proxy
+    ('SPY', 'Index ETFs'),
+    ('QQQ', 'Index ETFs'),
+    ('DIA', 'Index ETFs'),
+    ('IWM', 'Index ETFs'),
+    ('AAPL', 'Technology'),
+    ('MSFT', 'Technology'),
+    ('NVDA', 'Technology'),
+    ('GOOGL', 'Communication'),
+    ('AMZN', 'Consumer Discretionary'),
+    ('META', 'Communication'),
+    ('TSLA', 'Consumer Discretionary'),
+    ('JPM', 'Financials'),
+    ('BAC', 'Financials'),
+    ('V', 'Financials'),
+    ('XOM', 'Energy'),
+    ('CVX', 'Energy'),
+    ('JNJ', 'Healthcare'),
+    ('UNH', 'Healthcare'),
+    ('WMT', 'Consumer Staples'),
+    ('HD', 'Consumer Discretionary'),
+    ('BRK-B', 'Financials'),
+]
+
+
+def _safe_float(x, default: float = 0.0) -> float:
+    try:
+        v = float(x)
+        if v != v:  # NaN
+            return default
+        if v == float('inf') or v == float('-inf'):
+            return default
+        return v
+    except Exception:
+        return default
+
+
+def _compute_breadth_from_closes(symbols: list[str], nocache: bool = False) -> dict:
+    """
+    Breadth proxy: % of symbols above SMA50 and SMA200 using yfinance daily closes.
+    This is NOT the full S&P 500 breadth unless the universe contains all constituents.
+    """
+    ck = cache_key('all', f"spx-breadth:{','.join(symbols)}")
+    if not nocache:
+        cached = cache_get(ck)
+        if cached:
+            return cached
+
+    rows = []
+    above50 = 0
+    above200 = 0
+    total = 0
+
+    # Download all symbols in one call for efficiency.
+    with _yf_lock:
+        df = yf.download(' '.join(symbols), period='260d', interval='1d',
+                         group_by='ticker', auto_adjust=True, progress=False, threads=False)
+
+    def _get_close_series(sym: str):
+        try:
+            if sym in df.columns.get_level_values(0):
+                s = df[sym]['Close']
+            else:
+                # fallback for single-ticker shape
+                s = df['Close'] if 'Close' in df.columns else None
+            if s is None:
+                return None
+            s = s.dropna()
+            return s if len(s) >= 60 else None
+        except Exception:
+            return None
+
+    for sym in symbols:
+        s = _get_close_series(sym)
+        if s is None or len(s) < 60:
+            continue
+        close = float(s.iloc[-1])
+        sma50 = float(s.rolling(50).mean().iloc[-1]) if len(s) >= 50 else None
+        sma200 = float(s.rolling(200).mean().iloc[-1]) if len(s) >= 200 else None
+        if sma50 and close > sma50:
+            above50 += 1
+        if sma200 and close > sma200:
+            above200 += 1
+        total += 1
+        rows.append({
+            'symbol': sym,
+            'close': round(close, 4),
+            'sma50': round(sma50, 4) if sma50 else None,
+            'sma200': round(sma200, 4) if sma200 else None,
+            'above50': bool(sma50 and close > sma50),
+            'above200': bool(sma200 and close > sma200),
+        })
+
+    out = {
+        'universe_count': len(symbols),
+        'computed_count': total,
+        'pct_above_50': round((above50 / max(total, 1)) * 100, 1),
+        'pct_above_200': round((above200 / max(total, 1)) * 100, 1),
+        'rows': rows,
+        'timestamp': iso_now(),
+    }
+    cache_set(ck, out)
+    return out
+
+
+_SP500_CONSTITUENTS_URL = 'https://raw.githubusercontent.com/datasets/s-and-p-500-companies/master/data/constituents.csv'
+_SP500_CONSTITUENTS_CACHE: dict[str, object] = {'ts': 0.0, 'rows': []}
+
+
+def _load_sp500_constituents(nocache: bool = False) -> list[dict]:
+    """
+    Loads S&P 500 constituents as list of dicts:
+      {symbol, name, sector, industry}
+
+    Prefers local file `data/sp500_constituents.csv` if present AND looks complete.
+    Otherwise fetches from a public dataset URL and caches in memory.
+    """
+    try:
+        import time as _t
+        now = float(_t.time())
+    except Exception:
+        now = 0.0
+
+    if (not nocache) and _SP500_CONSTITUENTS_CACHE.get('rows') and (now - float(_SP500_CONSTITUENTS_CACHE.get('ts') or 0.0) < 3600):
+        return list(_SP500_CONSTITUENTS_CACHE.get('rows') or [])
+
+    local_rows: list[dict] = []
+    try:
+        import csv as _csv
+        base = os.path.dirname(__file__)
+        p = os.path.join(base, 'data', 'sp500_constituents.csv')
+        if os.path.exists(p):
+            with open(p, 'r', encoding='utf-8', newline='') as f:
+                r = _csv.DictReader(f)
+                for row in r:
+                    sym = (row.get('Symbol') or row.get('symbol') or '').strip().upper()
+                    if not sym:
+                        continue
+                    local_rows.append({
+                        'symbol': sym.replace('.', '-'),
+                        'name': (row.get('Security') or row.get('security') or sym).strip(),
+                        'sector': (row.get('GICS Sector') or row.get('sector') or 'Unknown').strip() or 'Unknown',
+                        'industry': (row.get('GICS Sub-Industry') or row.get('industry') or '').strip(),
+                    })
+    except Exception:
+        local_rows = []
+
+    # If local file exists and is plausibly complete, use it.
+    if len(local_rows) >= 480:
+        _SP500_CONSTITUENTS_CACHE['rows'] = local_rows
+        _SP500_CONSTITUENTS_CACHE['ts'] = now
+        return local_rows
+
+    # Remote fallback.
+    remote_rows: list[dict] = []
+    try:
+        import csv as _csv
+        import io as _io
+        import urllib.request as _ur
+        req = _ur.Request(_SP500_CONSTITUENTS_URL, headers={'User-Agent': 'Mozilla/5.0'})
+        with _ur.urlopen(req, timeout=12) as resp:
+            raw = resp.read().decode('utf-8', errors='replace')
+        f = _io.StringIO(raw)
+        r = _csv.DictReader(f)
+        for row in r:
+            sym = (row.get('Symbol') or '').strip().upper()
+            if not sym:
+                continue
+            remote_rows.append({
+                'symbol': sym.replace('.', '-'),
+                'name': (row.get('Security') or sym).strip(),
+                'sector': (row.get('GICS Sector') or 'Unknown').strip() or 'Unknown',
+                'industry': (row.get('GICS Sub-Industry') or '').strip(),
+            })
+    except Exception:
+        remote_rows = []
+
+    # Prefer remote if it looks better; else fall back to local even if incomplete.
+    rows = remote_rows if len(remote_rows) >= len(local_rows) else local_rows
+    _SP500_CONSTITUENTS_CACHE['rows'] = rows
+    _SP500_CONSTITUENTS_CACHE['ts'] = now
+    return rows
+
+
+def _download_daily_closes_batched(symbols: list[str], period: str = '260d', lock=None) -> pd.DataFrame:
+    """
+    Batch yfinance.download calls to avoid ticker-count/URL limits.
+    Returns a DataFrame where columns are ticker symbols and rows are daily closes.
+    """
+    symbols = [s for s in symbols if s]
+    if not symbols:
+        return pd.DataFrame()
+    if lock is None:
+        lock = _yf_lock
+    out: list[pd.DataFrame] = []
+    step = 90
+    for i in range(0, len(symbols), step):
+        chunk = symbols[i:i + step]
+        with lock:
+            df = yf.download(' '.join(chunk), period=period, interval='1d',
+                             group_by='ticker', auto_adjust=True, progress=False, threads=False)
+        if df is None or getattr(df, 'empty', True):
+            continue
+        try:
+            if isinstance(df.columns, pd.MultiIndex):
+                closes = {}
+                for t in chunk:
+                    if t in df.columns.get_level_values(0):
+                        s = df[t]['Close'] if 'Close' in df[t].columns else None
+                        if s is not None:
+                            closes[t] = s
+                if closes:
+                    out.append(pd.DataFrame(closes))
+            else:
+                # single ticker shape
+                if 'Close' in df.columns and len(chunk) == 1:
+                    out.append(pd.DataFrame({chunk[0]: df['Close']}))
+        except Exception:
+            continue
+    if not out:
+        return pd.DataFrame()
+    try:
+        m = pd.concat(out, axis=1)
+        m = m.loc[:, ~m.columns.duplicated()]
+        return m
+    except Exception:
+        return out[0]
+
+
+def _to_et_index(df: pd.DataFrame) -> pd.DataFrame:
+    """Best-effort convert candle index to America/New_York."""
+    if df is None or df.empty:
+        return df
+    try:
+        idx = df.index
+        if not isinstance(idx, pd.DatetimeIndex):
+            df = df.copy()
+            df.index = pd.to_datetime(df.index)
+            idx = df.index
+        if idx.tz is None:
+            idx = idx.tz_localize('UTC')
+        df = df.copy()
+        df.index = idx.tz_convert('America/New_York')
+        return df
+    except Exception:
+        return df
+
+
+def _build_0dte_projection(symbol: str = 'SPY', lookback: int = 12, weekday: int | None = None,
+                           use_rth: bool = True) -> dict:
+    """
+    0DTE projection indicator (proxy):
+    - Pull 5m candles
+    - Build seasonality by weekday + 5m bucket since 09:30 ET (RTH)
+    - Return today's actual + projected path for remainder of session
+    """
+    lookback = int(max(3, min(30, lookback)))
+
+    try:
+        now_et = datetime.now(ZoneInfo("America/New_York"))
+    except Exception:
+        now_et = datetime.now()
+    wd = int(now_et.weekday() if weekday is None else weekday)
+
+    # Proxy mapping
+    req = symbol.upper()
+    sym = req
+    if req in ('SPX', '^SPX', '^GSPC', '^SPXW'):
+        sym = 'SPY'
+
+    df = get_candles(sym, interval='5m', period='60d')
+    df = _to_et_index(df)
+    if df is None or df.empty:
+        return {'ok': False, 'error': f'No 5m data for {sym}', 'symbol': sym, 'requested_symbol': req, 'timestamp': iso_now()}
+
+    if use_rth:
+        try:
+            df = df.between_time('09:30', '16:00')
+        except Exception:
+            pass
+
+    try:
+        dates = sorted({ts.date() for ts in df.index})
+    except Exception:
+        dates = []
+    if not dates:
+        return {'ok': False, 'error': 'No session dates in 5m data', 'symbol': sym, 'requested_symbol': req, 'timestamp': iso_now()}
+
+    today = dates[-1]
+    df_today = df[df.index.date == today].copy()
+    if df_today.empty or len(df_today) < 5:
+        return {'ok': False, 'error': 'Insufficient 5m bars for today', 'symbol': sym, 'requested_symbol': req, 'timestamp': iso_now()}
+
+    hist_days: list = []
+    for d in reversed(dates[:-1]):
+        try:
+            if datetime(d.year, d.month, d.day).weekday() == wd:
+                hist_days.append(d)
+        except Exception:
+            continue
+        if len(hist_days) >= lookback:
+            break
+    hist_days = list(reversed(hist_days))
+
+    if len(hist_days) < max(3, lookback // 2):
+        hist_days = dates[-(lookback + 1):-1]
+
+    def bucket_i(ts_):
+        try:
+            m = ts_.hour * 60 + ts_.minute
+            base = 9 * 60 + 30
+            return int((m - base) // 5)
+        except Exception:
+            return None
+
+    buckets: dict[int, list[float]] = {}
+    for d in hist_days:
+        day_df = df[df.index.date == d]
+        if day_df.empty or len(day_df) < 20:
+            continue
+        try:
+            o = float(day_df['Open'].iloc[0])
+            if not o or o <= 0:
+                continue
+            for ts, row in day_df.iterrows():
+                bi = bucket_i(ts)
+                if bi is None or bi < 0:
+                    continue
+                c = float(row['Close'])
+                r = (c / o) - 1.0
+                buckets.setdefault(bi, []).append(r)
+        except Exception:
+            continue
+
+    if not buckets:
+        return {'ok': False, 'error': 'No historical buckets built', 'symbol': sym, 'requested_symbol': req, 'timestamp': iso_now()}
+
+    max_bi = max(buckets.keys())
+    season = []
+    for bi in range(0, max_bi + 1):
+        arr = buckets.get(bi, [])
+        if not arr:
+            season.append({'i': bi, 'mean': None, 'p25': None, 'p75': None, 'n': 0})
+            continue
+        s = pd.Series(arr, dtype='float64')
+        season.append({
+            'i': bi,
+            'mean': float(s.mean()),
+            'p25': float(s.quantile(0.25)),
+            'p75': float(s.quantile(0.75)),
+            'n': int(s.count()),
+        })
+
+    o_today = float(df_today['Open'].iloc[0])
+    actual = []
+    last_ts = None
+    for ts, row in df_today.iterrows():
+        bi = bucket_i(ts)
+        if bi is None or bi < 0:
+            continue
+        c = float(row['Close'])
+        actual.append({
+            'time': int(ts.timestamp()),
+            'i': int(bi),
+            'price': round(c, 4),
+            'ret_from_open': (c / o_today) - 1.0 if o_today else 0.0,
+        })
+        last_ts = ts
+
+    if not actual:
+        return {'ok': False, 'error': 'No actual points built', 'symbol': sym, 'requested_symbol': req, 'timestamp': iso_now()}
+
+    cur_i = int(actual[-1]['i'])
+
+    proj = []
+    for item in season:
+        bi = int(item['i'])
+        if bi <= cur_i:
+            continue
+        if item['mean'] is None:
+            continue
+        try:
+            base = datetime(today.year, today.month, today.day, 9, 30, tzinfo=ZoneInfo("America/New_York"))
+            ts = base + timedelta(minutes=bi * 5)
+            tsec = int(ts.timestamp())
+        except Exception:
+            tsec = int((last_ts.timestamp() if last_ts else datetime.now().timestamp()) + (bi - cur_i) * 300)
+
+        mean_px = o_today * (1.0 + float(item['mean']))
+        lo_px = o_today * (1.0 + float(item['p25'])) if item.get('p25') is not None else None
+        hi_px = o_today * (1.0 + float(item['p75'])) if item.get('p75') is not None else None
+        proj.append({
+            'time': tsec,
+            'i': bi,
+            'price_mean': round(float(mean_px), 4),
+            'price_p25': round(float(lo_px), 4) if lo_px is not None else None,
+            'price_p75': round(float(hi_px), 4) if hi_px is not None else None,
+            'n': int(item.get('n') or 0),
+        })
+
+    return {
+        'ok': True,
+        'requested_symbol': req,
+        'symbol': sym,
+        'weekday': wd,
+        'use_rth': bool(use_rth),
+        'today_date_et': str(today),
+        'lookback_days': len(hist_days),
+        'actual': actual,
+        'projection': proj,
+        'timestamp': iso_now(),
+        'note': 'Seasonality projection from 5m history by weekday/time bucket. Proxy uses SPY for SPX.',
+    }
+
+
+@app.route('/api/0dte-projection')
+def o0dte_projection_endpoint():
+    """
+    0DTE Projection indicator (5m seasonality).
+    Params:
+      symbol=SPX|SPY
+      lookback=12 (weekday samples)
+      weekday=0..4 (optional, default = today ET)
+      rth=1 (regular trading hours only)
+    """
+    nocache = request.args.get('nocache', '0') == '1'
+    symbol = (request.args.get('symbol') or 'SPX').strip().upper()
+    try:
+        lookback = int(request.args.get('lookback') or 12)
+    except Exception:
+        lookback = 12
+    w_s = request.args.get('weekday')
+    try:
+        weekday = int(w_s) if (w_s is not None and w_s != '') else None
+    except Exception:
+        weekday = None
+    rth = request.args.get('rth', '1') == '1'
+
+    ck = cache_key(symbol, f'0dte-proj:{lookback}:{weekday}:{int(rth)}')
+    if not nocache:
+        cached = cache_get(ck)
+        if cached:
+            return jsonify(cached)
+
+    result = _build_0dte_projection(symbol=symbol, lookback=lookback, weekday=weekday, use_rth=rth)
+    cache_set(ck, result)
+    return jsonify(result)
+
+
+@app.route('/api/sp500-map')
+def sp500_map_endpoint():
+    """
+    Full S&P 500 treemap feed + true breadth.
+    """
+    nocache = request.args.get('nocache', '0') == '1'
+    ck = cache_key('all', 'sp500-map')
+    if not nocache:
+        cached = cache_get(ck)
+        if cached:
+            return jsonify(cached)
+
+    # This endpoint can be slow on first run (500 tickers). We compute in a background
+    # thread and return quickly with a "computing" status; the frontend polls again.
+    global _SP500_MAP_WORKING  # type: ignore[declared-but-unused]
+    global _SP500_MAP_LAST_ERR  # type: ignore[declared-but-unused]
+    try:
+        _SP500_MAP_WORKING
+    except Exception:
+        _SP500_MAP_WORKING = False
+    try:
+        _SP500_MAP_LAST_ERR
+    except Exception:
+        _SP500_MAP_LAST_ERR = None
+
+    if not _SP500_MAP_WORKING:
+        _SP500_MAP_WORKING = True
+        _SP500_MAP_LAST_ERR = None
+
+        def _compute():
+            global _SP500_MAP_WORKING
+            global _SP500_MAP_LAST_ERR
+            try:
+                cons = _load_sp500_constituents(nocache=nocache)
+                symbols = [c['symbol'] for c in cons if c.get('symbol')]
+
+                # 220d usually covers SMA200 while being smaller/faster than 260d.
+                # Use a dedicated lock so this job doesn't stall other yfinance-backed endpoints.
+                global _SP500_YF_LOCK  # type: ignore[declared-but-unused]
+                try:
+                    _SP500_YF_LOCK
+                except Exception:
+                    import threading as _th2
+                    _SP500_YF_LOCK = _th2.Lock()
+
+                closes = _download_daily_closes_batched(symbols, period='220d', lock=_SP500_YF_LOCK)
+                if closes is None or closes.empty:
+                    out = {
+                        'ok': False,
+                        'status': 'error',
+                        'error': 'No data returned from yfinance for constituents.',
+                        'constituents_count': len(cons),
+                        'computed_count': 0,
+                        'treemap': [],
+                        'breadth': {'pct_above_50': None, 'pct_above_200': None, 'computed_count': 0},
+                        'timestamp': iso_now(),
+                    }
+                    cache_set(ck, out)
+                    return
+
+                # Compute daily % change from last two closes.
+                try:
+                    last = closes.iloc[-1]
+                    prev = closes.iloc[-2] if len(closes) >= 2 else closes.iloc[-1]
+                except Exception:
+                    last = closes.tail(1).T.iloc[:, 0]
+                    prev = last
+
+                treemap: list[dict] = []
+                computed = 0
+                for c in cons:
+                    sym = c.get('symbol')
+                    if not sym:
+                        continue
+                    try:
+                        c0 = _safe_float(last.get(sym), None)  # type: ignore[arg-type]
+                        c1 = _safe_float(prev.get(sym), None)  # type: ignore[arg-type]
+                        if c0 is None or c1 is None or c1 == 0:
+                            continue
+                        chg_pct = (c0 - c1) / c1 * 100.0
+                        computed += 1
+                        treemap.append({
+                            'symbol': sym,
+                            'label': c.get('name') or sym,
+                            'sector': c.get('sector') or 'Unknown',
+                            'industry': c.get('industry') or '',
+                            'price': round(float(c0), 4),
+                            'change_pct': round(float(chg_pct), 3),
+                            'weight': 1.0,
+                        })
+                    except Exception:
+                        continue
+
+                # Breadth: pct above SMA50 / SMA200 (vectorized).
+                try:
+                    sma50 = closes.rolling(50).mean().iloc[-1]
+                    sma200 = closes.rolling(200).mean().iloc[-1] if len(closes) >= 200 else None
+                    above50 = (last > sma50)
+                    above200 = (last > sma200) if sma200 is not None else None
+                    computed_b = int(above50.count())
+                    pct50 = float((above50.sum() / max(computed_b, 1)) * 100.0)
+                    if above200 is not None:
+                        computed_b2 = int(above200.count())
+                        pct200 = float((above200.sum() / max(computed_b2, 1)) * 100.0)
+                    else:
+                        pct200 = None
+                except Exception:
+                    computed_b = 0
+                    pct50 = None
+                    pct200 = None
+
+                out = {
+                    'ok': True,
+                    'status': 'ready',
+                    'constituents_count': len(cons),
+                    'computed_count': computed,
+                    'treemap': treemap,
+                    'breadth': {
+                        'pct_above_50': round(pct50, 1) if pct50 is not None else None,
+                        'pct_above_200': round(pct200, 1) if pct200 is not None else None,
+                        'computed_count': computed_b,
+                    },
+                    'timestamp': iso_now(),
+                }
+                cache_set(ck, out)
+            except Exception as e:
+                _SP500_MAP_LAST_ERR = str(e)
+                cache_set(ck, {
+                    'ok': False,
+                    'status': 'error',
+                    'error': _SP500_MAP_LAST_ERR,
+                    'timestamp': iso_now(),
+                })
+            finally:
+                _SP500_MAP_WORKING = False
+
+        try:
+            import threading as _th
+            _th.Thread(target=_compute, daemon=True).start()
+        except Exception:
+            # If threading isn't available, we'll just fall through and compute inline next call.
+            _SP500_MAP_WORKING = False
+
+    out = {
+        'ok': False,
+        'status': 'computing',
+        'error': _SP500_MAP_LAST_ERR,
+        'timestamp': iso_now(),
+    }
+    return jsonify(out)
+
+
+@app.route('/api/spx-hub')
+def spx_hub_endpoint():
+    """
+    SPX-focused dashboard data:
+    - SPX spot (via ^GSPC) + SPY proxy spot
+    - Mini "constituent" treemap universe (ETFs + Mag7 + key blue chips)
+    - Breadth proxy (% above 50/200-day SMA) for that universe
+    """
+    nocache = request.args.get('nocache', '0') == '1'
+    ck = cache_key('all', 'spx-hub')
+    if not nocache:
+        cached = cache_get(ck)
+        if cached:
+            return jsonify(cached)
+
+    universe_syms = [s for s, _ in _SPX_HUB_UNIVERSE]
+
+    # Quotes (use existing /api/quote machinery via helper if present)
+    def _quote(sym: str) -> dict:
+        try:
+            q = quote_symbol(sym, nocache=nocache)  # type: ignore[name-defined]
+            if isinstance(q, dict):
+                return q
+        except Exception:
+            pass
+        # fallback minimal
+        try:
+            with _yf_lock:
+                raw = yf.download(sym, period='5d', interval='1d', auto_adjust=True,
+                                  progress=False, threads=False)
+            if raw is None or raw.empty:
+                return {'symbol': sym, 'price': None, 'change': None, 'change_pct': None}
+            if isinstance(raw.columns, pd.MultiIndex):
+                raw.columns = raw.columns.get_level_values(0)
+            c0 = _safe_float(raw['Close'].iloc[-1], 0.0)
+            c1 = _safe_float(raw['Close'].iloc[-2], c0)
+            chg = c0 - c1
+            pct = (chg / c1 * 100) if c1 else 0.0
+            return {'symbol': sym, 'price': round(c0, 4), 'change': round(chg, 4), 'change_pct': round(pct, 2)}
+        except Exception:
+            return {'symbol': sym, 'price': None, 'change': None, 'change_pct': None}
+
+    spx = _quote('^GSPC')
+    spy = _quote('SPY')
+
+    # Treemap returns: 1-day % change for universe
+    quotes = {sym: _quote(sym) for sym in universe_syms}
+    treemap = []
+    for sym, sector in _SPX_HUB_UNIVERSE:
+        q = quotes.get(sym, {})
+        treemap.append({
+            'symbol': sym,
+            'label': SYMBOL_LABELS.get(sym, sym),
+            'sector': sector,
+            'price': q.get('price'),
+            'change_pct': q.get('change_pct'),
+            # Provide a default "weight" so tiles are stable even without real index weights
+            'weight': 1.0,
+        })
+
+    breadth = _compute_breadth_from_closes(universe_syms, nocache=nocache)
+
+    result = {
+        'spx': spx,
+        'spy': spy,
+        'treemap': treemap,
+        'breadth': breadth,
+        'universe': [{'symbol': s, 'sector': sec} for s, sec in _SPX_HUB_UNIVERSE],
+        'timestamp': iso_now(),
+        'note': 'Breadth + treemap are computed on a proxy universe (ETFs + Mag7 + key blue chips). Add full SPX constituents list to upgrade to true S&P 500 breadth/map.',
     }
     cache_set(ck, result)
     return jsonify(result)
@@ -4132,7 +4818,7 @@ def gamma_exposure_endpoint():
     grp_ord = {g: i for i, (g, _) in enumerate(_GEX_GROUPS)}
     rows.sort(key=lambda r: (grp_ord.get(r['group'], 99), r['symbol']))
 
-    result = {'assets': rows, 'count': len(rows), 'timestamp': datetime.now().isoformat()}
+    result = {'assets': rows, 'count': len(rows), 'timestamp': iso_now()}
     cache_set(ck, result)
     return jsonify(result)
 
@@ -4504,7 +5190,7 @@ def options_strategy_endpoint():
     go = {g: i for i, (g, _) in enumerate(_OPT_STRAT_GROUPS)}
     rows.sort(key=lambda r: (go.get(r['group'], 99), r['symbol']))
 
-    result = {'assets': rows, 'count': len(rows), 'timestamp': datetime.now().isoformat()}
+    result = {'assets': rows, 'count': len(rows), 'timestamp': iso_now()}
     cache_set(ck, result)
     return jsonify(result)
 
@@ -4817,7 +5503,7 @@ def option_flows_endpoint():
     go = {g: i for i, (g, _) in enumerate(_FLOW_GROUPS)}
     rows.sort(key=lambda r: (go.get(r['group'], 99), r['symbol']))
 
-    result = {'assets': rows, 'count': len(rows), 'timestamp': datetime.now().isoformat()}
+    result = {'assets': rows, 'count': len(rows), 'timestamp': iso_now()}
     cache_set(ck, result)
     return jsonify(result)
 
@@ -4962,7 +5648,7 @@ def _greeks_for_symbol(symbol: str, nocache: bool = False) -> dict:
         'atm': {'call': greeks_call, 'put': greeks_put},
         'near_strikes': [round(x, 2) for x in strikes_sorted],
         'no_options': False,
-        'timestamp': datetime.now().isoformat(),
+        'timestamp': iso_now(),
     }
     cache_set(ck, out)
     return out
@@ -4992,14 +5678,56 @@ def greeks_endpoint():
             s = 'IWM'
         elif u in ('VIX', '^VIX'):
             s = 'VXX'
-        row = _greeks_for_symbol(s, nocache=nocache)
+        # Fast path: serve cached if available; otherwise compute in background and return a placeholder.
+        proxy = s
+        ck = cache_key(proxy, 'greeks')
+        row = None
+        if not nocache:
+            try:
+                row = cache_get(ck)
+            except Exception:
+                row = None
+
+        if row is None:
+            global _GREEKS_WORKING  # type: ignore[declared-but-unused]
+            try:
+                _GREEKS_WORKING
+            except Exception:
+                _GREEKS_WORKING = {}
+
+            if not _GREEKS_WORKING.get(proxy):
+                _GREEKS_WORKING[proxy] = True
+
+                def _compute_g(sym: str):
+                    try:
+                        _greeks_for_symbol(sym, nocache=True)
+                    finally:
+                        try:
+                            _GREEKS_WORKING[sym] = False
+                        except Exception:
+                            pass
+
+                try:
+                    import threading as _th
+                    _th.Thread(target=_compute_g, args=(proxy,), daemon=True).start()
+                except Exception:
+                    _GREEKS_WORKING[proxy] = False
+
+            row = {
+                'symbol': proxy,
+                'label': SYMBOL_LABELS.get(proxy, proxy),
+                'status': 'computing',
+                'no_options': False,
+                'timestamp': iso_now(),
+            }
+
         # Preserve what the user asked for so the UI can label proxies clearly
         if requested.upper() != s.upper():
             row = dict(row)
             row['requested_symbol'] = requested
             row['proxy_symbol'] = s
         rows.append(row)
-    return jsonify({'assets': rows, 'count': len(rows), 'timestamp': datetime.now().isoformat()})
+    return jsonify({'assets': rows, 'count': len(rows), 'timestamp': iso_now()})
 
 
 # ── Live Flow (snapshot deltas) ──────────────────────────────────────────────
@@ -6101,7 +6829,7 @@ def volatility_surface_endpoint():
     rows.sort(key=lambda r: _VOL_SYMBOLS.index(r['symbol'])
               if r['symbol'] in _VOL_SYMBOLS else 99)
 
-    result = {'assets': rows, 'count': len(rows), 'timestamp': datetime.now().isoformat()}
+    result = {'assets': rows, 'count': len(rows), 'timestamp': iso_now()}
     cache_set(ck, result)
     return jsonify(result)
 
