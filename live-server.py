@@ -5751,6 +5751,124 @@ def quote_endpoint(symbol):
         return jsonify({'symbol': symbol, 'error': str(e)[:100]}), 500
 
 
+@app.route('/api/spx-dashboard')
+def spx_dashboard_endpoint():
+    """
+    Unified payload for the SPX Dashboard page.
+
+    Display: SPX
+    Price proxy: ES=F (candles/quote)
+    Options proxy: SPY (GEX/flows)
+    """
+    nocache = request.args.get('nocache', '0') == '1'
+    display_symbol = 'SPX'
+    price_proxy = 'ES=F'
+    options_proxy = 'SPY'
+
+    # ── Quote (best-effort real-time) ───────────────────────────────────────
+    q_out: dict = {'symbol': price_proxy, 'price': None, 'source': 'none'}
+    try:
+        symbol = price_proxy.upper().strip()
+        q = _fh_quote(symbol)
+        if q and q.get('c'):
+            q_out = {
+                'symbol': symbol,
+                'price':  q.get('c'),
+                'open':   q.get('o'),
+                'high':   q.get('h'),
+                'low':    q.get('l'),
+                'prev_close': q.get('pc'),
+                'change': round(q.get('c', 0) - q.get('pc', 0), 4) if q.get('pc') else None,
+                'change_pct': round((q.get('c', 0) - q.get('pc', 0)) / q.get('pc', 1) * 100, 3) if q.get('pc') else None,
+                'bid': None, 'ask': None, 'bidSize': None, 'askSize': None,
+                'source': 'finnhub',
+                'timestamp': datetime.now().isoformat(),
+            }
+        else:
+            sq = _schwab_quote(symbol)
+            if sq and sq.get('lastPrice'):
+                lp = sq.get('lastPrice', 0)
+                pc = sq.get('closePrice', 0)
+                q_out = {
+                    'symbol': symbol,
+                    'price':  lp,
+                    'open':   sq.get('openPrice'),
+                    'high':   sq.get('highPrice'),
+                    'low':    sq.get('lowPrice'),
+                    'prev_close': pc,
+                    'change': round(lp - pc, 4) if pc else None,
+                    'change_pct': round((lp - pc) / pc * 100, 3) if pc else None,
+                    'bid': sq.get('bidPrice'),
+                    'ask': sq.get('askPrice'),
+                    'bidSize': sq.get('bidSize'),
+                    'askSize': sq.get('askSize'),
+                    'source': 'schwab',
+                    'timestamp': datetime.now().isoformat(),
+                }
+            else:
+                with _yf_lock:
+                    t = yf.Ticker(symbol)
+                    info = t.info
+                price = info.get('currentPrice') or info.get('regularMarketPrice') or info.get('previousClose')
+                q_out = {
+                    'symbol': symbol,
+                    'price':  price,
+                    'bid': None, 'ask': None, 'bidSize': None, 'askSize': None,
+                    'source': 'yfinance',
+                    'timestamp': datetime.now().isoformat(),
+                }
+    except Exception as e:
+        q_out = {'symbol': price_proxy, 'price': None, 'error': str(e)[:140], 'source': 'error'}
+
+    # ── Options-derived panels (proxy: SPY) ──────────────────────────────────
+    gex_asset = _gex_row(options_proxy, 'ETFs', nocache=nocache) or {
+        'symbol': options_proxy, 'spot': 0.0, 'strikes': [], 'gex': [],
+        'gamma_wall': None, 'put_wall': None, 'call_wall': None, 'flip_level': None,
+        'regime': 'No Data', 'no_options': True,
+    }
+    flows_asset = _flow_row(options_proxy, 'ETFs', nocache=nocache) or None
+
+    # ── Scale SPY-strike levels into ES=F price domain ───────────────────────
+    scaled = {}
+    try:
+        esf_asset = _gex_row(price_proxy, 'Futures', nocache=nocache) or {}
+        esf_spot = float(esf_asset.get('spot') or 0.0)
+        spy_spot = float(gex_asset.get('spot') or 0.0)
+        if esf_spot > 0 and spy_spot > 0:
+            ratio = esf_spot / spy_spot
+            # Round to 0.25 increments to resemble SPX/ES strikes visually.
+            def _qtr(x: float | None) -> float | None:
+                if x is None:
+                    return None
+                try:
+                    return round(float(x) * ratio * 4) / 4
+                except Exception:
+                    return None
+
+            strikes = gex_asset.get('strikes') or []
+            scaled = {
+                'spot': esf_spot,
+                'gwall': _qtr(gex_asset.get('gamma_wall') or gex_asset.get('call_wall')),
+                'pwall': _qtr(gex_asset.get('put_wall')),
+                'flip':  _qtr(gex_asset.get('flip_level')),
+                'strikes': [round(float(sk) * ratio * 4) / 4 for sk in strikes if sk is not None],
+            }
+    except Exception:
+        scaled = {}
+
+    out = {
+        'display_symbol': display_symbol,
+        'price_proxy': price_proxy,
+        'options_proxy': options_proxy,
+        'quote': q_out,
+        'gex_asset': gex_asset,
+        'flows_asset': flows_asset,
+        'scaled': scaled,
+        'timestamp': datetime.now().isoformat(),
+    }
+    return jsonify(out)
+
+
 @app.route('/api/news/<symbol>')
 def news_endpoint(symbol):
     """Recent company news via Finnhub."""
