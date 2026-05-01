@@ -2426,6 +2426,29 @@ document.getElementById('refreshBtn').addEventListener('click', ()=> {
   loadSp500Map(true);
   loadSpxGreeks(true);
 });
+// Persist Best Options mode so refresh doesn't reset it.
+function _bestModeKey(){ return 'spxhub:bestMode'; }
+function _restoreBestMode(){
+  try{
+    const sel = document.getElementById('bestMode');
+    if (!sel) return;
+    const v = localStorage.getItem(_bestModeKey());
+    if (v && Array.from(sel.options).some(o => o.value === v)) sel.value = v;
+  }catch(e){}
+}
+function _saveBestMode(){
+  try{
+    const sel = document.getElementById('bestMode');
+    if (!sel) return;
+    localStorage.setItem(_bestModeKey(), sel.value || '0dte');
+  }catch(e){}
+}
+_restoreBestMode();
+document.getElementById('bestMode').addEventListener('change', ()=> {
+  _saveBestMode();
+  // Force a fresh IV pull when switching modes (prevents stale term structure / spot).
+  loadVol(true).then(()=> { try{ renderBestOptions(); }catch(e){} });
+});
 document.getElementById('ivExpSel').addEventListener('change', ()=> { try{ updateIvPanel(window.__volAll, 'SPY'); }catch(e){} });
 document.getElementById('sp500RefreshBtn').addEventListener('click', ()=> { loadSp500Map(true); });
 document.getElementById('sp500Sector').addEventListener('change', ()=> { try{ renderSp500Treemap((_sp500Raw && _sp500Raw.treemap) ? _sp500Raw.treemap : []); }catch(e){} });
