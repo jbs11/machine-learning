@@ -3772,11 +3772,28 @@ def _download_daily_closes_batched(symbols: list[str], period: str = '260d', loc
         try:
             if isinstance(df.columns, pd.MultiIndex):
                 closes = {}
+                lv0 = set([str(x) for x in df.columns.get_level_values(0)])
+                lv1 = set([str(x) for x in df.columns.get_level_values(1)])
                 for t in chunk:
-                    if t in df.columns.get_level_values(0):
-                        s = df[t]['Close'] if 'Close' in df[t].columns else None
-                        if s is not None:
-                            closes[t] = s
+                    sub = None
+                    try:
+                        # Common shape: (TICKER, FIELD)
+                        if t in lv0:
+                            sub = df[t]
+                        # Alternate shape: (FIELD, TICKER)
+                        elif t in lv1:
+                            sub = df.xs(t, axis=1, level=1)
+                    except Exception:
+                        sub = None
+
+                    if sub is None:
+                        continue
+                    try:
+                        s = sub['Close'] if 'Close' in sub.columns else None
+                    except Exception:
+                        s = None
+                    if s is not None:
+                        closes[t] = s
                 if closes:
                     out.append(pd.DataFrame(closes))
             else:
@@ -4083,24 +4100,52 @@ def sp500_map_endpoint():
                     last = closes.tail(1).T.iloc[:, 0]
                     prev = last
 
+                def _norm_sym(x) -> str:
+                    try:
+                        s = str(x).strip().upper()
+                    except Exception:
+                        s = ''
+                    return s.replace('.', '-')
+
+                # Build a lookup so we can handle occasional weird column labels.
+                col_map: dict[str, object] = {}
+                try:
+                    for ccol in list(closes.columns):
+                        raw = ccol[-1] if isinstance(ccol, tuple) and len(ccol) else ccol
+                        col_map[_norm_sym(raw)] = ccol
+                except Exception:
+                    col_map = {}
+
+                # Build sector/name lookup from constituents, but compute treemap using the
+                # actual columns we received from yfinance (avoids symbol mismatch edge cases).
+                meta_map: dict[str, dict] = {}
+                try:
+                    for c in cons:
+                        s = c.get('symbol')
+                        if not s:
+                            continue
+                        meta_map[_norm_sym(s)] = c
+                except Exception:
+                    meta_map = {}
+
                 treemap: list[dict] = []
                 computed = 0
-                for c in cons:
-                    sym = c.get('symbol')
-                    if not sym:
-                        continue
+                for ccol in list(closes.columns):
                     try:
-                        c0 = _safe_float(last.get(sym), None)  # type: ignore[arg-type]
-                        c1 = _safe_float(prev.get(sym), None)  # type: ignore[arg-type]
+                        raw = ccol[-1] if isinstance(ccol, tuple) and len(ccol) else ccol
+                        sym = _norm_sym(raw)
+                        c0 = _safe_float(last.get(ccol), None)  # type: ignore[arg-type]
+                        c1 = _safe_float(prev.get(ccol), None)  # type: ignore[arg-type]
                         if c0 is None or c1 is None or c1 == 0:
                             continue
                         chg_pct = (c0 - c1) / c1 * 100.0
                         computed += 1
+                        meta = meta_map.get(sym, {})
                         treemap.append({
                             'symbol': sym,
-                            'label': c.get('name') or sym,
-                            'sector': c.get('sector') or 'Unknown',
-                            'industry': c.get('industry') or '',
+                            'label': meta.get('name') or sym,
+                            'sector': meta.get('sector') or 'Unknown',
+                            'industry': meta.get('industry') or '',
                             'price': round(float(c0), 4),
                             'change_pct': round(float(chg_pct), 3),
                             'weight': 1.0,
@@ -6674,9 +6719,13 @@ def _vol_row(symbol: str) -> dict | None:
     """Fetch option chains and compute IV surface data for one symbol."""
     try:
         from datetime import date as _date
-        tk = yf.Ticker(symbol)
+        # yfinance is not reliably thread-safe across many concurrent tickers.
+        # Use the shared lock to reduce partial surfaces (missing SPY/QQQ).
+        with _yf_lock:
+            tk = yf.Ticker(symbol)
 
-        hist = tk.history(period='35d', auto_adjust=True)
+        with _yf_lock:
+            hist = tk.history(period='35d', auto_adjust=True)
         if hist.empty or len(hist) < 2:
             return None
         spot = float(hist['Close'].iloc[-1])
@@ -6685,7 +6734,8 @@ def _vol_row(symbol: str) -> dict | None:
         log_rets = np.log(hist['Close'] / hist['Close'].shift(1)).dropna()
         hv30 = float(log_rets.std() * np.sqrt(252))
 
-        expirations = tk.options
+        with _yf_lock:
+            expirations = tk.options
         if not expirations:
             return None
 
@@ -6701,7 +6751,8 @@ def _vol_row(symbol: str) -> dict | None:
                 exp_date = _date.fromisoformat(exp_str)
                 dte = max(1, (exp_date - today).days)
 
-                chain = tk.option_chain(exp_str)
+                with _yf_lock:
+                    chain = tk.option_chain(exp_str)
                 calls = chain.calls[chain.calls['impliedVolatility'] > 0.01].copy()
                 puts  = chain.puts[chain.puts['impliedVolatility']  > 0.01].copy()
                 if calls.empty or puts.empty:
@@ -6813,12 +6864,13 @@ def volatility_surface_endpoint():
             return jsonify(cached)
 
     rows = []
-    with ThreadPoolExecutor(max_workers=3) as pool:
+    # SPY/QQQ can take longer than 5s for option chains; give each worker more time.
+    with ThreadPoolExecutor(max_workers=5) as pool:
         futs = {pool.submit(_vol_row, sym): sym for sym in _VOL_SYMBOLS}
         try:
-            for fut in as_completed(futs, timeout=70):
+            for fut in as_completed(futs, timeout=120):
                 try:
-                    r = fut.result(timeout=5)
+                    r = fut.result(timeout=20)
                     if r:
                         rows.append(r)
                 except Exception:

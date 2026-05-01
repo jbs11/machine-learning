@@ -167,7 +167,22 @@
     .toastTitle { font-weight: 900; font-size: .85rem; margin-bottom:.15rem; }
     .toastBody { color: var(--muted); font-size: .78rem; line-height:1.55; }
 
-    /* IV skew panel */
+    
+
+    /* Best options table */
+    .tbl { width:100%; border-collapse: separate; border-spacing:0; overflow:hidden; border-radius:12px; border:1px solid rgba(255,255,255,.08); }
+    .tbl th, .tbl td { padding:.55rem .65rem; border-bottom:1px solid rgba(255,255,255,.06); vertical-align: top; }
+    .tbl th { font-size:.68rem; color: rgba(255,255,255,.72); text-transform: uppercase; letter-spacing:.08em; text-align:left; background: rgba(255,255,255,.03); position: sticky; top: 0; z-index: 2; }
+    .tbl tr:hover td { background: rgba(34,211,238,.04); }
+    .tbl td { font-size:.78rem; color: rgba(255,255,255,.86); line-height:1.45; }
+    .tbl .mono { font-family: Consolas, monospace; font-weight: 900; }
+    .tbl .tag { display:inline-flex; align-items:center; gap:.35rem; padding:.14rem .5rem; border-radius:999px; border:1px solid rgba(255,255,255,.14); background: rgba(255,255,255,.03); color: rgba(255,255,255,.78); font-size:.65rem; font-weight:900; letter-spacing:.04em; text-transform: uppercase; }
+    .tbl .tag.pos { border-color: rgba(34,197,94,.35); color:#4ade80; background: rgba(34,197,94,.08); }
+    .tbl .tag.neg { border-color: rgba(248,113,113,.35); color:#f87171; background: rgba(248,113,113,.08); }
+    .tbl .tag.neu { border-color: rgba(167,139,250,.35); color:#a78bfa; background: rgba(167,139,250,.08); }
+    .tblWrap { max-height: 420px; overflow:auto; border-radius:12px; }
+    .small { font-size:.72rem; color: var(--muted); }
+/* IV skew panel */
     .ivGrid { display:grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
     @media(max-width: 980px){ .ivGrid{ grid-template-columns: 1fr; } }
     #ivSkewChart { height: 240px; background:#070d18; }
@@ -408,6 +423,47 @@ if (window.location.search.indexOf('_v=') === -1) {
       <div class="footNote" style="margin-top:.65rem" id="spxGreeksNear"></div>
     </div>
   </div>
+
+  <div class="panel" style="margin-top:1rem" id="bestOptionsPanel">
+    <div class="ph">
+      <div>
+        <div class="pt">Best SPXW Options To Trade Now (0DTE + 5D)</div>
+        <div class="ps">Ranked trade candidates using IV surface + gamma regime + proxy Greeks. Uses SPY as the liquid proxy for SPX when needed.</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;">
+        <select id="bestMode" class="pill" style="padding:.28rem .6rem;border-radius:8px;font-weight:900;cursor:pointer;">
+          <option value="0dte">0DTE (SPXW)</option>
+          <option value="5d">5D (SPXW)</option>
+          <option value="45d">45–60 DTE (theta)</option>
+        </select>
+        <div class="ps" id="bestOptsStamp">—</div>
+      </div>
+    </div>
+    <div class="pb">
+      <div class="footNote" id="bestOptsSummary">Loading…</div>
+      <div class="tblWrap" style="margin-top:.7rem">
+        <table class="tbl">
+          <thead>
+            <tr>
+              <th>Rank</th>
+              <th>Setup</th>
+              <th>Exp</th>
+              <th>Strike (SPX)</th>
+              <th>Target Δ</th>
+              <th>When</th>
+              <th>How</th>
+              <th>Risk</th>
+            </tr>
+          </thead>
+          <tbody id="bestOptsBody">
+            <tr><td colspan="8" class="small">Loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="footNote" style="margin-top:.65rem">This is a <strong>trade planner</strong> (not a signal). It ranks candidates from the current options surface + gamma regime. Always use defined risk and your normal confirmations.</div>
+    </div>
+  </div>
+
 
   <div class="panel" style="margin-top:1rem">
     <div class="ph">
@@ -884,6 +940,309 @@ function renderSpxGreeks(row){
   near.innerHTML = ks.length
     ? ('<b>Nearby strikes:</b> ' + ks.map(x=>fmtNum(x,0)).join(', '))
     : '';
+
+}
+
+function _normCdf(x){
+  // Abramowitz-Stegun approximation (good enough for ranking)
+  const t = 1 / (1 + 0.2316419 * Math.abs(x));
+  const d = 0.3989423 * Math.exp(-x*x/2);
+  let p = d * t * (0.3193815 + t * (-0.3565638 + t * (1.781478 + t * (-1.821256 + t * 1.330274))));
+  if (x > 0) p = 1 - p;
+  return p;
+}
+
+function _bsDelta(S, K, T, r, sigma, type){
+  try{
+    const s = Number(S), k = Number(K), t = Number(T), rr = Number(r), v = Number(sigma);
+    if (!isFinite(s) || !isFinite(k) || !isFinite(t) || !isFinite(rr) || !isFinite(v)) return null;
+    if (s <= 0 || k <= 0 || t <= 0 || v <= 0) return null;
+    const d1 = (Math.log(s/k) + (rr + 0.5*v*v)*t) / (v*Math.sqrt(t));
+    const Nd1 = _normCdf(d1);
+    if (type === 'put') return Nd1 - 1;
+    return Nd1;
+  }catch(e){
+    return null;
+  }
+}
+
+function _pickExpiryFromTerm(ts, mode){
+  const arr = (ts||[]).slice().filter(x=>x && x.expiry);
+  if (!arr.length) return null;
+  const want = (mode === '45d') ? 55 : (mode === '5d') ? 5 : 0;
+  let best = arr[0];
+  let bd = Infinity;
+  for (const t of arr){
+    const dte = Number(t.dte);
+    if (!isFinite(dte)) continue;
+    const dd = Math.abs(dte - want);
+    if (dd < bd){ bd = dd; best = t; }
+  }
+  return best;
+}
+
+
+
+function _etYmd(){
+  try{
+    const parts = new Intl.DateTimeFormat('en-US', { timeZone:'America/New_York', year:'numeric', month:'2-digit', day:'2-digit' }).formatToParts(new Date());
+    const y = Number(parts.find(p=>p.type==='year')?.value);
+    const m = Number(parts.find(p=>p.type==='month')?.value);
+    const d = Number(parts.find(p=>p.type==='day')?.value);
+    if (!isFinite(y) || !isFinite(m) || !isFinite(d)) return null;
+    return { y, m, d };
+  }catch(e){
+    return null;
+  }
+}
+
+function _ymdToStr(ymd){
+  if (!ymd) return '';
+  const y = String(ymd.y).padStart(4,'0');
+  const m = String(ymd.m).padStart(2,'0');
+  const d = String(ymd.d).padStart(2,'0');
+  return `${y}-${m}-${d}`;
+}
+
+function _addBizDaysEt(ymd, n){
+  // Adds N business days (Mon-Fri) in ET calendar terms.
+  if (!ymd) return null;
+  let dt = new Date(Date.UTC(Number(ymd.y), Number(ymd.m)-1, Number(ymd.d), 12, 0, 0));
+  let left = Math.max(0, Number(n)||0);
+  while (left > 0){
+    dt = new Date(dt.getTime() + 24*3600*1000);
+    const wd = dt.getUTCDay(); // 0 Sun .. 6 Sat (UTC noon ~ ET date stable)
+    if (wd === 0 || wd === 6) continue;
+    left -= 1;
+  }
+  return { y: dt.getUTCFullYear(), m: dt.getUTCMonth()+1, d: dt.getUTCDate() };
+}
+function _regimeTextFromGex(row){
+  const reg = row ? _gexRegime(row) : 0;
+  if (reg === -1) return { reg, label:'Below Put Wall', cls:'neg' };
+  if (reg === 1) return { reg, label:'Above Call Wall', cls:'pos' };
+  return { reg, label:'Inside Walls', cls:'neu' };
+}
+
+function renderBestOptions(){
+  const body = document.getElementById('bestOptsBody');
+  const sum = document.getElementById('bestOptsSummary');
+  const stamp = document.getElementById('bestOptsStamp');
+  if (!body || !sum || !stamp) return;
+
+  const volAll = window.__volAll || null;
+  const hub = window.__spxHub || null;
+  const mode = (document.getElementById('bestMode')?.value || '0dte');
+
+  if (!volAll || !volAll.assets || !volAll.assets.length){
+    body.innerHTML = '<tr><td colspan="8" class="small"><span class="error">IV surface not loaded yet.</span> <button class="pill" style="margin-left:.5rem;cursor:pointer" onclick="try{ loadVol(true); }catch(e){}">Retry</button></td></tr>';
+    sum.innerHTML = 'Waiting for IV surface… (click Retry if it stays stuck)';
+    stamp.textContent = '—';
+    // Proactively kick a load once (in case render runs before loadVol resolves)
+    try{
+      if (!window.__bestVolKick){
+        window.__bestVolKick = Date.now();
+        setTimeout(()=> { try{ loadVol(false); }catch(e){} }, 300);
+      }
+    }catch(e){}
+    return;
+  }
+
+  const spyVol = volAll.assets.find(a => a && a.symbol === 'SPY') || null;
+  if (!spyVol || !spyVol.term_structure || !spyVol.term_structure.length){
+    body.innerHTML = '<tr><td colspan="8" class="small"><span class="error">No SPY vol surface rows.</span></td></tr>';
+    sum.innerHTML = 'IV surface unavailable for SPY.';
+    stamp.textContent = '—';
+    return;
+  }
+
+  const gexSpy = (window.__lastGexSpyRow || null);
+  const regInfo = _regimeTextFromGex(gexSpy);
+
+  const pick = _pickExpiryFromTerm(spyVol.term_structure, mode === '0dte' ? '0dte' : (mode === '5d' ? '5d' : '45d'));
+  const exp = pick ? pick.expiry : '';
+  const dtePicked = pick ? Number(pick.dte) : null;
+  const atmIv = pick && pick.atm_iv != null ? Number(pick.atm_iv) : null; // decimal
+  const ivRank = (spyVol.iv_rank != null) ? Number(spyVol.iv_rank) : null;
+
+  const spySpot = hub && hub.spy ? (hub.spy.price ?? hub.spy.last ?? hub.spy.close) : null;
+  // Spot fallback order:
+  // 1) spx-hub quote (fast)
+  // 2) vol surface row spot (already fetched)
+  // 3) gamma snapshot spot (proxy)
+  const S = (()=>{
+    const cands = [spySpot, (spyVol ? spyVol.spot : null), (gexSpy ? gexSpy.spot : null)];
+    for (const c of cands){
+      const n = Number(c);
+      if (isFinite(n) && n > 0) return n;
+    }
+    return null;
+  })();
+  const spxSpot = hub && hub.spx ? (hub.spx.price ?? hub.spx.last ?? hub.spx.close) : null;
+  const spxS = (spxSpot != null && isFinite(Number(spxSpot))) ? Number(spxSpot) : null;
+  const spotRatio = (spxS && isFinite(spxS) && isFinite(S) && S > 0) ? (spxS / S) : null;
+  const _toSpxStrike = (kSpy)=> {
+    const kk = Number(kSpy);
+    if (!isFinite(kk)) return null;
+    if (!spotRatio || !isFinite(spotRatio)) return null;
+    return kk * spotRatio;
+  };
+
+  // SPXW modes don't require a proxy expiry string to render (we label SPXW by date),
+  // but we still need a spot to compute deltas and strike conversion.
+  const dte = (mode === '0dte') ? 0 : (mode === '5d') ? 5 : dtePicked;
+  const needProxyExpiry = (mode === '45d');
+  if (S === null || !isFinite(S) || S <= 0 || (needProxyExpiry && !exp)){
+    body.innerHTML = '<tr><td colspan="8" class="small"><span class="error">Missing spot/expiry.</span> <button class="pill" style="margin-left:.5rem;cursor:pointer" onclick="try{ load(false); loadVol(true); }catch(e){}">Retry</button></td></tr>';
+    sum.innerHTML = 'Waiting for spot + expiry… (Retry will refetch quotes + IV)';
+    stamp.textContent = '—';
+    return;
+  }
+
+  const T = Math.max(((isFinite(dte) ? dte : 1) || 1) / 365.0, 1/365.0);
+  const r = 0.05;
+  const sigma = (atmIv && isFinite(atmIv) && atmIv > 0.001) ? atmIv : 0.25;
+
+  const strikes = (spyVol.matrix && spyVol.matrix.strikes) ? spyVol.matrix.strikes.map(Number).filter(x=>isFinite(x)) : [];
+  const uniqueStrikes = Array.from(new Set(strikes)).sort((a,b)=>a-b);
+
+  function nearestStrikeForAbsDelta(targetAbsDelta, type){
+    let best = null;
+    let bd = Infinity;
+    for (const K of uniqueStrikes){
+      const d = _bsDelta(S, K, T, r, sigma, type);
+      if (d === null) continue;
+      const ad = Math.abs(d);
+      const dd = Math.abs(ad - targetAbsDelta);
+      if (dd < bd){ bd = dd; best = { K, delta: d, absDelta: ad }; }
+    }
+    return best;
+  }
+
+  const highVol = (ivRank != null && isFinite(ivRank) && ivRank >= 70) || (sigma >= 0.28);
+  const lowVol  = (ivRank != null && isFinite(ivRank) && ivRank <= 30) || (sigma <= 0.18);
+  const inside = (regInfo.reg === 0);
+
+    const et = _etYmd();
+  const spxw0 = _ymdToStr(et);
+  const spxw5 = _ymdToStr(_addBizDaysEt(et, 5));
+  const expTxt = (mode === '0dte' && spxw0)
+    ? (`SPXW ${spxw0} (0d)`)
+    : (mode === '5d' && spxw5)
+      ? (`SPXW ${spxw5} (5d)`)
+      : (exp + (isFinite(dte) ? ` (${dte}d)` : ''));
+
+
+  const put15  = nearestStrikeForAbsDelta(0.15, 'put');
+  const put25  = nearestStrikeForAbsDelta(0.25, 'put');
+  const call15 = nearestStrikeForAbsDelta(0.15, 'call');
+  const call25 = nearestStrikeForAbsDelta(0.25, 'call');
+
+  function baseScore(){
+    let s0 = 50;
+    if (inside) s0 += 12; else s0 -= 8;
+    if (highVol) s0 += 10;
+    if (lowVol) s0 -= 6;
+    if (regInfo.reg !== 0) s0 -= 4;
+    return s0;
+  }
+
+  const rows = [];
+
+  function pushRow(obj){ rows.push(obj); }
+
+  if (put15){
+    pushRow({
+      setup: '<span class="tag pos">Income</span> Put credit spread',
+      exp: expTxt,
+      strike: (()=>{ const k=_toSpxStrike(put15.K); const spxK = (k!=null)?fmtNum(k,0):'—'; return `<span class="mono">${spxK}</span> sell <span class="small">(proxy SPY ${fmtNum(put15.K,0)})</span>`; })(),
+      delta: '0.15',
+      when: inside ? 'Inside walls; after first 15–30m if range stabilizes' : 'Only after reclaiming inside walls',
+      how: highVol ? 'Defined-risk; take 40–60% profit; manage early' : 'Prefer wider; smaller size; be picky',
+      risk: (regInfo.reg === -1) ? 'Downside continuation risk; avoid stacking short puts' : 'Gamma ramps near close',
+      score: baseScore() + 8,
+    });
+  }
+  if (call15){
+    pushRow({
+      setup: '<span class="tag pos">Income</span> Call credit spread',
+      exp: expTxt,
+      strike: (()=>{ const k=_toSpxStrike(call15.K); const spxK = (k!=null)?fmtNum(k,0):'—'; return `<span class="mono">${spxK}</span> sell <span class="small">(proxy SPY ${fmtNum(call15.K,0)})</span>`; })(),
+      delta: '0.15',
+      when: inside ? 'Inside walls; fade pushes into resistance / call wall area' : 'Only if price fails above call wall and returns inside',
+      how: highVol ? 'Defined-risk; scale out on quick wins; don’t fight melt-up' : 'Wider; smaller size; avoid chasing',
+      risk: (regInfo.reg === 1) ? 'Upside continuation risk; avoid short calls' : 'Late-day squeezes possible',
+      score: baseScore() + 7,
+    });
+  }
+
+  if (inside && put15 && call15){
+    pushRow({
+      setup: '<span class="tag neu">Range</span> Iron condor (defined-risk)',
+      exp: expTxt,
+      strike: (()=>{ const kp=_toSpxStrike(put15.K); const kc=_toSpxStrike(call15.K); const spxP=(kp!=null)?fmtNum(kp,0):'—'; const spxC=(kc!=null)?fmtNum(kc,0):'—'; return `Sell <span class="mono">${spxP}</span> put / <span class="mono">${spxC}</span> call <span class="small">(proxy SPY ${fmtNum(put15.K,0)}/${fmtNum(call15.K,0)})</span>`; })(),
+      delta: '±0.15',
+      when: 'Inside walls; after initial volatility settles; best on “chop” tape',
+      how: 'Wings outside walls; take 30–50% profit; cut if regime flips',
+      risk: 'Breakout / expansion day risk (don’t stay stubborn)',
+      score: baseScore() + 10,
+    });
+  }
+
+  if (!highVol && (put25 || call25)){
+    if (put25){
+      pushRow({
+        setup: '<span class="tag neu">Directional</span> Put debit spread (bearish)',
+        exp: expTxt,
+        strike: (()=>{ const k=_toSpxStrike(put25.K); const spxK = (k!=null)?fmtNum(k,0):'—'; return `Buy near <span class="mono">${spxK}</span> put <span class="small">(proxy SPY ${fmtNum(put25.K,0)})</span>`; })(),
+        delta: '0.25',
+        when: (regInfo.reg === -1) ? 'Below put wall / breakdown with follow-through' : 'Only with your breakdown trigger',
+        how: 'Defined-risk; size small; take profit into flushes',
+        risk: 'IV crush after event; whipsaw near flip',
+        score: baseScore() - 2,
+      });
+    }
+    if (call25){
+      pushRow({
+        setup: '<span class="tag neu">Directional</span> Call debit spread (bullish)',
+        exp: expTxt,
+        strike: (()=>{ const k=_toSpxStrike(call25.K); const spxK = (k!=null)?fmtNum(k,0):'—'; return `Buy near <span class="mono">${spxK}</span> call <span class="small">(proxy SPY ${fmtNum(call25.K,0)})</span>`; })(),
+        delta: '0.25',
+        when: (regInfo.reg === 1) ? 'Above call wall / breakout with follow-through' : 'Only with your breakout trigger',
+        how: 'Defined-risk; take profit into extensions; don’t hold through reversal',
+        risk: 'Chop / mean reversion inside walls',
+        score: baseScore() - 1,
+      });
+    }
+  }
+
+  rows.sort((a,b)=> (b.score||0) - (a.score||0));
+  const top = rows.slice(0, 8);
+
+  if (!top.length){
+    body.innerHTML = '<tr><td colspan="8" class="small"><span class="error">Not enough surface data to rank candidates.</span></td></tr>';
+  } else {
+    body.innerHTML = top.map((r,i)=>(
+      '<tr>' +
+        `<td class="mono">${i+1}</td>` +
+        `<td>${r.setup}</td>` +
+        `<td class="mono">${esc(String(r.exp||''))}</td>` +
+        `<td>${r.strike}</td>` +
+        `<td class="mono">${esc(String(r.delta||''))}</td>` +
+        `<td>${r.when}</td>` +
+        `<td>${r.how}</td>` +
+        `<td>${r.risk}</td>` +
+      '</tr>'
+    )).join('');
+  }
+
+  const proxyTxt = (spxSpot && isFinite(Number(spxSpot))) ? `SPX ${fmtNum(Number(spxSpot),2)} (strikes derived from SPY surface)` : `SPY ${fmtNum(S,2)} proxy (SPX spot unavailable)`;
+  const volTxt = `ATM IV ${(sigma*100).toFixed(1)}%` + (ivRank!=null && isFinite(ivRank) ? ` · IV Rank ${ivRank}%` : '');
+  sum.innerHTML = `<b>Context:</b> ${proxyTxt} · <span class="tag ${regInfo.cls}">${regInfo.label}</span> · ${volTxt}`;
+
+  const ms = volAll.timestamp ? Date.parse(volAll.timestamp) : NaN;
+  const loc = isFinite(ms) ? new Date(ms).toLocaleTimeString([], { hour:'numeric', minute:'2-digit' }) : '';
+  stamp.textContent = volAll.timestamp ? ('Updated ' + (loc || volAll.timestamp)) : '—';
 }
 
 async function loadSp500Map(nocache=false){
@@ -1922,6 +2281,7 @@ async function loadVol(nocache=false){
     const d = await res.json();
     window.__volAll = d;
     updateIvPanel(d, 'SPY');
+    try{ renderBestOptions(); }catch(e){}
   }catch(e){
     const note1 = document.getElementById('ivSkewNote');
     if (note1) note1.innerHTML = '<span class=\"error\">Failed to load IV surface:</span> ' + e.message;
@@ -2019,6 +2379,7 @@ async function loadGex(nocache=false){
     renderAlertStatus(spyRow);
     maybeGexAlerts(spyRow);
     drawGammaCurve(document.getElementById('gexCurve'), spyRow || {});
+    try{ renderBestOptions(); }catch(e){}
     if (document.getElementById('gexTimeWrap').style.display !== 'none') {
       const ts = d.timestamp ? Date.parse(d.timestamp) : Date.now();
       pushGexTimePoint(spyRow || {}, Math.floor(ts/1000));
@@ -2043,6 +2404,7 @@ async function load(nocache=false){
     const res = await fetch(API + '/api/spx-hub' + (nocache ? '?nocache=1' : ''), { cache:'no-store' });
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const d = await res.json();
+    window.__spxHub = d;
     setQuote('spx', d.spx || {});
     setQuote('spy', d.spy || {});
     renderTreemap(d.treemap || []);
@@ -2060,7 +2422,7 @@ async function load(nocache=false){
 document.getElementById('refreshBtn').addEventListener('click', ()=> {
   load(true);
   loadGex(true);
-  loadVol(true);
+  loadVol(true).then(()=> { try{ renderBestOptions(); }catch(e){} });
   loadSp500Map(true);
   loadSpxGreeks(true);
 });
@@ -2129,7 +2491,7 @@ document.getElementById('dteWeekday').addEventListener('change', ()=> { loadDteP
 
 load(false);
 loadGex(false);
-loadVol(false);
+loadVol(false).then(()=> { try{ renderBestOptions(); }catch(e){} });
 loadSp500Map(false);
 loadSpxGreeks(false);
 loadDteProjection(false);

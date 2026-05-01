@@ -289,6 +289,7 @@
     <button class="cat-pill" onclick="setCat('signals', this)">🎯 Signals &amp; Thresholds</button>
     <button class="cat-pill" onclick="setCat('setup', this)">⚙️ Trade Setup</button>
     <button class="cat-pill" onclick="setCat('options', this)">🎯 Options</button>
+    <button class="cat-pill" onclick="setCat('bestopts', this)">🧭 Best SPXW Options</button>
     <button class="cat-pill" onclick="setCat('futures', this)">⚡ Futures</button>
     <button class="cat-pill" onclick="setCat('market', this)">🌐 Market Structure</button>
     <button class="cat-pill" onclick="setCat('assets', this)">🏦 Asset Types</button>
@@ -927,6 +928,28 @@
         <div class="term-name">Calendar Spread <span class="term-abbr">Time Spread</span></div>
         <div class="term-def">Sell a near-term option, buy the <strong>same strike at a longer expiry</strong>. Profits from near-term IV crush + time decay while maintaining the longer-dated position. Net long vega — benefits when IV rises post-entry. Best use case: after a binary event crushes near-term IV (making the short leg cheaper to buy back), while IV in longer expiries remains elevated. Also used to sell expensive 0DTE premium while hedging with a weekly at the same strike.</div>
         <div class="term-tags"><span class="term-tag tag-sum">Market Prep</span></div>
+
+      <div class="term-card">
+        <div class="term-name">Best SPX Options Table <span class="term-abbr">Trade Planner</span></div>
+        <div class="term-def">
+          A ranked table on the <strong>SPX Hub</strong> that proposes <strong>SPX option setups</strong> (credit spreads, condors, debit spreads) with suggested strikes and a plain-English plan for <strong>when</strong> and <strong>how</strong> to trade.<br><br>
+
+          <strong>What it uses:</strong> IV surface + gamma regime (inside/outside walls) + spot context. Expiries are shown as <strong>SPXW</strong> for <strong>0DTE</strong> and <strong>5D</strong> modes. When direct SPX chain data isn’t available, strike selection is <strong>derived from the SPY surface</strong> and converted into <strong>SPX-equivalent strikes</strong> using the live SPX/SPY ratio.<br><br>
+
+          <strong>How to use the table:</strong><br>
+          - <strong>Start with regime</strong>: Inside Walls = range/mean‑reversion more likely; Outside Walls = expansion/trend risk.<br>
+          - <strong>Check IV / skew</strong>: rising ATM IV + steepening skew = tail risk (be conservative on short puts).<br>
+          - <strong>Pick the setup row</strong> that matches the day type: income rows (credit spreads/condors) for chop days; directional debit spread rows for expansion days.<br><br>
+
+          <strong>When to trade (best):</strong> the table ranks <strong>income</strong> setups highest when you are <strong>Inside Walls</strong> and volatility conditions are supportive. This tends to be more “range / mean-reversion” friendly (especially after the opening volatility settles).<br><br>
+
+          <strong>How to trade (practical):</strong> use <strong>defined risk</strong> only, keep strikes outside key levels (Put/Call Wall), and take profits early (don’t wait for expiry). If the regime flips (breaks outside walls), reduce risk quickly.<br><br>
+
+          <strong>When NOT to trade (short premium):</strong> if you’re <strong>Below Put Wall</strong> or <strong>Above Call Wall</strong> with momentum (expansion day behavior), avoid tight premium-selling structures (iron fly / tight condor). Also avoid short premium when IV/skew is accelerating into headlines. If you trade at all, prefer a <strong>directional debit spread</strong> aligned with your confirmation and small size.
+        </div>
+        <div class="term-tags"><span class="term-tag tag-both">Both Pages</span></div>
+      </div>
+
       </div>
 
       <div class="term-card">
@@ -1262,6 +1285,65 @@
   </div>
 
   <!-- ══════════════════════════════════════════════════════════════════════ -->
+  <!-- BEST SPXW OPTIONS TABLE (GUIDE) -->
+  <!-- ══════════════════════════════════════════════════════════════════════ -->
+  <div class="cat-section" data-cat="bestopts">
+    <div class="cat-section-header">
+      <span class="cat-icon">🧭</span>
+      <span class="cat-title">Best SPXW Options Table (SPX Hub)</span>
+      <span class="cat-count" id="cnt-bestopts"></span>
+    </div>
+    <div class="term-grid" id="grid-bestopts">
+
+      <div class="term-card">
+        <div class="term-name">How to Use the Best SPXW Options Table</div>
+        <div class="term-def">
+          The table on <strong>SPX Hub</strong> is a <strong>trade planner</strong>. It ranks setups (income vs directional) and suggests strikes based on the current regime and volatility context.<br><br>
+
+          <strong>Expiries:</strong> shows <strong>SPXW</strong> for <strong>0DTE</strong> and <strong>5D</strong> modes (weekly expirations).<br>
+          <strong>Strikes:</strong> when direct SPX chain data isn’t available, the strike selection is <strong>derived from the SPY surface</strong> and converted into <strong>SPX-equivalent strikes</strong> using the live SPX/SPY ratio (the row also shows the proxy SPY strike for sanity-checking).<br><br>
+
+          <strong>Step-by-step (fast):</strong><br>
+          1) <strong>Regime first</strong> (Inside/Outside Walls): Inside = range/mean‑reversion bias; Outside = expansion/trend risk.<br>
+          2) <strong>Vol next</strong> (ATM IV / IV Rank / skew): rising IV + steepening skew = tail risk; be more conservative on short puts.<br>
+          3) <strong>Pick the row</strong>: income rows (credit spreads/condors) for chop days; debit spreads for expansion days with confirmation.<br>
+          4) <strong>Manage early</strong>: defined risk only, take profits early (don’t “hope” into the close on 0DTE).<br>
+        </div>
+        <div class="term-tags"><span class="term-tag tag-both">Both Pages</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">When to Trade (Best Conditions)</div>
+        <div class="term-def">
+          <strong>Premium-selling (credit spreads / condors)</strong> is best when:<br>
+          - <strong>Inside Walls</strong> (range/mean‑reversion more likely)<br>
+          - IV/skew are stable or easing (no sudden tail-risk expansion)<br>
+          - You’re past the initial opening volatility (first 15–30 minutes)<br><br>
+
+          <strong>Directional debit spreads</strong> are best when:<br>
+          - You’re <strong>outside walls</strong> and the move is confirmed (break + hold / acceleration)<br>
+          - IV Rank is not extreme (so you’re not paying peak premium)<br>
+        </div>
+        <div class="term-tags"><span class="term-tag tag-both">Both Pages</span></div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-name">When NOT to Trade (or Trade Smaller)</div>
+        <div class="term-def">
+          <strong>Avoid short premium</strong> (tight condors/flies) when:<br>
+          - <strong>Below Put Wall</strong> or <strong>Above Call Wall</strong> with momentum (expansion day behavior)<br>
+          - ATM IV and skew are <strong>rising rapidly</strong> (headline/tail-risk regime)<br>
+          - Late day on 0DTE with accelerating moves (gamma can make losses grow fast)<br><br>
+
+          If you trade anyway, keep it <strong>defined-risk</strong>, <strong>smaller size</strong>, and prefer <strong>directional debit spreads</strong> with your entry confirmation.
+        </div>
+        <div class="term-tags"><span class="term-tag tag-both">Both Pages</span></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════════════════ -->
   <!-- TIMEFRAMES -->
   <!-- ══════════════════════════════════════════════════════════════════════ -->
   <div class="cat-section" data-cat="timeframes">
@@ -1438,6 +1520,7 @@ function initCounts() {
     signals:    'cnt-signals',
     setup:      'cnt-setup',
     options:    'cnt-options',
+    bestopts:   'cnt-bestopts',
     futures:    'cnt-futures',
     market:     'cnt-market',
     assets:     'cnt-assets',
