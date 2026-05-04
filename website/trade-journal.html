@@ -89,6 +89,99 @@
 
   /* ── Export strip ── */
   .export-strip { display:flex; gap:.6rem; margin-bottom:1rem; flex-wrap:wrap; }
+
+  /* ── Tabs ── */
+  .tabs { display:flex; gap:.6rem; flex-wrap:wrap; margin: .25rem 0 1rem; }
+  .tab {
+    display:inline-flex; align-items:center; gap:.45rem;
+    padding:.38rem .85rem;
+    border-radius: 999px;
+    border:1px solid var(--border);
+    background: rgba(255,255,255,.02);
+    color: var(--muted);
+    font-weight: 800;
+    font-size: .78rem;
+    cursor: pointer;
+    user-select: none;
+    transition: all .14s;
+  }
+  .tab:hover { border-color: rgba(34,211,238,.35); color: var(--text); }
+  .tab.on { border-color: rgba(34,211,238,.35); color:#22d3ee; background: rgba(34,211,238,.08); }
+  .tabPane { display:none; }
+  .tabPane.on { display:block; }
+
+  /* ── Import area ── */
+  .hint { font-size:.78rem; color: var(--muted); line-height:1.55; }
+  .import-grid { display:grid; grid-template-columns: 1fr; gap: 1rem; }
+  .import-box { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:1rem 1.2rem; }
+  .import-box h3 { font-size:.9rem; font-weight:900; margin-bottom:.45rem; }
+  .import-actions{ display:flex; gap:.6rem; flex-wrap:wrap; margin-top:.75rem; align-items:center; }
+  .file { display:inline-flex; align-items:center; gap:.5rem; padding:.45rem .7rem; border-radius:8px; border:1px dashed rgba(255,255,255,.18); color: var(--muted); background: rgba(255,255,255,.02); }
+  .file input{ max-width: 280px; }
+  .mini { font-size:.72rem; color: rgba(255,255,255,.6); }
+  .pre { font-family: Consolas, monospace; font-size: .75rem; color: rgba(255,255,255,.78); white-space: pre-wrap; }
+
+  /* Rich plan / review (paste images) */
+  .rich-edit {
+    background:var(--surface); border:1px solid var(--border); border-radius:6px;
+    color:var(--text); padding:.55rem .75rem; font-size:.84rem; font-family:inherit;
+    min-height:120px; max-height:420px; overflow-y:auto; line-height:1.45;
+    outline:none; transition:border-color .15s;
+  }
+  .rich-edit:focus { border-color: var(--primary); }
+  .rich-edit:empty:before { content: attr(data-placeholder); color: var(--muted); pointer-events:none; }
+  .rich-edit img { max-width:100%; height:auto; display:block; margin:.5rem 0; border-radius:4px; border:1px solid var(--border); }
+  .rich-edit table { border-collapse:collapse; width:100%; font-size:.8rem; margin:.5rem 0; }
+  .rich-edit td, .rich-edit th { border:1px solid var(--border); padding:.25rem .4rem; }
+
+  /* Calendar */
+  .cal-head { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:.75rem; margin-bottom:1rem; }
+  .cal-head h3 { margin:0; font-size:1rem; }
+  .cal-nav { display:flex; gap:.5rem; align-items:center; }
+  .cal-grid {
+    display:grid; grid-template-columns: repeat(7, 1fr); gap:4px;
+    font-size:.75rem;
+  }
+  .cal-dow {
+    text-align:center; color:var(--muted); font-weight:700; padding:.35rem 0;
+    text-transform:uppercase; letter-spacing:.04em; font-size:.65rem;
+  }
+  .cal-cell {
+    min-height:88px; background:rgba(255,255,255,.02); border:1px solid var(--border);
+    border-radius:8px; padding:.35rem .4rem; vertical-align:top;
+    display:flex; flex-direction:column; gap:.2rem;
+  }
+  .cal-cell.pad { background:transparent; border-color:transparent; min-height:0; }
+  .cal-cell.today { border-color: rgba(34,211,238,.45); box-shadow: inset 0 0 0 1px rgba(34,211,238,.15); }
+  .cal-daynum { font-weight:800; color:var(--text); font-size:.8rem; }
+  .cal-links { display:flex; flex-direction:column; gap:.15rem; margin-top:.15rem; }
+  .cal-links a, .cal-links button.linkish {
+    color:#22d3ee; text-decoration:none; font-size:.68rem; font-weight:700;
+    cursor:pointer; border:none; background:none; padding:0; text-align:left;
+    font-family:inherit;
+  }
+  .cal-links a:hover, .cal-links button.linkish:hover { text-decoration:underline; }
+  .cal-trade { font-size:.65rem; color:var(--muted); line-height:1.25; }
+  .cal-trade a { color:#94a3b8; font-weight:600; }
+  .cal-badge { display:inline-block; font-size:.58rem; padding:.08rem .28rem; border-radius:4px;
+    background:rgba(34,211,238,.12); color:#22d3ee; font-weight:800; margin-right:.2rem; }
+
+  tr.tj-flash td { animation: tjFlash 1.8s ease-out 1; }
+  @keyframes tjFlash {
+    0%, 40% { background: rgba(34,211,238,.22); }
+    100% { background: transparent; }
+  }
+
+  .cal-grid.week .cal-cell { min-height:140px; }
+  .cal-mode-on { border-color: rgba(34,211,238,.5) !important; color:#22d3ee !important; }
+  .rem-list { margin-top:.75rem; font-size:.78rem; }
+  .rem-row {
+    display:flex; align-items:flex-start; justify-content:space-between; gap:.5rem;
+    padding:.45rem .5rem; border-radius:6px; border:1px solid var(--border); margin-bottom:.35rem;
+    background:rgba(255,255,255,.02);
+  }
+  .rem-row .t { color:var(--text); }
+  .rem-row .when { color:var(--muted); font-size:.72rem; }
 </style>
 </head>
 <body>
@@ -117,6 +210,154 @@
 
 <div style="max-width:1400px;margin:0 auto;padding:1.4rem 1.2rem;">
 
+  <!-- ── Tabs ── -->
+  <div class="tabs" id="tj-tabs">
+    <button class="tab on" id="tab-log" type="button" onclick="setTab('log')">📋 Log</button>
+    <button class="tab" id="tab-import" type="button" onclick="setTab('import')">⬆ Import (TOS)</button>
+    <button class="tab" id="tab-analytics" type="button" onclick="setTab('analytics')">📈 Analytics</button>
+    <button class="tab" id="tab-plans" type="button" onclick="setTab('plans')">📝 Notes & Plans</button>
+    <button class="tab" id="tab-calendar" type="button" onclick="setTab('calendar')">📅 Calendar</button>
+  </div>
+
+  <!-- ── Pane: Import ── -->
+  <div class="tabPane" id="pane-import">
+    <div class="import-grid">
+      <div class="import-box">
+        <h3>Import ThinkOrSwim Trades (CSV)</h3>
+        <div class="hint">
+          Upload a TOS export CSV. We’ll preview the rows, auto-detect the columns, and import them into your journal.
+          Your existing manual-entry trades stay intact.
+        </div>
+        <div class="import-actions">
+          <span class="file">📎 <input id="tosFile" type="file" accept=".csv,text/csv" /></span>
+          <button class="btn-primary" type="button" onclick="importTosCsv()">Import CSV</button>
+          <button class="btn-outline" type="button" onclick="clearImported()">Clear imported (not manual)</button>
+          <label class="mini" style="display:inline-flex;align-items:center;gap:.4rem;">
+            <input type="checkbox" id="tosGroup" checked style="transform:translateY(1px);">
+            Group spreads (vertical/condor/bfly)
+          </label>
+          <span class="mini" id="importStatus">—</span>
+        </div>
+        <div class="hint" style="margin-top:.75rem;">
+          Tip: If your CSV uses different column names, the importer still tries to detect common TOS fields like
+          <code>Symbol</code>, <code>Qty</code>, <code>Price</code>, <code>Side</code>, <code>Exec Time</code>, <code>Commission</code>.
+        </div>
+      </div>
+
+      <div class="import-box">
+        <h3>Preview</h3>
+        <div class="pre" id="importPreview">Select a CSV to see a preview.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Pane: Analytics ── -->
+  <div class="tabPane" id="pane-analytics">
+    <div class="import-box">
+      <h3>Performance Summary</h3>
+      <div class="hint">Quick rollups based on the trades currently loaded (manual + imported).</div>
+      <div id="anaSummary" class="hint" style="margin-top:.6rem;">Loading…</div>
+    </div>
+  </div>
+
+  <!-- ── Pane: Notes & Plans ── -->
+  <div class="tabPane" id="pane-plans">
+    <div class="import-box">
+      <h3>Daily Trading Plan</h3>
+      <div class="hint">Use <strong>Premarket notes</strong> before the open, <strong>Plan / Checklist</strong> for the session, and <strong>Review</strong> after the close. Stored locally in your browser. Paste screenshots and charts with <strong>Ctrl+V</strong> (images embed in the boxes below).</div>
+      <div class="form-grid" style="margin-top:.8rem;">
+        <div class="form-group">
+          <label>Date</label>
+          <input type="date" id="planDate">
+        </div>
+        <div class="form-group">
+          <label>Bias</label>
+          <select id="planBias">
+            <option value="">—</option>
+            <option value="Bullish">Bullish</option>
+            <option value="Neutral">Neutral</option>
+            <option value="Bearish">Bearish</option>
+          </select>
+        </div>
+        <div class="form-group full-col">
+          <label>Premarket notes</label>
+          <div id="planPremarket" class="rich-edit" contenteditable="true" data-placeholder="Pre-open observations, levels to watch, overnight news… Paste screenshots (Ctrl+V)."></div>
+        </div>
+        <div class="form-group full-col">
+          <label>Plan / Checklist</label>
+          <div id="planText" class="rich-edit" contenteditable="true" data-placeholder="Key levels, setups to focus on, what you will avoid, size rules… Paste charts here (Ctrl+V)."></div>
+        </div>
+        <div class="form-group full-col">
+          <label>Review / Notes (after close)</label>
+          <div id="planReview" class="rich-edit" contenteditable="true" data-placeholder="What worked, what didn’t, what to change tomorrow… Paste tables or screenshots (Ctrl+V)."></div>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button class="btn-primary" type="button" onclick="savePlan()">💾 Save Plan</button>
+        <button class="btn-outline" type="button" onclick="loadPlan()">Load</button>
+        <button class="btn-outline" type="button" onclick="exportCurrentPlanHtml()" title="Single HTML file; images embedded">⬇ Export this day (HTML)</button>
+        <button class="btn-outline" type="button" onclick="exportAllPlansHtml()" title="All saved days in one HTML file">⬇ Export all plans (HTML)</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Pane: Calendar ── -->
+  <div class="tabPane" id="pane-calendar">
+    <div class="import-box">
+      <div class="cal-head">
+        <h3>Trading calendar</h3>
+        <div class="cal-nav">
+          <button type="button" id="calBtnMonth" class="btn-outline cal-mode-on" onclick="calSetMode('month')">Month</button>
+          <button type="button" id="calBtnWeek" class="btn-outline" onclick="calSetMode('week')">Week</button>
+          <span style="width:8px;display:inline-block"></span>
+          <button type="button" class="btn-outline" onclick="calShiftPeriod(-1)">◀ Prev</button>
+          <span id="calMonthLabel" class="mono" style="font-weight:800;color:var(--primary);">—</span>
+          <button type="button" class="btn-outline" onclick="calShiftPeriod(1)">Next ▶</button>
+          <button type="button" class="btn-outline" onclick="calGoToday()">Today</button>
+        </div>
+      </div>
+      <div class="hint" style="margin-bottom:.75rem;">
+        <span class="cal-badge">📝</span> plan · <span class="cal-badge">🔔</span> reminder · Click a trade to open the <strong>Log</strong>.
+      </div>
+      <div id="calGrid" class="cal-grid" aria-label="Calendar"></div>
+    </div>
+
+    <div class="import-box" style="margin-top:1rem;">
+      <h3>Reminders</h3>
+      <div class="hint">Set a date &amp; time for pre-market prep, economic releases, or review. Enable notifications and keep this site open in a tab (or return before the time) so the browser can show the alert.</div>
+      <div class="form-grid" style="margin-top:.75rem;">
+        <div class="form-group">
+          <label>Date</label>
+          <input type="date" id="remDate">
+        </div>
+        <div class="form-group">
+          <label>Time</label>
+          <input type="time" id="remTime" value="09:25">
+        </div>
+        <div class="form-group full-col">
+          <label>Title</label>
+          <input type="text" id="remTitle" placeholder="e.g. Pre-market checklist · FOMC 2pm">
+        </div>
+        <div class="form-group full-col">
+          <label>Note (optional)</label>
+          <input type="text" id="remNote" placeholder="Extra detail for the notification">
+        </div>
+        <div class="form-group full-col">
+          <label class="mini" style="display:flex;align-items:center;gap:.5rem;text-transform:none;">
+            <input type="checkbox" id="remNotify" checked> Desktop notification when due (if permitted)
+          </label>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button class="btn-primary" type="button" onclick="addReminder()">➕ Add reminder</button>
+        <button class="btn-outline" type="button" onclick="requestNotifyPermission()">🔔 Enable notifications</button>
+      </div>
+      <div id="reminderList" class="rem-list"></div>
+    </div>
+  </div>
+
+  <!-- ── Pane: Log (existing page) ── -->
+  <div class="tabPane on" id="pane-log">
   <!-- ── Stats strip ── -->
   <div class="stat-strip" id="stat-strip">
     <div class="stat-box"><div class="sv cyan" id="st-total">0</div><div class="sl">Total Trades</div></div>
@@ -338,6 +579,7 @@
       <option value="">All Instruments</option>
       <option value="SPX Index Option">SPX Index Option</option>
       <option value="MES Futures">MES Futures</option>
+      <option value="Futures Sweep">Futures Sweep</option>
       <option value="Stock Option">Stock Option</option>
     </select>
     <select id="flt-signal" onchange="renderTable()">
@@ -380,6 +622,7 @@
   </div>
 
 </div><!-- end container -->
+  </div><!-- end pane-log -->
 
 <!-- ── Bottom page nav ── -->
 <div class="page-nav">
@@ -403,15 +646,109 @@
 <script>
 'use strict';
 const STORE_KEY = 'ml-trade-journal-v1';
+const STORE_KEY_IMPORTED = 'ml-trade-journal-imported-v1';
+const STORE_KEY_IMPORTED_FILLS = 'ml-trade-journal-imported-fills-v1';
+const STORE_KEY_PLANS = 'ml-trade-journal-plans-v1';
+const STORE_KEY_TOS_GROUP = 'ml-trade-journal-tos-group-v1';
+const STORE_KEY_CAL_UI = 'ml-trade-journal-cal-ui-v1';
+const STORE_KEY_REMINDERS = 'ml-trade-journal-reminders-v1';
 let trades = [];
+let imported = [];
+let importedFills = [];
 let sortCol = 'datetime';
 let sortDir = -1; // -1 = desc
+let calYear = new Date().getFullYear();
+let calMonth = new Date().getMonth();
+let calViewMode = 'month';
+let calWeekStartYmd = '';
+
+function _pad2(n){ return String(n).padStart(2, '0'); }
+function _ymdFromDate(d){
+  return d.getFullYear() + '-' + _pad2(d.getMonth() + 1) + '-' + _pad2(d.getDate());
+}
+function _sundayYmdContaining(ymd){
+  const d = new Date(ymd + 'T12:00:00');
+  if (isNaN(d.getTime())) return _ymdFromDate(new Date());
+  d.setDate(d.getDate() - d.getDay());
+  return _ymdFromDate(d);
+}
+function _addDaysYmd(ymd, n){
+  const d = new Date(ymd + 'T12:00:00');
+  d.setDate(d.getDate() + n);
+  return _ymdFromDate(d);
+}
+function _calUiLoad(){
+  try{
+    const o = JSON.parse(localStorage.getItem(STORE_KEY_CAL_UI) || '{}');
+    if (o.mode === 'week' || o.mode === 'month') calViewMode = o.mode;
+    if (o.weekStart && /^\d{4}-\d{2}-\d{2}$/.test(o.weekStart)) calWeekStartYmd = o.weekStart;
+  }catch(e){}
+  if (!calWeekStartYmd) calWeekStartYmd = _sundayYmdContaining(_ymdFromDate(new Date()));
+}
+function _calUiSave(){
+  try{
+    localStorage.setItem(STORE_KEY_CAL_UI, JSON.stringify({ mode: calViewMode, weekStart: calWeekStartYmd }));
+  }catch(e){}
+}
+
+function setTab(name){
+  const tabs = ['log','import','analytics','plans','calendar'];
+  tabs.forEach(t=>{
+    const b = document.getElementById('tab-' + t);
+    const p = document.getElementById('pane-' + t);
+    if (b) b.classList.toggle('on', t===name);
+    if (p) p.classList.toggle('on', t===name);
+  });
+  try{ if (name === 'analytics') renderAnalytics(); }catch(e){}
+  try{ if (name === 'calendar'){ renderCalendar(); renderReminderList(); } }catch(e){}
+}
+
+function _inferInstrument(t){
+  const sym = String(t?.symbol || '').toUpperCase();
+  const ins = String(t?.instrument || '');
+  if (ins) return ins;
+  if (sym.startsWith('/MES') || sym === 'MES' || sym.startsWith('/ES') || sym === 'ES') return 'MES Futures';
+  if (sym.startsWith('SPXW') || sym.startsWith('SPX ' ) || sym === 'SPX' || sym === 'SPXW') return 'SPX Index Option';
+  return 'Stock';
+}
+
+function _normalizeTrade(t){
+  if (!t) return t;
+  if (!t.instrument) t.instrument = _inferInstrument(t);
+  return t;
+}
+
+function _tosGroupOn(){
+  try{
+    const el = document.getElementById('tosGroup');
+    if (el) return !!el.checked;
+  }catch(e){}
+  try{ return JSON.parse(localStorage.getItem(STORE_KEY_TOS_GROUP) || 'true'); }catch(e){ return true; }
+}
+function _tosGroupSave(v){
+  try{ localStorage.setItem(STORE_KEY_TOS_GROUP, JSON.stringify(!!v)); }catch(e){}
+}
 
 // ── Load from localStorage ─────────────────────────────────────────────────
 function loadTrades() {
   try { trades = JSON.parse(localStorage.getItem(STORE_KEY) || '[]'); } catch(e) { trades = []; }
+  trades = (trades || []).map(_normalizeTrade);
 }
 function saveTrades() { localStorage.setItem(STORE_KEY, JSON.stringify(trades)); }
+function loadImported() {
+  try { imported = JSON.parse(localStorage.getItem(STORE_KEY_IMPORTED) || '[]'); } catch(e) { imported = []; }
+  imported = (imported || []).map(_normalizeTrade);
+}
+function saveImported() { localStorage.setItem(STORE_KEY_IMPORTED, JSON.stringify(imported)); }
+function loadImportedFills() {
+  try { importedFills = JSON.parse(localStorage.getItem(STORE_KEY_IMPORTED_FILLS) || '[]'); } catch(e) { importedFills = []; }
+}
+function saveImportedFills() { localStorage.setItem(STORE_KEY_IMPORTED_FILLS, JSON.stringify(importedFills)); }
+
+function allTrades(){
+  // Manual trades take precedence; imported are appended.
+  return (trades || []).map(_normalizeTrade).concat((imported || []).map(_normalizeTrade));
+}
 
 // ── Form toggle ───────────────────────────────────────────────────────────
 function toggleForm() {
@@ -507,8 +844,14 @@ function clearForm() {
 // ── Delete / edit ─────────────────────────────────────────────────────────
 function deleteTrade(id) {
   if (!confirm('Delete this trade?')) return;
+  const before = trades.length;
   trades = trades.filter(t => t.id !== id);
-  saveTrades();
+  if (trades.length !== before) {
+    saveTrades();
+  } else {
+    imported = imported.filter(t => t.id !== id);
+    saveImported();
+  }
   render();
 }
 
@@ -562,7 +905,7 @@ function filteredTrades() {
   const ins = document.getElementById('flt-instrument').value;
   const sig = document.getElementById('flt-signal').value;
   const sym = document.getElementById('flt-sym').value.trim().toUpperCase();
-  return trades.filter(t =>
+  return allTrades().filter(t =>
     (!res || t.result === res) &&
     (!ins || t.instrument === ins) &&
     (!sig || t.mlSignal === sig) &&
@@ -603,7 +946,8 @@ function renderTable() {
       : t.regime.includes('Short') ? '<span class="badge b-short">Short&gamma;</span>'
       : '<span class="badge b-neut">Neut</span>';
     const pnlClass = t.pnl == null ? '' : t.pnl >= 0 ? 'pnl-pos' : 'pnl-neg';
-    return `<tr>
+    const _tid = String(t.id||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+    return `<tr data-trade-id="${_tid}">
       <td style="white-space:nowrap;font-size:.75rem;">${fmtDate(t.datetime)}</td>
       <td style="font-weight:800;color:var(--primary);">${t.symbol}</td>
       <td style="font-size:.75rem;color:var(--muted);">${t.instrument}</td>
@@ -628,9 +972,10 @@ function renderTable() {
 
 // ── Stats ─────────────────────────────────────────────────────────────────
 function updateStats() {
-  const closed = trades.filter(t => t.result !== 'OPEN');
-  const wins   = trades.filter(t => t.result === 'WIN');
-  const open   = trades.filter(t => t.result === 'OPEN');
+  const a = allTrades();
+  const closed = a.filter(t => t.result !== 'OPEN');
+  const wins   = a.filter(t => t.result === 'WIN');
+  const open   = a.filter(t => t.result === 'OPEN');
   const withPnl= closed.filter(t => t.pnl != null);
   const totalPnl = withPnl.reduce((s,t) => s + t.pnl, 0);
   const winRate  = closed.length > 0 ? (wins.length / closed.length * 100) : null;
@@ -649,7 +994,7 @@ function updateStats() {
 
   const set = (id, val, cls) => { const el=document.getElementById(id); if(!el)return; el.textContent=val; if(cls){el.className='sv '+cls;} };
 
-  set('st-total', trades.length, 'cyan');
+  set('st-total', a.length, 'cyan');
   set('st-winrate', winRate != null ? winRate.toFixed(1)+'%' : '—', winRate==null?'':winRate>=55?'green':winRate>=45?'gold':'red');
   set('st-pnl', totalPnl >= 0 ? '+$'+totalPnl.toFixed(0) : '-$'+Math.abs(totalPnl).toFixed(0), totalPnl>=0?'green':'red');
   set('st-open', open.length, 'cyan');
@@ -667,11 +1012,12 @@ function updateStats() {
 
 // ── Charts ────────────────────────────────────────────────────────────────
 function drawCharts() {
-  if (trades.length < 2) { document.getElementById('charts-section').style.display='none'; return; }
+  const a = allTrades();
+  if (a.length < 2) { document.getElementById('charts-section').style.display='none'; return; }
   document.getElementById('charts-section').style.display='grid';
 
   // Equity curve
-  const sorted = [...trades].filter(t=>t.pnl!=null).sort((a,b)=>new Date(a.datetime)-new Date(b.datetime));
+  const sorted = [...a].filter(t=>t.pnl!=null).sort((a,b)=>new Date(a.datetime)-new Date(b.datetime));
   let cum = 0;
   const eq = sorted.map(t => { cum += t.pnl; return cum; });
 
@@ -714,7 +1060,7 @@ function drawCharts() {
   const ctx2 = cv2.getContext('2d');
   ctx2.fillStyle = '#0f172a'; ctx2.fillRect(0,0,cv2.width,180);
   const sigs = {BUY:{w:0,l:0},SELL:{w:0,l:0},HOLD:{w:0,l:0}};
-  trades.filter(t=>t.mlSignal&&t.result!=='OPEN').forEach(t=>{
+  a.filter(t=>t.mlSignal&&t.result!=='OPEN').forEach(t=>{
     if(sigs[t.mlSignal]) { if(t.result==='WIN') sigs[t.mlSignal].w++; else sigs[t.mlSignal].l++; }
   });
   const cx=cv2.width/2, cy=90, r=60;
@@ -751,6 +1097,993 @@ function drawCharts() {
   }
 }
 
+// ── TOS CSV Import ──────────────────────────────────────────────────────────
+function _csvParse(text){
+  const rows = [];
+  let i=0, field='', row=[], inQ=false;
+  while(i < text.length){
+    const ch = text[i];
+    const nx = text[i+1];
+    if (inQ){
+      if (ch === '"' && nx === '"'){ field += '"'; i += 2; continue; }
+      if (ch === '"'){ inQ=false; i++; continue; }
+      field += ch; i++; continue;
+    } else {
+      if (ch === '"'){ inQ=true; i++; continue; }
+      if (ch === ','){ row.push(field); field=''; i++; continue; }
+      if (ch === '\n'){ row.push(field); rows.push(row); row=[]; field=''; i++; continue; }
+      if (ch === '\r'){ i++; continue; }
+      field += ch; i++; continue;
+    }
+  }
+  if (field.length || row.length){ row.push(field); rows.push(row); }
+  return rows;
+}
+
+function _hdrIndex(headers, needles){
+  const hs = headers.map(h => String(h||'').trim().toLowerCase());
+  for (const n of needles){
+    const nn = String(n).toLowerCase();
+    const idx = hs.findIndex(h => h === nn || h.includes(nn));
+    if (idx >= 0) return idx;
+  }
+  return -1;
+}
+
+function importTosCsv(){
+  const f = document.getElementById('tosFile')?.files?.[0];
+  if (!f){ alert('Choose a CSV file first.'); return; }
+  _tosGroupSave(_tosGroupOn());
+  const r = new FileReader();
+  r.onload = () => {
+    try{
+      const raw = String(r.result || '');
+      const rows = _csvParse(raw).filter(r => r.some(x => String(x||'').trim() !== ''));
+      if (rows.length < 2){ alert('CSV looks empty.'); return; }
+      const headers = rows[0];
+      // TOS "Transactions" export headers (seen in your screenshot):
+      // Date | Action | Symbol | Description | Quantity | Price | Fees & Comm | Amount
+      const dateI = _hdrIndex(headers, ['date', 'trade date']);
+      const actionI = _hdrIndex(headers, ['action', 'activity']);
+      const symI = _hdrIndex(headers, ['symbol','underlying','ticker']);
+      const descI = _hdrIndex(headers, ['description','desc']);
+      const qtyI = _hdrIndex(headers, ['quantity','qty']);
+      const priceI = _hdrIndex(headers, ['price','fill price','exec price']);
+      const feeI = _hdrIndex(headers, ['fees & comm','fees','commission','comm']);
+      const amtI = _hdrIndex(headers, ['amount','net amount']);
+
+      const preview = rows.slice(0, 8).map(r => r.slice(0, Math.min(8, r.length)).join(' | ')).join('\n');
+      document.getElementById('importPreview').textContent = preview;
+
+      function parseUsDate(s){
+        const t0 = String(s||'').trim();
+        // Some rows look like: "12/17/2025 as of 12/16/2025"
+        const t = (t0.split(/\s+/)[0] || '').trim();
+        // expects M/D/YYYY
+        const m = t.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+        if (!m) return null;
+        const mm = Number(m[1]), dd = Number(m[2]), yy = Number(m[3]);
+        if (!isFinite(mm)||!isFinite(dd)||!isFinite(yy)) return null;
+        // Use noon UTC to avoid TZ flips; we only have date, not time.
+        return new Date(Date.UTC(yy, mm-1, dd, 12, 0, 0));
+      }
+      function parseMoney(s){
+        const t = String(s||'').trim();
+        if (!t) return null;
+        // Handles ($1,234.56) negatives
+        const neg = t.startsWith('(') && t.endsWith(')');
+        const clean = t.replace(/[()$,]/g,'');
+        const n = Number(clean);
+        if (!isFinite(n)) return null;
+        return neg ? -n : n;
+      }
+      function parseAction(s){
+        const t = String(s||'').trim().toUpperCase();
+        if (!t) return { side:'', oc:'' };
+        const side = t.includes('BUY') ? 'BUY' : (t.includes('SELL') ? 'SELL' : '');
+        const oc = t.includes('OPEN') ? 'OPEN' : (t.includes('CLOSE') ? 'CLOSE' : '');
+        return { side, oc, raw: t };
+      }
+      function parseOptionSymbol(sym, desc){
+        const blob = (String(sym||'') + ' ' + String(desc||'')).toUpperCase();
+        // TOS examples:
+        // - "SPXW 04/24/2026 7090.00 P"  (uses C/P)
+        // - Description contains CALL/PUT but not necessarily adjacent to strike
+        const m = blob.match(/\b([A-Z]{1,10})\s+(\d{2}\/\d{2}\/\d{4})\s+(\d+(?:\.\d+)?)\s+(C|P|CALL|PUT)\b/);
+        if (!m) return null;
+        const r = (m[4] === 'C' || m[4] === 'CALL') ? 'CALL' : (m[4] === 'P' || m[4] === 'PUT') ? 'PUT' : '';
+        return {
+          root: m[1],
+          expiry: m[2],
+          strike: m[3],
+          right: r,
+        };
+      }
+      function parseFuturesSymbol(sym, desc){
+        const s = String(sym||'').trim().toUpperCase();
+        const d = String(desc||'').trim().toUpperCase();
+        if (!s) return null;
+        // Typical: /MES, /ES. Treat these as futures.
+        if (s.startsWith('/')) return s;
+        if (s === 'MES' || s === 'ES') return '/'+s;
+        if ((s.includes('MES') || s.includes('ES')) && (d.includes('FUT') || d.includes('FUTURE'))) return s;
+        return null;
+      }
+
+      // Build fills first
+      const fills = [];
+      const cashEvents = [];
+      for (let i=1;i<rows.length;i++){
+        const rr = rows[i];
+        const symRaw = symI>=0 ? String(rr[symI]||'').trim() : '';
+        const desc = descI>=0 ? String(rr[descI]||'').trim() : '';
+        const dt = dateI>=0 ? parseUsDate(rr[dateI]) : null;
+        const action = actionI>=0 ? parseAction(rr[actionI]) : {side:'', oc:'', raw:''};
+        const qty = qtyI>=0 ? Number(String(rr[qtyI]||'').replace(/,/g,'')) : NaN;
+        const price = priceI>=0 ? Number(String(rr[priceI]||'').replace(/[$,]/g,'')) : NaN;
+        const fees = feeI>=0 ? parseMoney(rr[feeI]) : 0;
+        const amount = amtI>=0 ? parseMoney(rr[amtI]) : null;
+        const iso = (dt && isFinite(dt.getTime())) ? dt.toISOString() : new Date().toISOString();
+
+        // Handle "Futures MM Sweep" lines (no symbol/qty/price; amount-only cash movements)
+        const actionRaw = String(action.raw||'').toUpperCase();
+        if (!symRaw && actionRaw.includes('FUTURES') && amount != null && isFinite(Number(amount))){
+          cashEvents.push({
+            id: 'imp-cash-' + Date.now().toString() + '-' + i,
+            datetime: iso,
+            symbol: 'FUTURES',
+            instrument: 'Futures Sweep',
+            strategy: 'Futures MM Sweep',
+            strike: '',
+            expiry: '',
+            size: 1,
+            dte: '',
+            entry: 0,
+            exit: 0,
+            target: null,
+            stop: null,
+            mlSignal: '',
+            regime: '',
+            setup: '',
+            direction: '',
+            expected: '',
+            result: Number(amount) > 0 ? 'WIN' : 'LOSS',
+            pnl: Number(Number(amount).toFixed(2)),
+            broker: 'Think or Swim',
+            notes: `[Imported TOS] ${action.raw} · ${desc} · amount ${Number(amount)>0?'+$':'-$'}${Math.abs(Number(amount)).toFixed(2)}`
+          });
+          continue;
+        }
+
+        if (!symRaw) continue;
+        if (!action.side || !action.oc) continue;
+        if (!isFinite(qty) || !isFinite(price)) continue;
+
+        const opt = parseOptionSymbol(symRaw, desc);
+        const fut = opt ? null : parseFuturesSymbol(symRaw, desc);
+        const root = opt ? opt.root : (fut ? fut : (symRaw.split(' ')[0] || symRaw).toUpperCase());
+        fills.push({
+          id: 'fill-' + Date.now().toString() + '-' + i,
+          datetime: iso,
+          date: dt ? dt.toISOString().slice(0,10) : '',
+          action: action.raw || '',
+          side: action.side,
+          oc: action.oc,
+          root,
+          symbol: root,
+          instrument: opt ? 'SPX Index Option' : (fut ? 'MES Futures' : 'Stock'),
+          strike: opt ? opt.strike : '',
+          expiry: opt ? opt.expiry : '',
+          right: opt ? opt.right : '',
+          qty: Math.abs(Math.trunc(qty)) || 1,
+          price,
+          fees: (fees == null || !isFinite(Number(fees))) ? 0 : Number(fees),
+          amount: (amount == null || !isFinite(Number(amount))) ? null : Number(amount),
+          desc,
+        });
+      }
+
+      // Sort fills oldest→newest for FIFO matching
+      fills.sort((a,b)=> new Date(a.datetime) - new Date(b.datetime));
+      importedFills = fills;
+      saveImportedFills();
+
+      // Convert fills → closed trades (simple FIFO per contract)
+      const openLots = new Map(); // key -> [{qty, entryPrice, entryDt, cash, fees}]
+      const closedTrades = [];
+      const keyOf = (f)=> `${f.root}|${f.expiry}|${f.strike}|${f.right}`;
+
+      function lotPush(key, lot){
+        const arr = openLots.get(key) || [];
+        arr.push(lot);
+        openLots.set(key, arr);
+      }
+      function lotShift(key){
+        const arr = openLots.get(key) || [];
+        const v = arr.shift();
+        openLots.set(key, arr);
+        return v || null;
+      }
+
+      for (const f of fills){
+        const key = keyOf(f);
+        const isOpen = f.oc === 'OPEN';
+        const isClose = f.oc === 'CLOSE';
+        const isBuy = f.side === 'BUY';
+        const isSell = f.side === 'SELL';
+        // Cashflow sign: buys are negative, sells are positive (use Amount if present; else derive from price*qty*100)
+        const mult = f.instrument.includes('Option') ? 100 : 1;
+        const derivedCash = (isBuy ? -1 : 1) * Number(f.price) * Number(f.qty) * mult;
+        const cash = (f.amount != null && isFinite(f.amount)) ? Number(f.amount) : derivedCash;
+        const feeAbs = Math.abs(Number(f.fees)||0);
+
+        if (isOpen){
+          // Open a lot (long for buy-to-open, short for sell-to-open)
+          lotPush(key, {
+            qty: f.qty,
+            qty0: f.qty,
+            entryPrice: f.price,
+            entryDt: f.datetime,
+            entryAction: f.action,
+            cashIn: cash, // negative for buys, positive for sells
+            fees: feeAbs,
+            side: isBuy ? 'LONG' : 'SHORT',
+          });
+          continue;
+        }
+
+        if (isClose){
+          let left = f.qty;
+          while (left > 0){
+            const lot = lotShift(key);
+            if (!lot){
+              // unmatched close; drop into imported as OPEN placeholder so user can fix manually
+              break;
+            }
+            const q = Math.min(left, lot.qty);
+            lot.qty -= q;
+            left -= q;
+            // if lot still has remainder, put it back at front
+            if (lot.qty > 0){
+              const arr = openLots.get(key) || [];
+              arr.unshift(lot);
+              openLots.set(key, arr);
+            }
+
+            const denom = Math.max(1, Number(lot.qty0)||0);
+            const frac = q / denom;
+            const entryCash = (Number(lot.cashIn)||0) * frac;
+            const exitCash = cash * (q / f.qty);
+            const entryFees = (Number(lot.fees)||0) * frac;
+            const exitFees = feeAbs * (q / f.qty);
+            const pnl = (entryCash + exitCash) - (entryFees + exitFees);
+
+            closedTrades.push({
+              id: 'imp-trade-' + Date.now().toString() + '-' + Math.random().toString(16).slice(2),
+              datetime: lot.entryDt || f.datetime,
+              exitDatetime: f.datetime,
+              symbol: f.root || 'SPXW',
+              instrument: f.instrument || (f.right ? 'SPX Index Option' : 'Stock'),
+              strategy:
+                (f.instrument === 'MES Futures')
+                  ? ((lot.side === 'SHORT' ? 'Short ' : 'Long ') + 'Futures')
+                  : ((lot.side === 'SHORT' ? 'Short ' : 'Long ') + (f.right === 'PUT' ? 'Put' : (f.right === 'CALL' ? 'Call' : 'Position'))),
+              strike: f.strike || '',
+              expiry: f.expiry || '',
+              size: q,
+              dte: '',
+              entry: Number(lot.entryPrice)||0,
+              exit: Number(f.price)||0,
+              target: null,
+              stop: null,
+              mlSignal: '',
+              regime: '',
+              setup: '',
+              direction: '',
+              expected: '',
+              result: pnl > 5 ? 'WIN' : pnl < -5 ? 'LOSS' : 'BREAKEVEN',
+              pnl: Number(pnl.toFixed(2)),
+              broker: 'Think or Swim',
+              notes: `[Imported TOS] ${lot.entryAction} → ${f.action} · ${f.right||''} · fees ${Number(entryFees+exitFees).toFixed(2)}`,
+              _imp: {
+                root: f.root || '',
+                expiry: f.expiry || '',
+                strike: f.strike || '',
+                right: f.right || '',
+                side: lot.side || '',
+                qty: q,
+                entryCash,
+                exitCash,
+                fees: Number(entryFees + exitFees),
+              }
+            });
+          }
+        }
+      }
+
+      function _groupImportedSpreads(trs){
+        const groups = new Map(); // key -> [trades]
+        function k(t){
+          const entryD = String(t.datetime||'').slice(0,10);
+          const imp = t._imp || {};
+          const root = imp.root || t.symbol || '';
+          const expiry = imp.expiry || t.expiry || '';
+          // Group by open-date/root/expiry (ignore right + exit date so condors/butterflies can combine legs)
+          return [root, expiry, entryD].join('|');
+        }
+        for (const t of (trs||[])){
+          const kk = k(t);
+          const arr = groups.get(kk) || [];
+          arr.push(t);
+          groups.set(kk, arr);
+        }
+
+        function _fmtMoney(n){
+          const v = Number(n)||0;
+          return (v>=0?'+$':'-$') + Math.abs(v).toFixed(2);
+        }
+        function _baseQty(legs){
+          const qs = legs.map(t => Number(t._imp?.qty || t.size || 1)).filter(q => isFinite(q) && q>0);
+          return qs.length ? Math.min(...qs) : 1;
+        }
+        function _legLine(t){
+          const imp = t._imp || {};
+          const q = Number(imp.qty || t.size || 1) || 1;
+          return `${imp.side||''} ${imp.right||''} ${imp.strike||''} x${q} @ ${t.entry} → ${t.exit} (pnl ${_fmtMoney(t.pnl)})`;
+        }
+        function _sum(legs, fn){
+          return legs.reduce((s,t)=> s + (Number(fn(t))||0), 0);
+        }
+        function _detectStructure(legs){
+          // Only consider option legs with parsed strike/right
+          const opt = legs.filter(t => t._imp && t._imp.strike && t._imp.right);
+          if (opt.length < 2) return null;
+          const byRight = { CALL: [], PUT: [] };
+          opt.forEach(t => { if (t._imp.right === 'CALL') byRight.CALL.push(t); else if (t._imp.right === 'PUT') byRight.PUT.push(t); });
+
+          const hasCalls = byRight.CALL.length >= 2;
+          const hasPuts  = byRight.PUT.length >= 2;
+          const hasLong  = opt.some(t => (t._imp.side||'') === 'LONG');
+          const hasShort = opt.some(t => (t._imp.side||'') === 'SHORT');
+
+          // Iron condor: has both call & put spreads (long+short in each right)
+          const callHasLong = byRight.CALL.some(t => t._imp.side === 'LONG');
+          const callHasShort= byRight.CALL.some(t => t._imp.side === 'SHORT');
+          const putHasLong  = byRight.PUT.some(t => t._imp.side === 'LONG');
+          const putHasShort = byRight.PUT.some(t => t._imp.side === 'SHORT');
+          if (hasCalls && hasPuts && callHasLong && callHasShort && putHasLong && putHasShort){
+            return { kind: 'condor', legs: opt };
+          }
+
+          // Butterfly: 3 strikes on same right with 1:-2:1 qty-ish pattern
+          for (const right of ['CALL','PUT']){
+            const rr = byRight[right];
+            if (rr.length < 3) continue;
+            const strikes = Array.from(new Set(rr.map(t => Number(t._imp.strike)).filter(n=>isFinite(n)))).sort((a,b)=>a-b);
+            if (strikes.length !== 3) continue;
+            // Aggregate qty by strike and side (net contracts)
+            const qByStrike = new Map(); // strike -> net qty (LONG positive, SHORT negative)
+            rr.forEach(t=>{
+              const s = Number(t._imp.strike);
+              if (!isFinite(s)) return;
+              const q = Number(t._imp.qty || t.size || 1) || 1;
+              const sign = (t._imp.side === 'LONG') ? 1 : (t._imp.side === 'SHORT' ? -1 : 0);
+              qByStrike.set(s, (qByStrike.get(s)||0) + sign*q);
+            });
+            const q1 = qByStrike.get(strikes[0])||0;
+            const q2 = qByStrike.get(strikes[1])||0;
+            const q3 = qByStrike.get(strikes[2])||0;
+            // Typical long butterfly: +1, -2, +1 (or short butterfly: -1, +2, -1)
+            const isLongFly = (q1>0 && q3>0 && q2<0 && Math.abs(q2) >= (Math.abs(q1)+Math.abs(q3)));
+            const isShortFly= (q1<0 && q3<0 && q2>0 && Math.abs(q2) >= (Math.abs(q1)+Math.abs(q3)));
+            if (isLongFly || isShortFly){
+              return { kind: 'butterfly', right, legs: rr };
+            }
+          }
+
+          // Vertical: one right only, 2+ legs with long+short and 2 strikes
+          const rights = Array.from(new Set(opt.map(t => t._imp.right)));
+          if (rights.length === 1 && hasLong && hasShort){
+            const strikes = Array.from(new Set(opt.map(t => Number(t._imp.strike)).filter(n => isFinite(n)))).sort((a,b)=>a-b);
+            if (strikes.length >= 2){
+              return { kind: 'vertical', right: rights[0], legs: opt };
+            }
+          }
+
+          return null;
+        }
+
+        const out = [];
+        for (const [kk, arr] of groups.entries()){
+          if (!arr || !arr.length){ continue; }
+          // With date-only timestamps, same-day clusters can contain many unrelated trades.
+          // Only attempt structure grouping for small clusters.
+          if (arr.length > 8){
+            for (const t of arr){
+              const tt = Object.assign({}, t);
+              delete tt._imp;
+              out.push(tt);
+            }
+            continue;
+          }
+          const structure = _detectStructure(arr);
+          if (!structure){
+            for (const t of arr){
+              const tt = Object.assign({}, t);
+              delete tt._imp;
+              out.push(tt);
+            }
+            continue;
+          }
+
+          const legs = structure.legs;
+          const sample = legs[0];
+          const imp0 = sample._imp || {};
+          const root = imp0.root || sample.symbol || '';
+          const expiry = imp0.expiry || sample.expiry || '';
+          const netEntryCash = _sum(legs, t => t._imp.entryCash);
+          const netExitCash  = _sum(legs, t => t._imp.exitCash);
+          const netFees      = _sum(legs, t => t._imp.fees);
+          const pnl = _sum(legs, t => t.pnl);
+          const size = Math.max(1, _baseQty(legs));
+          const entryPx = Math.abs(netEntryCash) / (size*100);
+          const exitPx  = Math.abs(netExitCash) / (size*100);
+          const isCredit = netEntryCash > 0;
+
+          let strat = 'Options';
+          let strikeText = '';
+          if (structure.kind === 'vertical'){
+            const right = structure.right;
+            const strikes = Array.from(new Set(legs.map(t => Number(t._imp.strike)).filter(n=>isFinite(n)))).sort((a,b)=>a-b);
+            strikeText = strikes.map(s => (Math.round(s*100)/100).toFixed(2)).join('/');
+            // Bull/bear inference
+            const bias = (right === 'PUT') ? 'Bull' : 'Bear';
+            const kind = isCredit ? 'Credit' : 'Debit';
+            strat = `${bias} ${kind} Spread (${right === 'PUT' ? 'Put' : 'Call'})`;
+          } else if (structure.kind === 'condor'){
+            // Show all strikes by right
+            const puts = legs.filter(t => t._imp.right === 'PUT').map(t => Number(t._imp.strike)).filter(n=>isFinite(n)).sort((a,b)=>a-b);
+            const calls= legs.filter(t => t._imp.right === 'CALL').map(t => Number(t._imp.strike)).filter(n=>isFinite(n)).sort((a,b)=>a-b);
+            const putTxt = Array.from(new Set(puts)).map(s => (Math.round(s*100)/100).toFixed(2)).join('/');
+            const callTxt= Array.from(new Set(calls)).map(s => (Math.round(s*100)/100).toFixed(2)).join('/');
+            strikeText = `P:${putTxt} · C:${callTxt}`;
+            strat = `Iron Condor (${isCredit ? 'Credit' : 'Debit'})`;
+          } else if (structure.kind === 'butterfly'){
+            const right = structure.right;
+            const strikes = Array.from(new Set(legs.map(t => Number(t._imp.strike)).filter(n=>isFinite(n)))).sort((a,b)=>a-b);
+            strikeText = strikes.map(s => (Math.round(s*100)/100).toFixed(2)).join('/');
+            strat = `${right === 'PUT' ? 'Put' : 'Call'} Butterfly (${isCredit ? 'Credit' : 'Debit'})`;
+          }
+
+          const legLines = legs
+            .slice()
+            .sort((a,b)=>{
+              const ra = (a._imp.right||''); const rb=(b._imp.right||'');
+              if (ra !== rb) return ra.localeCompare(rb);
+              return Number(a._imp.strike) - Number(b._imp.strike);
+            })
+            .map(_legLine);
+
+          out.push({
+            id: 'imp-struct-' + Date.now().toString() + '-' + Math.random().toString(16).slice(2),
+            datetime: sample.datetime,
+            exitDatetime: sample.exitDatetime,
+            symbol: root,
+            instrument: 'SPX Index Option',
+            strategy: strat,
+            strike: strikeText,
+            expiry,
+            size,
+            dte: '',
+            entry: Number(entryPx.toFixed(2)),
+            exit: Number(exitPx.toFixed(2)),
+            target: null,
+            stop: null,
+            mlSignal: '',
+            regime: '',
+            setup: '',
+            direction: '',
+            expected: '',
+            result: pnl > 5 ? 'WIN' : pnl < -5 ? 'LOSS' : 'BREAKEVEN',
+            pnl: Number(pnl.toFixed(2)),
+            broker: 'Think or Swim',
+            notes:
+              `[Imported TOS] Grouped ${structure.kind} · net entry ${_fmtMoney(netEntryCash)} · net fees $${netFees.toFixed(2)}\n` +
+              `Legs:\n- ` + legLines.join('\n- ')
+          });
+
+          // Keep any non-option trades in this cluster (e.g. transfers/sweeps) ungrouped
+          for (const t of arr){
+            if (t._imp && t._imp.right) continue;
+            const tt = Object.assign({}, t);
+            delete tt._imp;
+            out.push(tt);
+          }
+        }
+        // Sort by entry datetime desc (like the table)
+        out.sort((a,b)=> new Date(b.datetime) - new Date(a.datetime));
+        return out;
+      }
+
+      const wantGroup = _tosGroupOn();
+      const grouped = wantGroup ? _groupImportedSpreads(closedTrades) : closedTrades.map(t => { const tt = Object.assign({}, t); delete tt._imp; return tt; });
+      imported = grouped.concat(cashEvents).map(_normalizeTrade);
+      saveImported();
+      const optLegs = fills.filter(x => x.instrument === 'SPX Index Option').length;
+      const futLegs = fills.filter(x => x.instrument === 'MES Futures').length;
+      document.getElementById('importStatus').textContent =
+        `Imported ${fills.length} fills (${optLegs} option fills, ${futLegs} futures fills) + ${cashEvents.length} futures sweeps → ${imported.length} ${wantGroup?'grouped ':''}closed trades.`;
+      render();
+    }catch(e){
+      alert('Import failed: ' + (e && e.message ? e.message : String(e)));
+    }
+  };
+  r.readAsText(f);
+}
+
+function clearImported(){
+  if (!confirm('Clear all imported rows? Manual trades will remain.')) return;
+  imported = [];
+  importedFills = [];
+  saveImported();
+  saveImportedFills();
+  document.getElementById('importStatus').textContent = 'Cleared imported rows.';
+  render();
+}
+
+// ── Analytics / Plans (basic) ───────────────────────────────────────────────
+function renderAnalytics(){
+  const a = allTrades();
+  const closed = a.filter(t => t.result !== 'OPEN' && t.pnl != null);
+  const total = closed.reduce((s,t)=>s + (Number(t.pnl)||0), 0);
+  const wins = closed.filter(t => Number(t.pnl) > 0).length;
+  const losses = closed.filter(t => Number(t.pnl) < 0).length;
+  const winRate = closed.length ? (wins/closed.length*100) : 0;
+  const byStrat = {};
+  closed.forEach(t=>{
+    const k = t.strategy || '—';
+    if (!byStrat[k]) byStrat[k] = {n:0, pnl:0};
+    byStrat[k].n += 1;
+    byStrat[k].pnl += Number(t.pnl)||0;
+  });
+  const top = Object.entries(byStrat).sort((a,b)=>b[1].pnl-a[1].pnl).slice(0,8);
+  const lines = [
+    `<b>Closed trades:</b> ${closed.length}`,
+    `<b>Total P&L:</b> ${total>=0?'+$':'-$'}${Math.abs(total).toFixed(2)}`,
+    `<b>Win rate:</b> ${winRate.toFixed(1)}% (${wins}W / ${losses}L)`,
+    `<b>Top strategies (P&L):</b> ` + (top.length ? top.map(([k,v])=> `${k} ${v.pnl>=0?'+$':'-$'}${Math.abs(v.pnl).toFixed(0)} (${v.n})`).join(' · ') : '—'),
+  ];
+  const el = document.getElementById('anaSummary');
+  if (el) el.innerHTML = lines.join('<br>');
+}
+
+function _escapeHtml(s){
+  const d = document.createElement('div');
+  d.textContent = s == null ? '' : String(s);
+  return d.innerHTML;
+}
+function _looksLikeRichHtml(s){
+  if (!s || typeof s !== 'string') return false;
+  const t = s.trim();
+  if (t.startsWith('<')) return true;
+  // Saved notes often start with plain text, then pasted HTML (e.g. <img>, <div>).
+  return /<(img|div|span|p|br|table|tbody|tr|td|th|ul|ol|li|h[1-6]|a|figure)\b/i.test(s) ||
+    /<\/[a-z][a-z0-9]*>/i.test(s);
+}
+/** If a prior bug stored HTML as escaped text (&lt;img ...), recover real HTML. */
+function _repairEscapedHtml(s){
+  if (!s || s.indexOf('&lt;') < 0) return s;
+  const tmp = document.createElement('textarea');
+  tmp.innerHTML = s;
+  return tmp.value;
+}
+function _setRichField(el, raw){
+  if (!el) return;
+  if (!raw) { el.innerHTML = ''; return; }
+  let s = String(raw);
+  if (!_looksLikeRichHtml(s)){
+    const decoded = _repairEscapedHtml(s);
+    if (_looksLikeRichHtml(decoded)) s = decoded;
+  }
+  if (_looksLikeRichHtml(s)) el.innerHTML = s;
+  else el.innerHTML = _escapeHtml(s).replace(/\n/g, '<br>');
+}
+function _attachRichPaste(el){
+  if (!el) return;
+  el.addEventListener('paste', function(e){
+    const items = e.clipboardData && e.clipboardData.items;
+    if (!items) return;
+    for (let i = 0; i < items.length; i++){
+      if (items[i].type.indexOf('image') === -1) continue;
+      e.preventDefault();
+      const file = items[i].getAsFile();
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(ev){
+        const img = document.createElement('img');
+        img.src = ev.target.result;
+        img.style.maxWidth = '100%';
+        img.style.height = 'auto';
+        const sel = window.getSelection();
+        if (!sel.rangeCount){
+          el.appendChild(img);
+          el.appendChild(document.createElement('br'));
+          return;
+        }
+        const range = sel.getRangeAt(0);
+        if (!el.contains(range.commonAncestorContainer)){
+          el.appendChild(img);
+          el.appendChild(document.createElement('br'));
+          return;
+        }
+        range.deleteContents();
+        range.insertNode(img);
+        range.setStartAfter(img);
+        range.collapse(true);
+        sel.removeAllRanges();
+        sel.addRange(range);
+        el.appendChild(document.createElement('br'));
+      };
+      reader.readAsDataURL(file);
+      return;
+    }
+  });
+}
+
+function _tradeDayKey(t){
+  if (!t || !t.datetime) return null;
+  const d = new Date(t.datetime);
+  if (isNaN(d.getTime())) return null;
+  return d.toISOString().slice(0, 10);
+}
+
+function openPlanForDate(ymd){
+  setTab('plans');
+  const pd = document.getElementById('planDate');
+  if (pd) pd.value = ymd;
+  loadPlan();
+}
+
+function goToTrade(id){
+  if (!id) return;
+  setTab('log');
+  render();
+  window.requestAnimationFrame(function(){
+    let row = null;
+    document.querySelectorAll('tr[data-trade-id]').forEach(function(r){
+      if (r.getAttribute('data-trade-id') === id) row = r;
+    });
+    if (row){
+      row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      row.classList.add('tj-flash');
+      window.setTimeout(function(){ row.classList.remove('tj-flash'); }, 2000);
+    }
+  });
+}
+
+function calShiftMonth(delta){
+  calMonth += delta;
+  if (calMonth > 11){ calMonth = 0; calYear++; }
+  if (calMonth < 0){ calMonth = 11; calYear--; }
+  calWeekStartYmd = _sundayYmdContaining(calYear + '-' + _pad2(calMonth + 1) + '-01');
+  _calUiSave();
+  renderCalendar();
+}
+function calShiftWeek(delta){
+  calWeekStartYmd = _addDaysYmd(calWeekStartYmd, delta * 7);
+  _calUiSave();
+  renderCalendar();
+}
+function calShiftPeriod(delta){
+  if (calViewMode === 'week') calShiftWeek(delta);
+  else calShiftMonth(delta);
+}
+function calGoToday(){
+  const n = new Date();
+  calYear = n.getFullYear();
+  calMonth = n.getMonth();
+  calWeekStartYmd = _sundayYmdContaining(_ymdFromDate(n));
+  _calUiSave();
+  renderCalendar();
+}
+function calSetMode(mode){
+  calViewMode = (mode === 'week') ? 'week' : 'month';
+  if (calViewMode === 'week'){
+    calWeekStartYmd = _sundayYmdContaining(calYear + '-' + _pad2(calMonth + 1) + '-15');
+  }
+  const bm = document.getElementById('calBtnMonth');
+  const bw = document.getElementById('calBtnWeek');
+  if (bm) bm.classList.toggle('cal-mode-on', calViewMode === 'month');
+  if (bw) bw.classList.toggle('cal-mode-on', calViewMode === 'week');
+  _calUiSave();
+  renderCalendar();
+}
+
+function _remindersForDate(ymd){
+  return loadReminders().filter(function(r){ return r.date === ymd && !r.done; });
+}
+
+function _renderCalDayCell(ymd, dayLabel, plans, byDay, todayStr){
+  const hasPlan = !!(plans[ymd] && (plans[ymd].premarket || plans[ymd].text || plans[ymd].review || plans[ymd].bias));
+  const dayTrades = byDay[ymd] || [];
+  const rems = _remindersForDate(ymd);
+  const isToday = ymd === todayStr;
+  let links = '';
+  if (rems.length){
+    links += '<div class="cal-trade" title="Reminders">🔔 ' + rems.length + '</div>';
+  }
+  if (hasPlan){
+    links += '<button type="button" class="linkish" onclick="openPlanForDate(\'' + ymd + '\')">📝 Plan &amp; notes</button>';
+  } else {
+    links += '<button type="button" class="linkish" onclick="openPlanForDate(\'' + ymd + '\')">+ Add plan</button>';
+  }
+  if (dayTrades.length){
+    links += '<div class="cal-trade">' + dayTrades.length + ' trade' + (dayTrades.length === 1 ? '' : 's') + '</div>';
+    dayTrades.slice(0, 6).forEach(function(t){
+      const sym = (t.symbol || '—').replace(/</g,'');
+      const strat = (t.strategy || '').replace(/</g,'');
+      const pnl = t.pnl != null ? (Number(t.pnl) >= 0 ? '+' : '') + '$' + Math.abs(Number(t.pnl)).toFixed(0) : '';
+      const tidJs = JSON.stringify(String(t.id || ''));
+      links += '<div class="cal-trade"><button type="button" class="linkish" onclick="goToTrade(' + tidJs + ')">' + sym + ' · ' + (strat || 'trade') + (pnl ? ' (' + pnl + ')' : '') + '</button></div>';
+    });
+    if (dayTrades.length > 6){
+      links += '<div class="cal-trade">… +' + (dayTrades.length - 6) + ' more</div>';
+    }
+  }
+  return '<div class="cal-cell' + (isToday ? ' today' : '') + '">' +
+    '<div class="cal-daynum">' + dayLabel + '</div>' +
+    '<div class="cal-links">' + links + '</div></div>';
+}
+
+function renderCalendar(){
+  const grid = document.getElementById('calGrid');
+  const lbl = document.getElementById('calMonthLabel');
+  if (!grid || !lbl) return;
+  const bm = document.getElementById('calBtnMonth');
+  const bw = document.getElementById('calBtnWeek');
+  if (bm) bm.classList.toggle('cal-mode-on', calViewMode === 'month');
+  if (bw) bw.classList.toggle('cal-mode-on', calViewMode === 'week');
+  grid.classList.toggle('week', calViewMode === 'week');
+
+  const plans = _plansLoadAll();
+  const byDay = {};
+  allTrades().forEach(function(t){
+    const k = _tradeDayKey(t);
+    if (!k) return;
+    if (!byDay[k]) byDay[k] = [];
+    byDay[k].push(t);
+  });
+  const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const todayStr = _ymdFromDate(new Date());
+  let html = '';
+  const dows = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  dows.forEach(function(w){ html += '<div class="cal-dow">' + w + '</div>'; });
+
+  if (calViewMode === 'week'){
+    const endYmd = _addDaysYmd(calWeekStartYmd, 6);
+    lbl.textContent = 'Week ' + calWeekStartYmd + ' – ' + endYmd;
+    for (let i = 0; i < 7; i++){
+      const ymd = _addDaysYmd(calWeekStartYmd, i);
+      const parts = ymd.split('-');
+      const dayNum = String(Number(parts[2]));
+      const dow = dows[new Date(ymd + 'T12:00:00').getDay()];
+      const dayLabel = dow + ' ' + dayNum;
+      html += _renderCalDayCell(ymd, dayLabel, plans, byDay, todayStr);
+    }
+  } else {
+    lbl.textContent = monthNames[calMonth] + ' ' + calYear;
+    const first = new Date(calYear, calMonth, 1);
+    const startPad = first.getDay();
+    const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+    for (let p = 0; p < startPad; p++){
+      html += '<div class="cal-cell pad"></div>';
+    }
+    for (let day = 1; day <= daysInMonth; day++){
+      const ymd = calYear + '-' + _pad2(calMonth + 1) + '-' + _pad2(day);
+      html += _renderCalDayCell(ymd, String(day), plans, byDay, todayStr);
+    }
+  }
+  grid.innerHTML = html;
+}
+
+function _planExportCss(){
+  return 'body{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:#f4f6f8;color:#111;max-width:920px;margin:0 auto;padding:2rem;line-height:1.5}' +
+    'h1{font-size:1.35rem;border-bottom:2px solid #0ea5e9;padding-bottom:.5rem}' +
+    'h2{font-size:1.05rem;margin-top:1.75rem;color:#0c4a6e}' +
+    '.meta{color:#64748b;font-size:.9rem;margin-bottom:1rem}' +
+    '.box{background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:1rem;margin:1rem 0}' +
+    '.box h3{margin:0 0 .5rem;font-size:.85rem;text-transform:uppercase;letter-spacing:.04em;color:#64748b}' +
+    '.rich img{max-width:100%;height:auto;display:block;margin:.5rem 0}' +
+    '.rich table{border-collapse:collapse;width:100%;font-size:.88rem}' +
+    '.rich td,.rich th{border:1px solid #cbd5e1;padding:6px 8px}';
+}
+function _planSectionsHtml(p){
+  const bias = p && p.bias ? '<p><strong>Bias:</strong> ' + _escapeHtml(p.bias) + '</p>' : '';
+  const pre = (p && p.premarket) ? '<div class="rich">' + p.premarket + '</div>' : '<p class="meta">(empty)</p>';
+  const plan = (p && p.text) ? '<div class="rich">' + p.text + '</div>' : '<p class="meta">(empty)</p>';
+  const rev = (p && p.review) ? '<div class="rich">' + p.review + '</div>' : '<p class="meta">(empty)</p>';
+  return bias +
+    '<div class="box"><h3>Premarket notes</h3>' + pre + '</div>' +
+    '<div class="box"><h3>Plan / Checklist</h3>' + plan + '</div>' +
+    '<div class="box"><h3>Review / After close</h3>' + rev + '</div>';
+}
+function _downloadTextFile(filename, text, mime){
+  const blob = new Blob([text], { type: mime || 'text/html;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+  window.setTimeout(function(){ URL.revokeObjectURL(a.href); }, 4000);
+}
+function exportCurrentPlanHtml(){
+  const d = document.getElementById('planDate').value;
+  if (!d){ alert('Pick a date first (Notes & Plans tab).'); return; }
+  const all = _plansLoadAll();
+  const p = all[d];
+  if (!p || (!p.premarket && !p.text && !p.review && !p.bias)){
+    alert('Nothing saved for that date yet. Click Save Plan first, or pick another day.');
+    return;
+  }
+  const title = 'Trading plan — ' + d;
+  const doc = '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>' + _escapeHtml(title) + '</title><style>' + _planExportCss() + '</style></head><body>' +
+    '<h1>' + _escapeHtml(title) + '</h1>' +
+    '<p class="meta">Exported ' + new Date().toISOString() + ' · ML Trade Journal</p>' +
+    _planSectionsHtml(p) +
+    '</body></html>';
+  _downloadTextFile('trade-plan-' + d + '.html', doc, 'text/html;charset=utf-8');
+}
+function exportAllPlansHtml(){
+  const all = _plansLoadAll();
+  const keys = Object.keys(all).filter(function(k){
+    const p = all[k];
+    return p && (p.premarket || p.text || p.review || p.bias);
+  }).sort();
+  if (!keys.length){ alert('No saved plans to export.'); return; }
+  let body = '';
+  keys.forEach(function(ymd){
+    body += '<h2 id="' + ymd + '">' + ymd + '</h2>' + _planSectionsHtml(all[ymd]) + '<hr style="margin:2rem 0;border:none;border-top:1px solid #e2e8f0">';
+  });
+  const doc = '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>All trading plans</title><style>' + _planExportCss() + '</style></head><body>' +
+    '<h1>All trading plans</h1><p class="meta">Exported ' + new Date().toISOString() + ' · ' + keys.length + ' day(s)</p>' + body + '</body></html>';
+  _downloadTextFile('trade-plans-all-' + _ymdFromDate(new Date()) + '.html', doc, 'text/html;charset=utf-8');
+}
+
+function loadReminders(){
+  try{
+    const a = JSON.parse(localStorage.getItem(STORE_KEY_REMINDERS) || '[]');
+    return Array.isArray(a) ? a : [];
+  }catch(e){ return []; }
+}
+function saveReminders(arr){
+  localStorage.setItem(STORE_KEY_REMINDERS, JSON.stringify(arr || []));
+}
+function addReminder(){
+  const date = document.getElementById('remDate').value;
+  const time = document.getElementById('remTime').value || '09:00';
+  const title = (document.getElementById('remTitle').value || '').trim();
+  const note = (document.getElementById('remNote').value || '').trim();
+  const notify = !!document.getElementById('remNotify').checked;
+  if (!date){ alert('Pick a reminder date.'); return; }
+  if (!title){ alert('Enter a title.'); return; }
+  const list = loadReminders();
+  list.push({
+    id: 'rem-' + Date.now() + '-' + Math.random().toString(16).slice(2),
+    date: date,
+    time: time.length === 5 ? time : '09:00',
+    title: title,
+    note: note,
+    notify: notify,
+    fired: false,
+    done: false,
+    created_at: new Date().toISOString(),
+  });
+  saveReminders(list);
+  document.getElementById('remTitle').value = '';
+  document.getElementById('remNote').value = '';
+  renderReminderList();
+  renderCalendar();
+}
+function deleteReminder(id){
+  saveReminders(loadReminders().filter(function(r){ return r.id !== id; }));
+  renderReminderList();
+  renderCalendar();
+}
+function requestNotifyPermission(){
+  if (!('Notification' in window)){
+    alert('This browser does not support notifications.');
+    return;
+  }
+  Notification.requestPermission().then(function(p){
+    alert(p === 'granted' ? 'Notifications enabled.' : 'Permission not granted — reminders will still list here, but no desktop pop-up.');
+  });
+}
+function renderReminderList(){
+  const el = document.getElementById('reminderList');
+  if (!el) return;
+  const now = Date.now();
+  const list = loadReminders().filter(function(r){ return !r.done; });
+  list.sort(function(a, b){
+    const ta = new Date(a.date + 'T' + (a.time || '00:00') + ':00').getTime();
+    const tb = new Date(b.date + 'T' + (b.time || '00:00') + ':00').getTime();
+    return ta - tb;
+  });
+  if (!list.length){
+    el.innerHTML = '<p class="hint">No active reminders.</p>';
+    return;
+  }
+  el.innerHTML = list.map(function(r){
+    const t = new Date(r.date + 'T' + (r.time || '00:00') + ':00').getTime();
+    const past = now > t + 60000;
+    const when = r.date + ' · ' + (r.time || '');
+    return '<div class="rem-row">' +
+      '<div><div class="t">' + _escapeHtml(r.title) + '</div>' +
+      '<div class="when">' + when + (past ? ' · past' : '') + '</div>' +
+      (r.note ? '<div class="when">' + _escapeHtml(r.note) + '</div>' : '') + '</div>' +
+      '<button type="button" class="btn-outline" onclick="deleteReminder(' + JSON.stringify(r.id) + ')">Remove</button></div>';
+  }).join('');
+}
+function tickReminders(){
+  if (!('Notification' in window)) return;
+  const list = loadReminders();
+  let changed = false;
+  const now = Date.now();
+  list.forEach(function(r){
+    if (r.done || r.fired || !r.notify) return;
+    const t = new Date(r.date + 'T' + (r.time || '09:00') + ':00').getTime();
+    if (isNaN(t)) return;
+    if (now >= t){
+      if (Notification.permission === 'granted'){
+        try{
+          new Notification(r.title, { body: r.note || 'Trade journal reminder', tag: r.id, requireInteraction: false });
+        }catch(e){}
+      }
+      r.fired = true;
+      changed = true;
+    }
+  });
+  if (changed) saveReminders(list);
+}
+
+function _plansLoadAll(){
+  try{ return JSON.parse(localStorage.getItem(STORE_KEY_PLANS) || '{}'); }catch(e){ return {}; }
+}
+function _plansSaveAll(obj){
+  localStorage.setItem(STORE_KEY_PLANS, JSON.stringify(obj||{}));
+}
+function savePlan(){
+  const d = document.getElementById('planDate').value;
+  if (!d){ alert('Pick a date first.'); return; }
+  const ppre = document.getElementById('planPremarket');
+  const pt = document.getElementById('planText');
+  const pr = document.getElementById('planReview');
+  const all = _plansLoadAll();
+  all[d] = {
+    bias: document.getElementById('planBias').value || '',
+    premarket: ppre ? ppre.innerHTML : '',
+    text: pt ? pt.innerHTML : '',
+    review: pr ? pr.innerHTML : '',
+    saved_at: new Date().toISOString(),
+  };
+  try{
+    _plansSaveAll(all);
+  }catch(err){
+    alert('Could not save (storage may be full). Try fewer / smaller images, or export and clear old plans. ' + (err && err.message ? err.message : ''));
+    return;
+  }
+  alert('Saved.');
+  try{ renderCalendar(); }catch(e){}
+}
+function loadPlan(){
+  const d = document.getElementById('planDate').value;
+  if (!d){ alert('Pick a date first.'); return; }
+  const all = _plansLoadAll();
+  const p = all[d] || {};
+  document.getElementById('planBias').value = p.bias || '';
+  _setRichField(document.getElementById('planPremarket'), p.premarket || '');
+  _setRichField(document.getElementById('planText'), p.text || '');
+  _setRichField(document.getElementById('planReview'), p.review || '');
+}
+
 // ── Export ────────────────────────────────────────────────────────────────
 function exportCSV() {
   const cols = ['datetime','symbol','instrument','strategy','strike','expiry','size','dte','entry','exit','target','stop','mlSignal','regime','setup','direction','expected','result','pnl','broker','notes'];
@@ -783,6 +2116,26 @@ function render() {
 
 // ── Init ──────────────────────────────────────────────────────────────────
 loadTrades();
+loadImported();
+loadImportedFills();
+(function initJournalRichAndCalendar(){
+  _calUiLoad();
+  const pd = document.getElementById('planDate');
+  if (pd && !pd.value){
+    pd.value = _ymdFromDate(new Date());
+  }
+  const rd = document.getElementById('remDate');
+  if (rd && !rd.value){
+    rd.value = _ymdFromDate(new Date());
+  }
+  _attachRichPaste(document.getElementById('planPremarket'));
+  _attachRichPaste(document.getElementById('planText'));
+  _attachRichPaste(document.getElementById('planReview'));
+  if (pd) pd.addEventListener('change', loadPlan);
+  loadPlan();
+  window.setInterval(tickReminders, 45000);
+  tickReminders();
+})();
 render();
 window.addEventListener('resize', drawCharts);
 </script>
