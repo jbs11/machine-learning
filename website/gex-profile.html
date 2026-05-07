@@ -1099,6 +1099,21 @@ function renderFlowFallback() {
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────────
+
+// Auto-refresh (every 5 minutes)
+const AUTO_REFRESH_MS = 5 * 60 * 1000;
+let _autoTimer = null;
+function _doAutoRefresh() {
+  if (document.hidden) return;
+  _cache = {};
+  gexProfileData = null;
+  loadAll();
+}
+document.addEventListener('visibilitychange', function() {
+  if (!document.hidden) _doAutoRefresh();
+});
+_autoTimer = setInterval(_doAutoRefresh, AUTO_REFRESH_MS);
+
 loadAll();
 </script>
 </body>
