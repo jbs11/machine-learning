@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SPX Dashboard — Price + Gamma (Walls &amp; Zero Gamma)</title>
+  <script src="lightweight-charts.min.js"></script>
+  <link rel="preload" href="style.css" as="style" fetchpriority="high">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .sd-wrap { max-width:1700px; margin:0 auto; padding:0 1.5rem 6rem; }
+    .sd-hero {
+      padding:3rem 1.5rem 2rem; text-align:center;
+      background:radial-gradient(ellipse 80% 55% at 50% -5%, rgba(34,211,238,.12) 0%, transparent 65%), var(--bg);
+      border-bottom:1px solid var(--border);
+    }
+    .sd-badge {
+      display:inline-flex; align-items:center; gap:.5rem; padding:.3rem 1rem;
+      background:rgba(34,211,238,.1); border:1px solid rgba(34,211,238,.25); border-radius:999px;
+      color:#22d3ee; font-size:.78rem; font-weight:600; letter-spacing:.08em;
+      text-transform:uppercase; margin-bottom:.9rem;
+    }
+    .sd-hero h1 {
+      font-size:clamp(1.8rem,4vw,3rem); font-weight:900; letter-spacing:-.03em;
+      line-height:1.15; margin-bottom:.7rem;
+      background:linear-gradient(135deg,#22d3ee 0%,#a78bfa 55%,#fff 90%);
+      -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+    }
+    .sd-hero p { color:var(--muted); font-size:1rem; max-width:900px; margin:0 auto; line-height:1.7; }
+
+    .sd-topbar {
+      display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap;
+      gap:1rem; padding:1.1rem 0 .6rem;
+    }
+    .sd-title {
+      display:flex; flex-direction:column; gap:.1rem;
+    }
+    .sd-title b { font-size:1.05rem; letter-spacing:-.01em; }
+    .sd-sub { color:var(--muted); font-size:.8rem; }
+
+    .sd-badges { display:flex; flex-wrap:wrap; gap:.45rem; align-items:center; justify-content:flex-end; }
+    .sd-pill {
+      display:inline-flex; align-items:center; gap:.45rem;
+      font-size:.72rem; font-weight:800; letter-spacing:.05em;
+      padding:.25rem .65rem; border-radius:999px;
+      border:1px solid var(--border); background:rgba(255,255,255,.03); color:var(--text);
+      font-family:Consolas,monospace;
+    }
+    .sd-pill .k { opacity:.7; font-weight:700; letter-spacing:.02em; }
+    .sd-pill.good { border-color:rgba(34,197,94,.35); background:rgba(34,197,94,.08); color:#4ade80; }
+    .sd-pill.warn { border-color:rgba(251,191,36,.35); background:rgba(251,191,36,.08); color:#fbbf24; }
+    .sd-pill.bad  { border-color:rgba(248,113,113,.35); background:rgba(248,113,113,.08); color:#f87171; }
+
+    .sd-grid { display:grid; grid-template-columns:1fr 430px; gap:1.2rem; align-items:start; }
+    @media(max-width:1100px){ .sd-grid{ grid-template-columns:1fr; } }
+
+    /* TF bar */
+    .sd-tf-bar { display:flex; align-items:center; gap:.38rem; padding:.1rem 0 .55rem; flex-wrap:wrap; }
+    .sd-tf-btn {
+      padding:.2rem .6rem; border-radius:5px; border:1px solid var(--border);
+      background:transparent; color:var(--muted); font-size:.72rem; font-weight:800; cursor:pointer; transition:all .12s;
+    }
+    .sd-tf-btn.active { background:#22d3ee; border-color:#22d3ee; color:#000; }
+    .sd-tf-note { font-size:.66rem; color:rgba(251,191,36,.65); margin-left:.25rem; }
+
+    /* Chart card */
+    .sd-chart-card { background:var(--surface); border:1px solid var(--border); border-radius:10px; overflow:hidden; }
+    .sd-chart-hdr {
+      display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap;
+      padding:.6rem 1rem; border-bottom:1px solid var(--border); gap:.6rem;
+    }
+    .sd-chart-title { font-weight:900; font-size:.9rem; }
+    .sd-ohlc { display:flex; gap:.8rem; font-size:.74rem; font-family:Consolas,monospace; }
+    .sd-chart-legend {
+      display:flex; flex-wrap:wrap; gap:.8rem; align-items:center; font-size:.69rem; color:var(--muted);
+      padding:.32rem 1rem; border-bottom:1px solid var(--border); background:#070d18;
+    }
+    .sd-leg-swatch { width:10px; height:10px; border-radius:2px; display:inline-block; vertical-align:middle; margin-right:3px; }
+    .sd-leg-dash   { width:16px; height:0; border-top:2px dashed; display:inline-block; vertical-align:middle; margin-right:3px; }
+    #sd-chart-container { background:#070d18; height:520px; position:relative; }
+    .sd-loading { display:flex; align-items:center; justify-content:center; flex-direction:column; gap:.55rem; height:180px; color:var(--muted); font-size:.82rem; }
+    .sd-spinner { width:26px; height:26px; border:3px solid var(--border); border-top-color:#22d3ee; border-radius:50%; animation:spin .8s linear infinite; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+
+    /* Right column */
+    .sd-card { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:.8rem 1rem; }
+    .sd-card h3 { font-size:.84rem; font-weight:900; margin-bottom:.55rem; }
+    .sd-levels { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:.55rem; }
+    .sd-level {
+      background:var(--card); border:1px solid var(--border); border-radius:8px; padding:.55rem .75rem;
+    }
+    .sd-level .lbl { font-size:.63rem; font-weight:800; text-transform:uppercase; letter-spacing:.07em; color:var(--muted); margin-bottom:.08rem; }
+    .sd-level .val { font-size:1rem; font-weight:900; font-family:Consolas,monospace; }
+    .sd-level .desc{ font-size:.67rem; color:var(--muted); margin-top:.12rem; line-height:1.35; }
+
+    .sd-regime-banner {
+      display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap;
+      gap:1rem; padding:.75rem 1rem; border-radius:10px; margin:.9rem 0;
+      border:1px solid; transition:all .3s;
+    }
+    .regime-positive   { background:rgba(34,197,94,.07);  border-color:rgba(34,197,94,.3);  }
+    .regime-negative   { background:rgba(249,115,22,.07); border-color:rgba(249,115,22,.3); }
+    .regime-transition { background:rgba(251,191,36,.07); border-color:rgba(251,191,36,.3); }
+    .regime-squeeze    { background:rgba(239,68,68,.07);  border-color:rgba(239,68,68,.35); }
+    .regime-maxneg     { background:rgba(139,92,246,.07); border-color:rgba(139,92,246,.3); }
+    .sd-regime-left    { display:flex; align-items:center; gap:.8rem; }
+    .sd-regime-icon    { font-size:1.8rem; line-height:1; }
+    .sd-regime-rating  { font-size:1.05rem; font-weight:900; letter-spacing:-.02em; line-height:1.1; }
+    .sd-regime-subtitle{ font-size:.74rem; color:var(--muted); margin-top:.16rem; max-width:520px; line-height:1.45; }
+    .sd-regime-right   { display:flex; flex-direction:column; align-items:flex-end; gap:.15rem; }
+    .sd-regime-spot    { font-size:1.25rem; font-weight:900; font-family:Consolas,monospace; }
+    .sd-regime-change  { font-size:.8rem; font-weight:800; }
+
+    .sd-note {
+      font-size:.74rem; color:var(--muted); line-height:1.55;
+      border-left:3px solid rgba(34,211,238,.5); padding:.35rem .7rem; margin-top:.75rem;
+      background:rgba(34,211,238,.04); border-radius:8px;
+    }
+  </style>
+</head>
+<body>
+
+<nav class="nav">
+  <a href="index.html" class="nav-logo">
+    <img src="images/steve.jpg" class="nav-logo-photo" alt="Stephen Borick">
+    <div class="nav-logo-text">
+      <span class="nav-company">Artificial Intelligence</span>
+      <span class="nav-name">Solutions, Inc.</span>
+    </div>
+  </a>
+  <ul class="nav-links">
+    <li><a href="index.html">Home</a></li>
+    <li><a href="machine-learning.html">Machine Learning</a></li>
+    <li><a href="ml-trading.html">ML in Trading</a></li>
+    <li><a href="stock-trading.html">Stock Trading</a></li>
+    <li><a href="options-trading.html">Options</a></li>
+    <li><a href="futures-trading.html">Futures</a></li>
+    <li><a href="brokers.html">Brokers</a></li>
+    <li><a href="algorithms-bots.html" style="color:#4ade80;font-weight:700;">&#129302; Algo Bots</a></li>
+    <li><a href="asset-algorithms.html" style="color:#22d3ee;font-weight:700;">&#128200; Asset Algos</a></li>
+    <li><a href="live-trading.html">Live Trading</a></li>
+    <li><a href="market-preparation.html">&#128204; Market Prep</a></li>
+    <li><a href="world-events.html">&#127758; World Events</a></li>
+    <li><a href="forecast.html" style="color:#f59e0b;font-weight:700;">&#128200; Forecast</a></li>
+    <li><a href="gex-heatmap.html" style="color:#22d3ee;font-weight:700;">&#127777; GEX Heat Maps</a></li>
+    <li><a href="gex-profile.html" style="color:#22d3ee;font-weight:700;">&#128200; GEX Profile</a></li>
+    <li><a href="spx-dashboard.html" style="color:#a78bfa;font-weight:700;" class="active">&#128200; SPX Dashboard</a></li>
+    <li><a href="spx-correlations.html" style="color:#a78bfa;font-weight:700;">&#128202; SPX Correlations</a></li>
+    <li><a href="vix-dashboard.html" style="color:#f87171;font-weight:700;">&#128293; VIX Dashboard</a></li>
+    <li><a href="the-edge.html" style="color:#fbbf24;font-weight:700;">&#9889; The EDGE</a></li>
+    <li><a href="real-time-news.html" style="color:#4ade80;font-weight:700;">&#128240; Real-Time News</a></li>
+    <li><a href="course.html" style="background:#f59e0b;color:#0a0f1e;padding:.28rem .85rem;border-radius:5px;font-weight:700;letter-spacing:.02em;">&#128218; ML Course</a></li>
+    <li><a href="report-ms.html" target="_blank" style="background:#22d3ee;color:var(--bg);padding:.28rem .85rem;border-radius:5px;font-weight:700;letter-spacing:.02em;">&#128202; Market Report</a></li>
+    <li><a href="report-tg.html" target="_blank" style="background:#a78bfa;color:var(--bg);padding:.28rem .85rem;border-radius:5px;font-weight:700;letter-spacing:.02em;">&#128214; Trading Guide</a></li>
+  </ul>
+</nav>
+
+<div class="sd-hero">
+  <div class="sd-badge">&#128200; SPX Dashboard</div>
+  <h1>SPX Price + Dealer Gamma</h1>
+  <p>
+    Interactive SPX chart with options-derived <strong style="color:var(--text);">net gamma profile</strong> and key levels:
+    <strong style="color:#4ade80;">Call Wall</strong>, <strong style="color:#f87171;">Put Wall</strong>, and
+    <strong style="color:#fbbf24;">Zero Gamma (Flip)</strong>. Data uses proxies for robustness:
+    price via <strong style="color:#fbbf24;">ES=F</strong> and options via <strong style="color:#22d3ee;">SPY</strong>.
+  </p>
+</div>
+
+<div class="sd-wrap">
+  <div class="sd-topbar">
+    <div class="sd-title">
+      <b>SPX (display)</b>
+      <div class="sd-sub">Price proxy: <span style="color:#fbbf24;font-weight:800;font-family:Consolas,monospace;">ES=F</span> · Options proxy: <span style="color:#22d3ee;font-weight:800;font-family:Consolas,monospace;">SPY</span></div>
+    </div>
+    <div class="sd-badges">
+      <span class="sd-pill" id="badge-status"><span class="k">STATUS</span><span id="b-status">Loading…</span></span>
+      <span class="sd-pill" id="badge-src"><span class="k">SRC</span><span id="b-src">--</span></span>
+      <span class="sd-pill" id="badge-ts"><span class="k">TS</span><span id="b-ts">--</span></span>
+    </div>
+  </div>
+
+  <div class="sd-grid">
+    <div>
+      <div class="sd-tf-bar">
+        <span style="font-size:.69rem;color:var(--muted);font-weight:800;margin-right:.2rem;">CHART:</span>
+        <button class="sd-tf-btn" data-interval="1d" data-period="120d" onclick="changeTF(this)">1D</button>
+        <button class="sd-tf-btn active" data-interval="4h" data-period="60d" onclick="changeTF(this)">4H</button>
+        <button class="sd-tf-btn" data-interval="1h" data-period="14d" onclick="changeTF(this)">1H</button>
+        <button class="sd-tf-btn" data-interval="30m" data-period="5d" onclick="changeTF(this)">30m</button>
+        <button class="sd-tf-btn" data-interval="15m" data-period="3d" onclick="changeTF(this)">15m</button>
+        <button class="sd-tf-btn" data-interval="5m" data-period="1d" onclick="changeTF(this)">5m</button>
+        <span class="sd-tf-note" id="tf-note"></span>
+      </div>
+
+      <div class="sd-chart-card">
+        <div class="sd-chart-hdr">
+          <div class="sd-chart-title" id="chart-title">SPX — ES=F Candles + GEX Profile</div>
+          <div class="sd-ohlc">
+            <span id="ohlc-o" style="color:var(--muted)">O --</span>
+            <span id="ohlc-h" style="color:#4ade80">H --</span>
+            <span id="ohlc-l" style="color:#f87171">L --</span>
+            <span id="ohlc-c" style="color:#22d3ee;font-weight:700">C --</span>
+          </div>
+        </div>
+        <div class="sd-chart-legend">
+          <span style="color:rgba(148,163,184,0.45);font-size:.67rem;">GEX PROFILE (right overlay):</span>
+          <span><span class="sd-leg-swatch" style="background:#22c55e;"></span>+GEX Stabilizing</span>
+          <span><span class="sd-leg-swatch" style="background:#f87171;"></span>-GEX Amplifying</span>
+          <span><span class="sd-leg-dash" style="border-color:#4ade80;"></span>Call Wall</span>
+          <span><span class="sd-leg-dash" style="border-color:#fbbf24;"></span>Zero Gamma (Flip)</span>
+          <span><span class="sd-leg-dash" style="border-color:#f87171;"></span>Put Wall</span>
+        </div>
+        <div id="sd-chart-container">
+          <div class="sd-loading">
+            <div class="sd-spinner"></div>
+            <span>Loading chart…</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="sd-regime-banner regime-transition" id="regime-banner">
+        <div class="sd-regime-left">
+          <div class="sd-regime-icon" id="regime-icon">⏳</div>
+          <div>
+            <div class="sd-regime-rating" id="regime-rating" style="color:#fbbf24">Loading…</div>
+            <div class="sd-regime-subtitle" id="regime-subtitle">Fetching SPX dashboard payload…</div>
+          </div>
+        </div>
+        <div class="sd-regime-right">
+          <div class="sd-regime-spot" id="regime-spot">--</div>
+          <div class="sd-regime-change" id="regime-change">--%</div>
+        </div>
+      </div>
+
+      <div class="sd-card">
+        <h3>&#127919; Key Gamma Levels</h3>
+        <div class="sd-levels">
+          <div class="sd-level">
+            <div class="lbl">Call Wall (Resistance)</div>
+            <div class="val" id="lv-callwall" style="color:#4ade80">--</div>
+            <div class="desc">Largest positive gamma strike.</div>
+          </div>
+          <div class="sd-level">
+            <div class="lbl">Put Wall (Support)</div>
+            <div class="val" id="lv-putwall" style="color:#f87171">--</div>
+            <div class="desc">Largest negative gamma strike.</div>
+          </div>
+          <div class="sd-level">
+            <div class="lbl">Zero Gamma (Flip)</div>
+            <div class="val" id="lv-flip" style="color:#fbbf24">--</div>
+            <div class="desc">Pivot: above stabilizing, below volatile.</div>
+          </div>
+          <div class="sd-level">
+            <div class="lbl">Spot (ES=F)</div>
+            <div class="val" id="lv-spot" style="color:#22d3ee">--</div>
+            <div class="desc">Last price from candles/quote.</div>
+          </div>
+        </div>
+
+        <div class="sd-note" id="note">
+          If options/GEX data is missing, the dashboard will estimate a profile from option flow or fall back to a synthetic shape.
+          This preserves the chart UX even when a data provider is delayed/offline.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+var API = window.location.origin;
+
+// Display/proxies (fixed for MVP)
+var DISPLAY_SYMBOL = 'SPX';
+var PRICE_PROXY    = 'ES=F';
+var OPTIONS_PROXY  = 'SPY';
+
+var currentInterval = '4h';
+var currentPeriod   = '60d';
+
+var chartInst        = null;
+var chartCS          = null;
+var gexPriceLines    = [];
+var gexOverlayCanvas = null;
+var gexProfileData   = null; // {strikes[], gex[], spot, gwall, pwall, flip}
+
+// Refresh timers
+var _tQuoteGex = null;
+var _tCandles  = null;
+var _inflight  = false;
+
+function fmt(v) {
+  if (v==null || isNaN(v)) return '--';
+  return v>=1000 ? v.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:1}) : v.toFixed(2);
+}
+function pct(v) { return v!=null && !isNaN(v) ? (v>=0?'+':'')+v.toFixed(2)+'%' : '--'; }
+
+function setBadgeStatus(kind, text) {
+  var el = document.getElementById('badge-status');
+  el.className = 'sd-pill ' + (kind === 'good' ? 'good' : kind === 'bad' ? 'bad' : 'warn');
+  document.getElementById('b-status').textContent = text;
+}
+function setBadgeSrc(text) { document.getElementById('b-src').textContent = text || '--'; }
+function setBadgeTs(ts) {
+  if (!ts) { document.getElementById('b-ts').textContent='--'; return; }
+  try { document.getElementById('b-ts').textContent = new Date(ts).toLocaleTimeString(); }
+  catch(_e){ document.getElementById('b-ts').textContent = String(ts); }
+}
+
+function changeTF(btn) {
+  document.querySelectorAll('.sd-tf-btn').forEach(function(b){ b.classList.remove('active'); });
+  btn.classList.add('active');
+  currentInterval = btn.dataset.interval;
+  currentPeriod   = btn.dataset.period;
+  destroyChart();
+  loadCandles();
+}
+
+function destroyChart() {
+  if (chartInst){ try{ chartInst.remove(); }catch(_e){} }
+  chartInst=null; chartCS=null; gexPriceLines=[]; gexOverlayCanvas=null;
+}
+
+// ── GEX price lines ───────────────────────────────────────────────────────────
+function applyGexLines(gwall, pwall, flip) {
+  gexPriceLines.forEach(function(pl){ try{ chartCS.removePriceLine(pl); }catch(_e){} });
+  gexPriceLines = [];
+  if (!chartCS) return;
+  var LS = LightweightCharts.LineStyle;
+  [
+    { val:gwall, color:'#4ade80', title:'Call Wall '  +fmt(gwall), style:LS.Dashed  },
+    { val:flip,  color:'#fbbf24', title:'ZeroGamma '+fmt(flip),  style:LS.Dashed  },
+    { val:pwall, color:'#f87171', title:'Put Wall '  +fmt(pwall), style:LS.Dashed  },
+  ].forEach(function(d){
+    if (!d.val||isNaN(d.val)) return;
+    var pl = chartCS.createPriceLine({
+      price:d.val, color:d.color, lineWidth:2, lineStyle:d.style, axisLabelVisible:true, title:d.title
+    });
+    gexPriceLines.push(pl);
+  });
+}
+
+// ── Overlay helpers ───────────────────────────────────────────────────────────
+var GEX_W = 115;
+var PRICE_AX_W = 65;
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+}
+
+var _overlayTimer = null;
+var _overlayAttempts = 0;
+function scheduleOverlayDraw() {
+  if (_overlayTimer) { clearTimeout(_overlayTimer); _overlayTimer = null; }
+  _overlayAttempts = 0;
+  _tryOverlayDraw();
+}
+function _tryOverlayDraw() {
+  _overlayTimer = null;
+  if (!gexOverlayCanvas || !chartCS || !chartInst || !gexProfileData) {
+    if (_overlayAttempts++ < 25) _overlayTimer = setTimeout(_tryOverlayDraw, 120);
+    return;
+  }
+  requestAnimationFrame(function() {
+    var testY = null;
+    try { testY = chartCS.priceToCoordinate(gexProfileData.spot || gexProfileData.strikes[0]); } catch(_e){}
+    if (testY === null && _overlayAttempts++ < 25) {
+      _overlayTimer = setTimeout(_tryOverlayDraw, 120);
+      return;
+    }
+    drawGexOverlay();
+    _overlayTimer = setTimeout(function(){ requestAnimationFrame(drawGexOverlay); }, 400);
+  });
+}
+
+function drawGexOverlay() {
+  if (!gexOverlayCanvas || !chartCS || !chartInst || !gexProfileData) return;
+  var data = gexProfileData;
+  var container = document.getElementById('sd-chart-container');
+  if (!container) return;
+  var cw = container.clientWidth;
+  var ch = container.clientHeight;
+  gexOverlayCanvas.width  = cw;
+  gexOverlayCanvas.height = ch;
+  var ctx = gexOverlayCanvas.getContext('2d');
+  ctx.clearRect(0,0,cw,ch);
+
+  var TIME_H = 24;
+  var paneH  = ch - TIME_H;
+  var xRight = cw - PRICE_AX_W;
+  var xZero  = xRight - 4;
+
+  var maxGex = data.gex.reduce(function(m,v){ return Math.max(m,Math.abs(v)); }, 0);
+  if (!maxGex) return;
+
+  ctx.fillStyle = 'rgba(4,9,20,0.72)';
+  ctx.fillRect(xZero - GEX_W - 2, 0, GEX_W + 6, paneH);
+
+  ctx.strokeStyle = 'rgba(148,163,184,0.2)';
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(xZero,0); ctx.lineTo(xZero,paneH); ctx.stroke();
+
+  ctx.fillStyle = 'rgba(148,163,184,0.4)';
+  ctx.font = 'bold 8px Consolas,monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('GEX', xZero - GEX_W/2, 10);
+
+  var visStart=null, visEnd=null;
+  for (var i=0; i<data.strikes.length; i++){
+    var yy=null;
+    try{ yy=chartCS.priceToCoordinate(data.strikes[i]); }catch(_e){ continue; }
+    if (yy!=null && yy>=0 && yy<=paneH){
+      if (visStart===null) visStart=i;
+      visEnd=i;
+    }
+  }
+  var visCount = (visStart!==null && visEnd!==null) ? (visEnd-visStart+1) : data.strikes.length;
+  var rowH = Math.max(2, Math.min(18, paneH / Math.max(visCount, 1) * 1.1));
+
+  for (var j=0; j<data.strikes.length; j++){
+    var price = data.strikes[j];
+    var gv    = data.gex[j] || 0;
+    var y = null;
+    try{ y = chartCS.priceToCoordinate(price); }catch(_e){ continue; }
+    if (y==null || y<0 || y>paneH) continue;
+    var barLen = (Math.abs(gv)/maxGex)*GEX_W;
+    if (barLen < 1) continue;
+
+    if (gv >= 0) {
+      var gr = ctx.createLinearGradient(xZero-barLen,0,xZero,0);
+      gr.addColorStop(0,'rgba(34,197,94,0.08)');
+      gr.addColorStop(1,'rgba(34,197,94,0.72)');
+      ctx.fillStyle = gr;
+    } else {
+      var gr2 = ctx.createLinearGradient(xZero-barLen,0,xZero,0);
+      gr2.addColorStop(0,'rgba(239,68,68,0.08)');
+      gr2.addColorStop(1,'rgba(239,68,68,0.72)');
+      ctx.fillStyle = gr2;
+    }
+    ctx.fillRect(xZero-barLen, y-rowH/2, barLen, rowH);
+  }
+
+  var lvDefs = [
+    { p:data.gwall, solid:'#4ade80', bg:'rgba(22,101,52,0.88)',  text:'Call Wall  '+fmt(data.gwall)  },
+    { p:data.flip,  solid:'#fbbf24', bg:'rgba(120,83,0,0.88)',   text:'ZeroGamma '+fmt(data.flip)   },
+    { p:data.pwall, solid:'#f87171', bg:'rgba(127,29,29,0.88)',  text:'Put Wall   '+fmt(data.pwall)  },
+  ];
+  lvDefs.forEach(function(m) {
+    if (!m.p) return;
+    var ly=null; try{ ly=chartCS.priceToCoordinate(m.p); }catch(_e){}
+    if (ly==null||ly<0||ly>paneH) return;
+
+    ctx.strokeStyle = m.solid;
+    ctx.lineWidth   = 1.5;
+    ctx.setLineDash([6, 4]);
+    ctx.beginPath();
+    ctx.moveTo(0, ly);
+    ctx.lineTo(xZero, ly);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    var PILL_H   = 20;
+    var PILL_PAD = 9;
+    ctx.font = 'bold 11px Consolas, monospace';
+    var tw     = ctx.measureText(m.text).width;
+    var PILL_W = tw + PILL_PAD * 2;
+    var px = 8;
+    var py = ly - PILL_H / 2;
+    if (py < 2) py = 2;
+    if (py + PILL_H > paneH - 2) py = paneH - PILL_H - 2;
+
+    ctx.fillStyle = m.bg;
+    roundRect(ctx, px, py, PILL_W, PILL_H, 5);
+    ctx.fill();
+
+    ctx.strokeStyle = m.solid;
+    ctx.lineWidth   = 1.5;
+    roundRect(ctx, px, py, PILL_W, PILL_H, 5);
+    ctx.stroke();
+
+    ctx.fillStyle = '#ffffff';
+    ctx.textAlign = 'left';
+    ctx.fillText(m.text, px + PILL_PAD, py + PILL_H - 5);
+  });
+}
+
+// ── Regime banner ─────────────────────────────────────────────────────────────
+function updateRegimeBanner(regime, spot, gwall, pwall, flip) {
+  var banner = document.getElementById('regime-banner');
+  var icon   = document.getElementById('regime-icon');
+  var rating = document.getElementById('regime-rating');
+  var sub    = document.getElementById('regime-subtitle');
+  var ru = (regime||'').toUpperCase();
+  banner.className = 'sd-regime-banner';
+
+  if (spot && gwall && spot > gwall) {
+    banner.classList.add('regime-squeeze');
+    icon.innerHTML='&#128293;'; rating.style.color='#ef4444';
+    rating.textContent='GAMMA SQUEEZE — Above Call Wall';
+    sub.textContent='Spot ('+fmt(spot)+') above Call Wall ('+fmt(gwall)+'). Dealers short gamma — forced to buy rallies. Fast moves, shallow pullbacks.';
+  } else if (spot && pwall && spot < pwall) {
+    banner.classList.add('regime-maxneg');
+    icon.innerHTML='&#9889;'; rating.style.color='#a78bfa';
+    rating.textContent='MAX NEGATIVE GAMMA — Below Put Wall';
+    sub.textContent='Spot ('+fmt(spot)+') below Put Wall ('+fmt(pwall)+'). Max dealer short gamma. Extreme volatility risk. Bounce target: '+fmt(flip)+' Zero Gamma.';
+  } else if (ru.indexOf('LONG')>=0 || ru.indexOf('POS')>=0 || (spot&&flip&&spot>flip)) {
+    banner.classList.add('regime-positive');
+    icon.innerHTML='&#128994;'; rating.style.color='#4ade80';
+    rating.textContent='POSITIVE GAMMA — Stabilizing';
+    sub.textContent='Spot ('+fmt(spot)+') above Zero Gamma ('+fmt(flip)+'). Dealers LONG gamma — sell rallies and buy dips. Volatility suppressed; price pins between walls.';
+  } else if (ru.indexOf('SHORT')>=0 || ru.indexOf('NEG')>=0 || (spot&&flip&&spot<flip)) {
+    banner.classList.add('regime-negative');
+    icon.innerHTML='&#128308;'; rating.style.color='#f97316';
+    rating.textContent='NEGATIVE GAMMA — Volatility Amplifying';
+    sub.textContent='Spot ('+fmt(spot)+') below Zero Gamma ('+fmt(flip)+'). Dealers SHORT gamma — buy rallies and sell dips, amplifying trending moves. VIX risk elevated.';
+  } else {
+    banner.classList.add('regime-transition');
+    icon.innerHTML='&#9888;'; rating.style.color='#fbbf24';
+    rating.textContent='TRANSITION — Near Zero Gamma';
+    sub.textContent='Spot near Zero Gamma ('+fmt(flip)+'). Expect whipsaws. Close above = stabilizing; close below = volatile.';
+  }
+}
+
+// ── Data loading ──────────────────────────────────────────────────────────────
+async function loadDashboardPayload() {
+  if (_inflight) return;
+  _inflight = true;
+  try {
+    setBadgeStatus('warn','Updating');
+    var r = await fetch(API + '/api/spx-dashboard', { cache:'no-store' });
+    if (!r.ok) throw new Error('HTTP '+r.status);
+    var d = await r.json();
+
+    setBadgeTs(d.timestamp || d.ts);
+    setBadgeSrc((d.quote && d.quote.source) ? d.quote.source : (d.source||'--'));
+
+    var quote = d.quote || {};
+    var spot  = (quote && quote.price) ? quote.price : null;
+
+    var gex  = d.gex_asset || null;
+    var prof = d.gex_profile || null;
+
+    // Prefer explicit profile; otherwise synthesize from gex_asset arrays.
+    var strikes = (prof && prof.strikes) || (gex && gex.strikes) || [];
+    var gexArr  = (prof && prof.gex)     || (gex && gex.gex)     || [];
+
+    var gwall = (gex && (gex.gamma_wall || gex.call_wall)) || (prof && prof.gwall) || null;
+    var pwall = (gex && gex.put_wall) || (prof && prof.pwall) || null;
+    var flip  = (gex && gex.flip_level) || (prof && prof.flip) || null;
+    var regime= (gex && gex.regime) || (d.regime || '');
+
+    // If backend gave scaled_spot for ES=F, use it.
+    if (d.scaled && d.scaled.spot) spot = d.scaled.spot;
+    if (d.scaled && d.scaled.gwall) gwall = d.scaled.gwall;
+    if (d.scaled && d.scaled.pwall) pwall = d.scaled.pwall;
+    if (d.scaled && d.scaled.flip)  flip  = d.scaled.flip;
+    if (d.scaled && Array.isArray(d.scaled.strikes) && d.scaled.strikes.length) strikes = d.scaled.strikes;
+
+    // Update cards
+    document.getElementById('lv-spot').textContent = spot ? '$'+fmt(spot) : '--';
+    document.getElementById('lv-callwall').textContent = fmt(gwall);
+    document.getElementById('lv-putwall').textContent  = fmt(pwall);
+    document.getElementById('lv-flip').textContent     = fmt(flip);
+
+    document.getElementById('regime-spot').textContent = spot ? '$'+fmt(spot) : '--';
+    updateRegimeBanner(regime, spot, gwall, pwall, flip);
+
+    // Store profile for overlay
+    if (Array.isArray(strikes) && strikes.length && Array.isArray(gexArr) && gexArr.length) {
+      gexProfileData = { strikes:strikes, gex:gexArr, spot:spot, gwall:gwall, pwall:pwall, flip:flip };
+      if (chartCS) {
+        applyGexLines(gwall, pwall, flip);
+        scheduleOverlayDraw();
+      }
+    }
+
+    setBadgeStatus('good','Live');
+  } catch(e) {
+    console.error('spx-dashboard payload error', e);
+    setBadgeStatus('bad','Offline');
+    document.getElementById('regime-rating').textContent = 'Data Unavailable';
+    document.getElementById('regime-subtitle').textContent = e.message;
+  } finally {
+    _inflight = false;
+  }
+}
+
+// ── Candles chart ─────────────────────────────────────────────────────────────
+async function loadCandles() {
+  var container = document.getElementById('sd-chart-container');
+  if (!container) return;
+  try {
+    setBadgeStatus('warn','Chart');
+    var url = API + '/api/candles/' + encodeURIComponent(PRICE_PROXY) +
+      '?interval=' + encodeURIComponent(currentInterval) + '&period=' + encodeURIComponent(currentPeriod);
+    var r = await fetch(url, { cache:'no-store' });
+    if (!r.ok) throw new Error('HTTP '+r.status);
+    var raw = await r.json();
+    var candles = raw.candles || raw;
+    if (!Array.isArray(candles)||!candles.length) throw new Error('No candle data');
+    var mapped = candles
+      .map(function(c){ return {time:c.time||c.timestamp,open:c.open,high:c.high,low:c.low,close:c.close}; })
+      .filter(function(c){ return c.time && c.open!=null && c.close!=null; });
+    if (!mapped.length) throw new Error('No valid candles');
+
+    container.innerHTML = '';
+    container.style.position = 'relative';
+    var w = container.clientWidth || 900;
+
+    chartInst = LightweightCharts.createChart(container, {
+      width:w, height:520,
+      layout:{ background:{color:'#070d18'}, textColor:'rgba(226,232,240,0.9)' },
+      grid:{ vertLines:{color:'rgba(36,48,88,.38)'}, horzLines:{color:'rgba(36,48,88,.38)'} },
+      crosshair:{ mode:LightweightCharts.CrosshairMode.Normal },
+      rightPriceScale:{ borderColor:'rgba(255,255,255,0.14)' },
+      timeScale:{ borderColor:'rgba(255,255,255,0.14)', timeVisible:true, secondsVisible:false, rightOffset:5, barSpacing:8 },
+      handleScroll:{ mouseWheel:true, pressedMouseMove:true, horzTouchDrag:true },
+      handleScale:{ mouseWheel:true, pinch:true, axisPressedMouseMove:{time:true,price:true} },
+    });
+
+    chartCS = chartInst.addCandlestickSeries({
+      upColor:'#22c55e', downColor:'#ef4444',
+      borderUpColor:'#22c55e', borderDownColor:'#ef4444',
+      wickUpColor:'#22c55e', wickDownColor:'#ef4444',
+    });
+    chartCS.setData(mapped);
+    chartInst.timeScale().fitContent();
+
+    chartInst.subscribeCrosshairMove(function(p){
+      if (!p.seriesData||!p.seriesData.size) return;
+      var d=p.seriesData.get(chartCS); if (!d) return;
+      document.getElementById('ohlc-o').textContent='O '+d.open.toFixed(2);
+      document.getElementById('ohlc-h').textContent='H '+d.high.toFixed(2);
+      document.getElementById('ohlc-l').textContent='L '+d.low.toFixed(2);
+      document.getElementById('ohlc-c').textContent='C '+d.close.toFixed(2);
+    });
+
+    var last = mapped[mapped.length-1];
+    document.getElementById('ohlc-o').textContent='O '+last.open.toFixed(2);
+    document.getElementById('ohlc-h').textContent='H '+last.high.toFixed(2);
+    document.getElementById('ohlc-l').textContent='L '+last.low.toFixed(2);
+    document.getElementById('ohlc-c').textContent='C '+last.close.toFixed(2);
+
+    if (mapped.length>=2){
+      var prev=mapped[mapped.length-2];
+      var chg=((last.close-prev.close)/prev.close*100).toFixed(2);
+      var chgEl=document.getElementById('regime-change');
+      chgEl.textContent=(chg>=0?'+':'')+chg+'%';
+      chgEl.style.color=chg>=0?'#4ade80':'#f87171';
+    }
+
+    // Overlay canvas
+    gexOverlayCanvas = document.createElement('canvas');
+    gexOverlayCanvas.style.cssText='position:absolute;top:0;left:0;pointer-events:none;z-index:3;';
+    container.appendChild(gexOverlayCanvas);
+
+    chartInst.timeScale().subscribeVisibleLogicalRangeChange(function(){ requestAnimationFrame(drawGexOverlay); });
+    chartInst.subscribeCrosshairMove(function(){ requestAnimationFrame(drawGexOverlay); });
+    window.addEventListener('resize', function(){
+      if (chartInst) chartInst.applyOptions({width:container.clientWidth});
+      requestAnimationFrame(drawGexOverlay);
+    });
+
+    // Apply existing GEX lines if already loaded
+    if (gexProfileData) {
+      applyGexLines(gexProfileData.gwall, gexProfileData.pwall, gexProfileData.flip);
+      scheduleOverlayDraw();
+    }
+
+    setBadgeStatus('good','Live');
+  } catch(e) {
+    container.innerHTML = '<div style="color:var(--muted);text-align:center;padding:3rem;font-size:.85rem;">Chart unavailable: '+e.message+'</div>';
+    setBadgeStatus('bad','ChartErr');
+  }
+}
+
+function startRefreshLoops() {
+  if (_tQuoteGex) clearInterval(_tQuoteGex);
+  if (_tCandles)  clearInterval(_tCandles);
+  _tQuoteGex = setInterval(function(){ if (document.hidden) return; loadDashboardPayload(); }, 20 * 1000);
+  _tCandles  = setInterval(function(){ if (document.hidden) return; loadCandles(); }, 90 * 1000);
+  document.addEventListener('visibilitychange', function(){
+    if (!document.hidden) { loadDashboardPayload(); loadCandles(); }
+  });
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+document.getElementById('tf-note').textContent = 'Auto-refresh: quote/GEX ~20s · candles ~90s';
+loadCandles();
+loadDashboardPayload();
+startRefreshLoops();
+</script>
+</body>
+</html>
