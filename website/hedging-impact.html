@@ -5,9 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Hedging Impact — Real-Time Options Dealer Flow</title>
   <link rel="preload" href="style.css" as="style" fetchpriority="high">
+  <link rel="stylesheet" href="page-export.css">
   <link rel="stylesheet" href="style.css">
   <link rel="preload" href="lightweight-charts.min.js" as="script">
   <script src="lightweight-charts.min.js"></script>
+  <script src="chart-draw-tools.js"></script>
   <style>
     .hi-wrap { max-width:1600px; margin:0 auto; padding:0 1.5rem 6rem; }
 
@@ -164,6 +166,8 @@
   <a href="market-summary.html">Market Summary</a>
   <span class="page-nav-sep">|</span>
   <a href="gamma-exposure.html">GEX Charts 🎯</a>
+  <span class="page-nav-sep">|</span>
+  <a href="treasury-yields.html" style="color:#fbbf24;font-weight:700;">&#128176; Treasury Yields</a>
   <span class="page-nav-sep">|</span>
   <a href="option-flows.html">Option Flows 🌊</a>
   <span class="page-nav-sep">|</span>
@@ -898,7 +902,7 @@ async function loadMainChart(sym, gexAsset) {
   if (!Array.isArray(data) || !data.length) { el.innerHTML = '<div class="loading-msg">No data</div>'; return; }
   el.innerHTML = '';
 
-  const chart = LightweightCharts.createChart(el, {
+  const chart = (window.createLwcChart || LightweightCharts.createChart)(el, {
     width: el.clientWidth, height: el.clientHeight || 340,
     layout: { background:{color:'#070d18'}, textColor:'rgba(127,163,190,.9)' },
     grid:   { vertLines:{color:'rgba(0,0,0,.07)'}, horzLines:{color:'rgba(0,0,0,.07)'} },
@@ -1246,5 +1250,6 @@ window.addEventListener('load', function() {
 });
 </script>
 <script src="search.js" defer></script>
+  <script src="page-export.js"></script>
 </body>
 </html>

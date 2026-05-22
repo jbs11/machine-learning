@@ -1,0 +1,3370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Option Charts — All Assets</title>
+  <link rel="preload" href="style.css" as="style" fetchpriority="high">
+  <link rel="stylesheet" href="page-export.css">
+  <link rel="stylesheet" href="style.css">
+  <script src="lightweight-charts.min.js"></script>
+  <script src="chart-draw-tools.js"></script>
+  <script src="option-chart-axis.js"></script>
+  <style>
+    .oc-wrap { max-width: 1720px; margin: 0 auto; padding: 0 1.5rem 5rem; }
+    .oc-hero {
+      padding: 3rem 1.5rem 2rem; text-align: center;
+      background: radial-gradient(ellipse 80% 55% at 50% -5%, rgba(251,191,36,.12) 0%, transparent 65%), var(--bg);
+      border-bottom: 1px solid var(--border);
+    }
+    .oc-badge {
+      display: inline-flex; align-items: center; gap: .5rem; padding: .3rem 1rem;
+      background: rgba(251,191,36,.1); border: 1px solid rgba(251,191,36,.28); border-radius: 999px;
+      color: #fbbf24; font-size: .78rem; font-weight: 700; letter-spacing: .08em;
+      text-transform: uppercase; margin-bottom: .9rem;
+    }
+    .oc-hero h1 {
+      font-size: clamp(1.8rem, 4vw, 3rem); font-weight: 900; letter-spacing: -.03em;
+      line-height: 1.15; margin-bottom: .7rem;
+      background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 40%, #22d3ee 90%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    .oc-hero p { color: var(--muted); font-size: 1rem; max-width: 820px; margin: 0 auto; line-height: 1.7; }
+
+    .oc-bar { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; padding: .85rem 0 .4rem; }
+    .oc-grp { font-size: .63rem; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); }
+    .oc-sym {
+      padding: .28rem .72rem; border-radius: 6px; border: 1px solid var(--border);
+      background: transparent; color: var(--muted); font-size: .78rem; font-weight: 700;
+      cursor: pointer; font-family: Consolas, monospace; transition: all .14s;
+    }
+    .oc-sym.active { background: rgba(251,191,36,.14); border-color: #fbbf24; color: #fbbf24; }
+    .oc-sym.fut.active { background: rgba(251,191,36,.1); border-color: #fbbf24; color: #fbbf24; }
+    .oc-sym:hover:not(.active) { border-color: var(--muted); color: var(--text); }
+    .oc-div { width: 1px; height: 20px; background: var(--border); margin: 0 .15rem; }
+
+    .oc-stats {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr));
+      gap: 1px; background: var(--border); border: 1px solid var(--border);
+      border-radius: 10px; overflow: hidden; margin: .6rem 0 1rem;
+    }
+    .oc-st { background: var(--surface); padding: .6rem .75rem; text-align: center; }
+    .oc-st-v { font-size: 1rem; font-weight: 900; font-family: Consolas, monospace; }
+    .oc-st-l { font-size: .6rem; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); margin-top: .08rem; }
+
+    .oc-layout { display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: 1rem; min-height: 520px; }
+    @media(max-width: 900px) { .oc-layout { grid-template-columns: 1fr; } }
+
+    .oc-side {
+      background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+      overflow: hidden; display: flex; flex-direction: column;
+    }
+    @media(max-width: 900px) {
+      .oc-side { flex-direction: row; flex-wrap: wrap; }
+      .oc-tab { flex: 1 1 auto; border-right: none !important; border-bottom: 1px solid var(--border); }
+    }
+    .oc-tab {
+      padding: .65rem .85rem; font-size: .78rem; font-weight: 700; color: var(--muted);
+      cursor: pointer; border-left: 3px solid transparent; transition: all .12s;
+      text-align: left;
+    }
+    .oc-tab:hover { color: var(--text); background: rgba(255,255,255,.02); }
+    .oc-tab.active { color: #fbbf24; border-left-color: #fbbf24; background: rgba(251,191,36,.06); }
+
+    .oc-main {
+      background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+      overflow: visible; min-height: 480px;
+    }
+    .oc-main-hdr {
+      display: flex; align-items: center; flex-wrap: wrap; gap: .6rem;
+      padding: .65rem 1rem; border-bottom: 1px solid var(--border);
+      background: rgba(255,255,255,.02);
+    }
+    .oc-main-title { font-weight: 900; font-size: .95rem; }
+    .oc-main-sub { font-size: .72rem; color: var(--muted); }
+    .oc-filters { display: flex; flex-wrap: wrap; gap: .35rem; margin-left: auto; align-items: center; }
+    .oc-filt {
+      padding: .22rem .55rem; border-radius: 5px; border: 1px solid var(--border);
+      background: transparent; color: var(--muted); font-size: .7rem; font-weight: 700; cursor: pointer;
+    }
+    .oc-filt.active { background: rgba(34,211,238,.12); border-color: #22d3ee; color: #22d3ee; }
+    .oc-exp-sel {
+      background: var(--card); border: 1px solid var(--border); color: var(--text);
+      font-size: .72rem; padding: .22rem .5rem; border-radius: 5px; font-family: inherit;
+    }
+    .oc-body { padding: .85rem 1rem 1.2rem; overflow: visible; min-width: 0; }
+    .oc-canvas-wrap {
+      background: #070d18; border: 1px solid var(--border); border-radius: 8px; overflow: hidden;
+    }
+    .oc-canvas-lbl {
+      font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em;
+      color: var(--muted); padding: .4rem .85rem; border-bottom: 1px solid var(--border);
+    }
+    .oc-lwc-wrap .oc-canvas-lbl::after {
+      content: ' · scroll to zoom · drag to pan';
+      font-weight: 600; text-transform: none; letter-spacing: 0;
+    }
+    .oc-canvas-wrap canvas { display: block; width: 100%; }
+    .oc-canvas-wrap .cdt-wrap { display: block; }
+    .oc-canvas-wrap .cdt-chart-slot { min-height: 120px; }
+    .oc-lwc-wrap .cdt-wrap { min-height: 200px; }
+    #oc-term-chart { height: 300px; }
+    .oc-loading { padding: 3rem; text-align: center; color: var(--muted); font-size: .85rem; }
+    .oc-spinner {
+      width: 28px; height: 28px; border: 3px solid var(--border); border-top-color: #fbbf24;
+      border-radius: 50%; animation: spin .8s linear infinite; margin: 0 auto .6rem;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .oc-links { display: flex; flex-wrap: wrap; gap: .45rem; margin-top: .75rem; }
+    .oc-link {
+      padding: .3rem .7rem; border-radius: 999px; border: 1px solid var(--border);
+      color: var(--muted); font-size: .72rem; font-weight: 700; text-decoration: none;
+    }
+    .oc-link:hover { border-color: #fbbf24; color: #fbbf24; }
+    .oc-panel { display: none; }
+    .oc-panel.active { display: block; }
+    .oc-matrix-table { border-collapse: collapse; font-size: .68rem; }
+    .oc-matrix-table th, .oc-matrix-table td { padding: .28rem .35rem; text-align: center; border: 1px solid var(--border); }
+    .oc-matrix-table th { background: var(--card); color: var(--muted); font-weight: 700; }
+    .oc-greeks-tbl { border-collapse: collapse; font-size: .74rem; }
+    .oc-greeks-tbl th { color: var(--muted); font-size: .64rem; text-transform: uppercase; padding: .35rem .5rem; border-bottom: 1px solid var(--border); }
+    .oc-greeks-tbl td { padding: .3rem .5rem; border-bottom: 1px solid rgba(36,48,88,.35); font-family: Consolas, monospace; }
+    .oc-strat-box { font-size: .82rem; color: var(--muted); line-height: 1.65; }
+    .oc-strat-name { font-size: 1rem; font-weight: 900; color: var(--text); margin-bottom: .35rem; }
+    .oc-server { display: flex; align-items: center; gap: .6rem; padding: .5rem 0; font-size: .78rem; color: var(--muted); }
+    .oc-dot { width: 8px; height: 8px; border-radius: 50%; background: #fbbf24; }
+    .oc-dot.ok { background: #4ade80; }
+    .oc-dot.err { background: #f87171; }
+    .oc-refresh {
+      margin-left: auto; padding: .28rem .75rem; border-radius: 6px; border: 1px solid var(--border);
+      background: transparent; color: var(--muted); font-size: .75rem; font-weight: 700; cursor: pointer;
+    }
+    .oc-refresh:hover { border-color: #fbbf24; color: #fbbf24; }
+    .vd-skew-legend { display: flex; flex-wrap: wrap; gap: .8rem; padding: .45rem 0; font-size: .68rem; color: var(--muted); }
+
+    .oc-side { max-height: 72vh; overflow-y: auto; }
+    .oc-sec-lbl {
+      font-size: .58rem; font-weight: 800; text-transform: uppercase; letter-spacing: .12em;
+      color: rgba(148,163,184,.55); padding: .55rem .85rem .15rem; margin-top: .2rem;
+    }
+    .oc-sec-lbl:first-child { margin-top: 0; }
+    #oc-price-chart { height: 340px; }
+    #oc-pnl-chart { height: 300px; }
+    .oc-tf-bar { display: flex; gap: .35rem; flex-wrap: wrap; margin-bottom: .65rem; }
+    .oc-tf-btn {
+      padding: .2rem .55rem; border-radius: 5px; border: 1px solid var(--border);
+      background: transparent; color: var(--muted); font-size: .7rem; font-weight: 700; cursor: pointer;
+    }
+    .oc-tf-btn.active { background: #fbbf24; border-color: #fbbf24; color: #0a0f1e; }
+    .oc-catalog {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: .5rem; margin-bottom: 1rem; padding: .75rem;
+      background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+    }
+    .oc-cat { font-size: .68rem; color: var(--muted); line-height: 1.45; }
+    .oc-cat b { color: var(--text); display: block; font-size: .72rem; margin-bottom: .15rem; }
+
+
+    .oc-ticker {
+      display: flex; align-items: center; flex-wrap: wrap; gap: 1rem;
+      padding: 1rem 1.2rem; margin-bottom: .75rem;
+      background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    }
+    .oc-ticker-sym { font-size: 1.35rem; font-weight: 900; font-family: Consolas, monospace; }
+    .oc-ticker-name { font-size: .78rem; color: var(--muted); }
+    .oc-ticker-price { font-size: 1.5rem; font-weight: 900; font-family: Consolas, monospace; }
+    .oc-ticker-chg.pos { color: #4ade80; }
+    .oc-ticker-chg.neg { color: #f87171; }
+    .oc-pills {
+      display: flex; flex-wrap: wrap; gap: .35rem; padding: .5rem 0 .85rem;
+      border-bottom: 1px solid var(--border); margin-bottom: .75rem;
+    }
+    .oc-pill {
+      padding: .32rem .75rem; border-radius: 999px; border: 1px solid var(--border);
+      background: transparent; color: var(--muted); font-size: .72rem; font-weight: 700;
+      cursor: pointer; white-space: nowrap; transition: all .12s;
+    }
+    .oc-pill:hover { border-color: #fbbf24; color: var(--text); }
+    .oc-pill.active { background: rgba(251,191,36,.15); border-color: #fbbf24; color: #fbbf24; }
+    .oc-ov-table { border-collapse: collapse; font-size: .72rem; }
+    .oc-ov-table th {
+      text-align: right; padding: .45rem .5rem; color: var(--muted); font-weight: 700;
+      border-bottom: 2px solid var(--border); font-size: .62rem; text-transform: uppercase;
+    }
+    .oc-ov-table th:first-child { text-align: left; }
+    .oc-ov-table td { padding: .38rem .5rem; border-bottom: 1px solid var(--border); text-align: right; font-family: Consolas, monospace; }
+    .oc-ov-table td:first-child { text-align: left; font-family: inherit; font-weight: 600; }
+    .oc-ov-table tr:hover td { background: rgba(255,255,255,.02); }
+    .oc-pcr-hi { color: #f87171; }
+    .oc-pcr-lo { color: #4ade80; }
+    .oc-greek-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; }
+    @media(max-width: 800px) { .oc-greek-grid { grid-template-columns: 1fr; } }
+    .oc-greek-mini { background: #070d18; border: 1px solid var(--border); border-radius: 8px; padding: .35rem; }
+    .oc-greek-mini canvas { width: 100%; display: block; }
+    .oc-greek-title { font-size: .7rem; font-weight: 800; color: #fbbf24; padding: .25rem .4rem; }
+    .oc-unusual-tbl { border-collapse: collapse; font-size: .73rem; }
+    .oc-unusual-tbl th { color: var(--muted); font-size: .62rem; text-transform: uppercase; padding: .35rem .5rem; border-bottom: 1px solid var(--border); }
+    .oc-unusual-tbl td { padding: .32rem .5rem; border-bottom: 1px solid rgba(36,48,88,.35); font-family: Consolas, monospace; }
+    .oc-unusual-tbl tr.put td { background: rgba(248,113,113,.06); }
+    .oc-unusual-tbl tr.call td { background: rgba(34,197,94,.05); }
+
+
+    .oc-section-nav {
+      display: flex; flex-wrap: wrap; gap: 0; border-bottom: 2px solid var(--border);
+      margin-bottom: .85rem; background: var(--surface); border-radius: 10px 10px 0 0;
+      overflow: hidden;
+    }
+    .oc-sec-btn {
+      padding: .65rem 1.1rem; font-size: .78rem; font-weight: 700; color: var(--muted);
+      background: transparent; border: none; cursor: pointer; border-bottom: 3px solid transparent;
+    }
+    .oc-sec-btn:hover { color: var(--text); background: rgba(255,255,255,.03); }
+    .oc-sec-btn.active { color: #22d3ee; border-bottom-color: #22d3ee; background: rgba(34,211,238,.06); }
+    .oc-chain-tbl { width: 100%; border-collapse: collapse; font-size: .7rem; }
+    .oc-chain-tbl th {
+      position: sticky; top: 0; background: var(--card); z-index: 1;
+      padding: .4rem .45rem; text-align: right; color: var(--muted); font-size: .6rem;
+      text-transform: uppercase; border-bottom: 1px solid var(--border);
+    }
+    .oc-chain-tbl th:first-child { text-align: left; }
+    .oc-chain-tbl td { padding: .32rem .45rem; border-bottom: 1px solid rgba(36,48,88,.3); text-align: right; font-family: Consolas, monospace; }
+    .oc-chain-tbl td:first-child { text-align: left; font-weight: 700; }
+    .oc-chain-tbl tr.call-row td { background: rgba(34,197,94,.04); }
+    .oc-chain-tbl tr.put-row td { background: rgba(248,113,113,.04); }
+    
+    .oc-table-scroll,
+    .oc-chain-scroll {
+      display: block;
+      width: 100%;
+      max-width: 100%;
+      max-height: min(560px, 72vh);
+      overflow: auto;
+      overflow-x: auto;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior: contain;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      scrollbar-gutter: stable both-edges;
+    }
+    .oc-scroll-hint {
+      font-size: .66rem; color: var(--muted); margin: .4rem 0 0;
+      text-align: center; letter-spacing: .02em;
+    }
+    .oc-chain-grid,
+    .oc-ov-table,
+    .oc-greeks-tbl,
+    .oc-unusual-tbl,
+    .oc-matrix-table,
+    .oc-pos-tbl {
+      width: max-content;
+      min-width: 100%;
+      border-collapse: collapse;
+    }
+    .oc-chain-grid { font-size: .66rem; }
+    .oc-chain-grid th,
+    .oc-chain-grid td {
+      white-space: nowrap;
+      padding: .35rem .45rem;
+    }
+    .oc-chain-grid th {
+      position: sticky; top: 0; background: var(--card); z-index: 2;
+      text-align: right; color: var(--muted); font-size: .58rem;
+      text-transform: uppercase; border-bottom: 1px solid var(--border);
+    }
+    .oc-chain-grid th.oc-strike-h {
+      text-align: center; background: #1a2236; color: #fbbf24; z-index: 4;
+      box-shadow: -1px 0 0 var(--border), 1px 0 0 var(--border);
+    }
+    .oc-chain-grid td {
+      border-bottom: 1px solid rgba(36,48,88,.35); text-align: right;
+      font-family: Consolas, monospace;
+    }
+    .oc-chain-grid td.oc-strike-cell {
+      text-align: center; font-weight: 800; color: #fbbf24;
+      background: rgba(251,191,36,.08);
+    }
+    .oc-chain-grid tr.call-side td { background: rgba(34,197,94,.05); }
+    .oc-chain-grid tr.put-side td { background: rgba(248,113,113,.05); }
+    .oc-ov-table th, .oc-ov-table td,
+    .oc-greeks-tbl th, .oc-greeks-tbl td,
+    .oc-unusual-tbl th, .oc-unusual-tbl td,
+    .oc-matrix-table th, .oc-matrix-table td { white-space: nowrap; }
+    .oc-chain-sum { display: flex; flex-wrap: wrap; gap: 1rem; margin-bottom: .65rem; font-size: .75rem; }
+    .oc-chain-sum span { color: var(--muted); }
+    .oc-chain-sum b { font-family: Consolas, monospace; color: var(--text); }
+    .oc-pnl-picks { display: flex; flex-wrap: wrap; gap: .35rem; margin-bottom: .75rem; }
+    .oc-pnl-btn {
+      padding: .32rem .7rem; border-radius: 999px; border: 1px solid var(--border);
+      background: transparent; color: var(--muted); font-size: .7rem; font-weight: 700; cursor: pointer;
+    }
+    .oc-pnl-btn.active { border-color: #a78bfa; color: #a78bfa; background: rgba(167,139,250,.1); }
+    .oc-pnl-btn.bull { border-color: rgba(34,197,94,.35); }
+    .oc-pnl-btn.bear { border-color: rgba(248,113,113,.35); }
+
+    .oc-strat-desc-box {
+      margin: .75rem 0 1rem; padding: .85rem 1rem; background: var(--card);
+      border: 1px solid var(--border); border-radius: 10px;
+    }
+    .oc-strat-desc-box h3 { margin: 0 0 .4rem; font-size: 1rem; font-weight: 900; color: var(--text); }
+    .oc-strat-desc-box p { margin: 0; font-size: .8rem; color: var(--muted); line-height: 1.6; }
+    .oc-save-trade-bar {
+      display: flex; flex-wrap: wrap; align-items: center; gap: .65rem; margin: .85rem 0;
+    }
+    .oc-btn-save {
+      padding: .45rem 1.1rem; border-radius: 8px; border: none; background: linear-gradient(135deg,#22c55e,#16a34a);
+      color: #fff; font-size: .78rem; font-weight: 800; cursor: pointer;
+    }
+    .oc-btn-save:hover { filter: brightness(1.08); }
+    .oc-save-hint { font-size: .72rem; color: var(--muted); }
+    .oc-st-card {
+      margin: 1rem 0; padding: 1rem 1.1rem; background: var(--card);
+      border: 1px solid var(--border); border-radius: 12px;
+    }
+    .oc-st-hdr { display: flex; flex-wrap: wrap; align-items: flex-start; gap: .65rem; margin-bottom: .85rem; }
+    .oc-st-hdr h4 { margin: 0; font-size: .95rem; font-weight: 900; flex: 1; min-width: 180px; }
+    .oc-st-badge {
+      font-size: .62rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase;
+      padding: .2rem .55rem; border-radius: 6px;
+    }
+    .oc-st-badge.open { background: rgba(34,211,238,.15); color: #38bdf8; }
+    .oc-st-badge.closed { background: rgba(34,197,94,.15); color: #4ade80; }
+    .oc-st-badge.expired { background: rgba(251,191,36,.2); color: #fbbf24; }
+    .oc-st-actions { display: flex; gap: .4rem; flex-wrap: wrap; }
+    .oc-st-btn {
+      padding: .32rem .75rem; border-radius: 8px; border: 1px solid var(--border);
+      background: transparent; font-size: .72rem; font-weight: 700; cursor: pointer; color: var(--text);
+    }
+    .oc-st-btn:hover { border-color: #94a3b8; }
+    .oc-st-btn.danger { color: #f87171; border-color: rgba(248,113,113,.4); }
+    .oc-st-btn.danger:hover { background: rgba(248,113,113,.1); }
+    .oc-st-btn.ok { color: #4ade80; border-color: rgba(74,222,128,.4); }
+    .oc-st-name { font-size: .82rem; color: #22d3ee; font-weight: 800; margin-bottom: .75rem; }
+    .oc-st-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem 2rem; }
+    @media(max-width:700px){ .oc-st-grid{ grid-template-columns:1fr; } }
+    .oc-st-col-lbl { font-size: .62rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-bottom: .5rem; }
+    .oc-st-row { margin-bottom: .45rem; }
+    .oc-st-lbl { font-size: .68rem; color: var(--muted); }
+    .oc-st-val { font-size: 1.05rem; font-weight: 800; font-family: Consolas, monospace; color: var(--text); }
+    .oc-st-val.pos { color: #4ade80; }
+    .oc-st-val.neg { color: #f87171; }
+    .oc-st-all { margin-top: .75rem; }
+    .oc-st-mini {
+      padding: .65rem .75rem; border: 1px solid var(--border); border-radius: 8px;
+      margin-bottom: .45rem; cursor: pointer; font-size: .78rem;
+    }
+    .oc-st-mini:hover { border-color: #a78bfa; }
+    .oc-st-mini.active { border-color: #a78bfa; background: rgba(167,139,250,.08); }
+    .oc-pnl-btn.compare-on { border-color: #22d3ee; color: #22d3ee; box-shadow: 0 0 0 1px rgba(34,211,238,.35); }
+    .oc-strat-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: .6rem; margin: .75rem 0; }
+    .oc-strat-card {
+      padding: .7rem .85rem; background: var(--card); border: 1px solid var(--border);
+      border-radius: 8px; cursor: pointer; transition: border-color .12s;
+    }
+    .oc-strat-card:hover, .oc-strat-card.active { border-color: #a78bfa; }
+    .oc-strat-card .oc-sc-name { font-weight: 800; font-size: .82rem; color: var(--text); }
+    .oc-strat-card .oc-sc-meta { font-size: .68rem; color: var(--muted); margin-top: .25rem; line-height: 1.4; }
+    .oc-strat-card.bull { border-left: 3px solid #22c55e; }
+    .oc-strat-card.bear { border-left: 3px solid #f87171; }
+    .oc-strat-card.neutral { border-left: 3px solid #fbbf24; }
+    .oc-gex-hint { font-size: .78rem; color: var(--muted); padding: .65rem .85rem; background: rgba(34,211,238,.06); border: 1px solid rgba(34,211,238,.2); border-radius: 8px; margin-bottom: .75rem; line-height: 1.55; }
+    .oc-skew-leg { display: flex; flex-wrap: wrap; gap: 1rem; padding: .5rem .85rem; font-size: .72rem; color: var(--muted); }
+    .oc-skew-leg span { display: inline-flex; align-items: center; gap: .35rem; }
+    .oc-skew-leg .ln { display: inline-block; width: 22px; height: 3px; border-radius: 2px; }
+
+
+    .oc-ma-wrap { padding: .25rem 0 1.5rem; }
+    .oc-ma-hdr { margin-bottom: 1rem; }
+    .oc-ma-hdr h2 { font-size: 1.35rem; font-weight: 900; margin: 0 0 .35rem; color: var(--text); }
+    .oc-ma-hdr p { font-size: .82rem; color: var(--muted); margin: 0; line-height: 1.55; max-width: 720px; }
+    .oc-ma-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; margin: 1rem 0 .75rem; }
+    .oc-ma-filt {
+      padding: .35rem .95rem; border-radius: 999px; border: 1px solid var(--border);
+      background: transparent; color: var(--muted); font-size: .78rem; font-weight: 700; cursor: pointer;
+    }
+    .oc-ma-filt.active { background: rgba(251,191,36,.15); border-color: #fbbf24; color: #fbbf24; }
+    .oc-ma-dl {
+      margin-left: auto; padding: .38rem 1rem; border-radius: 8px; border: 1px solid var(--border);
+      background: var(--card); color: var(--text); font-size: .78rem; font-weight: 700; cursor: pointer;
+    }
+    .oc-ma-dl:hover { border-color: #22d3ee; color: #22d3ee; }
+    .oc-ma-tbl { width: 100%; border-collapse: collapse; font-size: .8rem; }
+    .oc-ma-tbl th {
+      text-align: left; padding: .55rem .65rem; color: var(--muted); font-size: .68rem;
+      text-transform: uppercase; letter-spacing: .05em; border-bottom: 2px solid var(--border);
+      white-space: nowrap; cursor: pointer; user-select: none;
+    }
+    .oc-ma-tbl th.num { text-align: right; }
+    .oc-ma-tbl th.sorted { color: #fbbf24; }
+    .oc-ma-tbl td { padding: .5rem .65rem; border-bottom: 1px solid rgba(36,48,88,.4); }
+    .oc-ma-tbl td.num { text-align: right; font-family: Consolas, monospace; }
+    .oc-ma-tbl tr:hover td { background: rgba(255,255,255,.03); }
+    .oc-ma-tbl tr.ma-row { cursor: pointer; }
+    .oc-ma-tbl .ma-sym { font-weight: 800; color: #22d3ee; }
+
+
+
+    .oc-ivr-wrap { padding: .25rem 0 1.5rem; }
+    .oc-ivr-hdr { margin-bottom: 1rem; }
+    .oc-ivr-hdr h2 { font-size: 1.35rem; font-weight: 900; margin: 0 0 .35rem; color: var(--text); }
+    .oc-ivr-hdr p { font-size: .82rem; color: var(--muted); margin: 0; line-height: 1.55; }
+    .oc-ivr-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; margin: 1rem 0 .75rem; }
+    .oc-ivr-filt {
+      padding: .35rem .95rem; border-radius: 999px; border: 1px solid var(--border);
+      background: transparent; color: var(--muted); font-size: .78rem; font-weight: 700; cursor: pointer;
+    }
+    .oc-ivr-filt.active { background: rgba(251,191,36,.12); border-color: #fbbf24; color: #fbbf24; }
+    .oc-ivr-wrap.lo .oc-ivr-filt.active { background: rgba(34,211,238,.12); border-color: #38bdf8; color: #38bdf8; }
+    .oc-ivr-dl {
+      margin-left: auto; padding: .38rem 1rem; border-radius: 8px; border: 1px solid var(--border);
+      background: var(--card); color: var(--text); font-size: .78rem; font-weight: 700; cursor: pointer;
+    }
+    .oc-ivr-scroll { overflow: auto; max-height: min(620px, 70vh); border: 1px solid var(--border); border-radius: 10px; }
+    .oc-ivr-tbl { width: 100%; border-collapse: collapse; font-size: .8rem; min-width: 820px; }
+    .oc-ivr-tbl th {
+      text-align: left; padding: .55rem .65rem; color: var(--muted); font-size: .68rem;
+      text-transform: uppercase; letter-spacing: .05em; border-bottom: 2px solid var(--border);
+      white-space: nowrap; cursor: pointer; user-select: none; position: sticky; top: 0;
+      background: rgba(8,13,26,.96); z-index: 1;
+    }
+    .oc-ivr-tbl th.num { text-align: right; }
+    .oc-ivr-tbl th.sorted { color: #fbbf24; }
+    .oc-ivr-wrap.lo .oc-ivr-tbl th.sorted { color: #38bdf8; }
+    .oc-ivr-tbl td { padding: .5rem .65rem; border-bottom: 1px solid rgba(36,48,88,.4); }
+    .oc-ivr-tbl td.num { text-align: right; font-family: Consolas, monospace; }
+    .oc-ivr-tbl tr:hover td { background: rgba(255,255,255,.03); }
+    .oc-ivr-tbl tr.ivr-row { cursor: pointer; }
+    .oc-ivr-tbl .ivr-sym { font-weight: 800; color: #22d3ee; }
+    .oc-ivr-tbl .ivr-rank { color: #fbbf24; font-weight: 800; }
+    .oc-ivr-wrap.lo .oc-ivr-tbl .ivr-rank { color: #38bdf8; }
+    .oc-hiv-wrap { padding: .25rem 0 1.5rem; }
+    .oc-hiv-hdr { margin-bottom: 1rem; }
+    .oc-hiv-hdr h2 { font-size: 1.35rem; font-weight: 900; margin: 0 0 .35rem; color: var(--text); }
+    .oc-hiv-hdr p { font-size: .82rem; color: var(--muted); margin: 0; line-height: 1.55; max-width: 720px; }
+    .oc-hiv-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; margin: 1rem 0 .75rem; }
+    .oc-hiv-filt {
+      padding: .35rem .95rem; border-radius: 999px; border: 1px solid var(--border);
+      background: transparent; color: var(--muted); font-size: .78rem; font-weight: 700; cursor: pointer;
+    }
+    .oc-hiv-filt.active { background: rgba(167,139,250,.15); border-color: #a78bfa; color: #a78bfa; }
+    .oc-hiv-dl {
+      margin-left: auto; padding: .38rem 1rem; border-radius: 8px; border: 1px solid var(--border);
+      background: var(--card); color: var(--text); font-size: .78rem; font-weight: 700; cursor: pointer;
+    }
+    .oc-hiv-dl:hover { border-color: #22d3ee; color: #22d3ee; }
+    .oc-hiv-scroll { overflow: auto; max-height: min(680px, 72vh); border: 1px solid var(--border); border-radius: 10px; }
+    .oc-hiv-tbl { width: 100%; border-collapse: collapse; font-size: .8rem; min-width: 900px; }
+    .oc-hiv-tbl th {
+      text-align: left; padding: .55rem .65rem; color: var(--muted); font-size: .68rem;
+      text-transform: uppercase; letter-spacing: .05em; border-bottom: 2px solid var(--border);
+      white-space: nowrap; cursor: pointer; user-select: none; position: sticky; top: 0;
+      background: rgba(8,13,26,.96); z-index: 1;
+    }
+    .oc-hiv-tbl th.num { text-align: right; }
+    .oc-hiv-tbl th.sorted { color: #a78bfa; }
+    .oc-hiv-tbl td { padding: .5rem .65rem; border-bottom: 1px solid rgba(36,48,88,.4); }
+    .oc-hiv-tbl td.num { text-align: right; font-family: Consolas, monospace; }
+    .oc-hiv-tbl tr:hover td { background: rgba(255,255,255,.03); }
+    .oc-hiv-tbl tr.hiv-row { cursor: pointer; }
+    .oc-hiv-tbl .hiv-sym { font-weight: 800; color: #22d3ee; }
+    .oc-hiv-tbl .hiv-iv { color: #fbbf24; font-weight: 800; }
+    .oc-hiv-tbl .hiv-contract { max-width: 300px; }
+    .oc-of-wrap { padding: .25rem 0 1.5rem; }
+    .oc-of-hdr { margin-bottom: 1rem; }
+    .oc-of-hdr h2 { font-size: 1.35rem; font-weight: 900; margin: 0 0 .35rem; color: var(--text); }
+    .oc-of-hdr p { font-size: .82rem; color: var(--muted); margin: 0; line-height: 1.55; max-width: 760px; }
+    .oc-of-note { font-size: .72rem; color: var(--muted); margin-top: .5rem; font-style: italic; }
+    .oc-of-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; margin: 1rem 0 .75rem; }
+    .oc-of-filt {
+      padding: .35rem .95rem; border-radius: 999px; border: 1px solid var(--border);
+      background: transparent; color: var(--muted); font-size: .78rem; font-weight: 700; cursor: pointer;
+    }
+    .oc-of-filt.active { background: rgba(56,189,248,.12); border-color: #38bdf8; color: #38bdf8; }
+    .oc-of-dl {
+      margin-left: auto; padding: .38rem 1rem; border-radius: 8px; border: 1px solid var(--border);
+      background: var(--card); color: var(--text); font-size: .78rem; font-weight: 700; cursor: pointer;
+    }
+    .oc-of-dl:hover { border-color: #22d3ee; color: #22d3ee; }
+    .oc-of-scroll { overflow: auto; max-height: min(680px, 72vh); border: 1px solid var(--border); border-radius: 10px; }
+    .oc-of-tbl { width: 100%; border-collapse: collapse; font-size: .76rem; min-width: 1100px; }
+    .oc-of-tbl th {
+      text-align: left; padding: .55rem .6rem; color: var(--muted); font-size: .65rem;
+      text-transform: uppercase; letter-spacing: .05em; border-bottom: 2px solid var(--border);
+      white-space: nowrap; cursor: pointer; user-select: none; position: sticky; top: 0;
+      background: rgba(8,13,26,.96); z-index: 1;
+    }
+    .oc-of-tbl th.num { text-align: right; }
+    .oc-of-tbl th.sorted { color: #38bdf8; }
+    .oc-of-tbl td { padding: .48rem .6rem; border-bottom: 1px solid rgba(36,48,88,.4); vertical-align: middle; }
+    .oc-of-tbl td.num { text-align: right; font-family: Consolas, monospace; white-space: nowrap; }
+    .oc-of-tbl tr:hover td { background: rgba(255,255,255,.03); }
+    .oc-of-tbl tr.of-row { cursor: pointer; }
+    .oc-of-tbl .of-sym { font-weight: 800; color: #22d3ee; white-space: nowrap; }
+    .oc-of-tbl .of-contract { color: var(--text); max-width: 280px; }
+    .oc-of-type { text-transform: capitalize; font-weight: 700; color: #fbbf24; }
+    .oc-of-sent.bullish { color: #4ade80; font-weight: 700; }
+    .oc-of-sent.bearish { color: #f87171; font-weight: 700; }
+    .oc-of-sent.neutral { color: var(--muted); font-weight: 600; }
+    .oc-ma-scroll { overflow: auto; max-height: min(620px, 70vh); border: 1px solid var(--border); border-radius: 10px; }
+    .vd-legend-line { display: inline-block; width: 18px; height: 3px; border-radius: 2px; vertical-align: middle; margin-right: 4px; }
+  </style>
+</head>
+<body>
+
+<nav class="nav">
+  <a href="index.html" class="nav-logo">
+    <img src="images/steve.jpg" class="nav-logo-photo" alt="Stephen Borick">
+    <div class="nav-logo-text">
+      <span class="nav-company">Artificial Intelligence</span>
+      <span class="nav-name">Solutions, Inc.</span>
+    </div>
+  </a>
+  <ul class="nav-links">
+    <li><a href="index.html">Home</a></li>
+    <li><a href="machine-learning.html">Machine Learning</a></li>
+    <li><a href="ml-trading.html">ML in Trading</a></li>
+    <li><a href="stock-trading.html">Stock Trading</a></li>
+    <li><a href="options-trading.html">Options</a></li>
+    <li><a href="futures-trading.html">Futures</a></li>
+    <li><a href="brokers.html">Brokers</a></li>
+    <li><a href="algorithms-bots.html" style="color:#4ade80;font-weight:700;">&#129302; Algo Bots</a></li>
+    <li><a href="asset-algorithms.html" style="color:#22d3ee;font-weight:700;">&#128200; Asset Algos</a></li>
+    <li><a href="live-trading.html">Live Trading</a></li>
+    <li><a href="market-preparation.html">&#128204; Market Prep</a></li>
+    <li><a href="world-events.html">&#127758; World Events</a></li>
+    <li><a href="forecast.html" style="color:#f59e0b;font-weight:700;">&#128200; Forecast</a></li>
+    <li><a href="option-charts.html" style="color:#fbbf24;font-weight:700;" class="active">&#128202; Option Charts</a></li>
+    <li><a href="spx-hub.html" style="color:#a78bfa;font-weight:700;">&#128200; SPX Hub</a></li>
+    <li><a href="gex-profile.html" style="color:#22d3ee;font-weight:700;">&#128200; GEX Profile</a></li>
+    <li><a href="options-summary.html" style="color:#818cf8;font-weight:700;">&#128202; Options Summary</a></li>
+    <li><a href="gex-heatmap.html" style="color:#22d3ee;font-weight:700;">&#127777; GEX Heat Maps</a></li>
+    <li><a href="trade-journal.html" style="color:#4ade80;font-weight:700;">&#128221; Journal</a></li>
+    <li><a href="course.html" style="background:#f59e0b;color:#0a0f1e;padding:.28rem .85rem;border-radius:5px;font-weight:700;">&#128218; ML Course</a></li>
+    <li><a href="report-ms.html" target="_blank" style="background:#22d3ee;color:var(--bg);padding:.28rem .85rem;border-radius:5px;font-weight:700;">&#128202; Market Report</a></li>
+    <li><a href="report-tg.html" target="_blank" style="background:#a78bfa;color:var(--bg);padding:.28rem .85rem;border-radius:5px;font-weight:700;">&#128214; Trading Guide</a></li>
+  </ul>
+</nav>
+
+<div class="oc-hero">
+  <div class="oc-badge">OptionCharts-style dashboard</div>
+  <h1>Option Charts — All Key Assets</h1>
+  <p>
+    Full OptionCharts.io-style chart library — per ticker: GEX, volume by strike, IV skew, term structure,
+    fixed-strike IV matrix, and Greeks. Select any tracked ETF, Mag 7, blue chip, or ES futures.
+  </p>
+</div>
+
+<div class="oc-wrap">
+  <div class="oc-ticker" id="oc-ticker">
+    <div>
+      <div class="oc-ticker-sym" id="oc-tk-sym">SPY</div>
+      <div class="oc-ticker-name" id="oc-tk-name">Loading…</div>
+    </div>
+    <div>
+      <div class="oc-ticker-price" id="oc-tk-price">—</div>
+      <div class="oc-ticker-chg" id="oc-tk-chg">—</div>
+    </div>
+  </div>
+  
+  <div class="oc-section-nav" id="oc-section-nav">
+    <button type="button" class="oc-sec-btn active" data-sec="chain" onclick="setSection('chain',this)">Option Chain</button>
+    <button type="button" class="oc-sec-btn" data-sec="active" onclick="setSection('active',this)">Most Active</button>
+    <button type="button" class="oc-sec-btn" data-sec="flow" onclick="setSection('flow',this)">Options Flow</button>
+    <button type="button" class="oc-sec-btn" data-sec="hiv" onclick="setSection('hiv',this)">Highest IV</button>
+    <button type="button" class="oc-sec-btn" data-sec="ivhi" onclick="setSection('ivhi',this)">High IV Rank</button>
+    <button type="button" class="oc-sec-btn" data-sec="ivlo" onclick="setSection('ivlo',this)">Low IV Rank</button>
+    <button type="button" class="oc-sec-btn" data-sec="overview" onclick="setSection('overview',this)">Overview</button>
+    <button type="button" class="oc-sec-btn" data-sec="charts" onclick="setSection('charts',this)">Option Charts</button>
+    <button type="button" class="oc-sec-btn" data-sec="pnl" onclick="setSection('pnl',this)">Profit &amp; Loss</button>
+    <button type="button" class="oc-sec-btn" data-sec="hist" onclick="setSection('hist',this)">Historical Data</button>
+  </div>
+
+  <div class="oc-pills" id="oc-pills"></div>
+  <div class="oc-server">
+    <div class="oc-dot" id="oc-dot"></div>
+    <span id="oc-status">Connecting…</span>
+    <button class="oc-refresh" type="button" onclick="loadAsset(_ocSym, true)">&#8635; Refresh</button>
+  </div>
+
+  <div class="oc-bar" id="oc-asset-bar"></div>
+
+  <div class="oc-stats" id="oc-stats">
+    <div class="oc-st"><div class="oc-st-v" id="st-spot">—</div><div class="oc-st-l">Spot</div></div>
+    <div class="oc-st"><div class="oc-st-v" id="st-iv" style="color:#fbbf24">—</div><div class="oc-st-l">ATM IV</div></div>
+    <div class="oc-st"><div class="oc-st-v" id="st-rank" style="color:#38bdf8">—</div><div class="oc-st-l">IV Rank</div></div>
+    <div class="oc-st"><div class="oc-st-v" id="st-regime">—</div><div class="oc-st-l">GEX Regime</div></div>
+    <div class="oc-st"><div class="oc-st-v" id="st-gwall" style="color:#4ade80">—</div><div class="oc-st-l">Gamma Wall</div></div>
+    <div class="oc-st"><div class="oc-st-v" id="st-flip" style="color:#a78bfa">—</div><div class="oc-st-l">Gamma Flip</div></div>
+    <div class="oc-st"><div class="oc-st-v" id="st-flow">—</div><div class="oc-st-l">Flow Sent.</div></div>
+    <div class="oc-st"><div class="oc-st-v" id="st-maxpain" style="color:#a78bfa">—</div><div class="oc-st-l">Max Pain</div></div>
+    <div class="oc-st"><div class="oc-st-v" id="st-strat">—</div><div class="oc-st-l">ML Strategy</div></div>
+  </div>
+
+  <div class="oc-layout">
+    <div class="oc-side" id="oc-tabs">
+      <div class="oc-sec-lbl">Market</div>
+      <div class="oc-tab" data-tab="overview" onclick="switchTab('overview',this)">&#128203; Overview</div>
+      <div class="oc-tab" data-tab="expected" onclick="switchTab('expected',this)">&#128200; Expected Move</div>
+      <div class="oc-tab" data-tab="price" onclick="switchTab('price',this)">&#128200; Price History</div>
+      <div class="oc-sec-lbl">Volume &amp; OI</div>
+      <div class="oc-tab" data-tab="gex" onclick="switchTab('gex',this)">&#127919; Gamma Exposure (GEX)</div>
+      <div class="oc-tab" data-tab="volume" onclick="switchTab('volume',this)">&#128202; Option Volume</div>
+      <div class="oc-tab" data-tab="oi" onclick="switchTab('oi',this)">&#128203; Open Interest</div>
+      <div class="oc-tab" data-tab="maxpain" onclick="switchTab('maxpain',this)">&#128176; Max Pain</div>
+      <div class="oc-sec-lbl">Sentiment &amp; Vol</div>
+      <div class="oc-tab" data-tab="dex" onclick="switchTab('dex',this)">&#916; Delta Exposure (DEX)</div>
+      <div class="oc-tab" data-tab="skew" onclick="switchTab('skew',this)">〜 IV Skew</div>
+      <div class="oc-tab" data-tab="term" onclick="switchTab('term',this)">&#128200; Term Structure</div>
+      <div class="oc-tab" data-tab="matrix" onclick="switchTab('matrix',this)">&#9638; IV Matrix</div>
+      <div class="oc-tab" data-tab="surface" onclick="switchTab('surface',this)">&#128506; IV Surface</div>
+      <div class="oc-sec-lbl">Probability &amp; P&amp;L</div>
+      <div class="oc-tab" data-tab="prob" onclick="switchTab('prob',this)">&#127922; Implied Distribution</div>
+      <div class="oc-tab" data-tab="pnl" onclick="switchTab('pnl',this)">&#128200; Strategy P&amp;L</div>
+      <div class="oc-sec-lbl">Chain &amp; ML</div>
+      <div class="oc-tab" data-tab="greekcharts" onclick="switchTab('greekcharts',this)">&#916; Greeks Charts</div>
+      <div class="oc-tab active" data-tab="chain" onclick="switchTab('chain',this)">&#128203; Option Chain</div>
+      <div class="oc-tab" data-tab="highestoi" onclick="switchTab('highestoi',this)">&#128200; Highest OI</div>
+      <div class="oc-tab" data-tab="greeks" onclick="switchTab('greeks',this)">&#916; Greeks Table</div>
+      <div class="oc-tab" data-tab="unusual" onclick="switchTab('unusual',this)">&#9889; Unusual Options</div>
+      <div class="oc-tab" data-tab="strategy" onclick="switchTab('strategy',this)">&#128161; ML Strategy</div>
+    </div>
+
+    <div class="oc-main">
+      <div class="oc-main-hdr">
+        <div>
+          <div class="oc-main-title" id="oc-chart-title">Option Chain</div>
+          <div class="oc-main-sub" id="oc-chart-sub">Full chain — bid/ask/vol/OI/Greeks per strike</div>
+        </div>
+        <div class="oc-filters" id="oc-filters" style="display:none">
+          <button class="oc-filt active" data-side="both" onclick="setSide('both',this)">Both</button>
+          <button class="oc-filt" data-side="call" onclick="setSide('call',this)">Calls</button>
+          <button class="oc-filt" data-side="put" onclick="setSide('put',this)">Puts</button>
+          <select class="oc-exp-sel" id="oc-exp-sel" onchange="onExpChange()"></select>
+        </div>
+      </div>
+      <div class="oc-body">
+        <div class="oc-loading" id="oc-loading">
+          <div class="oc-spinner"></div>
+          Loading option chain for <span id="oc-load-sym">SPY</span>…
+        </div>
+        <div id="oc-panels" style="display:none">
+          
+          
+          
+          <div class="oc-panel active" id="ocp-chain">
+            <div class="oc-chain-sum" id="oc-chain-sum"></div>
+            <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:.5rem;align-items:center">
+              <label style="font-size:.7rem;color:var(--muted)">Expiry</label>
+              <select class="oc-exp-sel" id="oc-chain-exp" onchange="loadOptionChain()"></select>
+              <button class="oc-filt active" data-chain="all" onclick="setChainSide('all',this)">All</button>
+              <button class="oc-filt" data-chain="call" onclick="setChainSide('call',this)">Calls</button>
+              <button class="oc-filt" data-chain="put" onclick="setChainSide('put',this)">Puts</button>
+            </div>
+            <div class="oc-chain-scroll" id="oc-chain-scroll"></div>
+            <p class="oc-scroll-hint">↔ Scroll horizontally · ↕ vertically to read all call/put columns</p>
+          </div>
+          <div class="oc-panel" id="ocp-highestoi">
+            <div class="oc-canvas-wrap">
+              <div class="oc-canvas-lbl">Highest open interest contracts (front expiry)</div>
+              <canvas id="cv-highest-oi" height="340"></canvas>
+            </div>
+          </div>
+          <div class="oc-panel" id="ocp-hist">
+            <p style="color:var(--muted);font-size:.85rem;line-height:1.65">
+              Historical OI, IV, max pain, and GEX over time (like OptionCharts 6M history) requires stored snapshots.
+              Multi-asset vol history is on Options Summary (separate page); this view is planned next.
+            </p>
+          </div>
+          <div class="oc-panel" id="ocp-pnlpage">
+            <div id="oc-pnl-suggest-wrap"></div>
+            <p style="font-size:.72rem;color:var(--muted);margin:0 0 .45rem">Shift+click template buttons to compare multiple P&amp;L curves.</p>
+            <div class="oc-pnl-picks" id="oc-pnl-picks"></div>
+            <div class="oc-canvas-wrap oc-lwc-wrap">
+              <div class="oc-canvas-lbl">P&amp;L at expiration — compare selected strategies</div>
+              <div id="oc-pnl-page-chart" style="height:300px"></div>
+            </div>
+            <p id="oc-pnl-page-desc" style="font-size:.8rem;color:var(--muted);margin-top:.5rem"></p>
+            <div id="oc-strat-desc-box" class="oc-strat-desc-box" style="display:none"></div>
+            <div class="oc-save-trade-bar">
+              <button type="button" class="oc-btn-save" onclick="ocSaveCurrentTrade()">Save Trade After Analysis</button>
+              <span class="oc-save-hint" id="oc-save-hint">Saves the selected strategy with entry premiums from the live chain.</span>
+            </div>
+            <div id="oc-saved-active"></div>
+            <div id="oc-saved-all" class="oc-st-all" style="display:none"></div>
+
+          </div>
+
+          
+          
+          
+          
+          <div class="oc-panel" id="ocp-ivhi">
+            <div class="oc-ivr-wrap">
+              <div class="oc-ivr-hdr">
+                <h2>High IV Rank Stocks</h2>
+                <p>The stocks with the highest IV Rank.</p>
+              </div>
+              <div class="oc-ivr-toolbar">
+                <button type="button" class="oc-ivr-filt active" data-f="stock" onclick="setIvRankFilter('high','stock',this)">Stock</button>
+                <button type="button" class="oc-ivr-filt" data-f="etf" onclick="setIvRankFilter('high','etf',this)">ETF</button>
+                <button type="button" class="oc-ivr-filt" data-f="index" onclick="setIvRankFilter('high','index',this)">Index</button>
+                <button type="button" class="oc-ivr-filt" data-f="all" onclick="setIvRankFilter('high','all',this)">All</button>
+                <button type="button" class="oc-ivr-dl" onclick="downloadIvRankCsv('high')">Download</button>
+              </div>
+              <div class="oc-ivr-scroll" id="oc-ivhi-scroll">
+                <div class="oc-loading"><div class="oc-spinner"></div>Loading high IV rank…</div>
+              </div>
+            </div>
+          </div>
+
+          
+          <div class="oc-panel" id="ocp-ivlo">
+            <div class="oc-ivr-wrap lo">
+              <div class="oc-ivr-hdr">
+                <h2>Low IV Rank Stocks</h2>
+                <p>The stocks with the lowest IV Rank.</p>
+              </div>
+              <div class="oc-ivr-toolbar">
+                <button type="button" class="oc-ivr-filt active" data-f="stock" onclick="setIvRankFilter('low','stock',this)">Stock</button>
+                <button type="button" class="oc-ivr-filt" data-f="etf" onclick="setIvRankFilter('low','etf',this)">ETF</button>
+                <button type="button" class="oc-ivr-filt" data-f="index" onclick="setIvRankFilter('low','index',this)">Index</button>
+                <button type="button" class="oc-ivr-filt" data-f="all" onclick="setIvRankFilter('low','all',this)">All</button>
+                <button type="button" class="oc-ivr-dl" onclick="downloadIvRankCsv('low')">Download</button>
+              </div>
+              <div class="oc-ivr-scroll" id="oc-ivlo-scroll">
+                <div class="oc-loading"><div class="oc-spinner"></div>Loading low IV rank…</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="oc-panel" id="ocp-hiv">
+            <div class="oc-hiv-wrap">
+              <div class="oc-hiv-hdr">
+                <h2>Highest Implied Volatility Stock Contracts</h2>
+                <p>Stock option contracts by highest implied volatility.</p>
+              </div>
+              <div class="oc-hiv-toolbar">
+                <button type="button" class="oc-hiv-filt active" data-f="stock" onclick="setHighestIvFilter('stock',this)">Stock</button>
+                <button type="button" class="oc-hiv-filt" data-f="etf" onclick="setHighestIvFilter('etf',this)">ETF</button>
+                <button type="button" class="oc-hiv-filt" data-f="index" onclick="setHighestIvFilter('index',this)">Index</button>
+                <button type="button" class="oc-hiv-filt" data-f="all" onclick="setHighestIvFilter('all',this)">All</button>
+                <button type="button" class="oc-hiv-dl" onclick="downloadHighestIvCsv()">Download</button>
+              </div>
+              <div class="oc-hiv-scroll" id="oc-hiv-scroll">
+                <div class="oc-loading"><div class="oc-spinner"></div>Loading highest IV contracts…</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="oc-panel" id="ocp-flow">
+            <div class="oc-of-wrap">
+              <div class="oc-of-hdr">
+                <h2>Options Flow Stock Options</h2>
+                <p>The options flow table shows the largest trades by total value for stock options (estimated premium from session volume).</p>
+                <p class="oc-of-note" id="oc-of-note"></p>
+              </div>
+              <div class="oc-of-toolbar">
+                <button type="button" class="oc-of-filt active" data-f="stock" onclick="setOptionsFlowFilter('stock',this)">Stock</button>
+                <button type="button" class="oc-of-filt" data-f="etf" onclick="setOptionsFlowFilter('etf',this)">ETF</button>
+                <button type="button" class="oc-of-filt" data-f="index" onclick="setOptionsFlowFilter('index',this)">Index</button>
+                <button type="button" class="oc-of-filt" data-f="all" onclick="setOptionsFlowFilter('all',this)">All</button>
+                <button type="button" class="oc-of-dl" onclick="downloadOptionsFlowCsv()">Download</button>
+              </div>
+              <div class="oc-of-scroll" id="oc-of-scroll">
+                <div class="oc-loading" id="oc-of-loading"><div class="oc-spinner"></div>Loading options flow…</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="oc-panel" id="ocp-active">
+            <div class="oc-ma-wrap">
+              <div class="oc-ma-hdr">
+                <h2>Most Active Stock Options</h2>
+                <p>The underlyings with the highest total option trading volume in the current session (calls + puts, front-week expiries).</p>
+              </div>
+              <div class="oc-ma-toolbar">
+                <button type="button" class="oc-ma-filt active" data-f="stock" onclick="setMostActiveFilter('stock',this)">Stock</button>
+                <button type="button" class="oc-ma-filt" data-f="etf" onclick="setMostActiveFilter('etf',this)">ETF</button>
+                <button type="button" class="oc-ma-filt" data-f="index" onclick="setMostActiveFilter('index',this)">Index</button>
+                <button type="button" class="oc-ma-filt" data-f="all" onclick="setMostActiveFilter('all',this)">All</button>
+                <button type="button" class="oc-ma-dl" onclick="downloadMostActiveCsv()">Download</button>
+              </div>
+              <div class="oc-ma-scroll" id="oc-ma-scroll">
+                <div class="oc-loading" id="oc-ma-loading"><div class="oc-spinner"></div>Loading most active options…</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="oc-panel" id="ocp-overview">
+            <div class="oc-table-scroll" id="oc-overview-wrap"></div>
+            <p class="oc-scroll-hint">↔ Scroll to see all expiration columns</p>
+          </div>
+          <div class="oc-panel" id="ocp-expected">
+            <div class="oc-table-scroll" id="oc-expected-wrap"></div>
+          </div>
+          <div class="oc-panel" id="ocp-greekcharts">
+            <div class="oc-greek-grid">
+              <div class="oc-greek-mini"><div class="oc-greek-title">Delta</div><canvas id="cv-gd" height="200"></canvas></div>
+              <div class="oc-greek-mini"><div class="oc-greek-title">Gamma</div><canvas id="cv-gg" height="200"></canvas></div>
+              <div class="oc-greek-mini"><div class="oc-greek-title">Theta</div><canvas id="cv-gt" height="200"></canvas></div>
+              <div class="oc-greek-mini"><div class="oc-greek-title">Vega</div><canvas id="cv-gv" height="200"></canvas></div>
+            </div>
+          </div>
+          <div class="oc-panel" id="ocp-unusual">
+            <div id="oc-unusual-wrap"></div>
+          </div>
+
+          <div class="oc-panel" id="ocp-price">
+            <div class="oc-tf-bar">
+              <button class="oc-tf-btn" data-iv="1d" data-pr="1y" onclick="setPriceTf(this)">1D</button>
+              <button class="oc-tf-btn active" data-iv="4h" data-pr="60d" onclick="setPriceTf(this)">4H</button>
+              <button class="oc-tf-btn" data-iv="1h" data-pr="60d" onclick="setPriceTf(this)">1H</button>
+            </div>
+            <div class="oc-canvas-wrap oc-lwc-wrap">
+              <div class="oc-canvas-lbl">Underlying price — candles + SMA 20/50 + Bollinger (20,2)</div>
+              <div id="oc-price-chart"></div>
+            </div>
+          </div>
+          <div class="oc-panel" id="ocp-oi">
+            <div class="oc-canvas-wrap">
+              <div class="oc-canvas-lbl">Open interest by strike (calls green · puts red)</div>
+              <canvas id="cv-oi" height="380"></canvas>
+            </div>
+          </div>
+          <div class="oc-panel" id="ocp-maxpain">
+            <div class="oc-canvas-wrap">
+              <div class="oc-canvas-lbl">Max pain &amp; pin risk — OI-weighted strikes</div>
+              <canvas id="cv-maxpain" height="380"></canvas>
+            </div>
+            <p id="oc-maxpain-meta" style="font-size:.78rem;color:var(--muted);margin-top:.5rem"></p>
+          </div>
+          <div class="oc-panel" id="ocp-dex">
+            <div class="oc-canvas-wrap">
+              <div class="oc-canvas-lbl">Dealer delta exposure ($K) by strike — from flow model</div>
+              <canvas id="cv-dex" height="380"></canvas>
+            </div>
+          </div>
+          <div class="oc-panel" id="ocp-prob">
+            <div class="oc-canvas-wrap">
+              <div class="oc-canvas-lbl">Implied probability distribution at front expiry (lognormal, ATM IV)</div>
+              <canvas id="cv-prob" height="300"></canvas>
+            </div>
+          </div>
+          <div class="oc-panel" id="ocp-pnl">
+            <div id="oc-pnl-suggest-wrap-tab"></div>
+            <div class="oc-pnl-picks" id="oc-pnl-picks-tab"></div>
+            <div class="oc-canvas-wrap oc-lwc-wrap">
+              <div class="oc-canvas-lbl">P&amp;L at expiration — compare strategies</div>
+              <div id="oc-pnl-chart"></div>
+            </div>
+            <div id="oc-strat-desc-box-tab" class="oc-strat-desc-box" style="display:none"></div>
+            <div class="oc-save-trade-bar">
+              <button type="button" class="oc-btn-save" onclick="ocSaveCurrentTrade()">Save Trade</button>
+            </div>
+            <div id="oc-saved-active-tab"></div>
+            <p id="oc-pnl-meta" style="font-size:.78rem;color:var(--muted);margin-top:.5rem"></p>
+          </div>
+
+          <div class="oc-panel" id="ocp-gex">
+            <div class="oc-canvas-wrap">
+              <div class="oc-canvas-lbl">Gamma exposure ($M) by strike — Put Wall · Flip · Call Wall</div>
+              <canvas id="cv-gex" height="420"></canvas>
+            </div>
+            <div class="oc-gex-stats" id="oc-gex-stats"></div>
+          </div>
+          <div class="oc-panel" id="ocp-volume">
+            <div class="oc-canvas-wrap">
+              <div class="oc-canvas-lbl">Call vs put volume by strike (tornado)</div>
+              <canvas id="cv-volume" height="360"></canvas>
+            </div>
+          </div>
+          <div class="oc-panel" id="ocp-skew">
+            <div class="oc-canvas-wrap">
+              <div class="oc-canvas-lbl">IV skew — Call IV (green) vs Put IV (red) · % of spot</div>
+              <canvas id="cv-skew" height="300"></canvas>
+            </div>
+            <div class="vd-skew-legend" id="oc-skew-leg"></div>
+          </div>
+          <div class="oc-panel" id="ocp-term">
+            <div class="oc-canvas-wrap oc-lwc-wrap">
+              <div class="oc-canvas-lbl">ATM implied volatility vs expiry</div>
+              <div id="oc-term-chart"></div>
+            </div>
+          </div>
+          <div class="oc-panel" id="ocp-matrix">
+            <div class="oc-table-scroll" id="oc-matrix-wrap"></div>
+            <p class="oc-scroll-hint">↔ Scroll IV matrix — strikes × expirations</p>
+          </div>
+          <div class="oc-panel" id="ocp-surface">
+            <div class="oc-canvas-wrap">
+              <div class="oc-canvas-lbl">IV heatmap — strikes × expirations</div>
+              <canvas id="cv-surface" height="360"></canvas>
+            </div>
+          </div>
+          <div class="oc-panel" id="ocp-greeks">
+            <div id="oc-greeks-wrap"></div>
+          </div>
+          <div class="oc-panel" id="ocp-strategy">
+            <div id="oc-strat-gex-hint" class="oc-gex-hint"></div>
+            <div class="oc-strat-box" id="oc-strat-wrap"></div>
+            <h4 style="font-size:.82rem;color:#a78bfa;margin:.85rem 0 .45rem">Strategy suggestions (on-page)</h4>
+            <p style="font-size:.72rem;color:var(--muted);margin:0 0 .5rem">Click a card to plot expiration P&amp;L below. Shift+click to compare multiple curves on P&amp;L tab.</p>
+            <div class="oc-strat-cards" id="oc-strat-cards"></div>
+            <div class="oc-canvas-wrap oc-lwc-wrap" style="margin-top:.75rem">
+              <div class="oc-canvas-lbl">P&amp;L at expiration — selected strategy</div>
+              <div id="oc-pnl-strat-chart" style="height:280px"></div>
+            </div>
+            <div id="oc-strat-desc-box-strat" class="oc-strat-desc-box" style="display:none"></div>
+            <div class="oc-save-trade-bar">
+              <button type="button" class="oc-btn-save" onclick="ocSaveCurrentTrade()">Save Trade</button>
+            </div>
+            <div id="oc-saved-active-strat"></div>
+            <p id="oc-strat-pnl-meta" style="font-size:.78rem;color:var(--muted);margin-top:.5rem"></p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<section class="oc-guide" id="oc-guide" style="margin-top:2.5rem;padding:2rem 1.25rem 3rem;border-top:2px solid var(--border);background:linear-gradient(180deg,rgba(7,13,24,.4),rgba(15,23,41,.85));border-radius:12px">
+  <h2 style="font-size:1.35rem;margin:0 0 .35rem;color:#fbbf24">Technology &amp; Trading Guide</h2>
+  <p style="color:var(--muted);font-size:.88rem;line-height:1.7;max-width:920px;margin-bottom:1.25rem">
+    OptionCharts-style analytics: chain, GEX, volume/OI, IV surface, and ML strategy hints. Data via yfinance (delayed unless IBKR connected). SPX uses SPY proxy at index price levels.
+  </p>
+  <h3 style="font-size:1rem;color:#22d3ee;margin:1rem 0 .4rem">Tabs — definitions &amp; how to trade</h3>
+  <div style="font-size:.8rem;color:var(--muted);line-height:1.65">
+    <p><b style="color:#e2e8f0">Option Chain</b> — Full call/put grid. Trade liquid strikes (tight spread, high OI).</p>
+    <p><b style="color:#e2e8f0">GEX</b> — Dealer gamma by strike; walls and flip guide mean-reversion vs trend.</p>
+    <p><b style="color:#e2e8f0">Volume / OI</b> — Where flow and positioning concentrate; confirms support/resistance.</p>
+    <p><b style="color:#e2e8f0">IV Skew / Term</b> — Rich/cheap vol; pick spreads and expiry.</p>
+    <p><b style="color:#e2e8f0">Max Pain / Prob</b> — Expiry magnets and implied range for sizing condors/spreads.</p>
+    <p><b style="color:#e2e8f0">P&amp;L / Strategy</b> — Compare structures; use Profit &amp; Loss section to template multi-leg trades.</p>
+  </div>
+  <h3 style="font-size:1rem;color:#22d3ee;margin:1.2rem 0 .4rem">Glossary</h3>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:.55rem;font-size:.76rem;color:var(--muted)">
+    <div><b style="color:#e2e8f0">ATM IV</b> — Implied move expectation (annualized).</div>
+    <div><b style="color:#e2e8f0">IV Rank</b> — IV vs 1y range; high favors premium selling.</div>
+    <div><b style="color:#e2e8f0">GEX regime</b> — Positive: dampened moves; negative: amplified.</div>
+    <div><b style="color:#e2e8f0">Gamma flip</b> — Strike where net GEX crosses zero.</div>
+    <div><b style="color:#e2e8f0">PCR</b> — Put/call ratio; positioning bias indicator.</div>
+    <div><b style="color:#e2e8f0">Expected move</b> — ≈ spot × IV × √(DTE/365).</div>
+  </div>
+  <p style="margin-top:1rem;font-size:.72rem;color:#64748b">Educational only — not financial advice. Options involve substantial risk.</p>
+</section>
+
+<script src="search.js"></script>
+<script>
+'use strict';
+
+function ocLwcOptions(extra) {
+  const base = {
+    autoSize: true,
+    layout: { background: { type: 'solid', color: '#070d18' }, textColor: '#e2e8f0', fontSize: 13 },
+    grid: { vertLines: { color: '#1e293b' }, horzLines: { color: '#1e293b' } },
+    rightPriceScale: { borderColor: '#475569', fontSize: 13, scaleMargins: { top: 0.12, bottom: 0.12 } },
+    timeScale: { borderColor: '#475569', fontSize: 13 },
+    handleScroll: { mouseWheel: true, pressedMouseMove: true, horzTouchDrag: true, vertTouchDrag: true },
+    handleScale: { axisPressedMouseMove: { time: true, price: true }, mouseWheel: true, pinch: true },
+  };
+  if (!extra) return base;
+  return Object.assign({}, base, extra, {
+    layout: Object.assign({}, base.layout, (extra.layout || {})),
+    rightPriceScale: Object.assign({}, base.rightPriceScale, (extra.rightPriceScale || {})),
+    timeScale: Object.assign({}, base.timeScale, (extra.timeScale || {})),
+  });
+}
+function ocLwcAxisHint(el, xLabel, yLabel) {
+  if (!el || el.querySelector('.oc-lwc-axis-hint')) return;
+  const d = document.createElement('div');
+  d.className = 'oc-lwc-axis-hint';
+  d.innerHTML = '<span>Y: ' + yLabel + '</span><span>X: ' + xLabel + '</span>';
+  el.appendChild(d);
+}
+
+const API = window.location.origin;
+
+function ocFetch(url, ms) {
+  const timeout = ms || 60000;
+  if (typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function') {
+    return fetch(url, { signal: AbortSignal.timeout(timeout) });
+  }
+  const ctrl = new AbortController();
+  const tid = setTimeout(() => ctrl.abort(), timeout);
+  return fetch(url, { signal: ctrl.signal }).finally(() => clearTimeout(tid));
+}
+
+async function ocPingServer() {
+  try {
+    const r = await ocFetch(`${API}/api/health`, 8000);
+    return r.ok;
+  } catch (e) {
+    return false;
+  }
+}
+
+const OC_ASSETS = [
+  { sym: 'SPY', grp: 'etf' }, { sym: 'QQQ', grp: 'etf' }, { sym: 'IWM', grp: 'etf' }, { sym: 'DIA', grp: 'etf' },
+  { sym: 'SPX', grp: 'idx', fetch: 'SPX' },
+  { sym: 'ES=F', grp: 'fut' },
+  { sym: 'AAPL', grp: 'stk' }, { sym: 'NVDA', grp: 'stk' }, { sym: 'TSLA', grp: 'stk' },
+  { sym: 'MSFT', grp: 'stk' }, { sym: 'AMZN', grp: 'stk' }, { sym: 'META', grp: 'stk' }, { sym: 'GOOGL', grp: 'stk' },
+  { sym: 'JPM', grp: 'stk' }, { sym: 'BAC', grp: 'stk' }, { sym: 'V', grp: 'stk' },
+  { sym: 'XOM', grp: 'stk' }, { sym: 'CVX', grp: 'stk' }, { sym: 'JNJ', grp: 'stk' },
+  { sym: 'UNH', grp: 'stk' }, { sym: 'WMT', grp: 'stk' }, { sym: 'HD', grp: 'stk' }, { sym: 'BRK-B', grp: 'stk' },
+];
+const GEX_FETCH = { SPX: 'SPY' };
+let _ocSym = 'SPY';
+let _ocTab = 'chain';
+let _ocSide = 'both';
+let _ocVol = null;
+let _ocGex = null;
+let _ocFlow = null;
+let _ocGreeks = null;
+let _ocStrat = null;
+let _ocExp = '';
+let _termChart = null;
+let _priceChart = null;
+let _pnlChart = null;
+let _ocCandles = [];
+let _priceInterval = '4h';
+let _pricePeriod = '60d';
+
+const TAB_META = {
+  hist: { t: 'Historical Data', s: 'Planned — OI/IV/max pain history' },
+  highestoi: { t: 'Highest Open Interest', s: 'Top contracts by OI' },
+  chain: { t: 'Option Chain', s: 'Bid/ask/vol/OI/IV/Greeks per strike' },
+  overview: { t: 'Overview', s: 'Expiration table — IV, expected move, max pain (front expiry)' },
+  expected: { t: 'Expected Move', s: '±1σ range by expiration from ATM IV' },
+  greekcharts: { t: 'Greeks Charts', s: 'Delta, Gamma, Theta, Vega vs strike (calls & puts)' },
+  unusual: { t: 'Unusual Options', s: 'High volume vs open interest' },
+  price:    { t: 'Price History', s: 'Candlesticks with selectable timeframe' },
+  gex:      { t: 'Gamma Exposure (GEX)', s: 'Dealer gamma by strike — walls & flip in stats' },
+  volume:   { t: 'Option Volume', s: 'Call vs put volume tornado' },
+  oi:       { t: 'Open Interest', s: 'OI distribution — support/resistance levels' },
+  maxpain:  { t: 'Max Pain', s: 'Strike minimizing option-holder loss at expiry' },
+  dex:      { t: 'Delta Exposure (DEX)', s: 'Estimated dealer delta hedging by strike' },
+  skew:     { t: 'IV Skew', s: 'Volatility smile by expiry' },
+  term:     { t: 'Term Structure', s: 'ATM IV across expirations' },
+  matrix:   { t: 'Fixed Strike IV Matrix', s: 'IV at fixed moneyness buckets' },
+  surface:  { t: 'IV Surface', s: 'Heatmap of IV across strikes and dates' },
+  prob:     { t: 'Implied Distribution', s: 'Market-implied price range from ATM IV' },
+  pnl:      { t: 'Strategy P&L', s: 'Expiration P&L for ML-recommended structure' },
+  greeks:   { t: 'Greeks Table', s: 'ATM and nearby strikes' },
+  strategy: { t: 'ML Strategy', s: 'Recommended structure and rationale' },
+};
+
+let _ocChain = null;
+let _ocChainSide = 'all';
+let _ocSection = 'chain';
+let _ocPnlView = 'ml';
+let _pnlPageChart = null;
+
+let _ocSpxRatio = 10;
+let _ocPnlLegs = null;
+let _greeksPoll = null;
+
+function ocRatio() {
+  if (_ocSym !== 'SPX') return 1;
+  return _ocSpxRatio || (_ocVol && _ocVol.spx_ratio) || (_ocChain && _ocChain.spx_ratio) || 10;
+}
+function ocFmtPrice(v, dec) {
+  if (v == null || v === '' || isNaN(v)) return '—';
+  const d = dec != null ? dec : (_ocSym === 'SPX' ? 2 : 2);
+  return Number(v).toLocaleString(undefined, { minimumFractionDigits: d, maximumFractionDigits: d });
+}
+function ocDisplaySpot() {
+  const g = gexLookup(_ocSym);
+  return (g && g.spot) || (_ocVol && _ocVol.spot) || (_ocChain && _ocChain.spot) || 0;
+}
+function scaleGexAsset(a, r) {
+  if (!a || r === 1) return a;
+  return Object.assign({}, a, {
+    spot: a.spot * r,
+    strikes: (a.strikes || []).map(s => +(s * r).toFixed(2)),
+    gamma_wall: a.gamma_wall != null ? +(a.gamma_wall * r).toFixed(2) : null,
+    put_wall: a.put_wall != null ? +(a.put_wall * r).toFixed(2) : null,
+    flip_level: a.flip_level != null ? +(a.flip_level * r).toFixed(2) : null,
+    call_wall: a.call_wall != null ? +(a.call_wall * r).toFixed(2) : null,
+  });
+}
+function scaleFlowAsset(f, r) {
+  if (!f || r === 1) return f;
+  return Object.assign({}, f, {
+    spot: f.spot * r,
+    strikes: (f.strikes || []).map(s => +(s * r).toFixed(2)),
+    max_pain_strike: f.max_pain_strike != null ? +(f.max_pain_strike * r).toFixed(2) : null,
+  });
+}
+function greeksRow() {
+  const rows = (_ocGreeks && _ocGreeks.assets) || [];
+  return rows.find(r => r && r.curves && r.curves.strikes && r.curves.strikes.length)
+    || rows.find(r => r && (r.requested_symbol === _ocSym || r.symbol === _ocSym))
+    || rows[0];
+}
+function legPnlAtDisplay(S, leg) {
+  const r = ocRatio();
+  const Sspy = S / r;
+  const K = leg.strike / r;
+  const prem = (leg.premium || 0) * 100;
+  const intr = leg.type === 'call'
+    ? Math.max(0, Sspy - K) * 100
+    : Math.max(0, K - Sspy) * 100;
+  return leg.action === 'BUY' ? intr - prem : prem - intr;
+}
+function chainPick(calls, puts, spot, type, moneyness) {
+  const arr = type === 'call' ? (calls || []) : (puts || []);
+  if (!arr.length) return null;
+  const tgt = spot * moneyness;
+  return arr.reduce((best, r) =>
+    !best || Math.abs(r.strike - tgt) < Math.abs(best.strike - tgt) ? r : best, null);
+}
+function chainMid(r) {
+  if (!r) return 0;
+  const b = r.bid, a = r.ask, m = r.mid;
+  if (m != null && m > 0) return +m;
+  if (b > 0 && a > 0) return (b + a) / 2;
+  return r.last || 0;
+}
+
+
+const OC_TRADES_KEY = 'oc_saved_trades_v1';
+let _ocTrades = [];
+let _ocActiveTradeId = null;
+let _ocShowAllTrades = false;
+
+const OC_STRATEGY_DESC = {
+  ml: 'Machine-learning recommended structure from options-strategy API — uses live IV rank, GEX regime, and directional signal.',
+  long_call: 'Buy a call for bullish exposure. Limited risk (premium paid); unlimited upside. Best when IV rank is low and you expect a rally.',
+  long_put: 'Buy a put for bearish exposure. Limited risk; profits when price falls. Use with low IV and a sell signal.',
+  bull_put: 'Sell a higher put and buy a lower put (credit spread). Bullish — you keep premium if price stays above the short strike. Max loss = width minus credit.',
+  short_put: 'Sell a put to collect premium. Bullish/neutral; obligated to buy stock if assigned. Use on names you want to own.',
+  bear_call: 'Sell a lower call and buy a higher call (credit). Bearish — profit if price stays below the short call. Limited risk.',
+  iron_condor: 'Sell OTM put spread + OTM call spread. Neutral — profit in a range. High IV helps credit; risk if price breaks wings.',
+  straddle: 'Buy ATM call + put. Needs a large move; profits from volatility expansion. Pays debit; IV crush hurts.',
+};
+
+function ocLoadTrades() {
+  try {
+    const raw = localStorage.getItem(OC_TRADES_KEY);
+    _ocTrades = raw ? JSON.parse(raw) : [];
+  } catch (e) { _ocTrades = []; }
+}
+
+function ocPersistTrades() {
+  try { localStorage.setItem(OC_TRADES_KEY, JSON.stringify(_ocTrades)); } catch (e) {}
+}
+
+function ocFmtTradeDate(iso) {
+  if (!iso) return '—';
+  try {
+    const d = new Date(iso);
+    return d.toLocaleString('en-US', { timeZone: 'America/New_York', month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }) + ' EDT';
+  } catch (e) { return iso; }
+}
+
+function ocFmtMoney(n) {
+  if (n == null || isNaN(n)) return '—';
+  const sign = n < 0 ? '-' : '';
+  return sign + '$' + Math.abs(n).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function ocEntryCostBasis(legs) {
+  let net = 0;
+  (legs || []).forEach(leg => {
+    const p = (leg.premium || 0) * 100;
+    net += leg.action === 'BUY' ? -p : p;
+  });
+  return +net.toFixed(2);
+}
+
+function ocLegCurrentMid(leg) {
+  if (!_ocChain) return leg.premium || 0;
+  const arr = leg.type === 'call' ? (_ocChain.calls || []) : (_ocChain.puts || []);
+  const row = arr.find(r => Math.abs((r.strike || 0) - (leg.strike || 0)) < 0.05);
+  return row ? chainMid(row) : (leg.premium || 0);
+}
+
+function ocLegMtmPnl(leg) {
+  const entry = leg.premium || 0;
+  const cur = ocLegCurrentMid(leg);
+  if (leg.action === 'BUY') return (cur - entry) * 100;
+  return (entry - cur) * 100;
+}
+
+function ocExpiryPnl(legs, spot) {
+  let pnl = 0;
+  (legs || []).forEach(leg => { pnl += legPnlAtDisplay(spot, leg); });
+  return +pnl.toFixed(2);
+}
+
+function ocTradeExpiry(legs) {
+  const e = (legs && legs[0] && legs[0].expiry) || '';
+  return e;
+}
+
+function ocTradeStatus(trade) {
+  if (trade.status === 'closed') return 'closed';
+  const exp = trade.expiry || ocTradeExpiry(trade.legs);
+  if (exp) {
+    try {
+      const end = new Date(exp + 'T16:15:00-04:00');
+      if (new Date() >= end) return 'expired';
+    } catch (e) {}
+  }
+  return 'open';
+}
+
+function ocTradeName(trade) {
+  const exp = trade.expiry || ocTradeExpiry(trade.legs) || '';
+  let tag = '';
+  if (exp) {
+    const p = exp.split('-');
+    if (p.length === 3) tag = p[1] + '-' + p[2];
+  }
+  return '$' + trade.symbol + ' ' + (trade.strategyName || 'Strategy') + (tag ? '_' + tag : '');
+}
+
+function ocMarkTrade(trade) {
+  const legs = trade.legs || [];
+  const spot = ocDisplaySpot() || trade.entrySpot || 0;
+  const entry = trade.entryCostBasis != null ? trade.entryCostBasis : ocEntryCostBasis(legs);
+  const st = ocTradeStatus(trade);
+  if (st === 'open' && trade.symbol === _ocSym && _ocChain) {
+    let mtm = 0;
+    legs.forEach(leg => { mtm += ocLegMtmPnl(leg); });
+    return {
+      status: 'open',
+      currentValue: +(entry + mtm).toFixed(2),
+      unrealizedPnl: +mtm.toFixed(2),
+      unrealizedPct: entry !== 0 ? +((mtm / Math.abs(entry)) * 100).toFixed(2) : null,
+      spot,
+    };
+  }
+  if (st === 'expired' && trade.status !== 'closed') {
+    const pnl = ocExpiryPnl(legs, spot);
+    return { status: 'expired', exitValue: +(entry + pnl).toFixed(2), realizedPnl: pnl, realizedPct: entry !== 0 ? +((pnl / Math.abs(entry)) * 100).toFixed(2) : null, spot };
+  }
+  if (trade.status === 'closed') {
+    const exitV = trade.exitCostBasis != null ? trade.exitCostBasis : entry;
+    const pnl = trade.realizedPnl != null ? trade.realizedPnl : (exitV - entry);
+    return {
+      status: 'closed',
+      exitValue: exitV,
+      realizedPnl: pnl,
+      realizedPct: trade.realizedPct != null ? trade.realizedPct : (entry !== 0 ? +((pnl / Math.abs(entry)) * 100).toFixed(2) : null),
+    };
+  }
+  return { status: st, entry, spot };
+}
+
+function ocPrimaryStrategy() {
+  const mode = [..._ocPnlSelected][0] || 'ml';
+  return ocResolveStrategy(mode);
+}
+
+function ocRenderStrategyDesc() {
+  const mode = [..._ocPnlSelected][0] || 'ml';
+  const strat = ocResolveStrategy(mode);
+  const desc = OC_STRATEGY_DESC[mode] || (strat && strat.rationale) || 'Select a strategy template above to see how it works.';
+  const html = strat
+    ? '<h3>' + strat.name + '</h3><p>' + desc + '</p>'
+    : '<h3>Strategy</h3><p>' + desc + '</p>';
+  ['oc-strat-desc-box', 'oc-strat-desc-box-tab', 'oc-strat-desc-box-strat'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.innerHTML = html; el.style.display = 'block'; }
+  });
+}
+
+function ocSaveCurrentTrade() {
+  const strat = ocPrimaryStrategy();
+  if (!strat || !strat.legs || !strat.legs.length) {
+    alert('Select a strategy with a loaded option chain first.');
+    return;
+  }
+  const legs = strat.legs.map(l => Object.assign({}, l));
+  const entryCost = ocEntryCostBasis(legs);
+  const trade = {
+    id: 't_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
+    symbol: _ocSym,
+    strategyId: strat.id,
+    strategyName: strat.name,
+    legs,
+    entryCostBasis: entryCost,
+    entryDate: new Date().toISOString(),
+    entrySpot: ocDisplaySpot(),
+    expiry: ocTradeExpiry(legs),
+    status: 'open',
+    exitCostBasis: null,
+    exitDate: null,
+    realizedPnl: null,
+    realizedPct: null,
+  };
+  _ocTrades.unshift(trade);
+  _ocActiveTradeId = trade.id;
+  _ocShowAllTrades = false;
+  ocPersistTrades();
+  ocRenderSavedTrades();
+  const hint = document.getElementById('oc-save-hint');
+  if (hint) hint.textContent = 'Saved ' + ocTradeName(trade) + ' — tracking with live chain marks.';
+}
+
+function ocCloseTrade(id) {
+  const t = _ocTrades.find(x => x.id === id);
+  if (!t) return;
+  const entry = t.entryCostBasis;
+  let mtm = 0;
+  if (t.symbol === _ocSym && _ocChain) {
+    (t.legs || []).forEach(leg => { mtm += ocLegMtmPnl(leg); });
+  } else {
+    mtm = (t.realizedPnl != null) ? t.realizedPnl : 0;
+  }
+  t.status = 'closed';
+  t.exitCostBasis = +(entry + mtm).toFixed(2);
+  t.exitDate = new Date().toISOString();
+  t.realizedPnl = +mtm.toFixed(2);
+  t.realizedPct = entry !== 0 ? +((mtm / Math.abs(entry)) * 100).toFixed(2) : null;
+  ocPersistTrades();
+  ocRenderSavedTrades();
+}
+
+function ocDeleteTrade(id) {
+  _ocTrades = _ocTrades.filter(x => x.id !== id);
+  if (_ocActiveTradeId === id) _ocActiveTradeId = _ocTrades.length ? _ocTrades[0].id : null;
+  ocPersistTrades();
+  ocRenderSavedTrades();
+}
+
+function ocSelectTrade(id) {
+  _ocActiveTradeId = id;
+  _ocShowAllTrades = false;
+  ocRenderSavedTrades();
+}
+
+function ocToggleViewAllTrades() {
+  _ocShowAllTrades = !_ocShowAllTrades;
+  ocRenderSavedTrades();
+}
+
+function ocSavedTradeCardHtml(trade, marks) {
+  const st = marks.status;
+  const badge = st === 'open' ? 'OPEN' : (st === 'expired' ? 'EXPIRED' : 'CLOSED');
+  const badgeCls = st;
+  const entry = trade.entryCostBasis;
+  let exitBlock = '';
+  if (st === 'open') {
+    const pnl = marks.unrealizedPnl;
+    const pct = marks.unrealizedPct;
+    const pos = pnl >= 0;
+    exitBlock = '<div class="oc-st-col"><div class="oc-st-col-lbl">Current Position</div>'
+      + '<div class="oc-st-row"><div class="oc-st-lbl">Mark-to-Market</div><div class="oc-st-val">' + ocFmtMoney(marks.currentValue) + '</div></div>'
+      + '<div class="oc-st-row"><div class="oc-st-lbl">Unrealized P/L</div><div class="oc-st-val ' + (pos ? 'pos' : 'neg') + '">'
+      + (pos ? '+' : '') + ocFmtMoney(pnl) + (pct != null ? ' (' + (pos ? '+' : '') + pct + '%)' : '') + '</div></div>'
+      + '<div class="oc-st-row"><div class="oc-st-lbl">Spot</div><div class="oc-st-val">$' + (marks.spot || 0).toFixed(2) + '</div></div></div>';
+  } else {
+    const pnl = marks.realizedPnl;
+    const pct = marks.realizedPct;
+    const pos = pnl >= 0;
+    exitBlock = '<div class="oc-st-col"><div class="oc-st-col-lbl">Exit Position</div>'
+      + '<div class="oc-st-row"><div class="oc-st-lbl">Exit Price</div><div class="oc-st-val">' + ocFmtMoney(marks.exitValue) + '</div></div>'
+      + '<div class="oc-st-row"><div class="oc-st-lbl">Exit Date</div><div class="oc-st-val" style="font-size:.82rem">' + ocFmtTradeDate(trade.exitDate || new Date().toISOString()) + '</div></div>'
+      + '<div class="oc-st-row"><div class="oc-st-lbl">Realized P/L</div><div class="oc-st-val ' + (pos ? 'pos' : 'neg') + '">'
+      + (pos ? '+' : '') + ocFmtMoney(pnl) + (pct != null ? ' (' + (pos ? '+' : '') + pct + '%)' : '') + '</div></div></div>';
+  }
+  return '<div class="oc-st-card" data-id="' + trade.id + '">'
+    + '<div class="oc-st-hdr"><h4>Saved Trade Details <span class="oc-st-badge ' + badgeCls + '">' + badge + '</span></h4>'
+    + '<div class="oc-st-actions">'
+    + '<button type="button" class="oc-st-btn" onclick="ocToggleViewAllTrades()">View All</button>'
+    + (st === 'open' ? '<button type="button" class="oc-st-btn ok" onclick="ocCloseTrade(\'' + trade.id + '\')">Close</button>' : '')
+    + '<button type="button" class="oc-st-btn danger" onclick="ocDeleteTrade(\'' + trade.id + '\')">Delete</button>'
+    + '</div></div>'
+    + '<div class="oc-st-name">' + ocTradeName(trade) + '</div>'
+    + '<div class="oc-st-grid">'
+    + '<div class="oc-st-col"><div class="oc-st-col-lbl">Entry Position</div>'
+    + '<div class="oc-st-row"><div class="oc-st-lbl">Cost Basis</div><div class="oc-st-val">' + ocFmtMoney(entry) + '</div></div>'
+    + '<div class="oc-st-row"><div class="oc-st-lbl">Entry Date</div><div class="oc-st-val" style="font-size:.82rem">' + ocFmtTradeDate(trade.entryDate) + '</div></div></div>'
+    + exitBlock
+    + '</div></div>';
+}
+
+function ocRenderSavedTrades() {
+  ocLoadTrades();
+  const symTrades = _ocTrades.filter(t => t.symbol === _ocSym);
+  if (!_ocActiveTradeId || !symTrades.some(t => t.id === _ocActiveTradeId)) {
+    _ocActiveTradeId = symTrades.length ? symTrades[0].id : null;
+  }
+  const active = _ocTrades.find(t => t.id === _ocActiveTradeId);
+  const card = active ? ocSavedTradeCardHtml(active, ocMarkTrade(active)) : '';
+  const empty = '<p style="font-size:.8rem;color:var(--muted)">No saved trades for ' + _ocSym + '. Analyze a strategy above, then click Save Trade.</p>';
+  ['oc-saved-active', 'oc-saved-active-tab', 'oc-saved-active-strat'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = card || empty;
+  });
+  let allHtml = '';
+  if (_ocShowAllTrades) {
+    const list = _ocTrades.length ? _ocTrades : [];
+    allHtml = '<p style="font-size:.72rem;color:var(--muted);margin:0 0 .5rem">All saved trades (' + list.length + ')</p>';
+    list.forEach(t => {
+      const m = ocMarkTrade(t);
+      const pnl = m.status === 'open' ? m.unrealizedPnl : m.realizedPnl;
+      const cls = t.id === _ocActiveTradeId ? ' active' : '';
+      allHtml += '<div class="oc-st-mini' + cls + '" onclick="ocSelectTrade(\'' + t.id + '\')">'
+        + '<b>' + ocTradeName(t) + '</b> · ' + (m.status || '').toUpperCase()
+        + ' · P/L ' + (pnl >= 0 ? '+' : '') + ocFmtMoney(pnl) + '</div>';
+    });
+  }
+  const allEl = document.getElementById('oc-saved-all');
+  if (allEl) {
+    allEl.innerHTML = allHtml;
+    allEl.style.display = _ocShowAllTrades && allHtml ? 'block' : 'none';
+  }
+}
+
+function ocRefreshOpenTrades() {
+  ocLoadTrades();
+  let changed = false;
+  _ocTrades.forEach(t => {
+    if (ocTradeStatus(t) === 'expired' && t.status === 'open') {
+      const entry = t.entryCostBasis;
+      const spot = t.entrySpot || 0;
+      const pnl = ocExpiryPnl(t.legs, spot);
+      t.status = 'closed';
+      t.exitCostBasis = +(entry + pnl).toFixed(2);
+      t.exitDate = new Date().toISOString();
+      t.realizedPnl = pnl;
+      t.realizedPct = entry !== 0 ? +((pnl / Math.abs(entry)) * 100).toFixed(2) : null;
+      changed = true;
+    }
+  });
+  if (changed) ocPersistTrades();
+  ocRenderSavedTrades();
+}
+
+const OC_STRATEGY_MODES = [
+  { id: 'ml', name: 'ML Pick', cls: '' },
+  { id: 'long_call', name: 'Long Call', cls: 'bull' },
+  { id: 'bull_put', name: 'Bull Put Spread', cls: 'bull' },
+  { id: 'short_put', name: 'Short Put', cls: 'bull' },
+  { id: 'long_put', name: 'Long Put', cls: 'bear' },
+  { id: 'bear_call', name: 'Bear Call Spread', cls: 'bear' },
+  { id: 'iron_condor', name: 'Iron Condor', cls: '' },
+  { id: 'straddle', name: 'Long Straddle', cls: '' },
+];
+const OC_PNL_COLORS = ['#4ade80', '#38bdf8', '#a78bfa', '#fbbf24', '#f87171'];
+let _ocPnlSelected = new Set(['ml']);
+let _pnlStratChart = null;
+
+function buildPnlPickers() {
+  const html = OC_STRATEGY_MODES.map(st =>
+    `<button type="button" class="oc-pnl-btn${st.cls ? ' ' + st.cls : ''}" data-mode="${st.id}" onclick="togglePnlStrategy('${st.id}',this,event)">${st.name}</button>`
+  ).join('');
+  ['oc-pnl-picks', 'oc-pnl-picks-tab'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = html;
+  });
+  syncPnlPickerUi();
+}
+
+function syncPnlPickerUi() {
+  document.querySelectorAll('.oc-pnl-btn[data-mode]').forEach(btn => {
+    const id = btn.dataset.mode;
+    const on = _ocPnlSelected.has(id);
+    btn.classList.toggle('active', on && _ocPnlSelected.size === 1);
+    btn.classList.toggle('compare-on', on && _ocPnlSelected.size > 1);
+  });
+}
+
+function togglePnlStrategy(mode, el, ev) {
+  if (ev && ev.shiftKey) {
+    if (_ocPnlSelected.has(mode)) _ocPnlSelected.delete(mode);
+    else _ocPnlSelected.add(mode);
+    if (!_ocPnlSelected.size) _ocPnlSelected.add(mode);
+  } else {
+    _ocPnlSelected.clear();
+    _ocPnlSelected.add(mode);
+  }
+  syncPnlPickerUi();
+  document.querySelectorAll('.oc-strat-card').forEach(c => c.classList.toggle('active', c.dataset.mode && _ocPnlSelected.has(c.dataset.mode)));
+  ocRenderAllPnlCharts();
+}
+
+function ocResolveStrategy(mode) {
+  if (mode === 'ml') {
+    const row = stratLookup(_ocSym);
+    const st = row && row.strategy && typeof row.strategy === 'object' ? row.strategy : null;
+    let legs = st && st.legs;
+    if (legs && _ocSym === 'SPX') {
+      const r = ocRatio();
+      legs = legs.map(l => Object.assign({}, l, { strike: +(l.strike * r).toFixed(2) }));
+    }
+    if (st && legs && legs.length) {
+      return { id: 'ml', name: st.name || 'ML Pick', legs, dir: st.direction || row.direction, rationale: st.description || row.rationale || '', meta: st };
+    }
+    return null;
+  }
+  const built = buildTemplateLegs(mode);
+  if (!built) return null;
+  return { id: mode, name: built.name, legs: built.legs, dir: mode.includes('put') && mode.includes('bear') ? 'bearish' : (mode.includes('call') || mode.includes('bull') ? 'bullish' : 'neutral'), rationale: built.name + ' from live option chain.', meta: null };
+}
+
+function ocCollectSuggestions() {
+  const out = [];
+  const ml = ocResolveStrategy('ml');
+  if (ml) out.push(ml);
+  const g = gexLookup(_ocSym);
+  const regime = (g && g.regime) || '';
+  const modes = [];
+  if (/positive|long gamma/i.test(regime)) modes.push('bull_put', 'iron_condor', 'long_call');
+  else if (/negative|short gamma/i.test(regime)) modes.push('long_put', 'bear_call', 'straddle');
+  else modes.push('iron_condor', 'straddle', 'bull_put', 'long_call');
+  modes.forEach(m => {
+    if (out.some(x => x.id === m)) return;
+    const s = ocResolveStrategy(m);
+    if (s) out.push(s);
+  });
+  if (!out.length) {
+    ['long_call', 'iron_condor', 'long_put'].forEach(m => {
+      const s = ocResolveStrategy(m);
+      if (s) out.push(s);
+    });
+  }
+  return out.slice(0, 6);
+}
+
+function ocGexHintHtml() {
+  const g = gexLookup(_ocSym);
+  const f = flowLookup(_ocSym);
+  const v = _ocVol;
+  if (!g && !f && !v) return '<span>Load data to see GEX/flow context for strategy selection.</span>';
+  const parts = [];
+  if (g && g.regime) parts.push('<b>GEX:</b> ' + g.regime);
+  if (g && g.flip_level) parts.push('<b>Flip:</b> $' + g.flip_level);
+  if (g && g.gamma_wall) parts.push('<b>Gamma wall:</b> $' + g.gamma_wall);
+  if (f && f.flow_sentiment) parts.push('<b>Flow:</b> ' + f.flow_sentiment);
+  if (v && v.atm_iv) parts.push('<b>ATM IV:</b> ' + (v.atm_iv * 100).toFixed(1) + '%');
+  return parts.join(' · ') || 'Context loaded.';
+}
+
+function ocRenderSuggestionCards() {
+  const list = ocCollectSuggestions();
+  const cardHtml = list.map(s => {
+    const cls = /bear/i.test(s.dir || '') ? 'bear' : (/bull/i.test(s.dir || '') ? 'bull' : 'neutral');
+    const sel = _ocPnlSelected.has(s.id) ? ' active' : '';
+    return `<div class="oc-strat-card ${cls}${sel}" data-mode="${s.id}" onclick="ocPickSuggestion('${s.id}',event)">
+      <div class="oc-sc-name">${s.name}</div>
+      <div class="oc-sc-meta">${s.dir || ''} · ${s.legs.length} leg(s)${s.id === 'ml' ? ' · ML' : ''}</div></div>`;
+  }).join('');
+  const empty = '<p style="color:var(--muted);font-size:.8rem">No strategies yet — wait for option chain + server data, then click Refresh.</p>';
+  ['oc-strat-cards', 'oc-pnl-suggest-wrap', 'oc-pnl-suggest-wrap-tab'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (id === 'oc-strat-cards') el.innerHTML = cardHtml || empty;
+    else el.innerHTML = '<div class="oc-strat-cards" style="margin-bottom:.65rem">' + (cardHtml || empty) + '</div>';
+  });
+  const hint = document.getElementById('oc-strat-gex-hint');
+  if (hint) hint.innerHTML = ocGexHintHtml();
+}
+
+function ocPickSuggestion(mode, ev) {
+  togglePnlStrategy(mode, null, ev);
+}
+
+function ocPnlPtsForLegs(legs, spot) {
+  const lo = spot * 0.88, hi = spot * 1.12;
+  const pts = [];
+  for (let i = 0; i <= 60; i++) {
+    const S = lo + (hi - lo) * (i / 60);
+    let pnl = 0;
+    legs.forEach(leg => { pnl += legPnlAtDisplay(S, leg); });
+    pts.push({ time: i, value: +pnl.toFixed(2) });
+  }
+  return pts;
+}
+
+function ocRenderPnlChart(el, chartHolder, seriesList) {
+  if (!el) return '';
+  if (!seriesList.length) {
+    el.innerHTML = '<p style="padding:1rem;color:var(--muted)">Select a strategy card or template above. Load option chain for spread legs.</p>';
+    return '';
+  }
+  if (chartHolder.current) { try { chartHolder.current.remove(); } catch (e) {} chartHolder.current = null; }
+  el.innerHTML = '';
+  const chart = (window.createLwcChart || LightweightCharts.createChart)(el, ocLwcOptions({ timeScale: { visible: false } }));
+  chartHolder.current = chart;
+  seriesList.forEach((s, i) => {
+    const line = chart.addLineSeries({ color: OC_PNL_COLORS[i % OC_PNL_COLORS.length], lineWidth: 2, title: s.name });
+    line.setData(ocPnlPtsForLegs(s.legs, ocDisplaySpot() || 100));
+  });
+  const z = chart.addLineSeries({ color: 'rgba(148,163,184,.4)', lineWidth: 1, title: '0' });
+  z.setData([{ time: 0, value: 0 }, { time: 60, value: 0 }]);
+  ocLwcAxisHint(el, 'Underlying at expiry ($)', 'P&L ($)');
+  requestAnimationFrame(() => { if (window.ChartDrawTools && ChartDrawTools.rescan) ChartDrawTools.rescan(); });
+  return seriesList.map(s => s.name + ' (' + s.legs.length + ' legs)').join(' · ');
+}
+
+const _pnlPageRef = { current: null };
+const _pnlTabRef = { current: null };
+
+function ocRenderAllPnlCharts() {
+  ocRenderStrategyDesc();
+  const seriesList = [..._ocPnlSelected].map(m => ocResolveStrategy(m)).filter(Boolean);
+  const meta = ocRenderPnlChart(document.getElementById('oc-pnl-page-chart'), _pnlPageRef, seriesList);
+  _pnlPageChart = _pnlPageRef.current;
+  const metaTab = ocRenderPnlChart(document.getElementById('oc-pnl-chart'), _pnlTabRef, seriesList);
+  _pnlChart = _pnlTabRef.current;
+  const _stratRef = { get current() { return _pnlStratChart; }, set current(c) { _pnlStratChart = c; } };
+  ocRenderPnlChart(document.getElementById('oc-pnl-strat-chart'), _stratRef, seriesList);
+  const m1 = document.getElementById('oc-pnl-page-desc');
+  const m2 = document.getElementById('oc-pnl-meta');
+  const m3 = document.getElementById('oc-strat-pnl-meta');
+  const txt = meta || metaTab || '';
+  if (m1) m1.textContent = txt;
+  if (m2) m2.textContent = txt;
+  if (m3) m3.textContent = txt;
+  ocRenderSavedTrades();
+}
+
+function buildTemplateLegs(mode) {
+  const spot = ocDisplaySpot();
+  if (!spot || !_ocChain) return null;
+  const calls = _ocChain.calls || [];
+  const puts = _ocChain.puts || [];
+  const exp = _ocChain.expiry;
+  const mk = (action, type, row) => ({
+    action, type: type,
+    strike: row.strike,
+    expiry: exp,
+    premium: +chainMid(row).toFixed(2) || 0.01,
+  });
+  if (mode === 'long_call') {
+    const r = chainPick(calls, puts, spot, 'call', 1.01);
+    return r ? { name: 'Long Call', legs: [mk('BUY', 'call', r)] } : null;
+  }
+  if (mode === 'long_put') {
+    const r = chainPick(calls, puts, spot, 'put', 0.99);
+    return r ? { name: 'Long Put', legs: [mk('BUY', 'put', r)] } : null;
+  }
+  if (mode === 'bull_put') {
+    const sp = chainPick(calls, puts, spot, 'put', 0.96);
+    const lp = chainPick(calls, puts, spot, 'put', 0.91);
+    return sp && lp ? { name: 'Bull Put Spread', legs: [mk('SELL', 'put', sp), mk('BUY', 'put', lp)] } : null;
+  }
+  if (mode === 'bear_call') {
+    const sc = chainPick(calls, puts, spot, 'call', 1.04);
+    const lc = chainPick(calls, puts, spot, 'call', 1.09);
+    return sc && lc ? { name: 'Bear Call Spread', legs: [mk('SELL', 'call', sc), mk('BUY', 'call', lc)] } : null;
+  }
+  if (mode === 'iron_condor') {
+    const sp = chainPick(calls, puts, spot, 'put', 0.94);
+    const lp = chainPick(calls, puts, spot, 'put', 0.90);
+    const sc = chainPick(calls, puts, spot, 'call', 1.06);
+    const lc = chainPick(calls, puts, spot, 'call', 1.10);
+    return sp && lp && sc && lc
+      ? { name: 'Iron Condor', legs: [mk('SELL', 'put', sp), mk('BUY', 'put', lp), mk('SELL', 'call', sc), mk('BUY', 'call', lc)] }
+      : null;
+  }
+  if (mode === 'short_put') {
+    const r = chainPick(calls, puts, spot, 'put', 0.96);
+    return r ? { name: 'Short Put', legs: [mk('SELL', 'put', r)] } : null;
+  }
+  if (mode === 'short_call') {
+    const r = chainPick(calls, puts, spot, 'call', 1.04);
+    return r ? { name: 'Short Call', legs: [mk('SELL', 'call', r)] } : null;
+  }
+  if (mode === 'straddle') {
+    const c = chainPick(calls, puts, spot, 'call', 1.0);
+    const p = chainPick(calls, puts, spot, 'put', 1.0);
+    return c && p ? { name: 'Long Straddle', legs: [mk('BUY', 'call', c), mk('BUY', 'put', p)] } : null;
+  }
+  if (mode === 'covered_call') {
+    const r = chainPick(calls, puts, spot, 'call', 1.03);
+    return r ? { name: 'Covered Call (short call leg only)', legs: [mk('SELL', 'call', r)] } : null;
+  }
+  if (mode === 'calendar') {
+    const near = chainPick(calls, puts, spot, 'call', 1.0);
+    return near ? { name: 'Calendar (front-month call)', legs: [mk('SELL', 'call', near)] } : null;
+  }
+  return null;
+}
+async function ensureGreeksReady() {
+  let row = greeksRow();
+  if (row && row.curves && row.curves.strikes && row.curves.strikes.length) return row;
+  const gSym = greeksFetchSym(_ocSym);
+  for (let i = 0; i < 8; i++) {
+    try {
+      const r = await ocFetch(`${API}/api/greeks?symbols=${encodeURIComponent(gSym)}`, 90000);
+      if (r.ok) {
+        _ocGreeks = await r.json();
+        row = greeksRow();
+        if (row && row.curves && row.curves.strikes && row.curves.strikes.length) return row;
+      }
+    } catch (e) {}
+    await new Promise(res => setTimeout(res, 1500));
+  }
+  return greeksRow();
+}
+
+const PILL_TABS = [
+  ['overview','Overview'], ['chain','Option Chain'], ['highestoi','Highest OI'],
+  ['gex','GEX'], ['volume','Volume'], ['oi','Open Interest'],
+  ['maxpain','Max Pain'], ['skew','IV Skew'], ['greekcharts','Greeks'],
+  ['prob','Prob Dist'], ['pnl','P&L'], ['unusual','Unusual'], ['strategy','Strategy'],
+];
+
+
+
+let _ocOfFilter = 'stock';
+let _ocOfRows = [];
+let _ocOfSort = { key: 'total_value', dir: -1 };
+
+function setOptionsFlowFilter(f, btn) {
+  _ocOfFilter = f;
+  document.querySelectorAll('.oc-of-filt').forEach(b => b.classList.toggle('active', b === btn));
+  loadOptionsFlowTrades(false);
+}
+
+function fmtUsd(n) {
+  if (n == null || isNaN(n)) return '—';
+  return '$' + Number(n).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+async function loadOptionsFlowTrades(nocache) {
+  const wrap = document.getElementById('oc-of-scroll');
+  if (!wrap) return;
+  wrap.innerHTML = '<div class="oc-loading"><div class="oc-spinner"></div>Loading options flow…<br><span style="font-size:.72rem;color:var(--muted)">Uses cached option-flows (fast). First load after server restart may take ~30s.</span></div>';
+  try {
+    const r = await ocFetch(`${API}/api/options-flow-trades?filter=${encodeURIComponent(_ocOfFilter)}${nocache ? '&nocache=1' : ''}`, 90000);
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const d = await r.json();
+    _ocOfRows = d.rows || [];
+    const note = document.getElementById('oc-of-note');
+    if (note) note.textContent = d.note || '';
+    renderOptionsFlowTable();
+  } catch (e) {
+    wrap.innerHTML = '<p style="padding:1.5rem;color:#f87171">Failed to load: ' + e.message + ' <button type="button" class="oc-refresh" onclick="loadOptionsFlowTrades(true)">Retry</button></p>';
+  }
+}
+
+function sortOptionsFlow(key) {
+  if (_ocOfSort.key === key) _ocOfSort.dir *= -1;
+  else { _ocOfSort.key = key; _ocOfSort.dir = (key === 'symbol' || key === 'contract' || key === 'traded_at') ? 1 : -1; }
+  renderOptionsFlowTable();
+}
+
+function renderOptionsFlowTable() {
+  const wrap = document.getElementById('oc-of-scroll');
+  if (!wrap) return;
+  const key = _ocOfSort.key;
+  const dir = _ocOfSort.dir;
+  const rows = [..._ocOfRows].sort((a, b) => {
+    const va = a[key], vb = b[key];
+    if (va == null) return 1;
+    if (vb == null) return -1;
+    if (typeof va === 'string') return dir * va.localeCompare(vb);
+    return dir * (va - vb);
+  });
+  const th = (k, label, cls) => {
+    const mark = _ocOfSort.key === k ? (_ocOfSort.dir < 0 ? ' ↓' : ' ↑') : '';
+    return `<th class="${cls || ''}${_ocOfSort.key === k ? ' sorted' : ''}" onclick="sortOptionsFlow('${k}')">${label}${mark}</th>`;
+  };
+  let html = '<table class="oc-of-tbl"><thead><tr>'
+    + th('symbol', 'Symbol', '')
+    + th('contract', 'Contract', '')
+    + th('type', 'Type', '')
+    + th('sentiment', 'Sentiment', '')
+    + th('total_value', 'Total Value', 'num')
+    + th('total_size', 'Total Size', 'num')
+    + th('avg_price', 'Avg Price', 'num')
+    + th('underlying_price', 'Underlying Price at Execution', 'num')
+    + th('traded_at', 'Traded at', '')
+    + '</tr></thead><tbody>';
+  if (!rows.length) {
+    html += '<tr><td colspan="9" style="padding:1.2rem;color:var(--muted)">No flow data — try All or refresh with server running.</td></tr>';
+  } else {
+    rows.forEach(r => {
+      const sent = (r.sentiment || 'neutral').toLowerCase();
+      const und = r.underlying_price != null ? '$' + Number(r.underlying_price).toFixed(2) : '—';
+      html += `<tr class="of-row" onclick="openOptionsFlowSymbol('${r.symbol}')">`
+        + `<td class="of-sym">${r.symbol}</td>`
+        + `<td class="of-contract">${r.contract || '—'}</td>`
+        + `<td class="oc-of-type">${r.type || '—'}</td>`
+        + `<td class="oc-of-sent ${sent}">${sent}</td>`
+        + `<td class="num">${fmtUsd(r.total_value)}</td>`
+        + `<td class="num">${(r.total_size||0).toLocaleString()}</td>`
+        + `<td class="num">${r.avg_price != null ? '$' + Number(r.avg_price).toFixed(2) : '—'}</td>`
+        + `<td class="num">${und}</td>`
+        + `<td>${r.traded_at || '—'}</td></tr>`;
+    });
+  }
+  html += '</tbody></table>';
+  wrap.innerHTML = html;
+}
+
+function downloadOptionsFlowCsv() {
+  if (!_ocOfRows.length) { alert('No data to download.'); return; }
+  const cols = ['symbol','contract','type','sentiment','total_value','total_size','avg_price','underlying_price','traded_at'];
+  const lines = [cols.join(',')];
+  _ocOfRows.forEach(r => {
+    lines.push(cols.map(c => {
+      const v = r[c];
+      if (v == null) return '';
+      const s = String(v);
+      return s.includes(',') ? '"' + s + '"' : s;
+    }).join(','));
+  });
+  const blob = new Blob([lines.join('\n')], { type: 'text/csv' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'options-flow-' + _ocOfFilter + '.csv';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function openOptionsFlowSymbol(sym) {
+  openMostActiveSymbol(sym);
+}
+
+
+let _ocHivFilter = 'stock';
+let _ocHivRows = [];
+let _ocHivSort = { key: 'implied_volatility', dir: -1 };
+
+function setHighestIvFilter(f, btn) {
+  _ocHivFilter = f;
+  document.querySelectorAll('.oc-hiv-filt').forEach(b => b.classList.toggle('active', b === btn));
+  loadHighestIvContracts(false);
+}
+
+async function loadHighestIvContracts(nocache) {
+  const wrap = document.getElementById('oc-hiv-scroll');
+  if (!wrap) return;
+  wrap.innerHTML = '<div class="oc-loading"><div class="oc-spinner"></div>Loading highest IV contracts…<br><span style="font-size:.72rem;color:var(--muted)">Scans top symbols only (~12). Restart server if this hangs over 90s.</span></div>';
+  try {
+    const r = await ocFetch(`${API}/api/highest-iv-contracts?filter=${encodeURIComponent(_ocHivFilter)}${nocache ? '&nocache=1' : ''}`, 90000);
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const d = await r.json();
+    _ocHivRows = d.rows || [];
+    renderHighestIvTable();
+  } catch (e) {
+    wrap.innerHTML = '<p style="padding:1.5rem;color:#f87171">Failed to load: ' + e.message + ' <button type="button" class="oc-refresh" onclick="loadHighestIvContracts(true)">Retry</button></p>';
+  }
+}
+
+function sortHighestIv(key) {
+  if (_ocHivSort.key === key) _ocHivSort.dir *= -1;
+  else { _ocHivSort.key = key; _ocHivSort.dir = (key === 'symbol' || key === 'contract') ? 1 : -1; }
+  renderHighestIvTable();
+}
+
+function renderHighestIvTable() {
+  const wrap = document.getElementById('oc-hiv-scroll');
+  if (!wrap) return;
+  const key = _ocHivSort.key;
+  const dir = _ocHivSort.dir;
+  const rows = [..._ocHivRows].sort((a, b) => {
+    const va = a[key], vb = b[key];
+    if (va == null) return 1;
+    if (vb == null) return -1;
+    if (typeof va === 'string') return dir * va.localeCompare(vb);
+    return dir * (va - vb);
+  });
+  const th = (k, label, cls) => {
+    const mark = _ocHivSort.key === k ? (_ocHivSort.dir < 0 ? ' ↓' : ' ↑') : '';
+    return `<th class="${cls || ''}${_ocHivSort.key === k ? ' sorted' : ''}" onclick="sortHighestIv('${k}')">${label}${mark}</th>`;
+  };
+  let html = '<table class="oc-hiv-tbl"><thead><tr>'
+    + th('symbol', 'Symbol', '')
+    + th('contract', 'Contract', '')
+    + th('implied_volatility', 'Implied Volatility', 'num')
+    + th('option_interest', 'Option Interest', 'num')
+    + th('option_volume', 'Option Volume', 'num')
+    + '</tr></thead><tbody>';
+  if (!rows.length) {
+    html += '<tr><td colspan="5" style="padding:1.2rem;color:var(--muted)">No contracts above 80% IV — try All or refresh.</td></tr>';
+  } else {
+    rows.forEach(r => {
+      html += `<tr class="hiv-row" onclick="openMostActiveSymbol('${r.symbol}')">`
+        + `<td class="hiv-sym">${r.symbol}</td>`
+        + `<td class="hiv-contract">${r.contract || '—'}</td>`
+        + `<td class="num hiv-iv">${r.implied_volatility != null ? r.implied_volatility.toFixed(2) + '%' : '—'}</td>`
+        + `<td class="num">${(r.option_interest||0).toLocaleString()}</td>`
+        + `<td class="num">${(r.option_volume||0).toLocaleString()}</td></tr>`;
+    });
+  }
+  html += '</tbody></table>';
+  wrap.innerHTML = html;
+}
+
+function downloadHighestIvCsv() {
+  if (!_ocHivRows.length) { alert('No data to download.'); return; }
+  const cols = ['symbol','contract','implied_volatility','option_interest','option_volume'];
+  const lines = [cols.join(',')];
+  _ocHivRows.forEach(r => {
+    lines.push(cols.map(c => {
+      const v = r[c];
+      if (v == null) return '';
+      const s = String(v);
+      return s.includes(',') ? '"' + s + '"' : s;
+    }).join(','));
+  });
+  const blob = new Blob([lines.join('\n')], { type: 'text/csv' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'highest-iv-contracts-' + _ocHivFilter + '.csv';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+
+let _ocIvHiFilter = 'stock';
+let _ocIvLoFilter = 'stock';
+let _ocIvHiRows = [];
+let _ocIvLoRows = [];
+let _ocIvHiSort = { key: 'iv_rank', dir: -1 };
+let _ocIvLoSort = { key: 'iv_rank', dir: 1 };
+
+function setIvRankFilter(sort, f, btn) {
+  if (sort === 'high') {
+    _ocIvHiFilter = f;
+    document.querySelectorAll('#ocp-ivhi .oc-ivr-filt').forEach(b => b.classList.toggle('active', b === btn));
+    loadIvRankStocks('high', false);
+  } else {
+    _ocIvLoFilter = f;
+    document.querySelectorAll('#ocp-ivlo .oc-ivr-filt').forEach(b => b.classList.toggle('active', b === btn));
+    loadIvRankStocks('low', false);
+  }
+}
+
+async function loadIvRankStocks(sort, nocache) {
+  const wrapId = sort === 'high' ? 'oc-ivhi-scroll' : 'oc-ivlo-scroll';
+  const wrap = document.getElementById(wrapId);
+  if (!wrap) return;
+  const filt = sort === 'high' ? _ocIvHiFilter : _ocIvLoFilter;
+  wrap.innerHTML = '<div class="oc-loading"><div class="oc-spinner"></div>Loading IV rank stocks…</div>';
+  try {
+    const r = await ocFetch(`${API}/api/iv-rank-stocks?sort=${sort}&filter=${encodeURIComponent(filt)}${nocache ? '&nocache=1' : ''}`, 90000);
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const d = await r.json();
+    if (sort === 'high') _ocIvHiRows = d.rows || [];
+    else _ocIvLoRows = d.rows || [];
+    renderIvRankTable(sort);
+  } catch (e) {
+    wrap.innerHTML = '<p style="padding:1.5rem;color:#f87171">Failed to load: ' + e.message
+      + ' <button type="button" class="oc-refresh" onclick="loadIvRankStocks(\'' + sort + '\',true)">Retry</button></p>';
+  }
+}
+
+function sortIvRankTable(sort, key) {
+  const st = sort === 'high' ? _ocIvHiSort : _ocIvLoSort;
+  if (st.key === key) st.dir *= -1;
+  else { st.key = key; st.dir = (key === 'symbol' || key === 'name') ? 1 : (sort === 'high' ? -1 : 1); }
+  renderIvRankTable(sort);
+}
+
+function renderIvRankTable(sort) {
+  const wrapId = sort === 'high' ? 'oc-ivhi-scroll' : 'oc-ivlo-scroll';
+  const wrap = document.getElementById(wrapId);
+  if (!wrap) return;
+  const rows = sort === 'high' ? [..._ocIvHiRows] : [..._ocIvLoRows];
+  const st = sort === 'high' ? _ocIvHiSort : _ocIvLoSort;
+  const key = st.key, dir = st.dir;
+  rows.sort((a, b) => {
+    const va = a[key], vb = b[key];
+    if (va == null) return 1;
+    if (vb == null) return -1;
+    if (typeof va === 'string') return dir * va.localeCompare(vb);
+    return dir * (va - vb);
+  });
+  const th = (k, label, cls) => {
+    const mark = st.key === k ? (st.dir < 0 ? ' ↓' : ' ↑') : '';
+    return `<th class="${cls || ''}${st.key === k ? ' sorted' : ''}" onclick="sortIvRankTable('${sort}','${k}')">${label}${mark}</th>`;
+  };
+  let html = '<table class="oc-ivr-tbl"><thead><tr>'
+    + th('symbol', 'Symbol', '')
+    + th('name', 'Name', '')
+    + th('iv_rank', 'IV Rank', 'num')
+    + th('implied_volatility_30d', 'Implied Volatility (30d)', 'num')
+    + th('volume', 'Volume', 'num')
+    + th('open_interest', 'Open Interest', 'num')
+    + '</tr></thead><tbody>';
+  if (!rows.length) {
+    html += '<tr><td colspan="6" style="padding:1.2rem;color:var(--muted)">No data — open Most Active first to warm caches, then retry.</td></tr>';
+  } else {
+    rows.forEach(r => {
+      const ivr = r.iv_rank != null ? r.iv_rank.toFixed(2) + '%' : '—';
+      const iv30 = r.implied_volatility_30d != null ? r.implied_volatility_30d.toFixed(2) + '%' : '—';
+      html += `<tr class="ivr-row" onclick="openMostActiveSymbol('${r.symbol}')">`
+        + `<td class="ivr-sym">${r.symbol}</td><td>${r.name || r.symbol}</td>`
+        + `<td class="num ivr-rank">${ivr}</td><td class="num">${iv30}</td>`
+        + `<td class="num">${(r.volume||0).toLocaleString()}</td>`
+        + `<td class="num">${(r.open_interest||0).toLocaleString()}</td></tr>`;
+    });
+  }
+  html += '</tbody></table>';
+  wrap.innerHTML = html;
+}
+
+function downloadIvRankCsv(sort) {
+  const rows = sort === 'high' ? _ocIvHiRows : _ocIvLoRows;
+  if (!rows.length) { alert('No data to download.'); return; }
+  const cols = ['symbol','name','iv_rank','implied_volatility_30d','volume','open_interest'];
+  const lines = [cols.join(',')];
+  rows.forEach(r => {
+    lines.push(cols.map(c => {
+      const v = r[c];
+      if (v == null) return '';
+      const s = String(v);
+      return s.includes(',') ? '"' + s + '"' : s;
+    }).join(','));
+  });
+  const blob = new Blob([lines.join('\n')], { type: 'text/csv' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'iv-rank-' + sort + '-' + (sort === 'high' ? _ocIvHiFilter : _ocIvLoFilter) + '.csv';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+let _ocMaFilter = 'stock';
+let _ocMaRows = [];
+let _ocMaSort = { key: 'option_volume', dir: -1 };
+
+function setMostActiveFilter(f, btn) {
+  _ocMaFilter = f;
+  document.querySelectorAll('.oc-ma-filt').forEach(b => b.classList.toggle('active', b === btn));
+  loadMostActiveOptions(false);
+}
+
+async function loadMostActiveOptions(nocache) {
+  const wrap = document.getElementById('oc-ma-scroll');
+  if (!wrap) return;
+  wrap.innerHTML = '<div class="oc-loading" id="oc-ma-loading"><div class="oc-spinner"></div>Loading most active options…</div>';
+  try {
+    const r = await ocFetch(`${API}/api/most-active-options?filter=${encodeURIComponent(_ocMaFilter)}${nocache ? '&nocache=1' : ''}`, 120000);
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const d = await r.json();
+    _ocMaRows = d.rows || [];
+    renderMostActiveTable();
+  } catch (e) {
+    wrap.innerHTML = '<p style="padding:1.5rem;color:#f87171">Failed to load: ' + e.message + '</p>';
+  }
+}
+
+function sortMostActive(key) {
+  if (_ocMaSort.key === key) _ocMaSort.dir *= -1;
+  else { _ocMaSort.key = key; _ocMaSort.dir = key === 'symbol' || key === 'name' ? 1 : -1; }
+  renderMostActiveTable();
+}
+
+function renderMostActiveTable() {
+  const wrap = document.getElementById('oc-ma-scroll');
+  if (!wrap) return;
+  const key = _ocMaSort.key;
+  const dir = _ocMaSort.dir;
+  const rows = [..._ocMaRows].sort((a, b) => {
+    const va = a[key], vb = b[key];
+    if (va == null) return 1;
+    if (vb == null) return -1;
+    if (typeof va === 'string') return dir * va.localeCompare(vb);
+    return dir * (va - vb);
+  });
+  const th = (k, label, cls) => {
+    const sorted = _ocMaSort.key === k ? (_ocMaSort.dir < 0 ? ' ↓' : ' ↑') : '';
+    return `<th class="${cls || ''}${_ocMaSort.key === k ? ' sorted' : ''}" onclick="sortMostActive('${k}')">${label}${sorted}</th>`;
+  };
+  let html = '<table class="oc-ma-tbl"><thead><tr>'
+    + th('symbol', 'Symbol', '')
+    + th('name', 'Name', '')
+    + th('option_volume', 'Option Volume', 'num')
+    + th('call_volume', 'Call Volume', 'num')
+    + th('put_volume', 'Put Volume', 'num')
+    + th('put_call_ratio', 'Put-Call Ratio', 'num')
+    + th('avg_daily_volume_pct', 'Avg Daily Volume %', 'num')
+    + '</tr></thead><tbody>';
+  if (!rows.length) {
+    html += '<tr><td colspan="7" style="padding:1.2rem;color:var(--muted)">No data — refresh server or try All filter.</td></tr>';
+  } else {
+    rows.forEach(r => {
+      const pct = r.avg_daily_volume_pct != null ? r.avg_daily_volume_pct.toFixed(2) + '%' : '—';
+      html += `<tr class="ma-row" onclick="openMostActiveSymbol('${r.symbol}')">`
+        + `<td class="ma-sym">${r.symbol}</td><td>${r.name || r.symbol}</td>`
+        + `<td class="num">${(r.option_volume||0).toLocaleString()}</td>`
+        + `<td class="num">${(r.call_volume||0).toLocaleString()}</td>`
+        + `<td class="num">${(r.put_volume||0).toLocaleString()}</td>`
+        + `<td class="num">${r.put_call_ratio != null ? r.put_call_ratio.toFixed(2) : '—'}</td>`
+        + `<td class="num">${pct}</td></tr>`;
+    });
+  }
+  html += '</tbody></table>';
+  wrap.innerHTML = html;
+}
+
+function downloadMostActiveCsv() {
+  if (!_ocMaRows.length) { alert('No data to download.'); return; }
+  const cols = ['symbol','name','option_volume','call_volume','put_volume','put_call_ratio','avg_daily_volume_pct'];
+  const lines = [cols.join(',')];
+  _ocMaRows.forEach(r => {
+    lines.push(cols.map(c => {
+      const v = r[c];
+      if (v == null) return '';
+      const s = String(v);
+      return s.includes(',') ? '"' + s + '"' : s;
+    }).join(','));
+  });
+  const blob = new Blob([lines.join('\n')], { type: 'text/csv' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'most-active-options-' + _ocMaFilter + '.csv';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function setSection(sec, btn) {
+  _ocSection = sec;
+  document.querySelectorAll('.oc-sec-btn').forEach(b => b.classList.toggle('active', b === btn));
+  const layout = document.querySelector('.oc-layout');
+  const side = document.querySelector('.oc-side');
+  const pills = document.getElementById('oc-pills');
+  const charts = sec === 'charts';
+  if (layout) layout.style.gridTemplateColumns = charts ? '200px 1fr' : '1fr';
+  if (side) side.style.display = charts ? '' : 'none';
+  if (pills) pills.style.display = charts ? '' : 'none';
+  const panels = document.getElementById('oc-panels');
+  const loading = document.getElementById('oc-loading');
+  if (panels) panels.style.display = 'block';
+  if (loading) loading.style.display = 'none';
+  if (charts) {
+    switchTab(_ocTab, document.querySelector('.oc-tab[data-tab="' + _ocTab + '"]') || document.querySelector('.oc-tab'));
+    return;
+  }
+  document.querySelectorAll('.oc-panel').forEach(p => p.classList.remove('active'));
+  const id = sec === 'pnl' ? 'ocp-pnlpage' : (sec === 'hist' ? 'ocp-hist' : (sec === 'ivlo' ? 'ocp-ivlo' : (sec === 'ivhi' ? 'ocp-ivhi' : (sec === 'hiv' ? 'ocp-hiv' : (sec === 'flow' ? 'ocp-flow' : (sec === 'active' ? 'ocp-active' : (sec === 'chain' ? 'ocp-chain' : 'ocp-overview')))))));
+  const panel = document.getElementById(id);
+  if (panel) panel.classList.add('active');
+  const titles = { chain: 'Option Chain', pnl: 'Profit & Loss', hist: 'Historical Data', active: 'Most Active Options', flow: 'Options Flow', hiv: 'Highest IV Contracts', ivhi: 'High IV Rank Stocks', ivlo: 'Low IV Rank Stocks', overview: 'Overview' };
+  document.getElementById('oc-chart-title').textContent = titles[sec] || 'Option Charts';
+  const subs = {
+    active: 'Ranked by total option volume — click a row to open that symbol',
+    flow: 'Largest trades by estimated premium — click a row to open that symbol',
+    hiv: 'Contracts sorted by implied volatility — click a row to open that symbol',
+    ivhi: 'Highest IV Rank — click a row to open that symbol',
+    ivlo: 'Lowest IV Rank — click a row to open that symbol',
+  };
+  document.getElementById('oc-chart-sub').textContent = subs[sec] || '';
+  if (sec === 'chain') loadOptionChain();
+  else if (sec === 'overview') renderOverviewTables();
+  else if (sec === 'pnl') { ocRenderSuggestionCards(); drawPnlPageChart(); }
+  else if (sec === 'active') loadMostActiveOptions(false);
+  else if (sec === 'flow') loadOptionsFlowTrades(false);
+  else if (sec === 'hiv') loadHighestIvContracts(false);
+  else if (sec === 'ivhi') loadIvRankStocks('high', false);
+  else if (sec === 'ivlo') loadIvRankStocks('low', false);
+}
+
+async function loadOptionChain() {
+  const sym = _ocSym;
+  const expSel = document.getElementById('oc-chain-exp');
+  const exp = expSel && expSel.value ? expSel.value : '';
+  const url = `${API}/api/option-chain?symbol=${encodeURIComponent(sym)}${exp ? '&expiry=' + encodeURIComponent(exp) : ''}`;
+  try {
+    const r = await ocFetch(url, 60000);
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    _ocChain = await r.json();
+    if (_ocChain && _ocChain.spx_ratio) _ocSpxRatio = _ocChain.spx_ratio;
+    fillChainExpSelect();
+    renderOptionChain();
+    drawHighestOi();
+  } catch (e) {
+    const el = document.getElementById('oc-chain-scroll');
+    if (el) el.innerHTML = '<p style="padding:1rem;color:#f87171">' + e.message + '</p>';
+  }
+}
+
+function fillChainExpSelect() {
+  const sel = document.getElementById('oc-chain-exp');
+  if (!sel || !_ocChain || !_ocChain.expiries) return;
+  const cur = _ocChain.expiry;
+  sel.innerHTML = _ocChain.expiries.slice(0, 20).map(e =>
+    `<option value="${e}"${e === cur ? ' selected' : ''}>${e}</option>`).join('');
+}
+
+function setChainSide(side, el) {
+  _ocChainSide = side;
+  document.querySelectorAll('[data-chain]').forEach(b => b.classList.remove('active'));
+  if (el) el.classList.add('active');
+  renderOptionChain();
+}
+
+function renderOptionChain() {
+  const wrap = document.getElementById('oc-chain-scroll');
+  const sum = document.getElementById('oc-chain-sum');
+  if (!_ocChain || !wrap) return;
+  const t = _ocChain.totals || {};
+  const spot = _ocChain.spot || ocDisplaySpot();
+  if (sum) {
+    sum.innerHTML = `<span>Spot <b>$${ocFmtPrice(spot)}</b></span>
+      <span>Call Vol <b>${(t.call_vol||0).toLocaleString()}</b></span>
+      <span>Put Vol <b>${(t.put_vol||0).toLocaleString()}</b></span>
+      <span>Call OI <b>${(t.call_oi||0).toLocaleString()}</b></span>
+      <span>Put OI <b>${(t.put_oi||0).toLocaleString()}</b></span>
+      <span>PCR <b class="${t.pcr_oi>1?'oc-pcr-hi':'oc-pcr-lo'}">${t.pcr_oi||'—'}</b></span>
+      <span>Expiry <b>${_ocChain.expiry}</b> (${_ocChain.dte}d)</span>
+      ${_ocSym === 'SPX' ? '<span style="color:var(--muted)">Premiums are SPY-contract $</span>' : ''}`;
+  }
+  const cmap = {};
+  (_ocChain.calls || []).forEach(r => { cmap[r.strike] = Object.assign({ _type: 'call' }, r); });
+  const pmap = {};
+  (_ocChain.puts || []).forEach(r => { pmap[r.strike] = Object.assign({ _type: 'put' }, r); });
+  let strikes = [...new Set([...Object.keys(cmap), ...Object.keys(pmap)].map(Number))].sort((a, b) => a - b);
+  if (_ocChainSide === 'call') strikes = strikes.filter(k => cmap[k]);
+  if (_ocChainSide === 'put') strikes = strikes.filter(k => pmap[k]);
+  const cell = (r, k) => {
+    if (!r) return '<td>—</td>'.repeat(k);
+    return `<td>${r.last ?? '—'}</td><td>${r.bid ?? '—'}</td><td>${r.mid ?? '—'}</td><td>${r.ask ?? '—'}</td>
+      <td>${(r.volume||0).toLocaleString()}</td><td>${(r.open_interest||0).toLocaleString()}</td>
+      <td>${r.iv != null ? r.iv + '%' : '—'}</td><td>${r.delta ?? '—'}</td><td>${r.gamma ?? '—'}</td><td>${r.theta ?? '—'}</td><td>${r.vega ?? '—'}</td>`;
+  };
+  let html = `<table class="oc-chain-grid"><thead>
+    <tr><th colspan="10" style="text-align:center;color:#22c55e">CALLS</th>
+      <th class="oc-strike-h">Strike</th>
+      <th colspan="10" style="text-align:center;color:#f87171">PUTS</th></tr>
+    <tr><th>Last</th><th>Bid</th><th>Mid</th><th>Ask</th><th>Vol</th><th>OI</th><th>IV</th><th>Δ</th><th>Γ</th><th>Θ</th><th>V</th>
+      <th class="oc-strike-h">Strike</th>
+      <th>Last</th><th>Bid</th><th>Mid</th><th>Ask</th><th>Vol</th><th>OI</th><th>IV</th><th>Δ</th><th>Γ</th><th>Θ</th><th>V</th></tr>
+    </thead><tbody>`;
+  strikes.forEach(k => {
+    const c = cmap[k], p = pmap[k];
+    const near = spot && Math.abs(k - spot) / spot < 0.005;
+    html += `<tr class="${c ? 'call-side' : ''}${p ? ' put-side' : ''}">
+      ${cell(c, 10)}<td class="oc-strike-cell"${near ? ' style="color:#22d3ee"' : ''}>${ocFmtPrice(k)}</td>${cell(p, 10)}</tr>`;
+  });
+  html += '</tbody></table>';
+  wrap.innerHTML = html || '<p style="padding:1rem;color:var(--muted)">No chain rows in range.</p>';
+  if (html) wrap.scrollLeft = Math.max(0, (wrap.scrollWidth - wrap.clientWidth) / 2);
+}
+
+function drawHighestOi() {
+  const cv = document.getElementById('cv-highest-oi');
+  const top = (_ocChain && _ocChain.top_open_interest) || [];
+  if (!cv || !top.length) return;
+  const redraw = () => drawHighestOi();
+  const { ctx, W, H } = ocSetupCanvas(cv, 360, 'cv-highest-oi', redraw);
+  const n0 = Math.min(top.length, 22);
+  const use0 = top.slice(0, n0);
+  const z = ocZoomGet('cv-highest-oi');
+  const i0 = Math.floor(n0 * z.yMin), i1 = Math.ceil(n0 * z.yMax) || n0;
+  const use = use0.slice(i0, Math.max(i1, i0 + 2));
+  const n = use.length;
+  const maxO0 = Math.max(...use.map(x => x.open_interest), 1);
+  const [vLo, vHi] = ocZoomWindow(0, maxO0, z);
+  const maxO = Math.max(vHi - vLo, 1);
+  const pad = ocPad('hbarOi');
+  const rowH = (H - pad.t - pad.b) / Math.max(n, 1);
+  ctx.fillStyle = '#070d18'; ctx.fillRect(0, 0, W, H);
+  use.forEach((r, i) => {
+    const y = pad.t + i * rowH + 2;
+    const w = ((r.open_interest - vLo) / maxO) * (W - pad.l - pad.r);
+    ctx.fillStyle = r.type === 'CALL' ? '#22c55e' : '#f87171';
+    ctx.fillRect(pad.l, y, w, rowH - 4);
+  });
+  ocDrawHBarAxes(ctx, W, H, pad, {
+    yLabel: 'Contract', xLabel: 'Open interest',
+    yTicks: use.map((r, i) => i),
+    xTicks: ocNiceTicks(vLo, maxO0, 5),
+    fmtX: v => Math.round(v).toLocaleString(),
+    fmtY: v => {
+      const r = use[v];
+      return r ? (ocFmtPrice(r.strike, 0) + ' ' + r.type) : '';
+    },
+    yp: v => pad.t + v * rowH + rowH / 2,
+    xp: v => pad.l + ((v - vLo) / maxO) * (W - pad.l - pad.r),
+  });
+}
+
+function setPnlView(mode, el) { togglePnlStrategy(mode, el, null); }
+function drawPnlPageChart() { ocRenderSuggestionCards(); ocRenderAllPnlCharts(); }
+function drawPnlChart() { ocRenderSuggestionCards(); ocRenderAllPnlCharts(); }
+
+
+function buildPills() {
+  const bar = document.getElementById('oc-pills');
+  if (!bar) return;
+  bar.innerHTML = PILL_TABS.map(([id, lbl]) =>
+    `<button class="oc-pill${id === _ocTab ? ' active' : ''}" data-tab="${id}" onclick="pillClick('${id}',this)">${lbl}</button>`
+  ).join('');
+}
+function pillClick(tab, el) {
+  const side = document.querySelector(`.oc-tab[data-tab="${tab}"]`);
+  if (side) switchTab(tab, side);
+  else {
+    _ocTab = tab;
+    document.querySelectorAll('.oc-pill').forEach(p => p.classList.toggle('active', p.dataset.tab === tab));
+    document.querySelectorAll('.oc-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+    document.querySelectorAll('.oc-panel').forEach(p => p.classList.remove('active'));
+    const panel = document.getElementById('ocp-' + tab);
+    if (panel) panel.classList.add('active');
+    const m = TAB_META[tab] || {};
+    document.getElementById('oc-chart-title').textContent = m.t || tab;
+    document.getElementById('oc-chart-sub').textContent = m.s || '';
+    redraw();
+  }
+}
+
+function buildAssetBar() {
+  const bar = document.getElementById('oc-asset-bar');
+  let html = '<span class="oc-grp">ETFs</span>';
+  OC_ASSETS.filter(a => a.grp === 'etf').forEach(a => {
+    html += `<button class="oc-sym${a.sym === _ocSym ? ' active' : ''}" data-sym="${a.sym}" onclick="pickSym('${a.sym}')">${a.sym}</button>`;
+  });
+  html += '<span class="oc-div"></span><span class="oc-grp">Index</span>';
+  html += `<button class="oc-sym${_ocSym === 'SPX' ? ' active' : ''}" data-sym="SPX" onclick="pickSym('SPX')">SPX</button>`;
+  html += '<span class="oc-div"></span><span class="oc-grp">Futures</span>';
+  OC_ASSETS.filter(a => a.grp === 'fut').forEach(a => {
+    html += `<button class="oc-sym fut${a.sym === _ocSym ? ' active' : ''}" data-sym="${a.sym}" onclick="pickSym('${a.sym}')">${a.sym}</button>`;
+  });
+  html += '<span class="oc-div"></span><span class="oc-grp">Stocks</span>';
+  OC_ASSETS.filter(a => a.grp === 'stk').forEach(a => {
+    html += `<button class="oc-sym${a.sym === _ocSym ? ' active' : ''}" data-sym="${a.sym}" onclick="pickSym('${a.sym}')">${a.sym}</button>`;
+  });
+  bar.innerHTML = html;
+}
+
+function openMostActiveSymbol(sym) {
+  pickSym(sym);
+  const btn = document.querySelector('.oc-sec-btn[data-sec="chain"]');
+  if (btn) setSection('chain', btn);
+}
+
+function pickSym(sym) {
+  _ocSym = sym;
+  document.querySelectorAll('.oc-sym').forEach(b => b.classList.toggle('active', b.dataset.sym === sym));
+  loadAsset(sym, false);
+}
+
+function switchTab(tab, el) {
+  _ocTab = tab;
+  document.querySelectorAll('.oc-pill').forEach(p => p.classList.toggle('active', p.dataset.tab === tab));
+  document.querySelectorAll('.oc-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  document.querySelectorAll('.oc-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('ocp-' + tab).classList.add('active');
+  const m = TAB_META[tab] || {};
+  document.getElementById('oc-chart-title').textContent = m.t || tab;
+  document.getElementById('oc-chart-sub').textContent = m.s || '';
+  document.getElementById('oc-filters').style.display =
+    (tab === 'skew' || tab === 'volume' || tab === 'oi') ? 'flex' : 'none';
+  redraw();
+}
+
+function setSide(side, el) {
+  _ocSide = side;
+  document.querySelectorAll('.oc-filt').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  redraw();
+}
+
+function onExpChange() {
+  _ocExp = document.getElementById('oc-exp-sel').value;
+  if (_ocTab === 'skew') drawSkew(_ocVol);
+}
+
+function gexLookup(sym) {
+  const key = GEX_FETCH[sym] || sym;
+  if (!_ocGex || !_ocGex.assets) return null;
+  return _ocGex.assets.find(a => a.symbol === key) ||
+         _ocGex.assets.find(a => a.symbol === sym) || null;
+}
+
+function flowLookup(sym) {
+  const key = GEX_FETCH[sym] || sym;
+  if (!_ocFlow || !_ocFlow.assets) return null;
+  return _ocFlow.assets.find(a => a.symbol === key) ||
+         _ocFlow.assets.find(a => a.symbol === sym) || null;
+}
+
+function stratLookup(sym) {
+  const key = GEX_FETCH[sym] || sym;
+  if (!_ocStrat || !_ocStrat.assets) return null;
+  return _ocStrat.assets.find(a => a.symbol === key || a.symbol === sym) || null;
+}
+
+function greeksFetchSym(sym) {
+  return GEX_FETCH[sym] || sym;
+}
+
+function ocApplyVolPayload(volPayload) {
+  _ocVol = volPayload;
+  _ocVol = (_ocVol && _ocVol.assets && _ocVol.assets[0]) ? _ocVol.assets[0]
+    : (_ocVol && _ocVol.term_structure ? _ocVol : null);
+  if (_ocVol && _ocVol.spx_ratio) _ocSpxRatio = _ocVol.spx_ratio;
+}
+
+function ocShowPanels(sym, quote, partial) {
+  updateTicker(sym, quote);
+  fillExpSelect();
+  updateStats();
+  renderOverviewTables();
+  buildPills();
+  ocLoadTrades();
+  buildPnlPickers();
+  ocRenderSuggestionCards();
+  document.getElementById('oc-loading').style.display = 'none';
+  document.getElementById('oc-panels').style.display = 'block';
+  const dot = document.getElementById('oc-dot');
+  const st = document.getElementById('oc-status');
+  dot.className = partial ? 'oc-dot' : 'oc-dot ok';
+  const proxy = (_ocVol && _ocVol.proxy) ? (' via ' + _ocVol.proxy) : '';
+  const spxNote = sym === 'SPX' ? ' (SPX index levels)' : proxy;
+  st.textContent = partial
+    ? ('Loading chain & Greeks for ' + sym + '…')
+    : ('Live — ' + sym + spxNote);
+  redraw();
+}
+
+async function loadGreeksBackground(gSym, nocache) {
+  const gq = nocache ? '&nocache=1' : '';
+  try {
+    const grR = await ocFetch(`${API}/api/greeks?symbols=${encodeURIComponent(gSym)}${gq}`, 90000);
+    if (grR.ok) {
+      _ocGreeks = await grR.json();
+      if (_ocTab === 'greekcharts' || _ocTab === 'greeks') redraw();
+    }
+  } catch (e) {}
+}
+
+async function loadAsset(sym, nocache) {
+  _ocSym = sym;
+  document.getElementById('oc-load-sym').textContent = sym;
+  document.getElementById('oc-loading').style.display = 'block';
+  document.getElementById('oc-panels').style.display = 'none';
+  const dot = document.getElementById('oc-dot');
+  const st = document.getElementById('oc-status');
+  dot.className = 'oc-dot';
+  st.textContent = 'Connecting…';
+
+  const up = await ocPingServer();
+  if (!up) {
+    dot.className = 'oc-dot err';
+    st.textContent = 'Server offline';
+    document.getElementById('oc-loading').innerHTML =
+      '<div style="color:#f87171">Cannot reach live-server on port 3000.<br>' +
+      'In the project folder run: <code>py live-server.py</code><br>' +
+      'Then open <code>http://localhost:3000/option-charts.html</code></div>';
+    return;
+  }
+
+  st.textContent = 'Loading ' + sym + '…';
+  const q = nocache ? '&nocache=1' : '';
+  const volQ = `symbol=${encodeURIComponent(sym)}${nocache ? '&nocache=1' : ''}`;
+  const gSym = greeksFetchSym(sym);
+  const candleSym = GEX_FETCH[sym] || sym;
+  try {
+    const [volR, gexR, flowR, stR, cdR, qtR] = await Promise.all([
+      ocFetch(`${API}/api/volatility-surface?${volQ}`, 90000),
+      ocFetch(`${API}/api/gamma-exposure${nocache ? '?nocache=1' : ''}`, 60000),
+      ocFetch(`${API}/api/option-flows${nocache ? '?nocache=1' : ''}`, 60000),
+      ocFetch(`${API}/api/options-strategy${nocache ? '?nocache=1' : ''}`, 60000),
+      ocFetch(`${API}/api/candles/${encodeURIComponent(candleSym)}?interval=${_priceInterval}&period=${_pricePeriod}${q}`, 45000),
+      ocFetch(`${API}/api/quote/${encodeURIComponent(sym === 'SPX' ? '^GSPC' : candleSym)}${nocache ? '?nocache=1' : ''}`, 20000).catch(() => ({ ok: false })),
+    ]);
+    _ocGex = gexR.ok ? await gexR.json() : null;
+    _ocFlow = flowR.ok ? await flowR.json() : null;
+    _ocStrat = stR.ok ? await stR.json() : null;
+    _ocCandles = cdR.ok ? await cdR.json() : [];
+    let _ocQuote = null;
+    try { if (qtR && qtR.ok) _ocQuote = await qtR.json(); } catch (e) {}
+    if (!Array.isArray(_ocCandles)) _ocCandles = [];
+    ocApplyVolPayload(volR.ok ? await volR.json() : null);
+    ocShowPanels(sym, _ocQuote, true);
+    loadOptionChain().catch(() => {}).then(() => { ocRenderSuggestionCards(); ocRenderAllPnlCharts(); ocRefreshOpenTrades(); });
+    loadGreeksBackground(gSym, nocache).then(() => {
+      dot.className = 'oc-dot ok';
+      const proxy = (_ocVol && _ocVol.proxy) ? (' via ' + _ocVol.proxy) : '';
+      st.textContent = 'Live — ' + sym + (sym === 'SPX' ? ' (SPX index levels)' : proxy);
+    });
+  } catch (e) {
+    dot.className = 'oc-dot err';
+    st.textContent = 'Error: ' + (e.name === 'AbortError' ? 'Timed out' : e.message);
+    document.getElementById('oc-loading').innerHTML =
+      '<div style="color:#f87171">Failed to load ' + sym + '. Try Refresh or wait for yfinance (first load can take 1–2 min).<br><small>' +
+      (e.message || e) + '</small></div>';
+  }
+}
+
+function fillExpSelect() {
+  const sel = document.getElementById('oc-exp-sel');
+  if (!sel) return;
+  const ts = (_ocVol && _ocVol.term_structure) || [];
+  sel.innerHTML = ts.slice(0, 6).map(t =>
+    `<option value="${t.expiry}">${t.dte}d — ${t.expiry}</option>`).join('');
+  _ocExp = ts[0] ? ts[0].expiry : '';
+  if (_ocExp) sel.value = _ocExp;
+}
+
+function updateStats() {
+  const g = gexLookup(_ocSym);
+  const f = flowLookup(_ocSym);
+  const v = _ocVol;
+  const s = stratLookup(_ocSym);
+  const spot = (g && g.spot) || (v && v.spot) || (f && f.spot);
+  document.getElementById('st-spot').textContent = spot ? '$' + Number(spot).toFixed(2) : '—';
+  document.getElementById('st-iv').textContent = v && v.atm_iv ? (v.atm_iv * 100).toFixed(1) + '%' : '—';
+  document.getElementById('st-rank').textContent = v && v.iv_rank != null ? v.iv_rank.toFixed(0) + 'th' : '—';
+  document.getElementById('st-regime').textContent = g && g.regime ? g.regime : '—';
+  document.getElementById('st-gwall').textContent = g && g.gamma_wall ? '$' + g.gamma_wall : '—';
+  document.getElementById('st-flip').textContent = g && g.flip_level ? '$' + g.flip_level : '—';
+  document.getElementById('st-flow').textContent = f && f.flow_sentiment ? f.flow_sentiment : '—';
+  document.getElementById('st-maxpain').textContent = f && f.max_pain_strike ? '$' + f.max_pain_strike : '—';
+  const stObj = s && s.strategy && typeof s.strategy === 'object' ? s.strategy : null;
+  document.getElementById('st-strat').textContent = (stObj && stObj.name) || (s && s.direction) || '—';
+  renderStrategy();
+  renderGreeks();
+}
+
+function redraw() {
+  if (_ocTab === 'overview' || _ocTab === 'expected') renderOverviewTables();
+  if (_ocTab === 'chain') { loadOptionChain(); }
+  if (_ocTab === 'highestoi') { loadOptionChain(); }
+  if (_ocTab === 'greekcharts') drawGreekCharts();
+  if (_ocTab === 'unusual') renderUnusual();
+  if (_ocTab === 'price') drawPriceChart();
+  if (_ocTab === 'gex') drawGexChart();
+  if (_ocTab === 'volume') drawVolumeChart();
+  if (_ocTab === 'oi') drawOiChart();
+  if (_ocTab === 'maxpain') drawMaxPainChart();
+  if (_ocTab === 'dex') drawDexChart();
+  if (_ocTab === 'skew') drawSkew(_ocVol);
+  if (_ocTab === 'term') drawTerm(_ocVol);
+  if (_ocTab === 'matrix') renderMatrix(_ocVol);
+  if (_ocTab === 'surface') drawSurfaceHeat(_ocVol);
+  if (_ocTab === 'prob') drawProbChart(_ocVol);
+  if (_ocTab === 'pnl') drawPnlChart();
+  if (_ocTab === 'greeks') renderGreeks();
+  if (_ocTab === 'strategy') { renderStrategy(); ocRenderAllPnlCharts(); }
+  requestAnimationFrame(() => {
+    if (window.ChartDrawTools && ChartDrawTools.rescan) ChartDrawTools.rescan();
+  });
+}
+
+function drawGexChart() {
+  const cv = document.getElementById('cv-gex');
+  const a = gexLookup(_ocSym);
+  if (!cv) return;
+  if (!a || !a.strikes || !a.strikes.length) {
+    cv.width = 600; cv.height = 120;
+    const ctx = cv.getContext('2d');
+    ctx.fillStyle = '#070d18'; ctx.fillRect(0, 0, 600, 120);
+    ctx.fillStyle = '#64748b'; ctx.font = '14px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('No GEX data for ' + _ocSym, 300, 60);
+    return;
+  }
+  const redraw = () => drawGexChart();
+  const pairs = a.strikes.map((k, i) => ({ k, g: a.gex[i] })).sort((x, y) => y.k - x.k);
+  const cH = Math.max(320, Math.min(pairs.length, 55) * 10 + 80);
+  const { ctx, W, H } = ocSetupCanvas(cv, cH, 'cv-gex', redraw);
+  const z = ocZoomGet('cv-gex');
+  const i0 = Math.floor(pairs.length * z.yMin), i1 = Math.ceil(pairs.length * z.yMax) || pairs.length;
+  const use = pairs.slice(i0, Math.max(i1, i0 + 3));
+  const n = use.length;
+  const maxG0 = Math.max(...use.map(p => Math.abs(p.g)), 1e-9);
+  const [gLo, gHi] = ocZoomWindow(0, maxG0, z);
+  const maxG = Math.max(gHi - gLo, 0.01);
+  const pad = ocPad('hbar');
+  const rowH = (H - pad.t - pad.b) / Math.max(n, 1);
+  const cx = pad.l + (W - pad.l - pad.r) / 2;
+  const halfW = (W - pad.l - pad.r) / 2;
+  ctx.fillStyle = '#070d18'; ctx.fillRect(0, 0, W, H);
+  const yp = ri => pad.t + (n - 1 - ri) * rowH + rowH / 2;
+  use.forEach((p, ri) => {
+    const y = yp(ri) - rowH / 2 + 2;
+    const g = Math.abs(p.g) - gLo;
+    const bW = (g / maxG) * (halfW - 4);
+    if (p.g >= 0) { ctx.fillStyle = 'rgba(34,197,94,.9)'; ctx.fillRect(cx, y, bW, rowH - 4); }
+    else { ctx.fillStyle = 'rgba(248,113,113,.9)'; ctx.fillRect(cx - bW, y, bW, rowH - 4); }
+  });
+  ocDrawHBarAxes(ctx, W, H, pad, {
+    yLabel: 'Strike ($)', xLabel: 'Net GEX ($M per 1% move)',
+    yTicks: use.map(p => p.k),
+    xTicks: ocNiceTicks(gLo, maxG0, 4),
+    fmtX: v => v.toFixed(1) + 'M',
+    fmtY: v => ocFmtPrice(v, 0),
+    yp: v => {
+      const ri = use.findIndex(p => p.k === v);
+      return pad.t + (n - 1 - ri) * rowH + rowH / 2;
+    },
+    xp: v => pad.l + ((v - gLo) / maxG) * halfW,
+  });
+  ctx.fillStyle = '#e2e8f0'; ctx.font = OC_AXIS.tick; ctx.textAlign = 'left';
+  if (a.gamma_wall) ctx.fillText('Call ' + ocFmtPrice(a.gamma_wall, 0), cx + 6, pad.t + 4);
+  if (a.flip_level) { ctx.fillStyle = '#a78bfa'; ctx.fillText('Flip ' + ocFmtPrice(a.flip_level, 0), cx + 6, pad.t + 18); }
+  if (a.put_wall) { ctx.fillStyle = '#f87171'; ctx.fillText('Put ' + ocFmtPrice(a.put_wall, 0), cx + 6, pad.t + 32); }
+  renderGexStats();
+}
+
+function drawVolumeChart() {
+  const cv = document.getElementById('cv-volume');
+  const r = flowLookup(_ocSym);
+  if (!cv || !r) return;
+  const redraw = () => drawVolumeChart();
+  const { ctx, W, H } = ocSetupCanvas(cv, 380, 'cv-volume', redraw);
+  const strikes = r.strikes || [], cvols = r.call_vol || [], pvols = r.put_vol || [];
+  const spot = r.spot || 0;
+  const lo0 = spot * 0.88, hi0 = spot * 1.12;
+  let idx = strikes.map((k, i) => i).filter(i => strikes[i] >= lo0 && strikes[i] <= hi0);
+  if (!idx.length) idx = strikes.map((_, i) => i);
+  idx.sort((a, b) => strikes[a] - strikes[b]);
+  const z = ocZoomGet('cv-volume');
+  const i0 = Math.floor(idx.length * z.yMin), i1 = Math.ceil(idx.length * z.yMax) || idx.length;
+  const useIdx = idx.slice(i0, Math.max(i1, i0 + 2));
+  const n = useIdx.length;
+  const maxV0 = Math.max(1, ...useIdx.map(i => Math.max(cvols[i] || 0, pvols[i] || 0)));
+  const [vLo, vHi] = ocZoomWindow(0, maxV0, z);
+  const maxV = Math.max(vHi - vLo, 1);
+  const pad = ocPad('hbar');
+  const plotH = H - pad.t - pad.b;
+  const rowH = plotH / Math.max(n, 1);
+  const cx = pad.l + (W - pad.l - pad.r) / 2;
+  ctx.fillStyle = '#070d18'; ctx.fillRect(0, 0, W, H);
+  const yp = ri => pad.t + (n - 1 - ri) * rowH + rowH / 2;
+  const xp = v => cx + ((v - vLo) / maxV) * ((W - pad.l - pad.r) / 2);
+  const xpm = v => cx - ((v - vLo) / maxV) * ((W - pad.l - pad.r) / 2);
+  useIdx.forEach((ii, ri) => {
+    const y = yp(ri) - rowH / 2 + 2;
+    let cv = cvols[ii] || 0, pv = pvols[ii] || 0;
+    if (_ocSide === 'call') pv = 0;
+    if (_ocSide === 'put') cv = 0;
+    const cw = xp(cv) - cx, pw = cx - xpm(pv);
+    if (cw > 0) { ctx.fillStyle = '#22c55e'; ctx.fillRect(cx, y, cw, rowH - 4); }
+    if (pw > 0) { ctx.fillStyle = '#ef4444'; ctx.fillRect(xpm(pv), y, pw, rowH - 4); }
+  });
+  ocDrawHBarAxes(ctx, W, H, pad, {
+    yLabel: 'Strike ($)', xLabel: 'Contracts (volume)',
+    yTicks: useIdx.map(i => strikes[i]),
+    xTicks: ocNiceTicks(vLo, maxV0, 4),
+    fmtX: v => Math.round(v).toLocaleString(),
+    fmtY: v => ocFmtPrice(v, 0),
+    yp: v => {
+      const ri = useIdx.findIndex(ii => strikes[ii] === v);
+      return pad.t + (n - 1 - ri) * rowH + rowH / 2;
+    },
+    xp: v => pad.l + ((v - vLo) / maxV) * (W - pad.l - pad.r) * 0.5,
+  });
+}
+
+function drawSkew(a) {
+  setTimeout(() => _drawSkewInner(a), 30);
+}
+function ocStrokeSkewLine(ctx, pts, minM, maxM, minV, maxV, xp, yp, color) {
+  ctx.strokeStyle = color; ctx.lineWidth = 2.5; ctx.beginPath();
+  let started = false;
+  pts.forEach(p => {
+    if (p.moneyness < minM || p.moneyness > maxM) return;
+    const x = xp(p.moneyness), y = yp(p.iv * 100);
+    if (!started) { ctx.moveTo(x, y); started = true; } else ctx.lineTo(x, y);
+  });
+  if (started) ctx.stroke();
+}
+
+function _drawSkewInner(a) {
+  const cv = document.getElementById('cv-skew');
+  if (!cv || !a || !a.skew_by_exp) return;
+  const redraw = () => _drawSkewInner(a);
+  const exp = _ocExp || (a.term_structure && a.term_structure[0] && a.term_structure[0].expiry);
+  const all = (a.skew_by_exp[exp] || []);
+  const callPts = all.filter(p => p.type === 'call').sort((x, y) => x.moneyness - y.moneyness);
+  const putPts = all.filter(p => p.type === 'put').sort((x, y) => x.moneyness - y.moneyness);
+  const showCall = _ocSide !== 'put';
+  const showPut = _ocSide !== 'call';
+  const active = [];
+  if (showCall) active.push(...callPts);
+  if (showPut) active.push(...putPts);
+  const { ctx, W, H } = ocSetupCanvas(cv, 320, 'cv-skew', redraw);
+  if (!active.length) {
+    ctx.fillStyle = '#64748b'; ctx.font = '14px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('No skew data', W / 2, H / 2);
+    return;
+  }
+  const pad = ocPad('cartesian');
+  const minM0 = Math.min(...active.map(p => p.moneyness));
+  const maxM0 = Math.max(...active.map(p => p.moneyness));
+  const ivs = active.map(p => p.iv * 100);
+  let minV = Math.min(...ivs) - 2, maxV = Math.max(...ivs) + 4;
+  const z = ocZoomGet('cv-skew');
+  const [minM, maxM] = ocZoomWindow(minM0, maxM0, z);
+  const xp = m => pad.l + ((m - minM) / (maxM - minM || 0.01)) * (W - pad.l - pad.r);
+  const yp = v => pad.t + (1 - (v - minV) / (maxV - minV)) * (H - pad.t - pad.b);
+  ctx.fillStyle = '#070d18'; ctx.fillRect(0, 0, W, H);
+  ocDrawCartesianAxes(ctx, W, H, pad, {
+    xLabel: 'Moneyness (% of spot)', yLabel: 'Implied vol (%)',
+    xTicks: ocNiceTicks(minM, maxM, 6), yTicks: ocNiceTicks(minV, maxV, 5),
+    fmtX: v => (v * 100).toFixed(0) + '%', fmtY: v => v.toFixed(1) + '%',
+    xp, yp,
+  });
+  if (minM <= 1 && maxM >= 1) {
+    const ax = xp(1);
+    ctx.strokeStyle = 'rgba(251,191,36,.45)'; ctx.setLineDash([4, 4]); ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(ax, pad.t); ctx.lineTo(ax, H - pad.b); ctx.stroke();
+    ctx.setLineDash([]);
+  }
+  if (showCall && callPts.length) ocStrokeSkewLine(ctx, callPts, minM, maxM, minV, maxV, xp, yp, '#22c55e');
+  if (showPut && putPts.length) ocStrokeSkewLine(ctx, putPts, minM, maxM, minV, maxV, xp, yp, '#f87171');
+  const ts = (a.term_structure || []).find(t => t.expiry === exp);
+  let dom = '';
+  if (ts && ts.call_iv != null && ts.put_iv != null) {
+    const diff = (ts.put_iv - ts.call_iv) * 100;
+    dom = diff > 0.5 ? 'Puts richer (hedge skew)' : (diff < -0.5 ? 'Calls richer' : 'Balanced ATM skew');
+  } else if (callPts.length && putPts.length) {
+    const nearC = callPts.reduce((b, p) => Math.abs(p.moneyness - 1) < Math.abs(b.moneyness - 1) ? p : b, callPts[0]);
+    const nearP = putPts.reduce((b, p) => Math.abs(p.moneyness - 1) < Math.abs(b.moneyness - 1) ? p : b, putPts[0]);
+    const diff = (nearP.iv - nearC.iv) * 100;
+    dom = diff > 0.5 ? 'Puts dominating' : (diff < -0.5 ? 'Calls dominating' : 'Balanced');
+  }
+  const leg = document.getElementById('oc-skew-leg');
+  if (leg) {
+    leg.className = 'oc-skew-leg';
+    leg.innerHTML =
+      (showCall ? '<span><span class="ln" style="background:#22c55e"></span>Call IV</span>' : '') +
+      (showPut ? '<span><span class="ln" style="background:#f87171"></span>Put IV</span>' : '') +
+      `<span>${exp || 'expiry'}${dom ? ' · ' + dom : ''}</span>`;
+  }
+}
+
+function drawTerm(a) {
+  const el = document.getElementById('oc-term-chart');
+  if (!el || !a || !a.term_structure || !a.term_structure.length) return;
+  if (_termChart) { try { _termChart.remove(); } catch (e) {} _termChart = null; }
+  el.innerHTML = '';
+  const chart = (window.createLwcChart || LightweightCharts.createChart)(el, ocLwcOptions());
+  const s = chart.addLineSeries({ color: '#fbbf24', lineWidth: 2, title: 'ATM IV' });
+  s.setData(a.term_structure.map(t => ({ time: t.expiry, value: +(t.atm_iv * 100).toFixed(3) })));
+  chart.timeScale().fitContent();
+  _termChart = chart;
+  ocLwcAxisHint(el, 'Expiration date', 'ATM IV (%)');
+}
+
+function renderMatrix(a) {
+  const wrap = document.getElementById('oc-matrix-wrap');
+  if (!wrap || !a || !a.matrix) { if (wrap) wrap.innerHTML = '<div class="oc-loading">No matrix data</div>'; return; }
+  const mx = a.matrix;
+  const { expirations, dtes, moneyness: monos, strikes, iv_grid: ivGrid } = mx;
+  const atmIdx = monos.reduce((b, m, i) => Math.abs(m - 1) < Math.abs(monos[b] - 1) ? i : b, 0);
+  let html = '<table class="oc-matrix-table"><thead><tr><th>Strike</th>';
+  expirations.forEach((exp, i) => {
+    html += `<th>${dtes[i]}d<br><small>${exp.slice(5)}</small></th>`;
+  });
+  html += '</tr></thead><tbody>';
+  monos.forEach((mono, ri) => {
+    html += `<tr><td style="text-align:left;color:${ri === atmIdx ? '#22d3ee' : ''}">$${(strikes[ri] || 0).toFixed(0)}</td>`;
+    expirations.forEach((_, ci) => {
+      const iv = (ivGrid[String(mono)] || [])[ci];
+      const pct = iv ? (iv * 100).toFixed(1) + '%' : '—';
+      const bg = iv > 0.35 ? 'rgba(248,113,113,.2)' : iv > 0.25 ? 'rgba(251,191,36,.15)' : 'transparent';
+      html += `<td style="background:${bg}">${pct}</td>`;
+    });
+    html += '</tr>';
+  });
+  html += '</tbody></table>';
+  wrap.innerHTML = html;
+}
+
+function drawSurfaceHeat(a) {
+  setTimeout(() => {
+    const cv = document.getElementById('cv-surface');
+    const mx = a && a.matrix;
+    if (!cv || !mx || !mx.expirations) return;
+    const redraw = () => drawSurfaceHeat(a);
+    const { ctx, W, H } = ocSetupCanvas(cv, 380, 'cv-surface', redraw);
+    const { expirations, moneyness: monos, iv_grid: ivGrid, strikes } = mx;
+    const nC = expirations.length, nR = monos.length;
+    const pad = { l: 72, r: 16, t: 28, b: 52 };
+    const cellW = (W - pad.l - pad.r) / nC, cellH = (H - pad.t - pad.b) / nR;
+    ctx.fillStyle = '#070d18'; ctx.fillRect(0, 0, W, H);
+    monos.forEach((mono, ri) => {
+      expirations.forEach((_, ci) => {
+        const iv = (ivGrid[String(mono)] || [])[ci] || 0;
+        const v = iv * 100;
+        let r = 8, g = 20, b = 70;
+        if (v > 15) { r = 20; g = 90; b = 50; }
+        if (v > 25) { r = 180; g = 80; b = 30; }
+        if (v > 35) { r = 220; g = 40; b = 20; }
+        ctx.fillStyle = 'rgb(' + r + ',' + g + ',' + b + ')';
+        ctx.fillRect(pad.l + ci * cellW, pad.t + ri * cellH, cellW - 1, cellH - 1);
+      });
+    });
+    ctx.font = OC_AXIS.tick;
+    ctx.fillStyle = OC_AXIS.muted;
+    ctx.textAlign = 'center';
+    expirations.forEach((exp, ci) => {
+      const x = pad.l + ci * cellW + cellW / 2;
+      ctx.fillText(exp.slice(5), x, H - pad.b + 14);
+    });
+    ctx.textAlign = 'right';
+    monos.forEach((mono, ri) => {
+      const y = pad.t + ri * cellH + cellH / 2;
+      const sk = strikes && strikes[ri] != null ? ocFmtPrice(strikes[ri], 0) : (mono * 100).toFixed(0) + '%';
+      ctx.fillText(sk, pad.l - 6, y);
+    });
+    ctx.font = OC_AXIS.label;
+    ctx.fillStyle = '#e2e8f0';
+    ctx.textAlign = 'center';
+    ctx.fillText('Expiration', pad.l + (W - pad.l - pad.r) / 2, H - 6);
+    ctx.save();
+    ctx.translate(18, pad.t + (H - pad.t - pad.b) / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.fillText('Strike / moneyness', 0, 0);
+    ctx.restore();
+  }, 30);
+}
+
+
+
+function updateTicker(sym, q) {
+  const labels = { SPY: 'S&P 500 ETF', QQQ: 'Nasdaq 100 ETF', SPX: 'S&P 500 Index', 'ES=F': 'S&P 500 Futures' };
+  document.getElementById('oc-tk-sym').textContent = sym;
+  document.getElementById('oc-tk-name').textContent = labels[sym] || sym;
+  const g = gexLookup(sym);
+  const spot = (q && q.price) || (g && g.spot) || (_ocVol && _ocVol.spot);
+  const chg = q && q.change_pct != null ? q.change_pct : (q && q.change != null && spot ? (q.change / spot * 100) : null);
+  document.getElementById('oc-tk-price').textContent = spot ? '$' + Number(spot).toFixed(2) : '—';
+  const chEl = document.getElementById('oc-tk-chg');
+  if (chg != null && !isNaN(chg)) {
+    chEl.textContent = (chg >= 0 ? '+' : '') + chg.toFixed(2) + '%';
+    chEl.className = 'oc-ticker-chg ' + (chg >= 0 ? 'pos' : 'neg');
+  } else chEl.textContent = '—';
+}
+
+function renderOverviewTables() {
+  const v = _ocVol;
+  const spot = (v && v.spot) || 0;
+  const ts = (v && v.term_structure) || [];
+  const fmt = n => (n != null && !isNaN(n)) ? Number(n).toLocaleString() : '—';
+  const pcrCls = x => x > 1.05 ? 'oc-pcr-hi' : (x < 0.95 ? 'oc-pcr-lo' : '');
+  let rows = '';
+  ts.forEach(t => {
+    const em = spot && t.atm_iv ? spot * t.atm_iv * Math.sqrt(Math.max(t.dte, 1) / 365) : 0;
+    const emPct = spot ? (em / spot * 100) : 0;
+    const mp = t.max_pain;
+    const mpDist = mp && spot ? (mp - spot) : null;
+    const mpPct = mpDist != null && spot ? (mpDist / spot * 100) : null;
+    rows += `<tr>
+      <td>${t.expiry} <span style="color:var(--muted);font-size:.65rem">(${t.dte}d)</span></td>
+      <td>${fmt(t.call_vol)}</td><td>${fmt(t.put_vol)}</td>
+      <td class="${pcrCls(t.pcr_vol)}">${t.pcr_vol != null ? t.pcr_vol : '—'}</td>
+      <td>${fmt(t.call_oi)}</td><td>${fmt(t.put_oi)}</td>
+      <td class="${pcrCls(t.pcr_oi)}">${t.pcr_oi != null ? t.pcr_oi : '—'}</td>
+      <td>${(t.atm_iv * 100).toFixed(2)}%</td>
+      <td>±${em.toFixed(2)} (${emPct.toFixed(2)}%)</td>
+      <td>${mp != null ? '$' + Number(mp).toFixed(2) : '—'}</td>
+      <td class="${mpDist != null && mpDist < 0 ? 'oc-pcr-hi' : ''}">${mpDist != null ? (mpDist >= 0 ? '+' : '') + mpDist.toFixed(2) + ' (' + (mpPct >= 0 ? '+' : '') + mpPct.toFixed(2) + '%)' : '—'}</td>
+    </tr>`;
+  });
+  const hdr = `<h3 style="font-size:.95rem;font-weight:900;margin:0 0 .5rem">Option Chain Statistics</h3>
+  <p style="font-size:.78rem;color:var(--muted);margin:0 0 .65rem">All ${_ocSym} options grouped by expiration (like OptionCharts.io).</p>
+  <table class="oc-ov-table"><thead>
+    <tr><th rowspan="2">Expiration</th><th colspan="3" class="oc-grp-hdr">Volume</th>
+    <th colspan="3" class="oc-grp-hdr">Open Interest</th>
+    <th rowspan="2">IV</th><th rowspan="2">Expected Move</th>
+    <th rowspan="2">Max Pain</th><th rowspan="2">MP vs Spot</th></tr>
+    <tr><th>Calls</th><th>Puts</th><th>PCR</th><th>Calls</th><th>Puts</th><th>PCR</th></tr>
+  </thead><tbody>${rows || '<tr><td colspan="11">No vol data — refresh or try SPY/QQQ</td></tr>'}</tbody></table>`;
+  const ow = document.getElementById('oc-overview-wrap');
+  const ew = document.getElementById('oc-expected-wrap');
+  if (ow) ow.innerHTML = hdr;
+  if (ew) {
+    ew.innerHTML = `<table class="oc-ov-table"><thead><tr>
+      <th>Expiration</th><th>Expected Move ($)</th><th>Expected Move (%)</th><th>Lower Price</th><th>Upper Price</th><th>IV</th>
+    </tr></thead><tbody>${ts.map(t => {
+      const em = spot && t.atm_iv ? spot * t.atm_iv * Math.sqrt(Math.max(t.dte, 1) / 365) : 0;
+      const emPct = spot ? (em / spot * 100) : 0;
+      return `<tr><td>${t.expiry} (${t.dte}d)</td><td>±$${em.toFixed(2)}</td><td>±${emPct.toFixed(2)}%</td>
+        <td>$${(spot - em).toFixed(2)}</td><td>$${(spot + em).toFixed(2)}</td><td>${(t.atm_iv*100).toFixed(2)}%</td></tr>`;
+    }).join('')}</tbody></table>`;
+  }
+}
+
+function renderGexStats() {
+  const box = document.getElementById('oc-gex-stats');
+  const a = gexLookup(_ocSym);
+  if (!box) return;
+  if (!a) { box.innerHTML = ''; return; }
+  const pos = (a.gex || []).filter(g => g > 0).reduce((s, g) => s + g, 0);
+  const neg = (a.gex || []).filter(g => g < 0).reduce((s, g) => s + g, 0);
+  const items = [
+    ['Net GEX ($M)', a.total_gex_m != null ? a.total_gex_m + 'M' : '—'],
+    ['Call GEX ($M)', pos ? '+' + pos.toFixed(1) + 'M' : '—'],
+    ['Put GEX ($M)', neg ? neg.toFixed(1) + 'M' : '—'],
+    ['Call Wall', a.call_wall || a.gamma_wall || '—'],
+    ['Put Wall', a.put_wall || '—'],
+    ['Gamma Flip', a.flip_level || '—'],
+    ['Regime', a.regime || '—'],
+    ['PCR OI', a.pcr != null ? a.pcr : '—'],
+  ];
+  box.innerHTML = items.map(([l, v]) =>
+    `<div class="oc-gex-st"><div class="oc-gex-st-l">${l}</div><div class="oc-gex-st-v">${v}</div></div>`
+  ).join('');
+}
+
+function drawGreekCurve(canvasId, greekKey, title) {
+  const cv = document.getElementById(canvasId);
+  const row = greeksRow();
+  const curves = row && row.curves;
+  if (!cv) return;
+  const redraw = () => drawGreekCurve(canvasId, greekKey, title);
+  const W0 = cv.parentElement ? cv.parentElement.clientWidth : 0;
+  if (!curves || !curves.strikes || !curves.strikes.length) {
+    cv.width = Math.max(W0, 200); cv.height = 80;
+    const ctx0 = cv.getContext('2d');
+    ctx0.fillStyle = '#070d18'; ctx0.fillRect(0, 0, cv.width, cv.height);
+    ctx0.fillStyle = '#64748b'; ctx0.font = '14px sans-serif'; ctx0.textAlign = 'center';
+    ctx0.fillText('Loading Greeks…', cv.width / 2, 44);
+    return;
+  }
+  const spot = row.spot || ocDisplaySpot() || 0;
+  const strikes = curves.strikes;
+  const cvals = curves.call[greekKey] || [];
+  const pvals = curves.put[greekKey] || [];
+  const { ctx, W, H } = ocSetupCanvas(cv, 220, canvasId, redraw);
+  const pad = ocPad('cartesian');
+  const all = cvals.concat(pvals).filter(x => x != null && !isNaN(x));
+  if (!all.length) return;
+  let minV = Math.min(...all), maxV = Math.max(...all);
+  if (minV === maxV) { minV -= 1; maxV += 1; }
+  const lo0 = Math.min(...strikes), hi0 = Math.max(...strikes);
+  const z = ocZoomGet(canvasId);
+  const [lo, hi] = ocZoomWindow(lo0, hi0, z);
+  const xp = k => pad.l + ((k - lo) / (hi - lo || 1)) * (W - pad.l - pad.r);
+  const yp = v => pad.t + (1 - (v - minV) / (maxV - minV)) * (H - pad.t - pad.b);
+  ctx.fillStyle = '#070d18'; ctx.fillRect(0, 0, W, H);
+  ocDrawCartesianAxes(ctx, W, H, pad, {
+    xLabel: 'Strike ($)', yLabel: title,
+    xTicks: ocNiceTicks(lo, hi, 6), yTicks: ocNiceTicks(minV, maxV, 5),
+    fmtX: v => ocFmtPrice(v, 0), fmtY: v => String(+v.toFixed(4)),
+    xp, yp,
+  });
+  const drawLine = (vals, color) => {
+    ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.beginPath();
+    let started = false;
+    strikes.forEach((k, i) => {
+      if (k < lo || k > hi) return;
+      const v = vals[i]; if (v == null) return;
+      const x = xp(k), y = yp(v);
+      if (!started) { ctx.moveTo(x, y); started = true; } else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+  };
+  drawLine(cvals, '#22c55e');
+  drawLine(pvals, '#f87171');
+  if (spot >= lo && spot <= hi) {
+    const sx = xp(spot);
+    ctx.strokeStyle = 'rgba(251,191,36,.75)'; ctx.setLineDash([4, 3]);
+    ctx.beginPath(); ctx.moveTo(sx, pad.t); ctx.lineTo(sx, H - pad.b); ctx.stroke();
+    ctx.setLineDash([]);
+  }
+}
+
+async function drawGreekCharts() {
+  await ensureGreeksReady();
+  requestAnimationFrame(() => {
+    drawGreekCurve('cv-gd', 'delta', 'Delta');
+    drawGreekCurve('cv-gg', 'gamma', 'Gamma');
+    drawGreekCurve('cv-gt', 'theta', 'Theta');
+    drawGreekCurve('cv-gv', 'vega', 'Vega');
+  });
+}
+
+function renderUnusual() {
+  const wrap = document.getElementById('oc-unusual-wrap');
+  const f = flowLookup(_ocSym);
+  if (!wrap) return;
+  const u = (f && f.unusual) || [];
+  if (!u.length) {
+    wrap.innerHTML = '<p style="color:var(--muted)">No unusual activity flagged (volume &gt; 2× OI, vol &gt; 500).</p>';
+    return;
+  }
+  let html = '<table class="oc-unusual-tbl"><thead><tr><th>Symbol</th><th>Type</th><th>Strike</th><th>Expiration</th><th>Vol/OI</th><th>Volume</th><th>Open Interest</th></tr></thead><tbody>';
+  u.slice(0, 30).forEach(x => {
+    const cls = (x.type || '').toLowerCase() === 'put' ? 'put' : 'call';
+    html += `<tr class="${cls}"><td>${_ocSym}</td><td>${x.type}</td><td>$${x.strike}</td><td>${x.expiry || '—'}</td><td>${x.ratio}x</td><td>${(x.vol||0).toLocaleString()}</td><td>${(x.oi||0).toLocaleString()}</td></tr>`;
+  });
+  html += '</tbody></table>';
+  wrap.innerHTML = '<div class="oc-table-scroll">' + html + '</div>';
+}
+
+
+function setPriceTf(btn) {
+  _priceInterval = btn.dataset.iv;
+  _pricePeriod = btn.dataset.pr;
+  document.querySelectorAll('.oc-tf-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const sym = GEX_FETCH[_ocSym] || _ocSym;
+  fetch(`${API}/api/candles/${encodeURIComponent(sym)}?interval=${_priceInterval}&period=${_pricePeriod}&nocache=1`)
+    .then(r => r.json()).then(d => { _ocCandles = Array.isArray(d) ? d : []; drawPriceChart(); })
+    .catch(() => {});
+}
+
+function ocSma(closes, period) {
+  const out = [];
+  for (let i = 0; i < closes.length; i++) {
+    if (i < period - 1) continue;
+    let s = 0;
+    for (let j = i - period + 1; j <= i; j++) s += closes[j];
+    out.push({ i, v: s / period });
+  }
+  return out;
+}
+
+function ocBollinger(closes, period, mult) {
+  const mid = [], up = [], lo = [];
+  for (let i = period - 1; i < closes.length; i++) {
+    let s = 0;
+    for (let j = i - period + 1; j <= i; j++) s += closes[j];
+    const m = s / period;
+    let v = 0;
+    for (let j = i - period + 1; j <= i; j++) v += (closes[j] - m) ** 2;
+    const sd = Math.sqrt(v / period) * mult;
+    mid.push({ i, v: m }); up.push({ i, v: m + sd }); lo.push({ i, v: m - sd });
+  }
+  return { mid, up, lo };
+}
+
+function drawPriceChart() {
+  const el = document.getElementById('oc-price-chart');
+  if (!el || !_ocCandles.length) {
+    if (el) el.innerHTML = '<div class="oc-loading">No price data</div>';
+    return;
+  }
+  if (_priceChart) { try { _priceChart.remove(); } catch (e) {} _priceChart = null; }
+  el.innerHTML = '';
+  const chart = (window.createLwcChart || LightweightCharts.createChart)(el, ocLwcOptions());
+  const cs = chart.addCandlestickSeries({
+    upColor: '#22c55e', downColor: '#ef4444', borderVisible: false,
+    wickUpColor: '#22c55e', wickDownColor: '#ef4444',
+  });
+  const data = _ocCandles.map(b => ({
+    time: b.time > 1e12 ? Math.floor(b.time / 1000) : b.time,
+    open: b.open, high: b.high, low: b.low, close: b.close,
+  }));
+  cs.setData(data);
+  const closes = data.map(d => d.close);
+  const addOverlay = (vals, color, width, title) => {
+    const s = chart.addLineSeries({ color, lineWidth: width, title, priceLineVisible: false, lastValueVisible: false });
+    const pts = vals.map(x => ({ time: data[x.i].time, value: +x.v.toFixed(4) }));
+    if (pts.length) s.setData(pts);
+  };
+  addOverlay(ocSma(closes, 20), '#38bdf8', 1.5, 'SMA 20');
+  addOverlay(ocSma(closes, 50), '#a78bfa', 1.5, 'SMA 50');
+  const bb = ocBollinger(closes, 20, 2);
+  addOverlay(bb.mid, 'rgba(251,191,36,.85)', 1, 'BB Mid');
+  addOverlay(bb.up, 'rgba(251,191,36,.45)', 1, 'BB Upper');
+  addOverlay(bb.lo, 'rgba(251,191,36,.45)', 1, 'BB Lower');
+  chart.timeScale().fitContent();
+  _priceChart = chart;
+  ocLwcAxisHint(el, 'Time', 'Price ($)');
+}
+
+function _strikeWindow(strikes, spot, pct) {
+  const lo = spot * (1 - pct), hi = spot * (1 + pct);
+  let idx = strikes.map((k, i) => i).filter(i => strikes[i] >= lo && strikes[i] <= hi);
+  if (!idx.length) idx = strikes.map((_, i) => i);
+  if (idx.length > 40) {
+    idx.sort((a, b) => Math.abs(strikes[a] - spot) - Math.abs(strikes[b] - spot));
+    idx = idx.slice(0, 40).sort((a, b) => strikes[a] - strikes[b]);
+  }
+  return idx;
+}
+
+function drawOiChart() {
+  const cv = document.getElementById('cv-oi');
+  const g = gexLookup(_ocSym);
+  if (!cv || !g || !g.strikes) return;
+  const redraw = () => drawOiChart();
+  const { ctx, W, H } = ocSetupCanvas(cv, 380, 'cv-oi', redraw);
+  const strikes = g.strikes, coi = g.call_oi || [], poi = g.put_oi || [];
+  const spot = g.spot || 0;
+  let idx = _strikeWindow(strikes, spot, 0.15);
+  const z = ocZoomGet('cv-oi');
+  const i0 = Math.floor(idx.length * z.yMin), i1 = Math.ceil(idx.length * z.yMax) || idx.length;
+  idx = idx.slice(i0, Math.max(i1, i0 + 2));
+  const n = idx.length;
+  const maxO0 = Math.max(1, ...idx.map(i => (coi[i] || 0) + (poi[i] || 0)));
+  const [vLo, vHi] = ocZoomWindow(0, maxO0, z);
+  const maxO = Math.max(vHi - vLo, 1);
+  const pad = ocPad('hbar');
+  const rowH = (H - pad.t - pad.b) / Math.max(n, 1);
+  const cx = pad.l + (W - pad.l - pad.r) / 2;
+  ctx.fillStyle = '#070d18'; ctx.fillRect(0, 0, W, H);
+  const yp = ri => pad.t + (n - 1 - ri) * rowH + rowH / 2;
+  idx.forEach((ii, ri) => {
+    const y = yp(ri) - rowH / 2 + 2;
+    let c = coi[ii] || 0, p = poi[ii] || 0;
+    if (_ocSide === 'call') p = 0;
+    if (_ocSide === 'put') c = 0;
+    const bw = ((W - pad.l - pad.r) / 2) * Math.max(c, p) / maxO;
+    if (c > 0) { ctx.fillStyle = '#16a34a'; ctx.fillRect(cx, y, (c / maxO) * bw, rowH - 4); }
+    if (p > 0) { ctx.fillStyle = '#dc2626'; ctx.fillRect(cx - (p / maxO) * bw, y, (p / maxO) * bw, rowH - 4); }
+  });
+  ocDrawHBarAxes(ctx, W, H, pad, {
+    yLabel: 'Strike ($)', xLabel: 'Open interest (contracts)',
+    yTicks: idx.map(i => strikes[i]),
+    xTicks: ocNiceTicks(vLo, maxO0, 4),
+    fmtX: v => Math.round(v).toLocaleString(),
+    fmtY: v => ocFmtPrice(v, 0),
+    yp: v => {
+      const ri = idx.findIndex(ii => strikes[ii] === v);
+      return pad.t + (n - 1 - ri) * rowH + rowH / 2;
+    },
+    xp: v => pad.l + ((v - vLo) / maxO) * (W - pad.l - pad.r) * 0.25,
+  });
+}
+
+function drawMaxPainChart() {
+  const cv = document.getElementById('cv-maxpain');
+  const f = flowLookup(_ocSym);
+  const g = gexLookup(_ocSym);
+  const meta = document.getElementById('oc-maxpain-meta');
+  if (!cv) return;
+  const strikes = (f && f.strikes) || (g && g.strikes) || [];
+  if (!strikes.length) {
+    const ctx = cv.getContext('2d');
+    cv.width = 400; cv.height = 80;
+    ctx.fillStyle = '#070d18'; ctx.fillRect(0, 0, 400, 80);
+    ctx.fillStyle = '#64748b'; ctx.textAlign = 'center'; ctx.fillText('No OI data', 200, 40);
+    return;
+  }
+  const spot = (f && f.spot) || (g && g.spot) || 0;
+  const mp = f && f.max_pain_strike;
+  const pin = f && f.pin_risk_strike;
+  const coi = (g && g.call_oi) || [];
+  const poi = (g && g.put_oi) || [];
+  const tot = strikes.map((k, i) => (coi[i] || 0) + (poi[i] || 0));
+  const idx = _strikeWindow(strikes, spot, 0.12);
+  const n = idx.length;
+  const redraw = () => drawMaxPainChart();
+  const { ctx, W, H } = ocSetupCanvas(cv, 400, 'cv-maxpain', redraw);
+  const z = ocZoomGet('cv-maxpain');
+  const i0 = Math.floor(n * z.xMin), i1 = Math.ceil(n * z.xMax) || n;
+  const useI = idx.slice(i0, Math.max(i1, i0 + 2));
+  const nn = useI.length;
+  const maxT0 = Math.max(1, ...useI.map(i => tot[i] || 0));
+  const [tLo, tHi] = ocZoomWindow(0, maxT0, { xMin: z.yMin, xMax: z.yMax });
+  const maxT = Math.max(tHi - tLo, 1);
+  const pad = ocPad('vbar');
+  const barW = (W - pad.l - pad.r) / Math.max(nn, 1);
+  const loK = strikes[useI[0]], hiK = strikes[useI[useI.length - 1]];
+  ctx.fillStyle = '#070d18'; ctx.fillRect(0, 0, W, H);
+  const xp = i => pad.l + i * barW + barW / 2;
+  const yp = v => H - pad.b - ((v - tLo) / maxT) * (H - pad.t - pad.b);
+  useI.forEach((ii, i) => {
+    const h = ((tot[ii] || 0) - tLo) / maxT * (H - pad.t - pad.b);
+    const x = pad.l + i * barW + 1;
+    const y = H - pad.b - h;
+    const isMp = mp && Math.abs(strikes[ii] - mp) < (strikes[ii] * 0.002 + 0.5);
+    const isPin = pin && Math.abs(strikes[ii] - pin) < (strikes[ii] * 0.002 + 0.5);
+    ctx.fillStyle = isMp ? '#a78bfa' : isPin ? '#fbbf24' : 'rgba(56,189,248,.55)';
+    ctx.fillRect(x, y, barW - 2, h);
+  });
+  ocDrawVBarAxes(ctx, W, H, pad, {
+    xLabel: 'Strike ($)', yLabel: 'Total OI (calls + puts)',
+    xTicks: useI.length <= 8 ? useI.map(i => strikes[i]) : ocNiceTicks(loK, hiK, 6),
+    yTicks: ocNiceTicks(tLo, maxT0, 5),
+    fmtX: v => ocFmtPrice(v, 0), fmtY: v => Math.round(v).toLocaleString(),
+    xp: v => {
+      const i = useI.findIndex(ii => strikes[ii] === v);
+      return i >= 0 ? pad.l + i * barW + barW / 2 : pad.l;
+    },
+    yp,
+  });
+  if (spot && strikes[useI[0]] <= spot && spot <= strikes[useI[useI.length - 1]]) {
+    const si = useI.reduce((b, ii, i) => Math.abs(strikes[ii] - spot) < Math.abs(strikes[useI[b]] - spot) ? i : b, 0);
+    const sx = pad.l + si * barW + barW / 2;
+    ctx.strokeStyle = '#fbbf24'; ctx.setLineDash([4, 3]);
+    ctx.beginPath(); ctx.moveTo(sx, pad.t); ctx.lineTo(sx, H - pad.b); ctx.stroke();
+    ctx.setLineDash([]);
+  }
+  if (meta) {
+    meta.textContent = `Max pain: $${mp || '—'} · Pin (max OI): $${pin || '—'} · Spot: $${spot ? spot.toFixed(2) : '—'}`;
+  }
+}
+
+function drawDexChart() {
+  const cv = document.getElementById('cv-dex');
+  const f = flowLookup(_ocSym);
+  if (!cv || !f || !f.dealer_delta_k) return;
+  const redraw = () => drawDexChart();
+  const { ctx, W, H } = ocSetupCanvas(cv, 380, 'cv-dex', redraw);
+  const strikes = f.strikes || [], dex = f.dealer_delta_k || [];
+  const spot = f.spot || 0;
+  let idx = _strikeWindow(strikes, spot, 0.15);
+  const z = ocZoomGet('cv-dex');
+  const i0 = Math.floor(idx.length * z.yMin), i1 = Math.ceil(idx.length * z.yMax) || idx.length;
+  idx = idx.slice(i0, Math.max(i1, i0 + 2));
+  const n = idx.length;
+  const maxD0 = Math.max(1, ...idx.map(i => Math.abs(dex[i] || 0)));
+  const [vLo, vHi] = ocZoomWindow(0, maxD0, z);
+  const maxD = Math.max(vHi - vLo, 1);
+  const pad = ocPad('hbar');
+  const rowH = (H - pad.t - pad.b) / Math.max(n, 1);
+  const cx = pad.l + (W - pad.l - pad.r) / 2;
+  ctx.fillStyle = '#070d18'; ctx.fillRect(0, 0, W, H);
+  const yp = ri => pad.t + (n - 1 - ri) * rowH + rowH / 2;
+  idx.forEach((ii, ri) => {
+    const y = yp(ri) - rowH / 2 + 2;
+    const d = dex[ii] || 0;
+    const bw = (Math.abs(d) / maxD) * ((W - pad.l - pad.r) / 2);
+    if (d >= 0) { ctx.fillStyle = '#38bdf8'; ctx.fillRect(cx, y, bw, rowH - 4); }
+    else { ctx.fillStyle = '#fb923c'; ctx.fillRect(cx - bw, y, bw, rowH - 4); }
+  });
+  ocDrawHBarAxes(ctx, W, H, pad, {
+    yLabel: 'Strike ($)', xLabel: 'Dealer Δ exposure ($K)',
+    yTicks: idx.map(i => strikes[i]),
+    xTicks: ocNiceTicks(vLo, maxD0, 4),
+    fmtX: v => Math.round(v) + 'K',
+    fmtY: v => ocFmtPrice(v, 0),
+    yp: v => {
+      const ri = idx.findIndex(ii => strikes[ii] === v);
+      return pad.t + (n - 1 - ri) * rowH + rowH / 2;
+    },
+    xp: v => pad.l + ((v - vLo) / maxD) * (W - pad.l - pad.r) * 0.25,
+  });
+}
+
+function drawProbChart(v) {
+  const cv = document.getElementById('cv-prob');
+  if (!cv || !v) return;
+  const g = gexLookup(_ocSym);
+  const spot = (g && g.spot) || v.spot || 100;
+  const iv = v.atm_iv || 0.22;
+  const dte = (v.term_structure && v.term_structure[0] && v.term_structure[0].dte) || 30;
+  const T = Math.max(dte, 1) / 365;
+  const sig = iv * Math.sqrt(T);
+  /* setup moved below */
+  const redraw = () => drawProbChart(v);
+  const { ctx, W, H } = ocSetupCanvas(cv, 320, 'cv-prob', redraw);
+  const pad = ocPad('cartesian');
+  const lo0 = spot * 0.82, hi0 = spot * 1.18;
+  const z = ocZoomGet('cv-prob');
+  const [lo, hi] = ocZoomWindow(lo0, hi0, z);
+  const n = 80;
+  const xs = [], ys = [];
+  let maxY = 0;
+  for (let i = 0; i <= n; i++) {
+    const S = lo + (hi - lo) * (i / n);
+    const ln = Math.log(S / spot);
+    const pdf = (1 / (S * sig * Math.sqrt(2 * Math.PI))) * Math.exp(-(ln * ln) / (2 * sig * sig));
+    xs.push(S); ys.push(pdf);
+    if (pdf > maxY) maxY = pdf;
+  }
+  const xp = S => pad.l + ((S - lo) / (hi - lo || 1)) * (W - pad.l - pad.r);
+  const yp = y => pad.t + (1 - y / maxY) * (H - pad.t - pad.b);
+  ctx.fillStyle = '#070d18'; ctx.fillRect(0, 0, W, H);
+  ocDrawCartesianAxes(ctx, W, H, pad, {
+    xLabel: 'Price at expiry ($)', yLabel: 'Probability density',
+    xTicks: ocNiceTicks(lo, hi, 6), yTicks: ocNiceTicks(0, maxY, 5),
+    fmtX: val => ocFmtPrice(val, 0), fmtY: val => val.toFixed(4),
+    xp, yp,
+  });
+  ctx.beginPath();
+  xs.forEach((S, i) => { const x = xp(S), y = yp(ys[i]); i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y); });
+  ctx.lineTo(xp(hi), H - pad.b); ctx.lineTo(xp(lo), H - pad.b);
+  ctx.closePath();
+  ctx.fillStyle = 'rgba(34,211,238,.2)'; ctx.fill();
+  ctx.strokeStyle = '#22d3ee'; ctx.lineWidth = 2; ctx.stroke();
+  const p1 = spot * Math.exp(-sig), p2 = spot * Math.exp(sig);
+  [[p1, '−1σ'], [spot, 'Spot'], [p2, '+1σ']].forEach(([px, lbl]) => {
+    if (px < lo || px > hi) return;
+    const x = xp(px);
+    ctx.strokeStyle = 'rgba(251,191,36,.55)'; ctx.setLineDash([3, 3]);
+    ctx.beginPath(); ctx.moveTo(x, pad.t); ctx.lineTo(x, H - pad.b); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = '#fbbf24'; ctx.font = OC_AXIS.tick; ctx.textAlign = 'center';
+    ctx.fillText(lbl, x, H - pad.b + 18);
+  });
+}
+
+function legPnlAt(S, leg) {
+  const prem = (leg.premium || 0) * 100;
+  const intr = leg.type === 'call'
+    ? Math.max(0, S - leg.strike) * 100
+    : Math.max(0, leg.strike - S) * 100;
+  return leg.action === 'BUY' ? intr - prem : prem - intr;
+}
+
+function renderGreeks() {
+  const wrap = document.getElementById('oc-greeks-wrap');
+  if (!wrap) return;
+  const row = greeksRow();
+  if (!row || !row.strikes) {
+    wrap.innerHTML = '<p style="color:var(--muted)">No Greeks data.</p>';
+    return;
+  }
+  let html = '<table class="oc-greeks-tbl"><thead><tr><th>Strike</th><th>Type</th><th>Δ</th><th>Γ</th><th>Θ</th><th>V</th><th>IV</th></tr></thead><tbody>';
+  const n = Math.min(row.strikes.length, 24);
+  for (let i = 0; i < n; i++) {
+    html += `<tr><td>${row.strikes[i]}</td><td>${row.types[i] || '—'}</td>`;
+    html += `<td>${(row.delta && row.delta[i] != null) ? row.delta[i].toFixed(3) : '—'}</td>`;
+    html += `<td>${(row.gamma && row.gamma[i] != null) ? row.gamma[i].toFixed(4) : '—'}</td>`;
+    html += `<td>${(row.theta && row.theta[i] != null) ? row.theta[i].toFixed(3) : '—'}</td>`;
+    html += `<td>${(row.vega && row.vega[i] != null) ? row.vega[i].toFixed(3) : '—'}</td>`;
+    html += `<td>${(row.iv && row.iv[i] != null) ? (row.iv[i] * 100).toFixed(1) + '%' : '—'}</td></tr>`;
+  }
+  html += '</tbody></table>';
+  wrap.innerHTML = '<div class="oc-table-scroll">' + html + '</div>';
+}
+
+function renderStrategy() {
+  const wrap = document.getElementById('oc-strat-wrap');
+  if (!wrap) return;
+  ocRenderSuggestionCards();
+  const s = stratLookup(_ocSym);
+  const st = s && s.strategy && typeof s.strategy === 'object' ? s.strategy : null;
+  const primary = ocResolveStrategy('ml') || ocCollectSuggestions()[0];
+  if (!primary && !st) {
+    wrap.innerHTML = '<p style="color:var(--muted)">Building suggestions from option chain and GEX… pick a template card below or Refresh.</p>';
+    ocRenderAllPnlCharts();
+    return;
+  }
+  const show = primary || { name: st.name, legs: st.legs, rationale: st.description, dir: st.direction, meta: st };
+  const stObj = show.meta || st;
+  const name = show.name || 'Strategy';
+  const dir = show.dir || (s && s.direction) || '';
+  const conv = (stObj && stObj.prob_profit != null) ? (stObj.prob_profit * 100).toFixed(0) + '% PoP'
+    : (s && s.conviction != null ? (s.conviction * 100).toFixed(0) + '%' : '');
+  let legsHtml = '';
+  const legs = show.legs || (st && st.legs);
+  if (legs && legs.length) {
+    legsHtml = '<div class="oc-table-scroll" style="margin-top:.5rem"><table class="oc-greeks-tbl"><thead><tr><th>Action</th><th>Type</th><th>Strike</th><th>Premium</th><th>Expiry</th></tr></thead><tbody>' +
+      legs.map(l => {
+        const sk = _ocSym === 'SPX' ? (l.strike * ocRatio()).toFixed(2) : l.strike;
+        return `<tr><td>${l.action}</td><td>${l.type}</td><td>$${sk}</td><td>$${(l.premium||0).toFixed(2)}</td><td>${l.expiry||'—'}</td></tr>`;
+      }).join('') + '</tbody></table></div>';
+  }
+  let stats = '';
+  if (stObj) {
+    const be = (stObj.breakeven || []).map(b => '$' + b).join(', ');
+    stats = `<p style="font-size:.78rem;color:var(--muted);margin-top:.4rem">Max profit: ${stObj.max_profit != null ? '$' + stObj.max_profit : '∞'} · Max loss: $${stObj.max_loss || '—'} · Breakeven: ${be || '—'}</p>`;
+  }
+  wrap.innerHTML = `<div class="oc-strat-name">${name}</div>
+    <p><b>Direction:</b> ${dir || '—'} &nbsp; <b>Conviction / PoP:</b> ${conv || '—'}</p>
+    <p style="line-height:1.6">${show.rationale || (s && (s.rationale || s.analysis)) || 'Rule-based structure from ML signals + live chain.'}</p>${stats}${legsHtml}`;
+  ocRenderAllPnlCharts();
+}
+
+window.addEventListener('load', () => {
+  const params = new URLSearchParams(location.search);
+  const q = params.get('symbol') || params.get('sym');
+  if (q) _ocSym = q.toUpperCase();
+  buildAssetBar();
+  buildPills();
+  buildPnlPickers();
+  document.getElementById('oc-chart-title').textContent = 'Option Chain';
+  document.getElementById('oc-chart-sub').textContent = 'Full chain — bid/ask/vol/OI/Greeks';
+  loadAsset(_ocSym, false).then(() => {
+    const btn = document.querySelector('.oc-sec-btn[data-sec="chain"]');
+    if (btn) setSection('chain', btn);
+  });
+});
+window.addEventListener('resize', () => { if (_ocVol || _ocGex) redraw(); });
+</script>
+  <script src="page-export.js"></script>
+</body>
+</html>

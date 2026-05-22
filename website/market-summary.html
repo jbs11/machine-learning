@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Market Summary — ML Trading Dashboard</title>
   <link rel="preload" href="style.css" as="style" fetchpriority="high">
+  <link rel="stylesheet" href="page-export.css">
   <link rel="stylesheet" href="style.css">
   <style>
     /* ── Page Layout ── */
@@ -538,6 +539,7 @@
   </style>
   <link rel="preload" href="lightweight-charts.min.js" as="script">
   <script src="lightweight-charts.min.js"></script>
+  <script src="chart-draw-tools.js"></script>
 </head>
 <body>
 
@@ -558,6 +560,8 @@
   <a href="ml-xgboost-assets.html">XGBoost Charts 📊</a>
   <span class="page-nav-sep">|</span>
   <a href="gamma-exposure.html">GEX Charts 🎯</a>
+  <span class="page-nav-sep">|</span>
+  <a href="treasury-yields.html" style="color:#fbbf24;font-weight:700;">&#128176; Treasury Yields</a>
   <span class="page-nav-sep">|</span>
   <a href="options-strategy.html">Options Strategy 📈</a>
   <span class="page-nav-sep">|</span>
@@ -1251,7 +1255,7 @@ function buildForecastChart(sym, candles) {
     delete fCharts[sym];
   }
 
-  const chart = LightweightCharts.createChart(chartEl, {
+  const chart = (window.createLwcChart || LightweightCharts.createChart)(chartEl, {
     autoSize: true,
     layout: { background: { type: 'solid', color: '#0f172a' }, textColor: '#94a3b8' },
     grid:    { vertLines: { color: '#1e293b' }, horzLines: { color: '#1e293b' } },
@@ -2555,5 +2559,6 @@ window.ibkrOnConnect = function() {
 };
 </script>
 <script src="search.js" defer></script>
+  <script src="page-export.js"></script>
 </body>
 </html>

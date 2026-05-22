@@ -5,9 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Options Summary — All Assets</title>
   <link rel="preload" href="style.css" as="style" fetchpriority="high">
+  <link rel="stylesheet" href="page-export.css">
   <link rel="stylesheet" href="style.css">
   <link rel="preload" href="lightweight-charts.min.js" as="script">
   <script src="lightweight-charts.min.js"></script>
+  <script src="chart-draw-tools.js"></script>
   <style>
     /* ── Layout ── */
     .os-wrap { max-width: 1600px; margin: 0 auto; padding: 0 1.5rem 6rem; }/* ── Hero ── */
@@ -569,6 +571,7 @@
     <li><a href="ml-sp500-example.html">ML Example</a></li>
     <li><a href="stock-trading.html">Stock Trading</a></li>
     <li><a href="options-trading.html">Options</a></li>
+    <li><a href="option-charts.html" style="color:#fbbf24;font-weight:700;">&#128202; Option Charts</a></li>
     <li><a href="futures-trading.html">Futures</a></li>
     <li><a href="brokers.html">Brokers</a></li>
     <li><a href="algorithms-bots.html" style="color:#4ade80;font-weight:700;">&#129302; Algo Bots</a></li>
@@ -581,6 +584,7 @@
     <li><a href="asset-details.html">&#128202; Asset Review</a></li>
     <li><a href="gex-heatmap.html" style="color:#22d3ee;font-weight:700;">&#127777; GEX Heat Maps</a></li>
     <li><a href="spx-correlations.html" style="color:#a78bfa;font-weight:700;">&#128202; SPX Correlations</a></li>
+    <li><a href="treasury-yields.html" style="color:#fbbf24;font-weight:700;">&#128176; Treasury Yields</a></li>
     <li><a href="vix-dashboard.html" style="color:#f87171;font-weight:700;">&#128293; VIX Dashboard</a></li>
     <li><a href="the-edge.html" style="color:#fbbf24;font-weight:700;">&#9889; The EDGE</a></li>
     <li><a href="real-time-news.html" style="color:#4ade80;font-weight:700;">&#128240; Real-Time News</a></li>
@@ -1546,7 +1550,7 @@ function drawTermStructure(a) {
   el.innerHTML = '';
 
   const LW = LightweightCharts;
-  const chart = LW.createChart(el, {
+  const chart = (window.createLwcChart || LW.createChart)(el, {
     autoSize: true,
     layout: { background: { type: 'solid', color: '#070d18' }, textColor: 'rgba(127,163,190,.9)' },
     grid: { vertLines: { color: '#1e293b' }, horzLines: { color: '#1e293b' } },
@@ -1917,7 +1921,7 @@ function drawForecastChart(a, daily) {
   el.innerHTML = '';
 
   const LW    = LightweightCharts;
-  const chart = LW.createChart(el, {
+  const chart = (window.createLwcChart || LW.createChart)(el, {
     autoSize: true,
     layout: { background: { type: 'solid', color: '#070d18' }, textColor: 'rgba(127,163,190,.9)' },
     grid: { vertLines: { color: '#1e293b' }, horzLines: { color: '#1e293b' } },
@@ -2129,5 +2133,6 @@ function renderForecastGuide() {
 }
 </script>
 <script src="search.js" defer></script>
+  <script src="page-export.js"></script>
 </body>
 </html>

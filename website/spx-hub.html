@@ -5,8 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SPX Hub — Charts, Gamma, Breadth &amp; Volatility</title>
   <link rel="preload" href="style.css" as="style" fetchpriority="high">
+  <link rel="stylesheet" href="page-export.css">
   <link rel="preload" href="lightweight-charts.min.js" as="script">
   <script src="lightweight-charts.min.js"></script>
+  <script src="chart-draw-tools.js"></script>
   <link rel="stylesheet" href="style.css">
   <style>
     .wrap { max-width: 1600px; margin: 0 auto; padding: 0 1.5rem 6rem; }
@@ -282,6 +284,7 @@ if (window.location.search.indexOf('_v=') === -1) {
     <li><a href="forecast.html" style="color:#f59e0b;font-weight:700;">&#128200; Forecast</a></li>
     <li><a href="gex-heatmap.html" style="color:#22d3ee;font-weight:700;">&#127777; GEX Heat Maps</a></li>
     <li><a href="spx-correlations.html" style="color:#a78bfa;font-weight:700;">&#128202; SPX Correlations</a></li>
+    <li><a href="treasury-yields.html" style="color:#fbbf24;font-weight:700;">&#128176; Treasury Yields</a></li>
     <li><a href="vix-dashboard.html" style="color:#f87171;font-weight:700;">&#128293; VIX Dashboard</a></li>
     <li><a href="the-edge.html" style="color:#fbbf24;font-weight:700;">&#9889; The EDGE</a></li>
     <li><a href="real-time-news.html" style="color:#4ade80;font-weight:700;">&#128240; Real-Time News</a></li>
@@ -323,10 +326,12 @@ if (window.location.search.indexOf('_v=') === -1) {
       <div class="k">Quick Links</div>
       <div class="links" style="margin-top:.55rem">
         <a class="pill hi" href="gex-profile.html">&#128200; GEX Profile</a>
+        <a class="pill hi" href="option-charts.html">&#128202; Option Charts</a>
         <a class="pill" href="gamma-exposure.html">&#127919; GEX Charts</a>
         <a class="pill" href="gex-heatmap.html">&#127777; GEX Heatmap</a>
         <a class="pill" href="0dte-options.html">&#128293; 0DTE</a>
         <a class="pill" href="spx-correlations.html">&#128202; Correlations</a>
+        <a class="pill hi" href="treasury-yields.html">&#128176; Treasury Yields</a>
         <a class="pill" href="vix-dashboard.html">&#128293; VIX</a>
       </div>
     </div>
@@ -1532,7 +1537,7 @@ function initGexTimeChart(){
     // Force a consistent, readable intraday label like "8:00 AM"
     return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
   };
-  const chart = LightweightCharts.createChart(el, {
+  const chart = (window.createLwcChart || LightweightCharts.createChart)(el, {
     layout: { background: { color:'#070d18' }, textColor:'rgba(255,255,255,.75)' },
     grid: { vertLines:{ color:'rgba(255,255,255,.06)' }, horzLines:{ color:'rgba(255,255,255,.06)' } },
     rightPriceScale: { borderColor:'rgba(255,255,255,.12)', visible:true },
@@ -1964,7 +1969,7 @@ function initIvCharts(){
   if (!elTerm || !elIntra) return;
   if (_ivCharts.term && _ivCharts.intra) return;
 
-  const mk = (el, height)=> LightweightCharts.createChart(el, {
+  const mk = (el, height)=> (window.createLwcChart || LightweightCharts.createChart)(el, {
     layout: { background: { color:'#070d18' }, textColor:'rgba(255,255,255,.75)' },
     grid: { vertLines:{ color:'rgba(255,255,255,.06)' }, horzLines:{ color:'rgba(255,255,255,.06)' } },
     rightPriceScale: { borderColor:'rgba(255,255,255,.12)' },
@@ -2303,7 +2308,7 @@ function initDteProjChart(){
   if (!el) return;
   if (_dteProj.chart) return;
   el.innerHTML = '';
-  const chart = LightweightCharts.createChart(el, {
+  const chart = (window.createLwcChart || LightweightCharts.createChart)(el, {
     layout: { background: { color:'#070d18' }, textColor:'rgba(255,255,255,.75)' },
     grid: { vertLines:{ color:'rgba(255,255,255,.06)' }, horzLines:{ color:'rgba(255,255,255,.06)' } },
     rightPriceScale: { borderColor:'rgba(255,255,255,.12)' },
@@ -2534,5 +2539,6 @@ setInterval(()=> { try{ loadSpxGreeks(false); }catch(e){} }, 60 * 1000);
 setInterval(()=> { try{ loadSp500Map(false); }catch(e){} }, 5 * 60 * 1000);
 setInterval(()=> { try{ loadDteProjection(false); }catch(e){} }, 60 * 1000);
 </script>
+  <script src="page-export.js"></script>
 </body>
 </html>

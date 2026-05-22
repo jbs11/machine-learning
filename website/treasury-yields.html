@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Treasury Yields &amp; SPX Options — Rates, Curve &amp; Vol Impact</title>
+  <script src="lightweight-charts.min.js"></script>
+  <script src="chart-draw-tools.js?v=4"></script>
+  <link rel="preload" href="style.css" as="style" fetchpriority="high">
+  <link rel="stylesheet" href="page-export.css">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .ty-wrap { max-width: 1500px; margin: 0 auto; padding: 0 1.5rem 6rem; }
+    .ty-hero {
+      padding: 3.2rem 1.5rem 2.2rem; text-align: center;
+      background: radial-gradient(ellipse 80% 55% at 50% -5%, rgba(251,191,36,.12) 0%, transparent 65%), var(--bg);
+      border-bottom: 1px solid var(--border);
+    }
+    .ty-badge {
+      display: inline-flex; align-items: center; gap: .5rem; padding: .3rem 1rem;
+      background: rgba(251,191,36,.1); border: 1px solid rgba(251,191,36,.28); border-radius: 999px;
+      color: #fbbf24; font-size: .78rem; font-weight: 600; letter-spacing: .08em;
+      text-transform: uppercase; margin-bottom: .9rem;
+    }
+    .ty-hero h1 {
+      font-size: clamp(1.75rem, 4vw, 2.85rem); font-weight: 900; letter-spacing: -.03em; line-height: 1.15;
+      margin-bottom: .7rem;
+      background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 35%, #22d3ee 75%, #fff 95%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    .ty-hero p { color: var(--muted); font-size: 1rem; max-width: 860px; margin: 0 auto; line-height: 1.7; }
+    .ty-nav-pills { display: flex; flex-wrap: wrap; gap: .45rem; justify-content: center; margin-top: 1rem; }
+    .ty-nav-pills a {
+      padding: .28rem .75rem; border-radius: 6px; border: 1px solid var(--border);
+      color: var(--muted); font-size: .75rem; font-weight: 700; text-decoration: none;
+    }
+    .ty-nav-pills a:hover { border-color: #fbbf24; color: #fbbf24; }
+
+    .ty-strip { display: flex; flex-wrap: wrap; gap: .65rem; padding: 1.1rem 0 .6rem; }
+    .ty-snap {
+      flex: 1 1 130px; background: var(--surface); border: 1px solid var(--border);
+      border-radius: 10px; padding: .7rem .95rem; min-width: 120px;
+    }
+    .ty-snap-k { font-size: .65rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+    .ty-snap-v { font-size: 1.25rem; font-weight: 900; font-family: Consolas, monospace; margin-top: .1rem; }
+    .ty-snap-s { font-size: .74rem; font-weight: 700; margin-top: .15rem; }
+    .pos { color: #4ade80; } .neg { color: #f87171; } .neu { color: var(--muted); }
+
+    .ty-banner {
+      display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 1rem;
+      padding: 1rem 1.2rem; border-radius: 10px; margin: .6rem 0 1rem; border: 1px solid;
+    }
+    .ty-banner.risk-off { background: rgba(239,68,68,.07); border-color: rgba(239,68,68,.35); }
+    .ty-banner.risk-on { background: rgba(34,197,94,.07); border-color: rgba(34,197,94,.35); }
+    .ty-banner.neutral { background: rgba(251,191,36,.07); border-color: rgba(251,191,36,.35); }
+    .ty-banner.shock { box-shadow: 0 0 0 1px rgba(239,68,68,.4); }
+    .ty-banner h2 { font-size: 1.15rem; font-weight: 900; margin-bottom: .25rem; }
+    .ty-banner p { font-size: .8rem; color: var(--muted); line-height: 1.55; max-width: 720px; margin: 0; }
+
+    .ty-bar { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; padding: .4rem 0; }
+    .ty-tf {
+      padding: .22rem .65rem; border-radius: 5px; border: 1px solid var(--border);
+      background: transparent; color: var(--muted); font-size: .72rem; font-weight: 700; cursor: pointer;
+    }
+    .ty-tf.active { background: #fbbf24; border-color: #fbbf24; color: #0a0f1e; }
+    .ty-upd { font-size: .68rem; color: var(--muted); margin-left: auto; }
+
+    .ty-sec {
+      font-size: .76rem; font-weight: 700; text-transform: uppercase; letter-spacing: .1em;
+      color: #fbbf24; padding: 1.4rem 0 .65rem; border-bottom: 1px solid var(--border); margin-bottom: .85rem;
+    }
+    .ty-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
+    @media (max-width: 900px) { .ty-grid-2 { grid-template-columns: 1fr; } }
+
+    .ty-card {
+      background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: hidden;
+    }
+    .ty-card-h {
+      padding: .6rem 1rem; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .4rem;
+    }
+    .ty-card-t { font-weight: 800; font-size: .88rem; }
+    .ty-card-s { font-size: .7rem; color: var(--muted); }
+    .ty-chart { height: 320px; background: #070d18; position: relative; }
+    .ty-chart.tall { height: 380px; }
+    .ty-chart.compare { height: 420px; }
+    .ty-legend { display: flex; flex-wrap: wrap; gap: .65rem 1rem; padding: .45rem 1rem .55rem; border-bottom: 1px solid var(--border); }
+    .ty-leg { display: inline-flex; align-items: center; gap: .35rem; font-size: .7rem; font-weight: 700; color: var(--muted); }
+    .ty-leg i { width: 14px; height: 3px; border-radius: 2px; display: inline-block; }
+    .ty-compare-note { font-size: .68rem; color: var(--muted); padding: .35rem 1rem .5rem; line-height: 1.45; }
+
+    .ty-cal { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: .75rem; margin: 1rem 0; }
+    .ty-cal-item {
+      background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: .75rem 1rem;
+      border-left: 3px solid #fbbf24;
+    }
+    .ty-cal-item.extreme { border-left-color: #ef4444; }
+    .ty-cal-item h4 { font-size: .82rem; font-weight: 800; margin-bottom: .2rem; }
+    .ty-cal-item .tm { font-size: .68rem; color: #fbbf24; font-weight: 700; margin-bottom: .35rem; }
+    .ty-cal-item p { font-size: .74rem; color: var(--muted); line-height: 1.5; margin: 0; }
+
+    .ty-gloss { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: .85rem; }
+    .ty-term {
+      background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: .9rem 1rem;
+    }
+    .ty-term h4 { font-size: .88rem; font-weight: 800; color: #fbbf24; margin-bottom: .35rem; }
+    .ty-term p, .ty-term li { font-size: .78rem; color: var(--muted); line-height: 1.6; }
+    .ty-term ul { padding-left: 1.1rem; margin: .35rem 0 0; }
+    .ty-term li { margin-bottom: .2rem; }
+
+    .ty-playbook {
+      background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+      padding: 1.2rem 1.3rem; margin: 1rem 0; border-left: 4px solid #22d3ee;
+    }
+    .ty-playbook h3 { font-size: 1rem; font-weight: 800; margin-bottom: .6rem; }
+    .ty-playbook ol { padding-left: 1.2rem; margin: 0; }
+    .ty-playbook li { font-size: .8rem; color: var(--muted); line-height: 1.65; margin-bottom: .45rem; }
+    .ty-playbook strong { color: var(--text); }
+
+    .ty-warn {
+      font-size: .72rem; color: rgba(251,191,36,.85); padding: .5rem 1rem;
+      background: rgba(251,191,36,.06); border-top: 1px solid rgba(251,191,36,.15);
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .ty-spin {
+      width: 22px; height: 22px; border: 2px solid var(--border); border-top-color: #fbbf24;
+      border-radius: 50%; animation: spin .7s linear infinite; margin: 2rem auto;
+    }
+  </style>
+</head>
+<body>
+<script>
+if (window.location.search.indexOf('_v=') === -1) {
+  window.location.replace(window.location.pathname + '?_v=' + Date.now());
+}
+</script>
+
+<nav class="nav">
+  <a href="index.html" class="nav-logo">
+    <img src="images/steve.jpg" class="nav-logo-photo" alt="Stephen Borick">
+    <div class="nav-logo-text"><span class="nav-company">Artificial Intelligence</span><span class="nav-name">Solutions, Inc.</span></div>
+  </a>
+  <ul class="nav-links">
+    <li><a href="index.html">Home</a></li>
+    <li><a href="options-trading.html">Options</a></li>
+    <li><a href="gex-profile.html" style="color:#22d3ee;font-weight:700;">&#128200; GEX Profile</a></li>
+    <li><a href="gex-heatmap.html" style="color:#22d3ee;font-weight:700;">&#127777; GEX Heat Maps</a></li>
+    <li><a href="spx-correlations.html" style="color:#a78bfa;font-weight:700;">&#128202; SPX Correlations</a></li>
+    <li><a href="treasury-yields.html" style="color:#fbbf24;font-weight:700;" class="active">&#128176; Treasury Yields</a></li>
+    <li><a href="vix-dashboard.html" style="color:#f87171;font-weight:700;">&#128293; VIX</a></li>
+    <li><a href="terminology.html">Terminology</a></li>
+    <li><a href="spx-hub.html" style="color:#a78bfa;font-weight:700;">SPX Hub</a></li>
+    <li><a href="option-charts.html" style="color:#fbbf24;font-weight:700;">&#128202; Option Charts</a></li>
+  </ul>
+</nav>
+
+<div class="ty-hero">
+  <div class="ty-badge">&#128176; Rates &amp; SPX Options</div>
+  <h1>Treasury Yields &amp; SPX Options Impact</h1>
+  <p>Compare 2Y, 5Y, 10Y, and 30Y yields side-by-side with SPX — then drill into the curve, 2s/10s spread, and vol impact for gamma, 0DTE, and short-dated options.</p>
+  <div class="ty-nav-pills">
+    <a href="#compare">Compare</a>
+    <a href="#dashboard">Dashboard</a>
+    <a href="#spread-chart">2s/10s Spread</a>
+    <a href="#spx-impact">SPX &amp; VIX</a>
+    <a href="#calendar">Event Calendar</a>
+    <a href="#summary">Summary</a>
+    <a href="#terminology">Terminology</a>
+    <a href="#playbook">Trading Playbook</a>
+  </div>
+</div>
+
+<div class="ty-wrap" id="dashboard">
+
+  <div class="ty-bar">
+    <span style="font-size:.68rem;color:var(--muted);font-weight:700;">CHART TF:</span>
+    <button class="ty-tf active" data-interval="1d" data-period="365d">1D</button>
+    <button class="ty-tf" data-interval="4h" data-period="120d">4H</button>
+    <button class="ty-tf" data-interval="1h" data-period="60d">1H</button>
+    <span class="ty-upd" id="last-upd">—</span>
+  </div>
+
+  <div class="ty-sec" id="compare" style="padding-top:.5rem;">&#128200; Yield Curve vs SPX — Side by Side</div>
+  <div class="ty-grid-2" style="margin-bottom:1.25rem;">
+    <div class="ty-card">
+      <div class="ty-card-h">
+        <div>
+          <div class="ty-card-t">All Treasury Yields (%)</div>
+          <div class="ty-card-s">2Y · 5Y · 10Y · 30Y — same scale for curve shape</div>
+        </div>
+      </div>
+      <div class="ty-legend" id="yield-legend">
+        <span class="ty-leg"><i style="background:#22d3ee;"></i><span id="leg-y2">2Y</span></span>
+        <span class="ty-leg"><i style="background:#38bdf8;"></i><span id="leg-y5">5Y</span></span>
+        <span class="ty-leg"><i style="background:#fbbf24;"></i><span id="leg-y10">10Y</span></span>
+        <span class="ty-leg"><i style="background:#a78bfa;"></i><span id="leg-y30">30Y</span></span>
+      </div>
+      <div class="ty-chart compare" id="chart-all-yields"></div>
+      <div class="ty-compare-note" id="compare-yield-note">Loading yield symbols…</div>
+    </div>
+    <div class="ty-card">
+      <div class="ty-card-h">
+        <div>
+          <div class="ty-card-t">S&amp;P 500 (SPX)</div>
+          <div class="ty-card-s">Compare index direction vs simultaneous rate moves</div>
+        </div>
+      </div>
+      <div class="ty-chart compare" id="chart-spx-compare"></div>
+      <div class="ty-compare-note" id="compare-spx-note">—</div>
+    </div>
+  </div>
+
+  <div class="ty-strip" id="snap-strip">
+    <div class="ty-snap"><div class="ty-snap-k">10Y</div><div class="ty-snap-v" id="snap-y10">—</div><div class="ty-snap-s neu" id="snap-y10c">…</div></div>
+    <div class="ty-snap"><div class="ty-snap-k">2Y</div><div class="ty-snap-v" id="snap-y2">—</div><div class="ty-snap-s neu" id="snap-y2c">…</div></div>
+    <div class="ty-snap"><div class="ty-snap-k">5Y</div><div class="ty-snap-v" id="snap-y5">—</div><div class="ty-snap-s neu" id="snap-y5c">…</div></div>
+    <div class="ty-snap"><div class="ty-snap-k">30Y</div><div class="ty-snap-v" id="snap-y30">—</div><div class="ty-snap-s neu" id="snap-y30c">…</div></div>
+    <div class="ty-snap"><div class="ty-snap-k">2s/10s</div><div class="ty-snap-v" id="snap-spread">—</div><div class="ty-snap-s neu" id="snap-spreadc">…</div></div>
+    <div class="ty-snap"><div class="ty-snap-k">SPX</div><div class="ty-snap-v" id="snap-spx">—</div><div class="ty-snap-s neu" id="snap-spxc">…</div></div>
+    <div class="ty-snap"><div class="ty-snap-k">VIX</div><div class="ty-snap-v" id="snap-vix">—</div><div class="ty-snap-s neu" id="snap-vixc">…</div></div>
+  </div>
+
+  <div class="ty-banner neutral" id="regime-banner">
+    <div>
+      <h2 id="regime-title">Loading regime…</h2>
+      <p id="regime-detail">Fetching treasury and index data.</p>
+    </div>
+    <div id="shock-badge" style="display:none;font-size:.72rem;font-weight:800;padding:.35rem .75rem;border-radius:6px;background:rgba(239,68,68,.15);color:#f87171;border:1px solid rgba(239,68,68,.35);">YIELD SHOCK</div>
+  </div>
+
+  <div class="ty-sec" id="yields-section">&#128200; Treasury Yields (Detail)</div>
+  <div class="ty-grid-2">
+    <div class="ty-card">
+      <div class="ty-card-h">
+        <div><div class="ty-card-t">10-Year Yield — ^TNX / US10Y</div><div class="ty-card-s">The big one — duration &amp; equity risk premium</div></div>
+      </div>
+      <div class="ty-chart" id="chart-y10"></div>
+      <div class="ty-warn" id="warn-y10"></div>
+    </div>
+    <div class="ty-card">
+      <div class="ty-card-h">
+        <div><div class="ty-card-t">2-Year Yield — US2Y</div><div class="ty-card-s">Fed expectations proxy — CPI, jobs, FOMC</div></div>
+      </div>
+      <div class="ty-chart" id="chart-y2"></div>
+      <div class="ty-warn" id="warn-y2"></div>
+    </div>
+  </div>
+
+  <div class="ty-sec" id="spread-chart">&#128202; 2s / 10s Yield Curve Spread</div>
+  <div class="ty-card" style="margin-bottom:1rem;">
+    <div class="ty-card-h">
+      <div><div class="ty-card-t">2s/10s Spread (10Y − 2Y)</div><div class="ty-card-s">Bear steepener (long end ↑) often risk-off for SPX · Bull steepener (front end ↓ on cuts) often risk-on</div></div>
+    </div>
+    <div class="ty-chart tall" id="chart-spread"></div>
+  </div>
+
+  <div class="ty-sec" id="spx-impact">&#9889; SPX Options Context — Price &amp; Volatility</div>
+  <div class="ty-grid-2">
+    <div class="ty-card">
+      <div class="ty-card-h">
+        <div><div class="ty-card-t">S&amp;P 500 (SPX / SPY proxy)</div><div class="ty-card-s">Where dealer gamma &amp; short-dated options pay out</div></div>
+      </div>
+      <div class="ty-chart tall" id="chart-spx"></div>
+    </div>
+    <div class="ty-card">
+      <div class="ty-card-h">
+        <div><div class="ty-card-t">VIX — Implied Vol Proxy</div><div class="ty-card-s">8–10+ bp yield shocks often precede IV expansion</div></div>
+      </div>
+      <div class="ty-chart tall" id="chart-vix"></div>
+    </div>
+  </div>
+
+  <div class="ty-sec" id="calendar">&#128197; High-Impact Rates Calendar (SPX Options)</div>
+  <div class="ty-cal" id="cal-grid"></div>
+
+  <div class="ty-sec" id="summary">&#128214; Executive Summary</div>
+  <div class="ty-playbook" style="border-left-color:#fbbf24;">
+    <h3>How Treasury Yields Drive SPX Options Today</h3>
+    <p id="exec-summary" style="font-size:.82rem;color:var(--muted);line-height:1.7;margin:0;">Loading…</p>
+  </div>
+
+  <div class="ty-sec" id="terminology">&#128218; Terminology</div>
+  <div class="ty-gloss">
+    <div class="ty-term">
+      <h4>10-Year Yield (^TNX / US10Y)</h4>
+      <p>The benchmark long-rate. It prices growth, inflation expectations, and term premium. When the 10Y backs up sharply, growth multiples compress — SPX and QQQ often sell off; put skew and VIX can rise together.</p>
+    </div>
+    <div class="ty-term">
+      <h4>2-Year Yield (US2Y)</h4>
+      <p>The front-end “Fed path” rate. It reprices fastest on CPI, NFP, and FOMC. Large 2Y moves (especially 8–10+ bps/day) frequently arrive <em>before</em> vol expansion in SPX and hurt short-gamma structures.</p>
+    </div>
+    <div class="ty-term">
+      <h4>2s/10s Spread</h4>
+      <p>10Y minus 2Y. Curve shape matters as much as level:</p>
+      <ul>
+        <li><strong>Bear steepener</strong> — long end rises more → often risk-off for equities.</li>
+        <li><strong>Bull steepener</strong> — short end falls on cut hopes → often risk-on if growth holds.</li>
+        <li><strong>Flatteners</strong> — front-end-led moves; hawkish flatteners stress growth/tech.</li>
+      </ul>
+    </div>
+    <div class="ty-term">
+      <h4>Basis Points (bps)</h4>
+      <p>0.01% = 1 bp. A 4.20% → 4.28% move is +8 bps. For options traders, track <em>daily</em> bps change in 2Y and 10Y, not just the level.</p>
+    </div>
+    <div class="ty-term">
+      <h4>Yield Shock &amp; Short Gamma</h4>
+      <p>Sudden 8–10+ bps moves in 2Y or 10Y tend to coincide with directional SPX breaks and rising IV. Short straddles, iron condors, and tight butterflies face gap &amp; vol risk — especially on event days.</p>
+    </div>
+    <div class="ty-term">
+      <h4>Treasury Auctions (10Y / 30Y @ 1pm ET)</h4>
+      <p>Supply hits the long end. Weak auctions can steepen the curve and pressure SPX into the close; strong auctions can relieve rates and support risk assets for the session.</p>
+    </div>
+  </div>
+
+  <div class="ty-sec" id="playbook">&#127919; Trading Playbook — Using Yields for SPX Options</div>
+  <div class="ty-playbook">
+    <h3>Pre-Market &amp; Event Checklist</h3>
+    <ol>
+      <li><strong>Check 2Y first.</strong> Overnight 2Y move sets the Fed narrative. If |Δ2Y| &gt; 8 bps, plan for wider SPX ranges and higher IV — reduce short gamma size.</li>
+      <li><strong>Read the curve.</strong> Bear steepener → favor defined-risk puts / bear call spreads or sit out short vol. Bull steepener with strong ES → cautious call spreads / reduced put sizing.</li>
+      <li><strong>Align with GEX.</strong> Use <a href="gex-profile.html" style="color:#22d3ee;">GEX Profile</a> — negative gamma + rising yields is a high-vol combo; positive gamma + stable yields favors range trades.</li>
+      <li><strong>Event days (CPI, NFP, FOMC).</strong> Avoid opening short premium into the print unless you have explicit vol edge. Consider 0DTE only after the reaction if structure is clear.</li>
+      <li><strong>Auction afternoons.</strong> On 10Y/30Y auction days, watch 1:00–3:00 PM ET for curve steepening and SPX drift — gamma on 0DTE can accelerate into the close.</li>
+      <li><strong>VIX confirmation.</strong> If yields spike and VIX rises 5%+ while SPX breaks a key level, treat it as a vol expansion regime — not a fade-the-move environment.</li>
+    </ol>
+  </div>
+
+</div>
+
+<script>
+'use strict';
+const API = '';
+let activeInterval = '1d';
+let activePeriod = '365d';
+let charts = {};
+let lastPayload = null;
+const CHART_PAD = { right: 34, lean: 0.28 };
+const YIELD_LINES = [
+  { key: 'y2', color: '#22d3ee', leg: 'leg-y2' },
+  { key: 'y5', color: '#38bdf8', leg: 'leg-y5' },
+  { key: 'y10', color: '#fbbf24', leg: 'leg-y10' },
+  { key: 'y30', color: '#a78bfa', leg: 'leg-y30' },
+];
+
+function fmtYield(v) {
+  if (v == null || isNaN(v)) return '—';
+  return v.toFixed(2) + '%';
+}
+function fmtBps(v) {
+  if (v == null || isNaN(v)) return '—';
+  return (v >= 0 ? '+' : '') + v.toFixed(1) + ' bps';
+}
+function fmtPct(v) {
+  if (v == null || isNaN(v)) return '—';
+  return (v >= 0 ? '+' : '') + v.toFixed(2) + '%';
+}
+function cls(v) { return v > 0 ? 'pos' : v < 0 ? 'neg' : 'neu'; }
+
+function destroyCharts() {
+  Object.keys(charts).forEach(function(k) {
+    try { charts[k].remove(); } catch (_e) {}
+  });
+  charts = {};
+}
+
+function makeChart(elId, h) {
+  var el = document.getElementById(elId);
+  if (!el) return null;
+  el.innerHTML = '';
+  var w = el.clientWidth || 600;
+  var chart = (window.createLwcChart || LightweightCharts.createChart)(el, {
+    width: w, height: h || 320,
+    layout: { background: { color: '#070d18' }, textColor: 'rgba(226,232,240,0.9)' },
+    grid: { vertLines: { color: 'rgba(36,48,88,.35)' }, horzLines: { color: 'rgba(36,48,88,.35)' } },
+    crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
+    rightPriceScale: { borderColor: 'rgba(255,255,255,0.14)' },
+    timeScale: { borderColor: 'rgba(255,255,255,0.14)', timeVisible: true, rightOffset: 32, barSpacing: 7 },
+    handleScroll: { mouseWheel: true, pressedMouseMove: true, horzTouchDrag: true },
+    handleScale: { mouseWheel: true, pinch: true },
+  });
+  return chart;
+}
+
+function applyRange(chart, n, saved) {
+  if (!chart || !n) return;
+  var last = Math.max(0, n - 1);
+  var to = last + CHART_PAD.right;
+  var from;
+  if (saved && saved.to > saved.from) {
+    from = Math.max(0, to - (saved.to - saved.from));
+  } else {
+    var vis = Math.min(120, n);
+    from = Math.max(0, n - vis - Math.round(vis * CHART_PAD.lean));
+  }
+  requestAnimationFrame(function() {
+    try { chart.timeScale().setVisibleLogicalRange({ from: from, to: to }); } catch (_e) {}
+  });
+}
+
+function lineSeries(chart, color) {
+  return chart.addLineSeries({ color: color, lineWidth: 2, priceLineVisible: true, lastValueVisible: true });
+}
+
+function syncTimeScales(master, slave) {
+  if (!master || !slave) return;
+  var lock = false;
+  master.timeScale().subscribeVisibleLogicalRangeChange(function(range) {
+    if (lock || !range) return;
+    lock = true;
+    try { slave.timeScale().setVisibleLogicalRange(range); } catch (_e) {}
+    lock = false;
+  });
+}
+
+function candleSeries(chart) {
+  return chart.addCandlestickSeries({
+    upColor: '#22c55e', downColor: '#ef4444',
+    borderUpColor: '#22c55e', borderDownColor: '#ef4444',
+    wickUpColor: '#22c55e', wickDownColor: '#ef4444',
+  });
+}
+
+function toLine(candles) {
+  return (candles || []).map(function(c) { return { time: c.time, value: c.close }; });
+}
+
+function renderCalendar(items) {
+  var html = '';
+  (items || []).forEach(function(ev) {
+    var imp = (ev.impact || '').toLowerCase();
+    html += '<div class="ty-cal-item' + (imp === 'extreme' ? ' extreme' : '') + '">' +
+      '<h4>' + ev.event + '</h4><div class="tm">' + ev.time_et + ' · ' + (ev.impact || '').toUpperCase() + '</div>' +
+      '<p>' + ev.note + '</p></div>';
+  });
+  document.getElementById('cal-grid').innerHTML = html;
+}
+
+function setSnap(id, val, chgId, chgBps) {
+  var el = document.getElementById(id);
+  var cel = document.getElementById(chgId);
+  if (el) el.textContent = val;
+  if (cel) {
+    cel.textContent = fmtBps(chgBps);
+    cel.className = 'ty-snap-s ' + cls(chgBps);
+  }
+}
+
+function updateSnapshot(d) {
+  var s = d.snapshot || {};
+  var sym = d.symbols || {};
+  setSnap('snap-y2', fmtYield(s.y2), 'snap-y2c', s.y2_chg_bps);
+  setSnap('snap-y5', fmtYield(s.y5), 'snap-y5c', s.y5_chg_bps);
+  setSnap('snap-y10', fmtYield(s.y10), 'snap-y10c', s.y10_chg_bps);
+  setSnap('snap-y30', fmtYield(s.y30), 'snap-y30c', s.y30_chg_bps);
+  document.getElementById('snap-spread').textContent = s.spread_2s10s != null ? s.spread_2s10s.toFixed(2) + '%' : '—';
+  document.getElementById('snap-spreadc').textContent = fmtBps(s.spread_chg_bps);
+  document.getElementById('snap-spreadc').className = 'ty-snap-s ' + cls(s.spread_chg_bps);
+  document.getElementById('snap-spx').textContent = s.spx != null ? s.spx.toLocaleString(undefined, { maximumFractionDigits: 0 }) : '—';
+  document.getElementById('snap-spxc').textContent = fmtPct(s.spx_chg_pct);
+  document.getElementById('snap-spxc').className = 'ty-snap-s ' + cls(s.spx_chg_pct);
+  document.getElementById('snap-vix').textContent = s.vix != null ? s.vix.toFixed(2) : '—';
+  document.getElementById('snap-vixc').textContent = fmtPct(s.vix_chg_pct);
+  document.getElementById('snap-vixc').className = 'ty-snap-s ' + cls(s.vix_chg_pct);
+
+  var yieldLabels = { y2: '2Y', y5: '5Y', y10: '10Y', y30: '30Y' };
+  YIELD_LINES.forEach(function(y) {
+    var leg = document.getElementById(y.leg);
+    if (!leg) return;
+    var symName = sym[y.key] || '';
+    leg.textContent = (yieldLabels[y.key] || y.key) + (symName ? ' (' + symName + ')' : '');
+  });
+
+  var yieldNote = ['2Y ' + (sym.y2 || '—'), '5Y ' + (sym.y5 || '^FVX'), '10Y ' + (sym.y10 || '^TNX'), '30Y ' + (sym.y30 || '^TYX')].join(' · ');
+  if (sym.y2_proxy) yieldNote += ' — 2Y uses ^IRX proxy when ^US2Y unavailable.';
+  document.getElementById('compare-yield-note').textContent = yieldNote;
+  document.getElementById('compare-spx-note').textContent = 'Source: ' + (sym.spx || '^GSPC') + ' · scroll/zoom synced with yield chart';
+
+  document.getElementById('warn-y10').textContent = 'Source: ' + (sym.y10 || '^TNX');
+  var y2w = 'Source: ' + (sym.y2 || '^US2Y');
+  if (sym.y2_proxy) y2w += ' — ^US2Y unavailable; showing ^IRX (13-week) proxy.';
+  document.getElementById('warn-y2').textContent = y2w;
+}
+
+function updateRegime(d) {
+  var r = d.regime || {};
+  var banner = document.getElementById('regime-banner');
+  banner.className = 'ty-banner ' + (r.spx_bias === 'risk_off' ? 'risk-off' : r.spx_bias === 'risk_on' ? 'risk-on' : 'neutral');
+  document.getElementById('regime-title').textContent = r.label || 'Curve regime';
+  document.getElementById('regime-detail').textContent = r.detail || '';
+  var shock = d.shock || {};
+  var badge = document.getElementById('shock-badge');
+  if (shock.active) {
+    banner.classList.add('shock');
+    badge.style.display = 'block';
+    badge.textContent = 'YIELD SHOCK: ' + (shock.messages || []).join(' · ');
+  } else {
+    banner.classList.remove('shock');
+    badge.style.display = 'none';
+  }
+}
+
+function buildSummary(d) {
+  var s = d.snapshot || {};
+  var r = d.regime || {};
+  var shock = d.shock || {};
+  var parts = [];
+  parts.push('2Y ' + fmtYield(s.y2) + ' (' + fmtBps(s.y2_chg_bps) + ') · 5Y ' + fmtYield(s.y5) + ' (' + fmtBps(s.y5_chg_bps) + ')');
+  parts.push('10Y ' + fmtYield(s.y10) + ' (' + fmtBps(s.y10_chg_bps) + ') · 30Y ' + fmtYield(s.y30) + ' (' + fmtBps(s.y30_chg_bps) + ')');
+  parts.push('2s/10s at ' + (s.spread_2s10s != null ? s.spread_2s10s.toFixed(2) + '%' : '—') + ' — ' + (r.label || 'neutral curve'));
+  parts.push('SPX ' + fmtPct(s.spx_chg_pct) + ' · VIX ' + fmtPct(s.vix_chg_pct));
+  if (shock.active) {
+    parts.push('Alert: ' + shock.options_note);
+  } else {
+    parts.push('No 8+ bps single-day shock flagged on 2Y/10Y — still respect auction & macro event windows.');
+  }
+  document.getElementById('exec-summary').textContent = parts.join(' ');
+}
+
+function renderCharts(d, savedRanges) {
+  destroyCharts();
+  var ser = d.series || {};
+  savedRanges = savedRanges || {};
+
+  var cAll = makeChart('chart-all-yields', 420);
+  var maxYieldBars = 0;
+  if (cAll) {
+    YIELD_LINES.forEach(function(y) {
+      var data = ser[y.key];
+      if (!data || !data.length) return;
+      lineSeries(cAll, y.color).setData(toLine(data));
+      maxYieldBars = Math.max(maxYieldBars, data.length);
+    });
+    charts.allYields = cAll;
+    applyRange(cAll, maxYieldBars, savedRanges.allYields);
+  }
+
+  var cSpxCmp = makeChart('chart-spx-compare', 420);
+  if (cSpxCmp) {
+    candleSeries(cSpxCmp).setData(ser.spx || []);
+    charts.spxCompare = cSpxCmp;
+    applyRange(cSpxCmp, (ser.spx || []).length, savedRanges.spxCompare);
+    if (cAll) syncTimeScales(cAll, cSpxCmp);
+  }
+
+  var c10 = makeChart('chart-y10', 320);
+  if (c10) {
+    var s10 = lineSeries(c10, '#fbbf24');
+    s10.setData(toLine(ser.y10));
+    charts.y10 = c10;
+    applyRange(c10, (ser.y10 || []).length, savedRanges.y10);
+  }
+
+  var c2 = makeChart('chart-y2', 320);
+  if (c2) {
+    var s2 = lineSeries(c2, '#22d3ee');
+    s2.setData(toLine(ser.y2));
+    charts.y2 = c2;
+    applyRange(c2, (ser.y2 || []).length, savedRanges.y2);
+  }
+
+  var cSp = makeChart('chart-spread', 380);
+  if (cSp) {
+    var ss = cSp.addAreaSeries({
+      lineColor: '#a78bfa', topColor: 'rgba(167,139,250,0.35)', bottomColor: 'rgba(167,139,250,0.02)', lineWidth: 2,
+    });
+    ss.setData(ser.spread || []);
+    charts.spread = cSp;
+    applyRange(cSp, (ser.spread || []).length, savedRanges.spread);
+  }
+
+  var cSpx = makeChart('chart-spx', 380);
+  if (cSpx) {
+    var cs = candleSeries(cSpx);
+    cs.setData(ser.spx || []);
+    charts.spx = cSpx;
+    applyRange(cSpx, (ser.spx || []).length, savedRanges.spx);
+  }
+
+  var cVix = makeChart('chart-vix', 380);
+  if (cVix) {
+    var sv = lineSeries(cVix, '#f87171');
+    sv.setData(toLine(ser.vix));
+    charts.vix = cVix;
+    applyRange(cVix, (ser.vix || []).length, savedRanges.vix);
+  }
+
+  window.addEventListener('resize', function onR() {
+    var map = {
+      'chart-all-yields': 'allYields', 'chart-spx-compare': 'spxCompare',
+      'chart-y10': 'y10', 'chart-y2': 'y2', 'chart-spread': 'spread', 'chart-spx': 'spx', 'chart-vix': 'vix',
+    };
+    Object.keys(map).forEach(function(id) {
+      var el = document.getElementById(id);
+      var ch = charts[map[id]];
+      if (el && ch) ch.applyOptions({ width: el.clientWidth || 600 });
+    });
+  }, { once: true });
+}
+
+function captureRanges() {
+  var keys = ['allYields','spxCompare','y10','y2','spread','spx','vix'];
+  var out = {};
+  keys.forEach(function(k) {
+    if (!charts[k]) return;
+    try {
+      var r = charts[k].timeScale().getVisibleLogicalRange();
+      if (r) out[k] = { from: r.from, to: r.to };
+    } catch (_e) {}
+  });
+  return out;
+}
+
+async function loadData(opts) {
+  opts = opts || {};
+  var scrollY = window.scrollY;
+  var saved = opts.preserveView ? captureRanges() : {};
+  try {
+    var url = API + '/api/treasury-yields?interval=' + activeInterval + '&period=' + activePeriod;
+    if (opts.nocache) url += '&nocache=1';
+    var res = await fetch(url, { cache: 'no-store' });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    var d = await res.json();
+    lastPayload = d;
+    document.getElementById('last-upd').textContent = 'Updated ' + (d.updated || '—') + ' · ' + activeInterval.toUpperCase();
+    updateSnapshot(d);
+    updateRegime(d);
+    buildSummary(d);
+    renderCalendar(d.calendar);
+    renderCharts(d, saved);
+    requestAnimationFrame(function() { window.scrollTo(0, scrollY); });
+  } catch (e) {
+    document.getElementById('exec-summary').textContent = 'Failed to load: ' + e.message + '. Ensure live-server.py is running.';
+  }
+}
+
+document.querySelectorAll('.ty-tf').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    document.querySelectorAll('.ty-tf').forEach(function(b) { b.classList.remove('active'); });
+    btn.classList.add('active');
+    activeInterval = btn.dataset.interval;
+    activePeriod = btn.dataset.period;
+    loadData();
+  });
+});
+
+setInterval(function() {
+  if (!document.hidden) loadData({ preserveView: true });
+}, 5 * 60 * 1000);
+
+loadData();
+</script>
+<script src="search.js" defer></script>
+  <script src="page-export.js"></script>
+</body>
+</html>

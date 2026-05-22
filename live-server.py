@@ -198,6 +198,15 @@ SYMBOL_LABELS = {
     'WMT':   'Walmart Inc. (WMT)',
     'HD':    'Home Depot (HD)',
     'BRK-B': 'Berkshire Hathaway B (BRK-B)',
+    'AMD':  'Advanced Micro Devices (AMD)',
+    'INTC':  'Intel Corp. (INTC)',
+    'PLTR':  'Palantir Technologies (PLTR)',
+    'SOFI':  'SoFi Technologies (SOFI)',
+    'NOK':  'Nokia Corp. (NOK)',
+    'RGTI':  'Rigetti Computing (RGTI)',
+    'COIN':  'Coinbase Global (COIN)',
+    'MARA':  'Marathon Digital (MARA)',
+    'F':  'Ford Motor Co. (F)',
     # Futures
     'ES=F':  'E-mini S&P 500 (ES)',
     'NQ=F':  'E-mini Nasdaq-100 (NQ)',
@@ -1038,6 +1047,7 @@ _API_RESP_TTL: dict = {
     '/api/market-summary':      300,
     '/api/gamma-exposure':      480,
     '/api/option-flows':        480,
+    '/api/treasury-yields':     300,
 }
 
 def api_resp_get(endpoint):
@@ -4827,6 +4837,212 @@ _GEX_GROUPS = [
 ]
 
 
+# ── Treasury yields (10Y / 2Y / curve vs SPX options) ─────────────────────────
+_TREASURY_Y2_CANDIDATES = ('^US2Y', '^IRX')    # ^IRX = 13-week bill proxy if 2Y index unavailable
+_TREASURY_Y5_CANDIDATES = ('^FVX',)            # 5-year yield index
+_TREASURY_Y10_CANDIDATES = ('^TNX',)           # 10-year yield index
+_TREASURY_Y30_CANDIDATES = ('^TYX',)           # 30-year yield index
+_TREASURY_SPX_CANDIDATES = ('^GSPC', 'SPY')
+_TREASURY_VIX_CANDIDATES = ('^VIX',)
+
+
+def _df_to_candle_list(df: pd.DataFrame) -> list:
+    out = []
+    if df is None or df.empty:
+        return out
+    for ts, row in df.iterrows():
+        try:
+            out.append({
+                'time': int(ts.timestamp()),
+                'open': round(float(row['Open']), 4),
+                'high': round(float(row['High']), 4),
+                'low': round(float(row['Low']), 4),
+                'close': round(float(row['Close']), 4),
+                'volume': int(row.get('Volume', 0) or 0),
+            })
+        except Exception:
+            pass
+    return out
+
+
+def _first_valid_candles(candidates: tuple, interval: str, period: str) -> tuple:
+    for sym in candidates:
+        df = get_candles(sym, interval=interval, period=period)
+        if df is not None and not df.empty and len(df) >= 10:
+            return sym, _df_to_candle_list(df)
+    return candidates[0], []
+
+
+def _yield_chg_bps(candles: list, lookback: int = 1) -> float | None:
+    if len(candles) <= lookback:
+        return None
+    return round((candles[-1]['close'] - candles[-1 - lookback]['close']) * 100, 2)
+
+
+def _merge_spread_series(y10: list, y2: list) -> list:
+    y2_map = {c['time']: c['close'] for c in y2}
+    spread = []
+    for c in y10:
+        y2v = y2_map.get(c['time'])
+        if y2v is None:
+            continue
+        spread.append({'time': c['time'], 'value': round(c['close'] - y2v, 4)})
+    return spread
+
+
+def _classify_curve(d2_bps: float | None, d10_bps: float | None) -> dict:
+    if d2_bps is None or d10_bps is None:
+        return {'curve': 'unknown', 'label': 'Insufficient data', 'spx_bias': 'neutral', 'detail': ''}
+    dspread = d10_bps - d2_bps
+    if dspread > 3:
+        if d10_bps >= 0:
+            return {
+                'curve': 'bear_steepener',
+                'label': 'Bear Steepener',
+                'spx_bias': 'risk_off',
+                'detail': 'Long-end yields rising faster than the front end — typically pressures SPX / expands vol.',
+            }
+        return {
+            'curve': 'bull_steepener',
+            'label': 'Bull Steepener',
+            'spx_bias': 'risk_on',
+            'detail': 'Curve steepening with the long end lagging a front-end rally — often growth-friendly.',
+        }
+    if dspread < -3:
+        if d2_bps >= 0:
+            return {
+                'curve': 'bear_flattener',
+                'label': 'Bear Flattener',
+                'spx_bias': 'risk_off',
+                'detail': 'Front-end yields rising faster — Fed repricing / hawkish impulse; SPX vol risk elevated.',
+            }
+        return {
+            'curve': 'bull_flattener',
+            'label': 'Bull Flattener',
+            'spx_bias': 'mixed',
+            'detail': 'Front-end yields falling faster — rate-cut hopes; can be risk-on if growth holds.',
+        }
+    return {
+        'curve': 'neutral',
+        'label': 'Stable Curve',
+        'spx_bias': 'neutral',
+        'detail': '2s/10s shape little changed — yields may still move SPX directionally via level shocks.',
+    }
+
+
+def _shock_flags(d2_bps: float | None, d10_bps: float | None, threshold: float = 8.0) -> dict:
+    shocks = []
+    if d2_bps is not None and abs(d2_bps) >= threshold:
+        shocks.append(f'2Y {"+" if d2_bps > 0 else ""}{d2_bps:.1f} bps')
+    if d10_bps is not None and abs(d10_bps) >= threshold:
+        shocks.append(f'10Y {"+" if d10_bps > 0 else ""}{d10_bps:.1f} bps')
+    return {
+        'active': len(shocks) > 0,
+        'threshold_bps': threshold,
+        'messages': shocks,
+        'options_note': (
+            'Sharp yield moves often coincide with IV expansion and directional breaks — '
+            'short gamma / tight iron condors are vulnerable.'
+            if shocks else ''
+        ),
+    }
+
+
+@app.route('/api/treasury-yields')
+def treasury_yields_endpoint():
+    nocache = request.args.get('nocache', '0') == '1'
+    interval = request.args.get('interval', '1d')
+    period = request.args.get('period', '365d')
+    ep_key = f'/api/treasury-yields:{interval}:{period}'
+    if not nocache:
+        cached = api_resp_get(ep_key)
+        if cached:
+            return jsonify(cached)
+
+    y2_sym, y2 = _first_valid_candles(_TREASURY_Y2_CANDIDATES, interval, period)
+    y5_sym, y5 = _first_valid_candles(_TREASURY_Y5_CANDIDATES, interval, period)
+    y10_sym, y10 = _first_valid_candles(_TREASURY_Y10_CANDIDATES, interval, period)
+    y30_sym, y30 = _first_valid_candles(_TREASURY_Y30_CANDIDATES, interval, period)
+    y2_proxy = y2_sym != '^US2Y'
+    spx_sym, spx = _first_valid_candles(_TREASURY_SPX_CANDIDATES, interval, period)
+    vix_sym, vix = _first_valid_candles(_TREASURY_VIX_CANDIDATES, interval, period)
+    spread = _merge_spread_series(y10, y2)
+
+    d2 = _yield_chg_bps(y2)
+    d5 = _yield_chg_bps(y5)
+    d10 = _yield_chg_bps(y10)
+    d30 = _yield_chg_bps(y30)
+    d_spread = None
+    if len(spread) >= 2:
+        d_spread = round((spread[-1]['value'] - spread[-2]['value']) * 100, 2)
+
+    spx_chg = None
+    if len(spx) >= 2 and spx[-2]['close']:
+        spx_chg = round((spx[-1]['close'] - spx[-2]['close']) / spx[-2]['close'] * 100, 2)
+    vix_chg = None
+    if len(vix) >= 2 and vix[-2]['close']:
+        vix_chg = round((vix[-1]['close'] - vix[-2]['close']) / vix[-2]['close'] * 100, 2)
+
+    curve = _classify_curve(d2, d10)
+    shock = _shock_flags(d2, d10)
+
+    payload = {
+        'updated': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+        'interval': interval,
+        'period': period,
+        'symbols': {
+            'y2': y2_sym,
+            'y2_proxy': y2_proxy,
+            'y5': y5_sym,
+            'y10': y10_sym,
+            'y30': y30_sym,
+            'spx': spx_sym,
+            'vix': vix_sym,
+        },
+        'snapshot': {
+            'y2': y2[-1]['close'] if y2 else None,
+            'y2_chg_bps': d2,
+            'y5': y5[-1]['close'] if y5 else None,
+            'y5_chg_bps': d5,
+            'y10': y10[-1]['close'] if y10 else None,
+            'y10_chg_bps': d10,
+            'y30': y30[-1]['close'] if y30 else None,
+            'y30_chg_bps': d30,
+            'spread_2s10s': spread[-1]['value'] if spread else None,
+            'spread_chg_bps': d_spread,
+            'spx': spx[-1]['close'] if spx else None,
+            'spx_chg_pct': spx_chg,
+            'vix': vix[-1]['close'] if vix else None,
+            'vix_chg_pct': vix_chg,
+        },
+        'regime': curve,
+        'shock': shock,
+        'series': {
+            'y2': y2,
+            'y5': y5,
+            'y10': y10,
+            'y30': y30,
+            'spread': spread,
+            'spx': spx,
+            'vix': vix,
+        },
+        'calendar': [
+            {'event': '10Y Treasury Auction', 'time_et': '1:00 PM ET', 'impact': 'high',
+             'note': 'Long-end supply often moves ^TNX and SPX gamma in the hour after.'},
+            {'event': '30Y Treasury Auction', 'time_et': '1:00 PM ET', 'impact': 'high',
+             'note': 'Extends duration shock — watch 2s/10s and VIX together.'},
+            {'event': 'CPI Release', 'time_et': '8:30 AM ET', 'impact': 'extreme',
+             'note': '2Y moves first (Fed path); 8–10+ bps 2Y days frequently expand SPX IV.'},
+            {'event': 'Non-Farm Payrolls (NFP)', 'time_et': '8:30 AM ET', 'impact': 'extreme',
+             'note': 'Labor + wages repricing in 2Y; directional SPX breaks vs short gamma.'},
+            {'event': 'FOMC Rate Decision', 'time_et': '2:00 PM ET', 'impact': 'extreme',
+             'note': 'Statement + dots move 2Y instantly; press conference can steepen/flatten curve.'},
+        ],
+    }
+    api_resp_set(ep_key, payload)
+    return jsonify(payload)
+
+
 @app.route('/api/gamma-exposure')
 def gamma_exposure_endpoint():
     nocache = request.args.get('nocache', '0') == '1'
@@ -5527,6 +5743,722 @@ _FLOW_GROUPS = [
 ]
 
 
+
+_MOST_ACTIVE_ETFS = set(SYMBOLS['sp500'])
+_MOST_ACTIVE_STOCKS = set(SYMBOLS['mag7'] + SYMBOLS['bluechip'])
+_MOST_ACTIVE_EXTRA = ['AMD', 'INTC', 'PLTR', 'SOFI', 'NOK', 'RGTI', 'COIN', 'MARA', 'F', 'BAC']
+_MOST_ACTIVE_ALL_SYMS = list(dict.fromkeys(
+    list(SYMBOLS['sp500']) + list(SYMBOLS['mag7']) + list(SYMBOLS['bluechip']) + _MOST_ACTIVE_EXTRA
+))
+
+
+def _short_company_name(symbol: str) -> str:
+    lb = SYMBOL_LABELS.get(symbol, symbol)
+    if '(' in lb:
+        return lb.split('(')[0].strip()
+    return lb
+
+
+def _most_active_asset_class(symbol: str) -> str:
+    if symbol in _MOST_ACTIVE_ETFS:
+        return 'etf'
+    if symbol.endswith('=F'):
+        return 'futures'
+    if symbol.startswith('^'):
+        return 'index'
+    return 'stock'
+
+
+def _rel_option_vol_pct(symbol: str, total_vol: int) -> float | None:
+    """Option volume vs typical daily baseline (yfinance share ADV proxy)."""
+    if total_vol <= 0:
+        return None
+    try:
+        with _yf_lock:
+            info = yf.Ticker(symbol).info or {}
+        avg = float(
+            info.get('averageVolume')
+            or info.get('averageDailyVolume10Day')
+            or info.get('averageDailyVolume3Month')
+            or 0
+        )
+        if avg <= 0:
+            return None
+        baseline = max(avg * 0.006, 400)
+        return round(total_vol / baseline * 100, 2)
+    except Exception:
+        return None
+
+
+def _most_active_from_flow(r: dict) -> dict | None:
+    if not r or r.get('no_options'):
+        return None
+    cv = int(r.get('total_call_vol') or 0)
+    pv = int(r.get('total_put_vol') or 0)
+    tv = cv + pv
+    if tv <= 0:
+        return None
+    sym = r.get('symbol', '')
+    return {
+        'symbol': sym,
+        'name': _short_company_name(sym),
+        'asset_class': _most_active_asset_class(sym),
+        'option_volume': tv,
+        'call_volume': cv,
+        'put_volume': pv,
+        'put_call_ratio': round(pv / max(cv, 1), 2),
+        'avg_daily_volume_pct': _rel_option_vol_pct(sym, tv),
+        'flow_sentiment': r.get('flow_sentiment'),
+        'spot': r.get('spot'),
+    }
+
+
+def _build_most_active_rows(nocache: bool = False) -> list:
+    rows = []
+    flows = None
+    if not nocache:
+        try:
+            flows = cache_get(cache_key('all', 'opt-flows'))
+        except Exception:
+            flows = None
+    if flows and flows.get('assets'):
+        for r in flows['assets']:
+            row = _most_active_from_flow(r)
+            if row:
+                rows.append(row)
+    sym_set = {x['symbol'] for x in rows}
+    missing = [s for s in _MOST_ACTIVE_ALL_SYMS if s not in sym_set]
+    if missing:
+        grp_map = {}
+        for sym in missing:
+            if sym in _MOST_ACTIVE_ETFS:
+                grp_map[sym] = 'ETFs'
+            elif sym in SYMBOLS.get('mag7', []):
+                grp_map[sym] = 'Mag 7'
+            else:
+                grp_map[sym] = 'Stocks'
+        with ThreadPoolExecutor(max_workers=4) as pool:
+            futs = {pool.submit(_flow_row, sym, grp_map.get(sym, 'Stocks'), nocache): sym for sym in missing}
+            for fut in as_completed(futs):
+                try:
+                    r = fut.result()
+                    row = _most_active_from_flow(r) if r else None
+                    if row:
+                        rows.append(row)
+                except Exception:
+                    pass
+    rows.sort(key=lambda x: x['option_volume'], reverse=True)
+    return rows
+
+
+
+
+
+
+def _flow_rank_symbols(max_n: int = 14) -> list[str]:
+    """Top symbols from cached option-flows + high-vol names."""
+    sym_list: list[str] = list(_FLOW_TRADE_EXTRA)
+    try:
+        flows = cache_get(cache_key('all', 'opt-flows'))
+        if flows and flows.get('assets'):
+            ranked = sorted(
+                flows['assets'],
+                key=lambda x: int(x.get('total_call_vol') or 0) + int(x.get('total_put_vol') or 0),
+                reverse=True,
+            )
+            for r in ranked:
+                sym = r.get('symbol')
+                if sym and sym not in sym_list:
+                    sym_list.append(sym)
+                if len(sym_list) >= max_n:
+                    break
+    except Exception:
+        pass
+    return sym_list[:max_n]
+
+
+def _pick_scan_expiries(expiries: list, max_n: int = 6) -> list[str]:
+    today = datetime.now().date()
+    target: list[tuple[str, int]] = []
+    for exp in expiries or []:
+        try:
+            dte = (datetime.strptime(exp, '%Y-%m-%d').date() - today).days
+        except Exception:
+            continue
+        if 0 <= dte <= 120:
+            target.append((exp, dte))
+    target.sort(key=lambda x: x[1])
+    if len(target) <= max_n:
+        return [e for e, _ in target]
+    near = [t for t in target if t[1] <= 14]
+    rest = [t for t in target if t[1] > 14]
+    picked = (near[:4] + rest[-2:])[:max_n]
+    return [e for e, _ in picked]
+
+
+def _flow_trades_from_flow_row(r: dict) -> list:
+    """Fast flow rows from cached /api/option-flows asset (no yfinance)."""
+    if not r or r.get('no_options'):
+        return []
+    symbol = r.get('symbol', '')
+    asset_class = _most_active_asset_class(symbol)
+    spot = r.get('spot')
+    exp_default = ''
+    fex = r.get('flow_expiries') or []
+    if fex:
+        fe = fex[0]
+        exp_default = fe[0] if isinstance(fe, (list, tuple)) else str(fe)
+    session_ts = _traded_at_et()
+    trades: list[dict] = []
+
+    for u in r.get('unusual') or []:
+        prem_k = float(u.get('premium_k') or 0)
+        tv = round(prem_k * 1000.0, 2)
+        if tv < 10_000:
+            continue
+        side = str(u.get('type') or 'CALL').upper()
+        strike = float(u.get('strike') or 0)
+        exp = str(u.get('expiry') or exp_default)
+        vol = int(u.get('vol') or 0)
+        oi = int(u.get('oi') or 0)
+        avg = round(tv / max(vol * 100, 1), 4) if vol else 0
+        trades.append({
+            'symbol': symbol,
+            'contract': _format_contract_desc(symbol, exp, strike, side),
+            'expiry': exp,
+            'strike': strike,
+            'side': side,
+            'type': _flow_trade_type(tv),
+            'sentiment': _flow_trade_sentiment(side, vol, oi),
+            'total_value': tv,
+            'total_size': vol,
+            'avg_price': avg,
+            'underlying_price': round(spot, 2) if spot else None,
+            'traded_at': session_ts,
+            'asset_class': asset_class,
+            'source': 'flow',
+        })
+
+    strikes = r.get('strikes') or []
+    call_vol = r.get('call_vol') or []
+    put_vol = r.get('put_vol') or []
+    call_prem_k = r.get('call_prem_k') or []
+    put_prem_k = r.get('put_prem_k') or []
+    for i, k in enumerate(strikes):
+        strike = float(k)
+        for side, vols, prems in (
+            ('CALL', call_vol, call_prem_k),
+            ('PUT', put_vol, put_prem_k),
+        ):
+            if i >= len(vols) or i >= len(prems):
+                continue
+            vol = int(vols[i] or 0)
+            tv = round(float(prems[i] or 0) * 1000.0, 2)
+            if tv < 25_000:
+                continue
+            trades.append({
+                'symbol': symbol,
+                'contract': _format_contract_desc(symbol, exp_default, strike, side),
+                'expiry': exp_default,
+                'strike': strike,
+                'side': side,
+                'type': _flow_trade_type(tv),
+                'sentiment': _flow_trade_sentiment(side, vol, 0),
+                'total_value': tv,
+                'total_size': vol,
+                'avg_price': round(tv / max(vol * 100, 1), 4) if vol else 0,
+                'underlying_price': round(spot, 2) if spot else None,
+                'traded_at': session_ts,
+                'asset_class': asset_class,
+                'source': 'flow',
+            })
+
+    merged: dict[str, dict] = {}
+    for t in trades:
+        key = f"{t['symbol']}|{t['expiry']}|{t['strike']}|{t['side']}"
+        if key not in merged or t['total_value'] > merged[key]['total_value']:
+            merged[key] = t
+    return sorted(merged.values(), key=lambda x: x['total_value'], reverse=True)[:40]
+
+
+def _high_iv_from_greeks_cached(symbol: str) -> list | None:
+    row = cache_get(cache_key(symbol, 'greeks'))
+    if not row or row.get('no_options'):
+        return None
+    exp = row.get('expiry') or ''
+    asset_class = _most_active_asset_class(symbol)
+    out: list[dict] = []
+    strikes = row.get('strikes') or []
+    types = row.get('types') or []
+    ivs = row.get('iv') or []
+    for i, k in enumerate(strikes):
+        if i >= len(types) or i >= len(ivs):
+            break
+        iv_pct = float(ivs[i] or 0)
+        if iv_pct < 80:
+            continue
+        side = 'CALL' if str(types[i]).lower() == 'call' else 'PUT'
+        strike = float(k)
+        out.append({
+            'symbol': symbol,
+            'contract': _format_contract_desc(symbol, exp, strike, side),
+            'expiry': exp,
+            'strike': strike,
+            'side': side,
+            'implied_volatility': round(iv_pct, 2),
+            'option_interest': 0,
+            'option_volume': 0,
+            'asset_class': asset_class,
+        })
+    out.sort(key=lambda x: x['implied_volatility'], reverse=True)
+    return out[:40] if out else None
+
+_FLOW_TRADE_EXTRA = ['MSTR', 'NFLX', 'ARM', 'SMCI', 'MU', 'AVGO']
+_FLOW_TRADE_SYMS = list(dict.fromkeys(_MOST_ACTIVE_ALL_SYMS + _FLOW_TRADE_EXTRA))
+
+
+def _format_expiry_label(exp: str) -> str:
+    try:
+        dt = datetime.strptime(exp, '%Y-%m-%d')
+        return f"{dt.strftime('%b')} {dt.day}, {dt.year}"
+    except Exception:
+        return exp
+
+
+def _format_contract_desc(symbol: str, expiry: str, strike: float, side: str) -> str:
+    opt = 'call' if str(side).upper() == 'CALL' else 'put'
+    return f"{symbol} {_format_expiry_label(expiry)} {strike:.2f} {opt}"
+
+
+def _flow_trade_type(total_value: float) -> str:
+    if total_value >= 1_000_000:
+        return 'large'
+    if total_value >= 250_000:
+        return 'medium'
+    return 'small'
+
+
+def _flow_trade_sentiment(side: str, vol: int, oi: int) -> str:
+    ratio = vol / max(oi, 1) if oi > 0 else (2.5 if vol >= 1500 else 1.0)
+    if str(side).upper() == 'CALL':
+        return 'bullish' if ratio >= 1.4 or vol >= 2500 else 'neutral'
+    return 'bearish' if ratio >= 1.4 or vol >= 2500 else 'neutral'
+
+
+def _traded_at_et(ts_ms: int | None = None) -> str:
+    try:
+        tz = ZoneInfo('America/New_York')
+        ts = ts_ms if ts_ms else int(datetime.now().timestamp() * 1000)
+        dt = datetime.fromtimestamp(ts / 1000.0, tz=tz)
+        h12 = dt.hour % 12 or 12
+        ampm = 'AM' if dt.hour < 12 else 'PM'
+        return f"{dt.year}-{dt.month:02d}-{dt.day:02d} {h12}:{dt.minute:02d}{ampm} EDT"
+    except Exception:
+        return '—'
+
+
+def _contract_trades_for_symbol(symbol: str, group: str = 'Stocks', nocache: bool = False, skip_live: bool = False) -> list:
+    """Largest option contracts by estimated premium (volume × mid × 100)."""
+    ck = cache_key(symbol, 'opt-flow-trades')
+    if not nocache:
+        cached = cache_get(ck)
+        if cached is not None:
+            return cached
+
+    trades: list[dict] = []
+    asset_class = _most_active_asset_class(symbol)
+    session_ts = _traded_at_et()
+
+    live_events: list = []
+    if not skip_live:
+        try:
+            _poll_live_flow(symbol, nocache=nocache)
+        except Exception:
+            pass
+        with _LIVE_FLOW_LOCK:
+            live_events = list(_LIVE_FLOW_EVENTS.get(symbol, []))[:400]
+    for ev in live_events:
+        contracts = int(ev.get('contracts') or 0)
+        if contracts <= 0:
+            continue
+        prem_k = float(ev.get('premium_k') or 0)
+        total_value = round(prem_k * 1000.0, 2)
+        if total_value < 25_000:
+            continue
+        strike = float(ev.get('strike') or 0)
+        expiry = str(ev.get('expiry') or '')
+        side = str(ev.get('side') or 'CALL').upper()
+        avg_price = round(total_value / max(contracts * 100, 1), 4)
+        trades.append({
+            'symbol': symbol,
+            'contract': _format_contract_desc(symbol, expiry, strike, side),
+            'expiry': expiry,
+            'strike': strike,
+            'side': side,
+            'type': _flow_trade_type(total_value),
+            'sentiment': _flow_trade_sentiment(side, contracts, 0),
+            'total_value': total_value,
+            'total_size': contracts,
+            'avg_price': avg_price,
+            'underlying_price': None,
+            'traded_at': _traded_at_et(ev.get('ts_ms')),
+            'asset_class': asset_class,
+            'source': 'live',
+        })
+
+    try:
+        with _yf_lock:
+            ticker = yf.Ticker(symbol)
+            try:
+                spot = float(ticker.fast_info.last_price or 0)
+            except Exception:
+                spot = 0.0
+            if spot <= 0:
+                spot = float((ticker.info or {}).get('regularMarketPrice', 0) or 0)
+            expiries = list(ticker.options or [])
+    except Exception:
+        spot = 0.0
+        expiries = []
+
+    if not expiries:
+        cache_set(ck, trades)
+        return trades
+
+    target_exps = _pick_scan_expiries(expiries, max_n=6)
+    lo, hi = (spot * 0.70, spot * 1.35) if spot > 0 else (0, float('inf'))
+
+    def _mid(row_):
+        b = float(row_.get('bid', 0) or 0)
+        a = float(row_.get('ask', 0) or 0)
+        if b > 0 and a > 0:
+            return (b + a) / 2
+        return float(row_.get('lastPrice', 0) or 0)
+
+    for exp in target_exps:
+        try:
+            with _yf_lock:
+                chain = ticker.option_chain(exp)
+        except Exception:
+            continue
+        for side, df in (('CALL', chain.calls), ('PUT', chain.puts)):
+            if df is None or df.empty:
+                continue
+            try:
+                df = df[(df['strike'] >= lo) & (df['strike'] <= hi)]
+            except Exception:
+                pass
+            for _, r in df.iterrows():
+                _v = r.get('volume', 0)
+                vol = 0 if (_v is None or (_v != _v)) else int(float(_v or 0))
+                if vol < 25:
+                    continue
+                _o = r.get('openInterest', 0)
+                oi = 0 if (_o is None or (_o != _o)) else int(float(_o or 0))
+                strike = round(float(r.get('strike') or 0), 2)
+                mid = float(_mid(r) or 0)
+                if mid <= 0:
+                    continue
+                total_value = round(vol * mid * 100.0, 2)
+                if total_value < 25_000:
+                    continue
+                avg_price = round(mid, 4)
+                trades.append({
+                    'symbol': symbol,
+                    'contract': _format_contract_desc(symbol, exp, strike, side),
+                    'expiry': exp,
+                    'strike': strike,
+                    'side': side,
+                    'type': _flow_trade_type(total_value),
+                    'sentiment': _flow_trade_sentiment(side, vol, oi),
+                    'total_value': total_value,
+                    'total_size': vol,
+                    'avg_price': avg_price,
+                    'underlying_price': round(spot, 2) if spot > 0 else None,
+                    'traded_at': session_ts,
+                    'asset_class': asset_class,
+                    'source': 'chain',
+                })
+
+    # Dedupe: prefer live event over chain snapshot for same contract key
+    merged: dict[str, dict] = {}
+    for t in trades:
+        key = f"{t['symbol']}|{t['expiry']}|{t['strike']}|{t['side']}"
+        prev = merged.get(key)
+        if not prev or t.get('source') == 'live' or t['total_value'] > prev.get('total_value', 0):
+            merged[key] = t
+    out = sorted(merged.values(), key=lambda x: x['total_value'], reverse=True)[:80]
+    cache_set(ck, out)
+    return out
+
+
+def _build_options_flow_trades(nocache: bool = False) -> list:
+    all_trades: list[dict] = []
+    flows = None
+    if not nocache:
+        try:
+            flows = cache_get(cache_key('all', 'opt-flows'))
+        except Exception:
+            flows = None
+    if flows and flows.get('assets'):
+        for r in flows['assets']:
+            all_trades.extend(_flow_trades_from_flow_row(r))
+    else:
+        for sym in _flow_rank_symbols(14):
+            row = cache_get(cache_key(sym, 'opt-flow'))
+            if row:
+                all_trades.extend(_flow_trades_from_flow_row(row))
+
+    have = {t['symbol'] for t in all_trades}
+    # Only deep-scan a few names missing from flows cache (meme/high-vol)
+    scan_syms = [sym for sym in _FLOW_TRADE_EXTRA if sym not in have][:4]
+    if scan_syms:
+        with ThreadPoolExecutor(max_workers=3) as pool:
+            futs = {
+                pool.submit(
+                    _contract_trades_for_symbol,
+                    sym,
+                    'Stocks',
+                    nocache,
+                    True,
+                ): sym
+                for sym in scan_syms
+            }
+            for fut in as_completed(futs, timeout=90):
+                try:
+                    rows = fut.result(timeout=1) or []
+                    all_trades.extend(rows[:20])
+                except Exception:
+                    pass
+
+    merged: dict[str, dict] = {}
+    for t in all_trades:
+        key = f"{t.get('symbol')}|{t.get('expiry')}|{t.get('strike')}|{t.get('side')}"
+        if key not in merged or t.get('total_value', 0) > merged[key].get('total_value', 0):
+            merged[key] = t
+    out = sorted(merged.values(), key=lambda x: x.get('total_value', 0), reverse=True)
+    return out[:400]
+
+
+@app.route('/api/options-flow-trades')
+def options_flow_trades_endpoint():
+    """Largest option trades by total premium value (chain volume + live deltas)."""
+    filt = (request.args.get('filter') or 'stock').strip().lower()
+    if filt not in ('stock', 'etf', 'index', 'all'):
+        filt = 'stock'
+    nocache = request.args.get('nocache', '0') == '1'
+    ck = cache_key(filt, 'opt-flow-trades')
+    if not nocache:
+        cached = cache_get(ck)
+        if cached:
+            return jsonify(cached)
+
+    all_rows = _build_options_flow_trades(nocache=nocache)
+    if filt == 'all':
+        rows = all_rows
+    else:
+        rows = [r for r in all_rows if r.get('asset_class') == filt]
+
+    result = {
+        'filter': filt,
+        'rows': rows,
+        'count': len(rows),
+        'timestamp': iso_now(),
+        'note': 'Estimated from chain volume × mid and live volume deltas — not exchange tape.',
+    }
+    cache_set(ck, result)
+    return jsonify(result)
+
+
+
+
+_HIV_EXTRA = ['MSTR', 'AMC', 'INTC', 'SLS', 'GME', 'RIOT', 'COIN', 'MARA', 'PLTR', 'SOFI', 'NFLX', 'SMCI']
+
+
+def _iv_to_pct(raw) -> float | None:
+    """Normalize yfinance/Schwab IV to percent (e.g. 340.79)."""
+    try:
+        iv = float(raw or 0)
+    except (TypeError, ValueError):
+        return None
+    if iv <= 0.001 or iv > 50:
+        return None
+    if iv <= 1.0:
+        pct = iv * 100.0
+    elif iv <= 15.0:
+        pct = iv * 100.0
+    else:
+        pct = iv
+    if pct < 50 or pct > 2000:
+        return None
+    return round(pct, 2)
+
+
+def _high_iv_contracts_for_symbol(symbol: str, nocache: bool = False) -> list:
+    """Contracts with highest implied volatility for one underlying."""
+    ck = cache_key(symbol, 'high-iv-contracts')
+    if not nocache:
+        cached = cache_get(ck)
+        if cached is not None:
+            return cached
+
+    rows: list[dict] = []
+    asset_class = _most_active_asset_class(symbol)
+
+    try:
+        with _yf_lock:
+            ticker = yf.Ticker(symbol)
+            try:
+                spot = float(ticker.fast_info.last_price or 0)
+            except Exception:
+                spot = 0.0
+            if spot <= 0:
+                spot = float((ticker.info or {}).get('regularMarketPrice', 0) or 0)
+            expiries = list(ticker.options or [])
+    except Exception:
+        expiries = []
+        spot = 0.0
+
+    if not expiries:
+        cache_set(ck, rows)
+        return rows
+
+    cached = _high_iv_from_greeks_cached(symbol)
+    if cached is not None:
+        cache_set(ck, cached)
+        return cached
+
+    target_exps = _pick_scan_expiries(expiries, max_n=6)
+    lo = spot * 0.25 if spot > 0 else 0
+    hi = spot * 2.5 if spot > 0 else float('inf')
+
+    for exp in target_exps:
+        try:
+            with _yf_lock:
+                chain = ticker.option_chain(exp)
+        except Exception:
+            continue
+        for side, df in (('CALL', chain.calls), ('PUT', chain.puts)):
+            if df is None or df.empty:
+                continue
+            try:
+                df = df[(df['strike'] >= lo) & (df['strike'] <= hi)]
+            except Exception:
+                pass
+            for _, r in df.iterrows():
+                iv_pct = _iv_to_pct(r.get('impliedVolatility'))
+                if iv_pct is None or iv_pct < 80:
+                    continue
+                _v = r.get('volume', 0)
+                vol = 0 if (_v is None or (_v != _v)) else int(float(_v or 0))
+                _o = r.get('openInterest', 0)
+                oi = 0 if (_o is None or (_o != _o)) else int(float(_o or 0))
+                strike = round(float(r.get('strike') or 0), 2)
+                rows.append({
+                    'symbol': symbol,
+                    'contract': _format_contract_desc(symbol, exp, strike, side),
+                    'expiry': exp,
+                    'strike': strike,
+                    'side': side,
+                    'implied_volatility': iv_pct,
+                    'option_interest': oi,
+                    'option_volume': vol,
+                    'asset_class': asset_class,
+                })
+
+    rows.sort(key=lambda x: x['implied_volatility'], reverse=True)
+    out = rows[:60]
+    cache_set(ck, out)
+    return out
+
+
+def _build_highest_iv_contracts(nocache: bool = False) -> list:
+    all_rows: list[dict] = []
+    sym_list = _flow_rank_symbols(12)
+    for sym in _HIV_EXTRA:
+        if sym not in sym_list:
+            sym_list.append(sym)
+    sym_list = sym_list[:12]
+
+    need_scan: list[str] = []
+    for sym in sym_list:
+        if not nocache:
+            hit = _high_iv_from_greeks_cached(sym)
+            if hit:
+                all_rows.extend(hit[:25])
+                continue
+        need_scan.append(sym)
+
+    if need_scan:
+        with ThreadPoolExecutor(max_workers=3) as pool:
+            futs = {pool.submit(_high_iv_contracts_for_symbol, sym, nocache): sym for sym in need_scan}
+            for fut in as_completed(futs, timeout=90):
+                try:
+                    chunk = fut.result(timeout=1) or []
+                    all_rows.extend(chunk[:25])
+                except Exception:
+                    pass
+    all_rows.sort(key=lambda x: x.get('implied_volatility', 0), reverse=True)
+    return all_rows[:350]
+
+
+@app.route('/api/highest-iv-contracts')
+def highest_iv_contracts_endpoint():
+    """Stock option contracts ranked by highest implied volatility."""
+    filt = (request.args.get('filter') or 'stock').strip().lower()
+    if filt not in ('stock', 'etf', 'index', 'all'):
+        filt = 'stock'
+    nocache = request.args.get('nocache', '0') == '1'
+    ck = cache_key(filt, 'high-iv-contracts')
+    if not nocache:
+        cached = cache_get(ck)
+        if cached:
+            return jsonify(cached)
+
+    all_rows = _build_highest_iv_contracts(nocache=nocache)
+    if filt == 'all':
+        rows = all_rows
+    else:
+        rows = [r for r in all_rows if r.get('asset_class') == filt]
+
+    result = {
+        'filter': filt,
+        'rows': rows,
+        'count': len(rows),
+        'timestamp': iso_now(),
+    }
+    cache_set(ck, result)
+    return jsonify(result)
+
+
+@app.route('/api/most-active-options')
+def most_active_options_endpoint():
+    """Rank underlyings by total option volume (calls + puts) for session."""
+    filt = (request.args.get('filter') or 'all').strip().lower()
+    if filt not in ('stock', 'etf', 'index', 'all'):
+        filt = 'all'
+    nocache = request.args.get('nocache', '0') == '1'
+    ck = cache_key(filt, 'most-active-opt')
+    if not nocache:
+        cached = cache_get(ck)
+        if cached:
+            return jsonify(cached)
+
+    all_rows = _build_most_active_rows(nocache=nocache)
+    if filt == 'all':
+        rows = all_rows
+    else:
+        rows = [r for r in all_rows if r.get('asset_class') == filt]
+
+    result = {
+        'filter': filt,
+        'rows': rows,
+        'count': len(rows),
+        'timestamp': iso_now(),
+    }
+    cache_set(ck, result)
+    return jsonify(result)
+
+
 @app.route('/api/option-flows')
 def option_flows_endpoint():
     nocache = request.args.get('nocache', '0') == '1'
@@ -5683,6 +6615,45 @@ def _greeks_for_symbol(symbol: str, nocache: bool = False) -> dict:
     strikes_sorted = sorted(strikes, key=lambda x: abs(x - spot))[:9]
     strikes_sorted = sorted(strikes_sorted)
 
+    # Full Greek curves by strike (OptionCharts-style)
+    curve_strikes = sorted(strikes, key=lambda x: abs(x - spot))[:42]
+    curve_strikes = sorted(curve_strikes)
+    curve = {'strikes': [round(x, 2) for x in curve_strikes],
+             'call': {'delta': [], 'gamma': [], 'theta': [], 'vega': [], 'iv': []},
+             'put':  {'delta': [], 'gamma': [], 'theta': [], 'vega': [], 'iv': []}}
+
+    def _row_iv(df, strike):
+        sub = df.iloc[(df['strike'] - strike).abs().argsort()[:1]]
+        if sub.empty:
+            return iv
+        return _iv(sub.iloc[0]) or iv
+
+    for k in curve_strikes:
+        iv_k_c = _row_iv(calls, k)
+        iv_k_p = _row_iv(puts, k)
+        curve['call']['iv'].append(round(iv_k_c * 100, 2))
+        curve['put']['iv'].append(round(iv_k_p * 100, 2))
+        curve['call']['delta'].append(round(_bs_delta(spot, k, T, R, iv_k_c, 'call'), 4))
+        curve['put']['delta'].append(round(_bs_delta(spot, k, T, R, iv_k_p, 'put'), 4))
+        curve['call']['gamma'].append(round(_bs_gamma(spot, k, T, R, iv_k_c), 6))
+        curve['put']['gamma'].append(round(_bs_gamma(spot, k, T, R, iv_k_p), 6))
+        curve['call']['vega'].append(round(_bs_vega(spot, k, T, R, iv_k_c) / 100.0, 4))
+        curve['put']['vega'].append(round(_bs_vega(spot, k, T, R, iv_k_p) / 100.0, 4))
+        curve['call']['theta'].append(round(_bs_theta(spot, k, T, R, iv_k_c, 'call') / 365.0, 4))
+        curve['put']['theta'].append(round(_bs_theta(spot, k, T, R, iv_k_p, 'put') / 365.0, 4))
+
+    # Table rows for frontend (near strikes)
+    tbl_strikes, tbl_types, tbl_delta, tbl_gamma, tbl_theta, tbl_vega, tbl_iv = [], [], [], [], [], [], []
+    for k in strikes_sorted:
+        for otype, iv_k in (('call', _row_iv(calls, k)), ('put', _row_iv(puts, k))):
+            tbl_strikes.append(round(k, 2))
+            tbl_types.append(otype)
+            tbl_delta.append(round(_bs_delta(spot, k, T, R, iv_k, otype), 4))
+            tbl_gamma.append(round(_bs_gamma(spot, k, T, R, iv_k), 6))
+            tbl_vega.append(round(_bs_vega(spot, k, T, R, iv_k) / 100.0, 4))
+            tbl_theta.append(round(_bs_theta(spot, k, T, R, iv_k, otype) / 365.0, 4))
+            tbl_iv.append(round(iv_k * 100, 2))
+
     out = {
         'symbol': symbol,
         'label': SYMBOL_LABELS.get(symbol, symbol),
@@ -5692,11 +6663,173 @@ def _greeks_for_symbol(symbol: str, nocache: bool = False) -> dict:
         'atm_strike': round(K, 2),
         'atm': {'call': greeks_call, 'put': greeks_put},
         'near_strikes': [round(x, 2) for x in strikes_sorted],
+        'curves': curve,
+        'strikes': tbl_strikes,
+        'types': tbl_types,
+        'delta': tbl_delta,
+        'gamma': tbl_gamma,
+        'theta': tbl_theta,
+        'vega': tbl_vega,
+        'iv': tbl_iv,
         'no_options': False,
         'timestamp': iso_now(),
     }
     cache_set(ck, out)
     return out
+
+
+def _option_chain_row(df_row, spot: float, T: float, R: float, otype: str) -> dict:
+    try:
+        K = float(df_row['strike'])
+        bid = float(df_row.get('bid') or 0)
+        ask = float(df_row.get('ask') or 0)
+        last = float(df_row.get('lastPrice') or 0)
+        mid = (bid + ask) / 2 if bid > 0 and ask > 0 else (last or 0)
+        vol = int(df_row.get('volume') or 0)
+        oi = int(df_row.get('openInterest') or 0)
+        iv = float(df_row.get('impliedVolatility') or 0)
+        if iv <= 0.001 or iv > 5:
+            iv = 0.25
+        return {
+            'strike': round(K, 2),
+            'last': round(last, 2) if last else None,
+            'bid': round(bid, 2) if bid else None,
+            'ask': round(ask, 2) if ask else None,
+            'mid': round(mid, 2) if mid else None,
+            'volume': vol,
+            'open_interest': oi,
+            'iv': round(iv * 100, 2),
+            'delta': round(_bs_delta(spot, K, T, R, iv, otype), 4),
+            'gamma': round(_bs_gamma(spot, K, T, R, iv), 6),
+            'theta': round(_bs_theta(spot, K, T, R, iv, otype) / 365.0, 4),
+            'vega': round(_bs_vega(spot, K, T, R, iv) / 100.0, 4),
+            'contract': str(df_row.get('contractSymbol', '') or ''),
+        }
+    except Exception:
+        return None
+
+
+def _option_chain_for_symbol(symbol: str, expiry: str | None = None, nocache: bool = False) -> dict | None:
+    fetch_sym = 'SPY' if symbol.upper() in ('SPX', '^SPX', '^GSPC') else symbol.upper()
+    ck = cache_key(fetch_sym, f'opt-chain:{expiry or "front"}')
+    if not nocache:
+        cached = cache_get(ck)
+        if cached:
+            if symbol.upper() in ('SPX', '^SPX', '^GSPC'):
+                cached = dict(cached)
+                cached['symbol'] = symbol.upper()
+                cached['proxy'] = 'SPY'
+            return cached
+
+    with _yf_lock:
+        tk = yf.Ticker(fetch_sym)
+    try:
+        with _yf_lock:
+            spot = float(tk.fast_info.last_price or 0)
+    except Exception:
+        spot = 0.0
+    if spot <= 0:
+        with _yf_lock:
+            h = tk.history(period='5d')
+        if h is not None and not h.empty:
+            spot = float(h['Close'].iloc[-1])
+
+    try:
+        with _yf_lock:
+            expiries = sorted(list(tk.options or []))
+    except Exception:
+        expiries = []
+    if not expiries or spot <= 0:
+        return None
+
+    exp, dte = _pick_expiry(expiries)
+    if expiry and expiry in expiries:
+        exp = expiry
+        from datetime import date as _date
+        try:
+            dte = (_date.fromisoformat(exp) - _date.today()).days
+        except Exception:
+            dte = 0
+
+    try:
+        with _yf_lock:
+            ch = tk.option_chain(exp)
+    except Exception:
+        return None
+
+    T = max((dte or 1) / 365.0, 1 / 365.0)
+    R = 0.05
+    lo, hi = spot * 0.82, spot * 1.18
+
+    calls, puts = [], []
+    for _, row in ch.calls.iterrows():
+        K = float(row['strike'])
+        if lo <= K <= hi:
+            r = _option_chain_row(row, spot, T, R, 'call')
+            if r:
+                calls.append(r)
+    for _, row in ch.puts.iterrows():
+        K = float(row['strike'])
+        if lo <= K <= hi:
+            r = _option_chain_row(row, spot, T, R, 'put')
+            if r:
+                puts.append(r)
+
+    calls.sort(key=lambda x: x['strike'])
+    puts.sort(key=lambda x: x['strike'])
+
+    tot_c_oi = sum(c['open_interest'] for c in calls)
+    tot_p_oi = sum(p['open_interest'] for p in puts)
+    tot_c_vol = sum(c['volume'] for c in calls)
+    tot_p_vol = sum(p['volume'] for p in puts)
+
+    top_oi = []
+    for c in calls:
+        if c['open_interest'] > 0:
+            top_oi.append({**c, 'type': 'CALL'})
+    for p in puts:
+        if p['open_interest'] > 0:
+            top_oi.append({**p, 'type': 'PUT'})
+    top_oi.sort(key=lambda x: x['open_interest'], reverse=True)
+
+    out = {
+        'symbol': symbol.upper(),
+        'proxy': fetch_sym if fetch_sym != symbol.upper() else None,
+        'spot': round(spot, 4),
+        'expiry': exp,
+        'dte': int(dte or 0),
+        'expiries': expiries[:24],
+        'calls': calls,
+        'puts': puts,
+        'totals': {
+            'call_oi': tot_c_oi, 'put_oi': tot_p_oi,
+            'call_vol': tot_c_vol, 'put_vol': tot_p_vol,
+            'pcr_oi': round(tot_p_oi / max(tot_c_oi, 1), 3),
+            'pcr_vol': round(tot_p_vol / max(tot_c_vol, 1), 3),
+        },
+        'top_open_interest': top_oi[:25],
+        'timestamp': iso_now(),
+    }
+    if symbol.upper() in ('SPX', '^SPX', '^GSPC'):
+        ratio = _spx_spy_ratio()
+        out['spx_ratio'] = round(ratio, 4)
+        out = _scale_spx_chain_row(out, ratio)
+        out['symbol'] = 'SPX'
+        out['proxy'] = 'SPY'
+    cache_set(ck, out)
+    return out
+
+
+@app.route('/api/option-chain')
+def option_chain_endpoint():
+    """Full option chain for one symbol + expiry (OptionCharts-style table)."""
+    sym = request.args.get('symbol', 'SPY').strip().upper()
+    exp = request.args.get('expiry', '').strip() or None
+    nocache = request.args.get('nocache', '0') == '1'
+    row = _option_chain_for_symbol(sym, expiry=exp, nocache=nocache)
+    if not row:
+        return jsonify({'error': f'No chain for {sym}', 'symbol': sym}), 404
+    return jsonify(row)
 
 
 @app.route('/api/greeks')
@@ -5709,11 +6842,11 @@ def greeks_endpoint():
     sym_s = (request.args.get('symbols') or 'SPY,QQQ').strip()
     symbols = [s.strip() for s in sym_s.split(',') if s.strip()]
     symbols = symbols[:12]
+    sync = nocache or len(symbols) == 1
 
     rows = []
     for s in symbols:
         requested = s
-        # indices have limited/no options in yfinance; map to liquid ETF proxies
         u = requested.upper()
         if u in ('SPX', '^SPX', '^GSPC', '^SPXW'):
             s = 'SPY'
@@ -5723,7 +6856,6 @@ def greeks_endpoint():
             s = 'IWM'
         elif u in ('VIX', '^VIX'):
             s = 'VXX'
-        # Fast path: serve cached if available; otherwise compute in background and return a placeholder.
         proxy = s
         ck = cache_key(proxy, 'greeks')
         row = None
@@ -5733,7 +6865,9 @@ def greeks_endpoint():
             except Exception:
                 row = None
 
-        if row is None:
+        if row is None and sync:
+            row = _greeks_for_symbol(proxy, nocache=True)
+        elif row is None:
             global _GREEKS_WORKING  # type: ignore[declared-but-unused]
             try:
                 _GREEKS_WORKING
@@ -5766,8 +6900,16 @@ def greeks_endpoint():
                 'timestamp': iso_now(),
             }
 
-        # Preserve what the user asked for so the UI can label proxies clearly
-        if requested.upper() != s.upper():
+        if row and requested.upper() in ('SPX', '^SPX', '^GSPC', '^SPXW'):
+            ratio = _spx_spy_ratio()
+            row = dict(row)
+            if row.get('curves'):
+                row = _scale_spx_greeks_row(row, ratio)
+            row['requested_symbol'] = requested
+            row['proxy_symbol'] = proxy
+            row['symbol'] = 'SPX'
+            row['spx_ratio'] = round(ratio, 4)
+        elif requested.upper() != s.upper():
             row = dict(row)
             row['requested_symbol'] = requested
             row['proxy_symbol'] = s
@@ -6711,8 +7853,278 @@ def xgboost_charts_endpoint():
 
 # ── Volatility Surface ────────────────────────────────────────────────────────
 
-_VOL_SYMBOLS = ['SPY', 'QQQ', 'AAPL', 'MSFT', 'NVDA', 'META', 'TSLA', 'AMZN', 'GOOGL']
+_VOL_SYMBOLS = list(dict.fromkeys(
+    SYMBOLS['stocks'] + SYMBOLS['futures'][:1]  # ETFs, Mag7, blue chips + ES=F
+))
 _VOL_MONO_TARGETS = [0.80, 0.85, 0.90, 0.92, 0.95, 0.97, 1.00, 1.03, 1.05, 1.08, 1.10, 1.15, 1.20]
+
+_IV_RANK_EXTRA = ['BTM', 'FUTU', 'DELL', 'SES', 'ONDS', 'NAKA', 'BMNR', 'MSTR', 'AMC', 'PLTR', 'SOFI']
+
+
+def _compute_iv_rank_pct(symbol: str, current_iv: float) -> float | None:
+    """IV Rank vs 1y range of 30-day realized vol (proxy when historical IV tape unavailable)."""
+    if current_iv is None or current_iv <= 0:
+        return None
+    try:
+        with _yf_lock:
+            hist = yf.Ticker(symbol).history(period='1y', auto_adjust=True)
+        if hist is None or hist.empty or len(hist) < 40:
+            return None
+        rets = np.log(hist['Close'] / hist['Close'].shift(1)).dropna()
+        rolling = (rets.rolling(30).std() * np.sqrt(252)).dropna()
+        if len(rolling) < 20:
+            return None
+        lo, hi = float(rolling.min()), float(rolling.max())
+        if hi <= lo:
+            return 50.0
+        return round((float(current_iv) - lo) / max(hi - lo, 0.001) * 100, 2)
+    except Exception:
+        return None
+
+
+def _vol_option_totals(vol_row: dict) -> tuple[int, int]:
+    tv, oi = 0, 0
+    for t in vol_row.get('term_structure') or []:
+        tv += int(t.get('call_vol') or 0) + int(t.get('put_vol') or 0)
+        oi += int(t.get('call_oi') or 0) + int(t.get('put_oi') or 0)
+    return tv, oi
+
+
+def _iv_rank_stock_from_vol(vol_row: dict, flow_row: dict | None = None) -> dict | None:
+    if not vol_row or not vol_row.get('symbol'):
+        return None
+    sym = vol_row['symbol']
+    atm = float(vol_row.get('atm_iv') or 0)
+    if atm <= 0:
+        return None
+    iv_rank = vol_row.get('iv_rank')
+    if iv_rank is None:
+        iv_rank = _compute_iv_rank_pct(sym, atm)
+    iv_pct = round(atm * 100, 2) if atm < 3 else round(atm, 2)
+    vol, oi = _vol_option_totals(vol_row)
+    if flow_row and not flow_row.get('no_options'):
+        vol = max(vol, int(flow_row.get('total_call_vol') or 0) + int(flow_row.get('total_put_vol') or 0))
+        # OI not in flow row totals — keep vol surface oi
+    return {
+        'symbol': sym,
+        'name': _short_company_name(sym),
+        'iv_rank': iv_rank,
+        'implied_volatility_30d': iv_pct,
+        'volume': vol,
+        'open_interest': oi,
+        'asset_class': _most_active_asset_class(sym),
+        'spot': vol_row.get('spot'),
+    }
+
+
+def _build_iv_rank_stocks(nocache: bool = False) -> list:
+    rows: list[dict] = []
+    flow_map: dict[str, dict] = {}
+    try:
+        flows = cache_get(cache_key('all', 'opt-flows'))
+        if flows and flows.get('assets'):
+            for r in flows['assets']:
+                if r.get('symbol'):
+                    flow_map[r['symbol']] = r
+    except Exception:
+        pass
+
+    vol_assets: list[dict] = []
+    try:
+        vs = cache_get(cache_key('all', 'vol-surface'))
+        if vs and vs.get('assets'):
+            vol_assets = vs['assets']
+    except Exception:
+        pass
+
+    if not vol_assets and not nocache:
+        for sym in _VOL_SYMBOLS[:14]:
+            vr = cache_get(cache_key(sym, 'vol-surface-one'))
+            if vr and vr.get('assets'):
+                vol_assets.extend(vr['assets'])
+
+    seen = set()
+    for vol_row in vol_assets:
+        sym = vol_row.get('symbol')
+        if not sym or sym in seen:
+            continue
+        seen.add(sym)
+        row = _iv_rank_stock_from_vol(vol_row, flow_map.get(sym))
+        if row and row.get('iv_rank') is not None:
+            rows.append(row)
+
+    # Per-symbol vol cache fallback
+    if len(rows) < 8:
+        for sym in _flow_rank_symbols(14):
+            if sym in seen:
+                continue
+            vol_row = cache_get(cache_key(sym, 'vol-surface-one'))
+            if isinstance(vol_row, dict) and vol_row.get('assets'):
+                vol_row = vol_row['assets'][0]
+            elif isinstance(vol_row, dict) and vol_row.get('symbol'):
+                pass
+            else:
+                vol_row = cache_get(cache_key(sym, 'vol-surface'))
+            if not vol_row or not isinstance(vol_row, dict):
+                continue
+            if vol_row.get('assets'):
+                vol_row = vol_row['assets'][0]
+            row = _iv_rank_stock_from_vol(vol_row, flow_map.get(sym))
+            if row and row.get('iv_rank') is not None:
+                rows.append(row)
+                seen.add(sym)
+
+    return rows
+
+
+@app.route('/api/iv-rank-stocks')
+def iv_rank_stocks_endpoint():
+    """Underlying IV Rank table (high or low sort)."""
+    sort = (request.args.get('sort') or 'high').strip().lower()
+    if sort not in ('high', 'low'):
+        sort = 'high'
+    filt = (request.args.get('filter') or 'stock').strip().lower()
+    if filt not in ('stock', 'etf', 'index', 'all'):
+        filt = 'stock'
+    nocache = request.args.get('nocache', '0') == '1'
+    ck = cache_key(f'{sort}:{filt}', 'iv-rank-stocks')
+    if not nocache:
+        cached = cache_get(ck)
+        if cached:
+            return jsonify(cached)
+
+    all_rows = _build_iv_rank_stocks(nocache=nocache)
+    if filt != 'all':
+        all_rows = [r for r in all_rows if r.get('asset_class') == filt]
+    rev = sort == 'high'
+    all_rows.sort(key=lambda x: (x.get('iv_rank') is None, x.get('iv_rank') or 0), reverse=rev)
+
+    result = {
+        'sort': sort,
+        'filter': filt,
+        'rows': all_rows,
+        'count': len(all_rows),
+        'timestamp': iso_now(),
+        'note': 'IV Rank uses 1y realized-vol range as proxy; IV 30d is front-month ATM implied vol.',
+    }
+    cache_set(ck, result)
+    return jsonify(result)
+
+
+
+_SPX_RATIO_CACHE: tuple[float, float] | None = None  # (ratio, monotonic time)
+
+
+def _spx_spy_ratio() -> float:
+    """Live SPX index level / SPY price for scaling proxy chains to SPX display."""
+    global _SPX_RATIO_CACHE
+    import time as _time
+    now = _time.monotonic()
+    if _SPX_RATIO_CACHE and (now - _SPX_RATIO_CACHE[1]) < 120:
+        return _SPX_RATIO_CACHE[0]
+    spx = spy = 0.0
+    try:
+        with _yf_lock:
+            spx = float(yf.Ticker('^GSPC').fast_info.last_price or 0)
+            spy = float(yf.Ticker('SPY').fast_info.last_price or 0)
+    except Exception:
+        pass
+    ratio = (spx / spy) if spx > 0 and spy > 0 else 10.0
+    _SPX_RATIO_CACHE = (ratio, now)
+    return ratio
+
+
+def _scale_num(v, ratio: float):
+    if v is None:
+        return None
+    try:
+        return round(float(v) * ratio, 4)
+    except Exception:
+        return v
+
+
+def _scale_spx_chain_row(row: dict, ratio: float) -> dict:
+    """Scale strikes/spot for SPX display; option premiums stay SPY-contract $."""
+    out = dict(row)
+    out['spot'] = _scale_num(out.get('spot'), ratio)
+    for key in ('calls', 'puts'):
+        scaled = []
+        for r in out.get(key) or []:
+            nr = dict(r)
+            nr['strike'] = _scale_num(nr.get('strike'), ratio)
+            scaled.append(nr)
+        out[key] = scaled
+    top = []
+    for r in out.get('top_open_interest') or []:
+        nr = dict(r)
+        nr['strike'] = _scale_num(nr.get('strike'), ratio)
+        top.append(nr)
+    out['top_open_interest'] = top
+    return out
+
+
+def _scale_spx_vol_row(row: dict, ratio: float) -> dict:
+    out = dict(row)
+    out['spot'] = _scale_num(out.get('spot'), ratio)
+    ts = []
+    for t in out.get('term_structure') or []:
+        nt = dict(t)
+        if nt.get('max_pain') is not None:
+            nt['max_pain'] = _scale_num(nt['max_pain'], ratio)
+        ts.append(nt)
+    out['term_structure'] = ts
+    mx = out.get('matrix')
+    if mx and isinstance(mx, dict) and mx.get('strikes'):
+        mx = dict(mx)
+        mx['strikes'] = [_scale_num(s, ratio) for s in mx['strikes']]
+        out['matrix'] = mx
+    return out
+
+
+def _scale_spx_greeks_row(row: dict, ratio: float) -> dict:
+    out = dict(row)
+    out['spot'] = _scale_num(out.get('spot'), ratio)
+    if out.get('atm_strike') is not None:
+        out['atm_strike'] = _scale_num(out['atm_strike'], ratio)
+    curves = out.get('curves')
+    if curves and isinstance(curves, dict):
+        curves = dict(curves)
+        curves['strikes'] = [_scale_num(s, ratio) for s in curves.get('strikes') or []]
+        out['curves'] = curves
+    if out.get('near_strikes'):
+        out['near_strikes'] = [_scale_num(s, ratio) for s in out['near_strikes']]
+    if out.get('strikes'):
+        out['strikes'] = [_scale_num(s, ratio) for s in out['strikes']]
+    return out
+
+
+def _chain_max_pain(calls, puts) -> float | None:
+    """Strike where total option-holder payout at expiry is minimized."""
+    strikes = set()
+    for df in (calls, puts):
+        if df is not None and not df.empty:
+            strikes.update(float(x) for x in df['strike'].tolist())
+    if not strikes:
+        return None
+    call_oi = {}
+    put_oi = {}
+    if calls is not None and not calls.empty and 'openInterest' in calls.columns:
+        for k, v in calls.groupby('strike')['openInterest'].sum().items():
+            call_oi[float(k)] = float(v or 0)
+    if puts is not None and not puts.empty and 'openInterest' in puts.columns:
+        for k, v in puts.groupby('strike')['openInterest'].sum().items():
+            put_oi[float(k)] = float(v or 0)
+    best_s, best_p = None, 1e30
+    for s in sorted(strikes):
+        pain = 0.0
+        for k, oi in call_oi.items():
+            pain += oi * max(0.0, s - k) * 100
+        for k, oi in put_oi.items():
+            pain += oi * max(0.0, k - s)  * 100
+        if pain < best_p:
+            best_p = pain
+            best_s = s
+    return round(best_s, 2) if best_s is not None else None
 
 
 def _vol_row(symbol: str) -> dict | None:
@@ -6777,6 +8189,12 @@ def _vol_row(symbol: str) -> dict | None:
                         float(otm_p['impliedVolatility'].mean()) -
                         float(otm_c['impliedVolatility'].mean()), 4)
 
+                c_vol = int(calls['volume'].fillna(0).sum()) if 'volume' in calls.columns else 0
+                p_vol = int(puts['volume'].fillna(0).sum()) if 'volume' in puts.columns else 0
+                c_oi  = int(calls['openInterest'].fillna(0).sum()) if 'openInterest' in calls.columns else 0
+                p_oi  = int(puts['openInterest'].fillna(0).sum()) if 'openInterest' in puts.columns else 0
+                mp    = _chain_max_pain(calls, puts)
+
                 term_structure.append({
                     'expiry':   exp_str,
                     'dte':      dte,
@@ -6785,6 +8203,13 @@ def _vol_row(symbol: str) -> dict | None:
                     'put_iv':   round(put_iv_atm, 4),
                     'skew':     skew_val,
                     'rr25':     rr25,
+                    'call_vol': c_vol,
+                    'put_vol':  p_vol,
+                    'pcr_vol':  round(p_vol / max(c_vol, 1), 3),
+                    'call_oi':  c_oi,
+                    'put_oi':   p_oi,
+                    'pcr_oi':   round(p_oi / max(c_oi, 1), 3),
+                    'max_pain': mp,
                 })
 
                 # Skew curve: IV at each available strike
@@ -6826,11 +8251,13 @@ def _vol_row(symbol: str) -> dict | None:
         if not term_structure:
             return None
 
-        # IV rank: front-month ATM IV position within surface range
-        ivs     = [t['atm_iv'] for t in term_structure]
-        iv_min  = min(ivs)
-        iv_max  = max(ivs)
-        iv_rank = round((ivs[0] - iv_min) / max(iv_max - iv_min, 0.001) * 100, 1)
+        # IV rank: percentile vs 1y realized-vol range (proxy for IV Rank)
+        atm_iv_front = float(term_structure[0]['atm_iv'])
+        iv_rank = _compute_iv_rank_pct(symbol, atm_iv_front)
+        if iv_rank is None:
+            ivs = [t['atm_iv'] for t in term_structure]
+            iv_min, iv_max = min(ivs), max(ivs)
+            iv_rank = round((ivs[0] - iv_min) / max(iv_max - iv_min, 0.001) * 100, 1)
 
         return {
             'symbol':       symbol,
@@ -6854,9 +8281,42 @@ def _vol_row(symbol: str) -> dict | None:
         return None
 
 
+def _vol_fetch_symbol(symbol: str) -> dict | None:
+    """Map display symbols (SPX) to yfinance tickers and return one vol row."""
+    sym = (symbol or '').strip().upper()
+    if not sym:
+        return None
+    fetch_sym = 'SPY' if sym == 'SPX' else sym
+    row = _vol_row(fetch_sym)
+    if row and sym == 'SPX':
+        ratio = _spx_spy_ratio()
+        row = _scale_spx_vol_row(dict(row), ratio)
+        row['symbol'] = 'SPX'
+        row['proxy'] = 'SPY'
+        row['spx_ratio'] = round(ratio, 4)
+    elif row and sym != fetch_sym:
+        row = dict(row)
+        row['symbol'] = sym
+    return row
+
+
 @app.route('/api/volatility-surface')
 def volatility_surface_endpoint():
     nocache = request.args.get('nocache', '0') == '1'
+    sym_q = request.args.get('symbol', '').strip().upper()
+    if sym_q:
+        ck1 = cache_key(sym_q, 'vol-surface-one')
+        if not nocache:
+            cached1 = cache_get(ck1)
+            if cached1:
+                return jsonify(cached1)
+        row = _vol_fetch_symbol(sym_q)
+        result = {'assets': [row] if row else [], 'count': 1 if row else 0,
+                  'symbol': sym_q, 'timestamp': iso_now()}
+        if row:
+            cache_set(ck1, result)
+        return jsonify(result)
+
     ck = cache_key('all', 'vol-surface')
     if not nocache:
         cached = cache_get(ck)
@@ -7154,9 +8614,13 @@ if __name__ == '__main__':
             '/api/market-summary',
             '/api/gamma-exposure',
             '/api/option-flows',
+            '/api/most-active-options',
             '/api/0dte',
             '/api/options-strategy',
             '/api/fundamentals',
+            '/api/volatility-surface?symbol=SPY',
+            '/api/greeks?symbols=SPY',
+            '/api/option-chain?symbol=SPY',
             # Key asset candles + signals (most-visited asset pages)
             '/api/candles/SPY?interval=1h',
             '/api/candles/QQQ?interval=1h',

@@ -444,3 +444,25 @@ window.getThemeChartColors = function () {
     text:  '#7fa3be',
   };
 };
+
+// Drawing tools on charts (Lightweight Charts + canvas)
+(function () {
+  function afterDrawTools() {
+    if (window.ChartDrawTools && window.ChartDrawTools.rescan) {
+      window.ChartDrawTools.rescan();
+    }
+  }
+  if (document.querySelector('script[src*="chart-draw-tools.js"]')) {
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', afterDrawTools);
+    } else {
+      afterDrawTools();
+    }
+    return;
+  }
+  var s = document.createElement('script');
+  s.src = 'chart-draw-tools.js?v=5';
+  s.async = false;
+  s.onload = afterDrawTools;
+  document.head.appendChild(s);
+})();

@@ -5,9 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Live ML Trading Dashboard — Artificial Intelligence Course</title>
   <link rel="preload" href="style.css" as="style" fetchpriority="high">
+  <link rel="stylesheet" href="page-export.css">
   <link rel="stylesheet" href="style.css">
   <link rel="preload" href="lightweight-charts.min.js" as="script">
   <script src="lightweight-charts.min.js"></script>
+  <script src="chart-draw-tools.js?v=5"></script>
   <style>
     /* ── Dashboard Layout ── */
     .dashboard-wrap {
@@ -277,6 +279,18 @@
       top: 0; left: 0; right: 0; bottom: 0;
       width: 100%; height: 100%;   /* explicit size for autoSize observer */
     }
+    .chart-wrap > .cdt-wrap {
+      position: absolute;
+      inset: 0;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+    .chart-wrap .cdt-chart-slot {
+      flex: 1;
+      min-height: 0;
+      position: relative;
+    }
     .chart-loading {
       position: absolute;
       top: 0; left: 0; right: 0; bottom: 0;
@@ -345,8 +359,10 @@
         <li><a href="trade-journal.html" style="color:#4ade80;font-weight:700;">&#128221; Journal</a></li>
     <li><a href="asset-details.html">&#128202; Asset Review</a></li>
     <li><a href="gex-heatmap.html" style="color:#22d3ee;font-weight:700;">&#127777; GEX Heat Maps</a></li>
-    <li><a href="gex-profile.html" style="color:#22d3ee;font-weight:700;">GEX Profile &amp; Institutional Positioning</a></li>
+        <li><a href="option-charts.html" style="color:#fbbf24;font-weight:700;">&#128202; Option Charts</a></li>
+<li><a href="gex-profile.html" style="color:#22d3ee;font-weight:700;">GEX Profile &amp; Institutional Positioning</a></li>
     <li><a href="spx-correlations.html" style="color:#a78bfa;font-weight:700;">&#128202; SPX Correlations</a></li>
+    <li><a href="treasury-yields.html" style="color:#fbbf24;font-weight:700;">&#128176; Treasury Yields</a></li>
     <li><a href="vix-dashboard.html" style="color:#f87171;font-weight:700;">&#128293; VIX Dashboard</a></li>
     <li><a href="the-edge.html" style="color:#fbbf24;font-weight:700;">&#9889; The EDGE</a></li>
     <li><a href="real-time-news.html" style="color:#4ade80;font-weight:700;">&#128240; Real-Time News</a></li>
@@ -407,6 +423,8 @@ ation ── -->
   <a href="ml-xgboost-assets.html">XGBoost Charts &#128202;</a>
   <span class="page-nav-sep">|</span>
   <a href="gamma-exposure.html">GEX Charts &#127919;</a>
+  <span class="page-nav-sep">|</span>
+  <a href="treasury-yields.html" style="color:#fbbf24;font-weight:700;">&#128176; Treasury Yields</a>
   <span class="page-nav-sep">|</span>
   <a href="options-strategy.html">Options Strategy &#128200;</a>
   <span class="page-nav-sep">|</span>
@@ -944,7 +962,7 @@ function initChart() {
   }
 
   // autoSize fills the absolute-positioned container without a manual ResizeObserver
-  chartInstance = LightweightCharts.createChart(container, {
+  chartInstance = (window.createLwcChart || LightweightCharts.createChart)(container, {
     autoSize:  true,
     layout:    { background: { color: '#0d1117' }, textColor: '#94a3b8' },
     grid:      { vertLines: { color: '#1e293b' }, horzLines: { color: '#1e293b' } },
@@ -1422,5 +1440,6 @@ window.addEventListener('load', async () => {
 </script>
 
 <script src="search.js" defer></script>
+  <script src="page-export.js"></script>
 </body>
 </html>

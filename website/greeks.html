@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Greeks — SPX Proxy + Key Assets</title>
   <link rel="preload" href="style.css" as="style" fetchpriority="high">
+  <link rel="stylesheet" href="page-export.css">
   <link rel="stylesheet" href="style.css">
   <style>
     .wrap { max-width: 1400px; margin: 0 auto; padding: 0 1.5rem 6rem; }
@@ -105,6 +106,8 @@
     <li><a href="live-flow.html">Live Flow</a></li>
     <li><a href="option-flows.html">Option Flows</a></li>
     <li><a href="gamma-exposure.html">GEX</a></li>
+    <li><a href="option-charts.html" style="color:#fbbf24;font-weight:700;">&#128202; Option Charts</a></li>
+    <li><a href="treasury-yields.html" style="color:#fbbf24;font-weight:700;">&#128176; Treasury</a></li>
     <li><a href="index.html">Home</a></li>
   </ul>
 </nav>
@@ -505,5 +508,6 @@ window.addEventListener('load', () => {
   setInterval(() => { if (!document.hidden) load(false); }, 60*1000);
 });
 </script>
+  <script src="page-export.js"></script>
 </body>
 </html>

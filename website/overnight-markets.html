@@ -5,7 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Overnight Markets — Global Session Tracker</title>
   <script src="lightweight-charts.min.js"></script>
+  <script src="chart-draw-tools.js"></script>
   <link rel="preload" href="style.css" as="style" fetchpriority="high">
+  <link rel="stylesheet" href="page-export.css">
   <link rel="stylesheet" href="style.css">
   <style>
     .om-wrap { max-width:1700px; margin:0 auto; padding:0 1.5rem 6rem; }
@@ -184,7 +186,9 @@
     <li><a href="overnight-markets.html" style="color:#a78bfa;font-weight:700;" class="active">&#127761; Overnight Markets</a></li>
     <li><a href="gex-heatmap.html" style="color:#22d3ee;font-weight:700;">&#127777; GEX Heat Maps</a></li>
     <li><a href="gex-profile.html" style="color:#22d3ee;font-weight:700;">&#128200; GEX Profile</a></li>
+    <li><a href="option-charts.html" style="color:#fbbf24;font-weight:700;">&#128202; Option Charts</a></li>
     <li><a href="spx-correlations.html" style="color:#a78bfa;font-weight:700;">&#128202; SPX Correlations</a></li>
+    <li><a href="treasury-yields.html" style="color:#fbbf24;font-weight:700;">&#128176; Treasury Yields</a></li>
     <li><a href="vix-dashboard.html" style="color:#f87171;font-weight:700;">&#128293; VIX Dashboard</a></li>
     <li><a href="the-edge.html" style="color:#fbbf24;font-weight:700;">&#9889; The EDGE</a></li>
     <li><a href="real-time-news.html" style="color:#4ade80;font-weight:700;">&#128240; Real-Time News</a></li>
@@ -540,7 +544,7 @@ async function loadChart(m) {
     var upColor   = dirColor(p);
     var downColor = p >= 0 ? '#f87171' : '#22c55e'; // reverse if overall bearish
 
-    var chart = LightweightCharts.createChart(cvEl, {
+    var chart = (window.createLwcChart || LightweightCharts.createChart)(cvEl, {
       width:w, height:200,
       layout:{ background:{color:'#070d18'}, textColor:'rgba(226,232,240,0.85)' },
       grid:{ vertLines:{color:'rgba(36,48,88,.35)'}, horzLines:{color:'rgba(36,48,88,.35)'} },
@@ -776,5 +780,6 @@ setInterval(refresh, 5 * 60 * 1000);
 loadAllMarkets();
 loadWorldEvents();
 </script>
+  <script src="page-export.js"></script>
 </body>
 </html>

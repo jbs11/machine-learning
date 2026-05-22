@@ -5,7 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>GEX Heat Maps — Gamma Exposure Heatmap</title>
   <script src="lightweight-charts.min.js"></script>
+  <script src="chart-draw-tools.js?v=4"></script>
   <link rel="preload" href="style.css" as="style" fetchpriority="high">
+  <link rel="stylesheet" href="page-export.css">
   <link rel="stylesheet" href="style.css">
   <style>
     .ghm-wrap { max-width:1600px; margin:0 auto; padding:0 1.5rem 6rem; }
@@ -60,6 +62,7 @@
       display:grid;
       grid-template-columns:repeat(auto-fill, minmax(520px,1fr));
       gap:1.2rem; margin-top:.8rem;
+      overflow-anchor:none;
     }
     .ghm-card {
       background:var(--surface); border:1px solid var(--border); border-radius:10px;
@@ -125,6 +128,7 @@ if (window.location.search.indexOf('_v=') === -1) {
     <li><a href="ml-sp500-example.html">ML Example</a></li>
     <li><a href="stock-trading.html">Stock Trading</a></li>
     <li><a href="options-trading.html">Options</a></li>
+    <li><a href="option-charts.html" style="color:#fbbf24;font-weight:700;">&#128202; Option Charts</a></li>
     <li><a href="futures-trading.html">Futures</a></li>
     <li><a href="brokers.html">Brokers</a></li>
     <li><a href="algorithms-bots.html" style="color:#4ade80;font-weight:700;">&#129302; Algo Bots</a></li>
@@ -136,6 +140,7 @@ if (window.location.search.indexOf('_v=') === -1) {
     <li><a href="gex-heatmap.html" style="color:#22d3ee;font-weight:700;" class="active">&#127777; GEX Heat Maps</a></li>
     <li><a href="gex-heatmap.html" style="color:#22d3ee;font-weight:700;" class="active">&#127777; GEX Heat Maps</a></li>
     <li><a href="spx-correlations.html" style="color:#a78bfa;font-weight:700;">&#128202; SPX Correlations</a></li>
+    <li><a href="treasury-yields.html" style="color:#fbbf24;font-weight:700;">&#128176; Treasury Yields</a></li>
     <li><a href="vix-dashboard.html" style="color:#f87171;font-weight:700;">&#128293; VIX Dashboard</a></li>
     <li><a href="the-edge.html" style="color:#fbbf24;font-weight:700;">&#9889; The EDGE</a></li>
     <li><a href="real-time-news.html" style="color:#4ade80;font-weight:700;">&#128240; Real-Time News</a></li>
@@ -188,6 +193,30 @@ const TF_CONFIG = {
   '15m': { interval:'15m', period:'3d',  bars:78  },
   '5m':  { interval:'5m',  period:'1d',  bars:78  },
 };
+// Extra history + logical whitespace after last bar so live candles sit left-of-center.
+const CHART_VIEW_RIGHT_PAD_LOGICAL = 34;
+const CHART_VIEW_HISTORY_LEAN_RATIO = 0.28;
+
+function defaultVisibleLogicalRange(barCount, cfg) {
+  var visibleBars = (cfg && cfg.bars) || 80;
+  var historyLean = Math.max(4, Math.round(visibleBars * CHART_VIEW_HISTORY_LEAN_RATIO));
+  var lastIdx = Math.max(0, barCount - 1);
+  return {
+    from: Math.max(0, barCount - visibleBars - historyLean),
+    to: lastIdx + CHART_VIEW_RIGHT_PAD_LOGICAL,
+  };
+}
+
+// On timer refresh: keep zoom span but slide window so the newest bar is not glued to the right edge.
+function rangeAfterRefresh(savedRange, barCount, cfg) {
+  var lastIdx = Math.max(0, barCount - 1);
+  var to = lastIdx + CHART_VIEW_RIGHT_PAD_LOGICAL;
+  if (savedRange && savedRange.to > savedRange.from) {
+    var span = savedRange.to - savedRange.from;
+    return { from: Math.max(0, to - span), to: to };
+  }
+  return defaultVisibleLogicalRange(barCount, cfg);
+}
 
 async function loadGex() {
   try {
@@ -211,6 +240,75 @@ function getFiltered() {
     if (activeGroup === 'futures') return (a.group || '').toLowerCase().indexOf('futures') >= 0;
     return true;
   });
+}
+
+function fmtLevel(v) {
+  return v >= 1000 ? v.toLocaleString(undefined, { maximumFractionDigits: 1 }) : v.toFixed(2);
+}
+
+function patchFuturesProxyLevels(filtered) {
+  filtered.forEach(function(a) {
+    if (!a.no_options || !FUTURES_PROXY[a.symbol]) return;
+    var proxyData = gexData.find(function(p) { return p.symbol === FUTURES_PROXY[a.symbol]; });
+    if (!proxyData) return;
+    var card = document.querySelector('.ghm-card[data-sym="' + a.symbol + '"]');
+    if (!card) return;
+    var lvs = card.querySelectorAll('.ghm-lv span');
+    if (proxyData.gamma_wall && lvs[0]) lvs[0].textContent = fmtLevel(proxyData.gamma_wall);
+    if (proxyData.flip_level && lvs[1]) lvs[1].textContent = fmtLevel(proxyData.flip_level);
+    if (proxyData.put_wall && lvs[2]) lvs[2].textContent = fmtLevel(proxyData.put_wall);
+  });
+}
+
+function updateCardMetadata(a) {
+  var card = document.querySelector('.ghm-card[data-sym="' + a.symbol + '"]');
+  if (!card) return false;
+  var spot = a.spot || 0;
+  var gwall = a.gamma_wall || 0;
+  var pwall = a.put_wall || 0;
+  var flip = a.flip_level || 0;
+  var regime = a.regime || '';
+  var regimeCls = regime.toLowerCase().indexOf('long') >= 0 ? 'regime-pos'
+    : regime.toLowerCase().indexOf('short') >= 0 ? 'regime-neg' : 'regime-trans';
+  var labelEl = card.querySelector('.ghm-label');
+  if (labelEl) {
+    labelEl.innerHTML = (a.label || a.symbol) + ' &nbsp;&middot;&nbsp; Spot: <strong style="color:var(--text)">' + fmtLevel(spot) + '</strong>';
+  }
+  var regimeEl = card.querySelector('.ghm-regime');
+  if (regimeEl) {
+    regimeEl.textContent = regime;
+    regimeEl.className = 'ghm-regime ' + regimeCls;
+  }
+  var lvs = card.querySelectorAll('.ghm-lv span');
+  if (lvs[0]) lvs[0].textContent = fmtLevel(gwall);
+  if (lvs[1]) lvs[1].textContent = fmtLevel(flip);
+  if (lvs[2]) lvs[2].textContent = fmtLevel(pwall);
+  return true;
+}
+
+function captureScrollState() {
+  return { x: window.scrollX, y: window.scrollY };
+}
+
+function restoreScrollState(state) {
+  if (!state) return;
+  requestAnimationFrame(function() {
+    window.scrollTo(state.x, state.y);
+    requestAnimationFrame(function() {
+      window.scrollTo(state.x, state.y);
+    });
+  });
+}
+
+function captureChartRanges() {
+  var saved = {};
+  Object.keys(chartInstances).forEach(function(k) {
+    try {
+      var r = chartInstances[k].chart.timeScale().getVisibleLogicalRange();
+      if (r) saved[k] = { from: r.from, to: r.to };
+    } catch (_e) {}
+  });
+  return saved;
 }
 
 function renderGrid() {
@@ -248,21 +346,7 @@ function renderGrid() {
   // Add legend after last row if odd number of cards
   if (cardCount % 2 !== 0) html += rowLegend;
   grid.innerHTML = html;
-  // Patch futures card levels using proxy ETF data (scaled)
-  filtered.forEach(function(a) {
-    if (a.no_options && FUTURES_PROXY[a.symbol]) {
-      // Show proxy ETF GEX levels in card header (proxy price space)
-      var proxyData = gexData.find(function(p){ return p.symbol === FUTURES_PROXY[a.symbol]; });
-      if (!proxyData) return;
-      var card = document.querySelector('.ghm-card[data-sym="' + a.symbol + '"]');
-      if (!card) return;
-      var lvs = card.querySelectorAll('.ghm-lv span');
-      var fmtL = function(v) { return v >= 1000 ? v.toLocaleString(undefined,{maximumFractionDigits:1}) : v.toFixed(2); };
-      if (proxyData.gamma_wall && lvs[0]) lvs[0].textContent = fmtL(proxyData.gamma_wall);
-      if (proxyData.flip_level  && lvs[1]) lvs[1].textContent = fmtL(proxyData.flip_level);
-      if (proxyData.put_wall    && lvs[2]) lvs[2].textContent = fmtL(proxyData.put_wall);
-    }
-  });
+  patchFuturesProxyLevels(filtered);
   // Load candles for each card
   filtered.forEach(function(a) {
     if (!a.no_options || FUTURES_PROXY[a.symbol]) {
@@ -326,7 +410,8 @@ function destroyAllCharts() {
   cvdInstances = {};
 }
 
-async function loadCandles(a) {
+async function loadCandles(a, opts) {
+  opts = opts || {};
   const cfg     = TF_CONFIG[activeTF];
   var fetchSym0 = a.candleSymbol || a.symbol;
   const key     = fetchSym0 + '_' + activeTF;
@@ -334,9 +419,11 @@ async function loadCandles(a) {
   var container    = document.getElementById('cv-'  + a.symbol);
   var ld           = document.getElementById('load-'+ a.symbol);
   var cvdContainer = document.getElementById('cvd-' + a.symbol);
+  var hasChart     = !!chartInstances[instKey];
+  var preserveRange = opts.preserveRange || null;
   try {
     let candles = candleCache[key];
-    if (!candles) {
+    if (!candles || opts.forceFetch) {
       const url = API + '/api/candles/' + encodeURIComponent(fetchSym0) +
                   '?interval=' + cfg.interval + '&period=' + cfg.period;
       const res = await fetch(url, { cache:'no-store' });
@@ -346,11 +433,14 @@ async function loadCandles(a) {
       candleCache[key] = candles;
     }
 
+    if (!hasChart && ld) ld.style.display = 'flex';
+    if (!hasChart && container) container.style.display = 'none';
+
     if (!chartInstances[instKey] && container) {
       container.style.display = 'block';
       var w = container.parentElement.clientWidth || 520;
 
-      var chart = LightweightCharts.createChart(container, {
+      var chart = (window.createLwcChart || LightweightCharts.createChart)(container, {
         width:  w,
         height: 380,
         layout: { background: { color: '#070d18' }, textColor: 'rgba(226,232,240,0.92)' },
@@ -360,7 +450,7 @@ async function loadCandles(a) {
         timeScale: {
           borderColor: 'rgba(255,255,255,0.18)',
           timeVisible: true, secondsVisible: false,
-          rightOffset: 5, barSpacing: 8,
+          rightOffset: 32, barSpacing: 8,
         },
         handleScroll: { mouseWheel: true, pressedMouseMove: true, horzTouchDrag: true, vertTouchDrag: false },
         handleScale:  { axisPressedMouseMove: { time: true, price: true }, mouseWheel: true, pinch: true },
@@ -462,7 +552,7 @@ async function loadCandles(a) {
       if (cvdContainer && !cvdInstances[instKey]) {
         cvdContainer.style.display = 'block';
         cvdContainer.style.position = 'relative';
-        var cvdChart = LightweightCharts.createChart(cvdContainer, {
+        var cvdChart = (window.createLwcChart || LightweightCharts.createChart)(cvdContainer, {
           width: w, height: 80,
           layout: { background:{ color:'#050b14' }, textColor:'rgba(226,232,240,0.65)' },
           grid:   { vertLines:{ color:'rgba(255,255,255,0.03)' }, horzLines:{ visible:false } },
@@ -507,7 +597,6 @@ async function loadCandles(a) {
       return { time: c.time, open: c.open, high: c.high, low: c.low, close: c.close };
     });
     inst.series.setData(lcData);
-    inst.chart.timeScale().fitContent();
 
     var cvdInst = cvdInstances[instKey];
     if (cvdInst) {
@@ -517,15 +606,31 @@ async function loadCandles(a) {
         return { time: c.time, value: _cvd };
       });
       cvdInst.series.setData(cvdData);
-      var vr = inst.chart.timeScale().getVisibleLogicalRange();
-      if (vr) cvdInst.chart.timeScale().setVisibleLogicalRange(vr);
       if (cvdContainer) cvdContainer.style.display = 'block';
     }
+
+    var viewRange = preserveRange
+      ? (opts.reanchorOnRefresh
+          ? rangeAfterRefresh(preserveRange, lcData.length, cfg)
+          : preserveRange)
+      : defaultVisibleLogicalRange(lcData.length, cfg);
+    requestAnimationFrame(function() {
+      try {
+        inst.chart.timeScale().setVisibleLogicalRange(viewRange);
+      } catch (e) {
+        inst.chart.timeScale().fitContent();
+      }
+      if (cvdInst) {
+        var vr = inst.chart.timeScale().getVisibleLogicalRange();
+        if (vr) cvdInst.chart.timeScale().setVisibleLogicalRange(vr);
+      }
+      if (inst.drawZones) inst.drawZones();
+    });
 
     if (ld) ld.style.display = 'none';
     if (container) container.style.display = 'block';
 
-    // Draw heatmap zones after data is set and chart has rendered
+    // Second pass after layout — heatmap zones use price coordinates
     if (inst.drawZones) setTimeout(inst.drawZones, 50);
 
   } catch(e) {
@@ -567,14 +672,58 @@ document.querySelectorAll('.tf-pill').forEach(function(btn) {
   });
 });
 
-// Auto-refresh (every 5 minutes)
+// Auto-refresh (every 5 minutes) — update data in place; do not rebuild grid (keeps scroll locked).
 const AUTO_REFRESH_MS = 5 * 60 * 1000;
 let _autoTimer = null;
+let _refreshInFlight = false;
+
+async function refreshInPlace() {
+  if (_refreshInFlight) return;
+  _refreshInFlight = true;
+  var scrollState = captureScrollState();
+  var savedRanges = captureChartRanges();
+  var filtered = getFiltered();
+  candleCache = {};
+
+  try {
+    var res = await fetch(API + '/api/gamma-exposure', { cache: 'no-store' });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    var d = await res.json();
+    gexData = d.assets || [];
+    filtered = getFiltered();
+    filtered.forEach(updateCardMetadata);
+    patchFuturesProxyLevels(filtered);
+
+    var jobs = [];
+    filtered.forEach(function(a) {
+      if (!a.no_options || FUTURES_PROXY[a.symbol]) {
+        var instKey = a.symbol + '_' + activeTF;
+        jobs.push(loadCandles(a, {
+          forceFetch: true,
+          reanchorOnRefresh: true,
+          preserveRange: savedRanges[instKey] || null,
+        }));
+      }
+    });
+    await Promise.all(jobs);
+  } catch (e) {
+    console.warn('GEX heatmap refresh failed:', e);
+  } finally {
+    restoreScrollState(scrollState);
+    _refreshInFlight = false;
+  }
+}
+
 function _doAutoRefresh() {
   if (document.hidden) return;
-  candleCache = {};
-  destroyAllCharts();
-  loadGex();
+  var grid = document.getElementById('ghm-grid');
+  if (grid && grid.querySelector('.ghm-card')) {
+    refreshInPlace();
+  } else {
+    candleCache = {};
+    destroyAllCharts();
+    loadGex();
+  }
 }
 document.addEventListener('visibilitychange', function() {
   if (!document.hidden) _doAutoRefresh();
@@ -584,5 +733,6 @@ _autoTimer = setInterval(_doAutoRefresh, AUTO_REFRESH_MS);
 loadGex();
 </script>
 <script src="search.js" defer></script>
+  <script src="page-export.js"></script>
 </body>
 </html>

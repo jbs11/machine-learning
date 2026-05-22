@@ -5,8 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Live Options Flow — Tape + Charts</title>
   <link rel="preload" href="style.css" as="style" fetchpriority="high">
+  <link rel="stylesheet" href="page-export.css">
   <link rel="preload" href="lightweight-charts.min.js" as="script">
   <script src="lightweight-charts.min.js"></script>
+  <script src="chart-draw-tools.js"></script>
   <link rel="stylesheet" href="style.css">
   <style>
     .wrap { max-width: 1600px; margin: 0 auto; padding: 0 1.5rem 6rem; }
@@ -84,6 +86,8 @@
     <li><a href="live-trading.html">Live Trading</a></li>
     <li><a href="option-flows.html">Option Flows</a></li>
     <li><a href="gamma-exposure.html">GEX</a></li>
+    <li><a href="option-charts.html" style="color:#fbbf24;font-weight:700;">&#128202; Option Charts</a></li>
+    <li><a href="treasury-yields.html" style="color:#fbbf24;font-weight:700;">&#128176; Treasury</a></li>
     <li><a href="greeks.html">Greeks</a></li>
     <li><a href="index.html">Home</a></li>
   </ul>
@@ -329,7 +333,7 @@ function initChart() {
       return new Intl.DateTimeFormat('en-US', opts).format(d);
     } catch (e) { return ''; }
   }
-  _chart = LightweightCharts.createChart(el, {
+  _chart = (window.createLwcChart || LightweightCharts.createChart)(el, {
     layout: { background: { color:'#070d18' }, textColor:'rgba(226,232,240,.85)' },
     grid: { vertLines: { color:'rgba(255,255,255,.06)' }, horzLines: { color:'rgba(255,255,255,.06)' } },
     rightPriceScale: { borderColor:'rgba(255,255,255,.08)' },
@@ -631,5 +635,6 @@ window.addEventListener('load', () => {
   setInterval(() => { if (!document.hidden) loadOnce(false); }, 10 * 1000);
 });
 </script>
+  <script src="page-export.js"></script>
 </body>
 </html>

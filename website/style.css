@@ -1,6 +1,13 @@
 /* ── Artificial Intelligence Course — Shared Stylesheet ── */
 
 :root {
+  /* Site standard page column (matches index / lesson hero layout; aligns with print) */
+  --site-content-max:     1200px;
+  --site-content-pad-x:   2rem;
+  --site-content-pad-y:   2rem;
+  --site-print-width-px:  720px;   /* ~7.5in printable portrait */
+  --site-print-landscape-px: 1000px;
+
   /* ── Dark theme (default) ── */
   --bg:        #080d1a;
   --surface:   #0f1729;
@@ -66,6 +73,7 @@ body {
   color: var(--text);
   line-height: 1.75;
   font-size: 16px;
+  min-height: 100vh;
 }
 
 a { color: var(--primary); text-decoration: none; }
@@ -204,9 +212,9 @@ a:hover { text-decoration: underline; }
 
 /* ── SECTION ──────────────────────────────────────────────────────────────── */
 .section {
-  max-width: 1100px;
+  max-width: var(--site-content-max);
   margin: 0 auto;
-  padding: 4rem 2rem;
+  padding: 4rem var(--site-content-pad-x);
 }
 
 .section-header {
@@ -332,7 +340,7 @@ a:hover { text-decoration: underline; }
   padding: 2rem;
 }
 .video-inner {
-  max-width: 1100px;
+  max-width: var(--site-content-max);
   margin: 0 auto;
 }
 .video-wrapper {
@@ -498,11 +506,11 @@ a:hover { text-decoration: underline; }
 
 /* ── BREADCRUMB ───────────────────────────────────────────────────────────── */
 .breadcrumb {
-  padding: 1rem 2rem;
+  padding: 1rem var(--site-content-pad-x);
   font-size: .85rem;
   color: var(--muted);
   border-bottom: 1px solid var(--border);
-  max-width: 1100px;
+  max-width: var(--site-content-max);
   margin: 0 auto;
   display: flex;
   align-items: center;
@@ -521,7 +529,7 @@ a:hover { text-decoration: underline; }
     var(--bg);
 }
 .page-hero-inner {
-  max-width: 1100px;
+  max-width: var(--site-content-max);
   margin: 0 auto;
 }
 .page-hero h1 {
