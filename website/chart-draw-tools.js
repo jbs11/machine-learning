@@ -11,6 +11,49 @@
   var DEFAULT_COLOR = '#fbbf24';
   var DEFAULT_WIDTH = 2;
 
+  /** US market session labels (ET) — not browser local time. */
+  var MARKET_TZ = 'America/New_York';
+
+  function formatMarketAxisTime(time) {
+    if (time && typeof time === 'object' && time.year !== undefined && time.month !== undefined && time.day !== undefined) {
+      var d = new Date(Date.UTC(Number(time.year), Number(time.month) - 1, Number(time.day)));
+      try {
+        return new Intl.DateTimeFormat('en-US', {
+          timeZone: MARKET_TZ,
+          month: 'short',
+          day: 'numeric',
+        }).format(d);
+      } catch (_e) {
+        return '';
+      }
+    }
+    var ts = Number(time);
+    if (!isFinite(ts)) return '';
+    try {
+      return new Intl.DateTimeFormat('en-US', {
+        timeZone: MARKET_TZ,
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true,
+      }).format(new Date(ts * 1000));
+    } catch (_e2) {
+      return '';
+    }
+  }
+
+  /** Merge ET tick/crosshair formatters unless axisTimezone === 'local'. */
+  function applyMarketTimeOptions(options) {
+    options = options || {};
+    if (options.axisTimezone === 'local') return options;
+    var loc = options.localization || {};
+    var ts = options.timeScale || {};
+    var fmt = function (t) { return formatMarketAxisTime(t); };
+    var out = Object.assign({}, options);
+    out.localization = Object.assign({}, loc, { timeFormatter: fmt });
+    out.timeScale = Object.assign({}, ts, { tickMarkFormatter: fmt });
+    return out;
+  }
+
   /* Only real chart hosts — not chart-ohlc-display, chart-loading, etc. */
   var CHART_SEL = [
     '.ty-chart', '.ghm-chart', '#chart-container',
@@ -547,7 +590,7 @@
     try {
       var orig = LightweightCharts.createChart.bind(LightweightCharts);
       LightweightCharts.createChart = function (container, options) {
-        var chart = orig(container, options);
+        var chart = orig(container, applyMarketTimeOptions(options));
         try {
           attachLightweightChart(chart, container);
         } catch (err) {
@@ -564,7 +607,7 @@
 
   function createLwcChart(container, options) {
     if (typeof LightweightCharts === 'undefined') return null;
-    var chart = LightweightCharts.createChart(container, options);
+    var chart = LightweightCharts.createChart(container, applyMarketTimeOptions(options));
     attachLightweightChart(chart, container);
     return chart;
   }
@@ -590,11 +633,20 @@
     }
   }
 
+  window.formatMarketAxisTime = formatMarketAxisTime;
+  window.ChartMarketTime = {
+    tz: MARKET_TZ,
+    format: formatMarketAxisTime,
+    applyOptions: applyMarketTimeOptions,
+  };
+
   window.ChartDrawTools = {
     attach: attachLightweightChart,
     rescan: scanContainers,
     patch: patchCreateChart,
     createChart: createLwcChart,
+    formatMarketAxisTime: formatMarketAxisTime,
+    applyMarketTimeOptions: applyMarketTimeOptions,
   };
   window.createLwcChart = createLwcChart;
 
