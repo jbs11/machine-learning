@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fundamentals + Options Impact — ML Trading Site</title>
+  <link rel="preload" href="style.css" as="style" fetchpriority="high">
+  <link rel="stylesheet" href="page-export.css">
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="fundamentals-options-dashboard-data.js"></script>
+  <style>
+    .fod-hero {
+      padding: 3rem 1.5rem 2rem; text-align: center;
+      background: radial-gradient(ellipse 80% 55% at 50% -5%, rgba(34,211,238,.12) 0%, transparent 65%), var(--bg);
+      border-bottom: 1px solid var(--border);
+    }
+    .fod-hero h1 {
+      font-size: clamp(1.6rem, 4vw, 2.6rem); font-weight: 900; letter-spacing: -.03em; line-height: 1.15; margin-bottom: .75rem;
+      background: linear-gradient(135deg, #22d3ee 0%, #67e8f9 50%, #e8f4fc 90%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    .fod-hero p { color: var(--muted); font-size: 1rem; max-width: 780px; margin: 0 auto 1rem; line-height: 1.65; }
+    .fod-badge {
+      display: inline-flex; align-items: center; gap: .5rem;
+      padding: .3rem 1rem; background: rgba(34,211,238,.1);
+      border: 1px solid rgba(34,211,238,.3); border-radius: 999px;
+      color: #22d3ee; font-size: .78rem; font-weight: 600;
+      letter-spacing: .08em; text-transform: uppercase; margin-bottom: 1rem;
+    }
+    .fod-wrap { max-width: 1200px; margin: 0 auto; padding: 0 1.5rem 5rem; }
+    .fod-banner {
+      background: var(--surface); border: 1px solid var(--border);
+      padding: .75rem 1rem; border-radius: 8px; font-size: .85rem; color: var(--muted); margin: 1rem 0 1.25rem;
+    }
+    .fod-banner a { color: #22d3ee; font-weight: 600; }
+    .fod-controls { display: flex; flex-wrap: wrap; gap: .75rem; align-items: flex-end; margin-bottom: 1.25rem; }
+    .fod-controls label { font-size: .72rem; color: var(--muted); display: block; margin-bottom: .2rem; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; }
+    .fod-controls select, .fod-controls button.tab {
+      background: var(--card); border: 1px solid var(--border); color: var(--text);
+      padding: .4rem .65rem; border-radius: 6px; font-size: .82rem; font-family: inherit;
+    }
+    .fod-controls button.tab { cursor: pointer; }
+    .fod-controls button.tab.active { border-color: #22d3ee; color: #22d3ee; }
+    .fod-toggle { display: flex; align-items: center; gap: .5rem; font-size: .82rem; color: var(--muted); }
+    #stats.fod-stats {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+      gap: .65rem; margin-bottom: 1.25rem;
+    }
+    #stats.fod-stats .stat {
+      background: var(--card); border: 1px solid var(--border); padding: .7rem; border-radius: 8px;
+    }
+    #stats.fod-stats .stat b { font-size: 1.25rem; display: block; font-family: Consolas, monospace; }
+    #stats.fod-stats .stat span { font-size: .68rem; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+    .fod-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.25rem; }
+    @media (max-width: 800px) { .fod-grid2 { grid-template-columns: 1fr; } }
+    .fod-panel { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius, 10px); padding: 1rem; }
+    .fod-panel h3 { margin: 0 0 .5rem; font-size: .88rem; font-weight: 700; color: #22d3ee; }
+    .fod-cap { font-size: .72rem; color: var(--muted); margin-top: .35rem; }
+    .hidden { display: none !important; }
+    .fod-table-wrap { overflow: auto; max-height: 440px; border: 1px solid var(--border); border-radius: 8px; background: var(--card); }
+    .fod-table-wrap table { width: 100%; border-collapse: collapse; font-size: .78rem; }
+    .fod-table-wrap th, .fod-table-wrap td { border-bottom: 1px solid var(--border); padding: .45rem .5rem; text-align: left; }
+    .fod-table-wrap th { color: var(--muted); font-weight: 700; position: sticky; top: 0; background: var(--card); font-size: .68rem; text-transform: uppercase; }
+    .fod-table-wrap tr:hover { background: var(--hover-overlay, rgba(255,255,255,.04)); cursor: pointer; }
+    .pill { display: inline-block; padding: .12rem .45rem; border-radius: 5px; font-size: .68rem; font-weight: 700; }
+    .pill.bullish { background: rgba(16,185,129,.15); color: #10b981; }
+    .pill.bearish { background: rgba(248,113,113,.15); color: #f87171; }
+    .pill.neutral { background: rgba(251,191,36,.15); color: #fbbf24; }
+    .detail-header { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin-bottom: 0.75rem; }
+    .fod-options-box { border-left: 3px solid #22d3ee; padding: 1rem 0 1rem 1rem; margin-top: 1rem; background: rgba(34,211,238,.04); border-radius: 0 8px 8px 0; }
+    .fod-strategies { display: flex; flex-wrap: wrap; gap: .4rem; margin: .5rem 0; }
+    .fod-strategies span { background: var(--surface); border: 1px solid var(--border); padding: .2rem .5rem; border-radius: 5px; font-size: .72rem; }
+    .fod-iv-bar { height: 8px; background: var(--hover-overlay); border-radius: 4px; overflow: hidden; margin-top: .5rem; }
+    .fod-iv-fill { height: 100%; background: #fbbf24; }
+    .fod-h2 { font-size: 1.05rem; font-weight: 800; margin: 1.25rem 0 .75rem; color: var(--text); }
+    details.fod-panel summary { cursor: pointer; font-weight: 700; padding: .25rem 0; }
+  </style>
+</head>
+<body>
+
+<nav class="page-nav">
+  <a href="live-trading.html">&#8592; Live Trading</a> | <a href="brokers.html">Brokers</a> | <a href="report-ms.html" target="_blank" style="background:#22d3ee;color:var(--bg);padding:.22rem .75rem;border-radius:5px;font-weight:700;text-decoration:none;font-size:.82rem;">&#128202; Report</a>
+  <span class="page-nav-sep">|</span>
+  <a href="market-summary.html">Market Summary</a>
+  <span class="page-nav-sep">|</span>
+  <a href="options-summary.html">Options Summary</a>
+  <span class="page-nav-sep">|</span>
+  <a href="options-strategy.html">Options Strategy</a>
+  <span class="page-nav-sep">|</span>
+  <a href="fundamentals.html">Fundamentals &#128203;</a>
+  <span class="page-nav-sep">|</span>
+  <a href="fundamentals-options-dashboard.html" class="active" style="color:#22d3ee;font-weight:700;">&#128200; Fund + Options</a>
+  <span class="page-nav-sep">|</span>
+  <a href="forecast.html" style="color:#f59e0b;font-weight:700;">Forecast</a>
+  <span class="page-nav-sep">|</span>
+  <a href="asset-details.html">Asset Review</a>
+</nav>
+
+<section class="fod-hero">
+  <div class="fod-badge">&#128200; Fundamentals &middot; Options Impact &middot; 27 Assets</div>
+  <h1>Fundamentals + Options<br>Impact Dashboard</h1>
+  <p>Interactive view of valuation, growth trends, IV percentile, and how each regime maps to options structures — SPX, ES, ETFs, Mag 7, financials, energy, and more.</p>
+</section>
+
+<div class="stats-strip">
+  <div class="stat-cell"><div class="stat-val" id="hAssets">27</div><div class="stat-lbl">Assets</div></div>
+  <div class="stat-cell"><div class="stat-val cv-green" id="hEps">—</div><div class="stat-lbl">Avg EPS Growth</div></div>
+  <div class="stat-cell"><div class="stat-val" id="hIv">—</div><div class="stat-lbl">Avg IV %ile</div></div>
+  <div class="stat-cell"><div class="stat-val cv-green" id="hBull">—</div><div class="stat-lbl">Bullish</div></div>
+</div>
+
+<div class="fod-wrap">
+  <div class="fod-banner">
+    <strong>Snapshot data</strong> (May 2026) for offline charts. For live P/E, analyst targets, and rankings, use
+    <a href="fundamentals.html">Fundamentals Analysis &amp; Rankings</a> (Flask API on port 3000).
+  </div>
+
+  <div class="fod-controls">
+      <div>
+        <label>View</label>
+        <div id="tabBar"></div>
+      </div>
+      <div>
+        <label>Symbol</label>
+        <select id="symbolSel"></select>
+      </div>
+      <div>
+        <label>Sector</label>
+        <select id="sectorSel">
+          <option value="all">All sectors</option>
+        </select>
+      </div>
+      <div class="fod-toggle">
+        <input type="checkbox" id="optionsFocus" />
+        <label for="optionsFocus">Options focus charts</label>
+      </div>
+    </div>
+
+    <div id="stats" class="fod-stats"></div>
+
+    <div id="viewOverview">
+      <div class="fod-grid2">
+        <div class="fod-panel"><h3 id="chart1Title">Forward P/E by symbol</h3><canvas id="chartPe"></canvas><p class="fod-cap">Y-axis: forward P/E (×) · May 2026 snapshot</p></div>
+        <div class="fod-panel"><h3 id="chart2Title">EPS growth YoY (%)</h3><canvas id="chartGrowth"></canvas><p class="fod-cap" id="chart2Cap">Y-axis: YoY EPS growth (%)</p></div>
+      </div>
+      <div class="fod-h2">Universe snapshot</div>
+      <div class="fod-table-wrap"><table id="mainTable"><thead></thead><tbody></tbody></table></div>
+    </div>
+
+    <div id="viewDetail" class="hidden">
+      <div class="detail-header" id="detailBadges"></div>
+      <p id="detailSummary" style="color:var(--muted);line-height:1.65;"></p>
+      <div class="fod-grid2">
+        <div class="fod-panel"><h3>EPS trend (8 quarters)</h3><canvas id="chartEps"></canvas><p class="fod-cap">X-axis: quarter · Y-axis: EPS ($)</p></div>
+        <div class="fod-panel"><h3 id="chartDetail2Title">Operating margin (%)</h3><canvas id="chartMargin"></canvas><p class="fod-cap" id="chartDetail2Cap"></p></div>
+      </div>
+      <div id="detailMetrics" class="fod-stats"></div>
+      <div class="fod-options-box">
+        <h3 style="margin:0 0 .5rem;font-size:.95rem;">Impact on options trading</h3>
+        <p id="detailOptionsNarrative" style="color:var(--muted);"></p>
+        <p><strong>Vol bias:</strong> <span id="detailVol"></span></p>
+        <p><strong>Skew:</strong> <span id="detailSkew"></span></p>
+        <div class="fod-strategies" id="detailStrategies"></div>
+        <p class="fod-cap" id="detailCatalysts"></p>
+        <label style="font-size:.72rem;color:var(--muted);">IV percentile (52w)</label>
+        <div class="fod-iv-bar"><div class="fod-iv-fill" id="ivFill"></div></div>
+        <p class="fod-cap" id="ivHint"></p>
+      </div>
+    </div>
+
+    <div id="viewSectors" class="hidden">
+      <div class="fod-grid2">
+        <div class="fod-panel"><h3>Avg forward P/E by sector</h3><canvas id="chartSecPe"></canvas></div>
+        <div class="fod-panel"><h3>Avg IV percentile by sector</h3><canvas id="chartSecIv"></canvas></div>
+      </div>
+      <div id="sectorAccordions"></div>
+    </div>
+
+    <div id="viewPlaybook" class="hidden">
+      <p style="color:var(--muted);font-size:.9rem;">How valuation, growth, and vol regimes map to common options approaches.</p>
+      <div class="fod-grid2">
+        <div class="fod-panel"><h3>High IV — premium selling (defined risk)</h3><ul id="highIvList" style="font-size:.85rem;color:var(--muted);"></ul></div>
+        <div class="fod-panel"><h3>Low IV — income / debit structures</h3><ul id="lowIvList" style="font-size:.85rem;color:var(--muted);"></ul></div>
+      </div>
+      <div class="fod-h2">Valuation discount vs 5y P/E</div>
+      <div class="fod-table-wrap"><table id="cheapTable"><thead><tr><th>Symbol</th><th>vs 5y</th><th>Fwd P/E</th><th>EPS gr.</th><th>Bias</th></tr></thead><tbody></tbody></table></div>
+    </div>
+</div>
+
+  <script>
+    const state = { tab: "overview", symbol: "SPY", sector: "all", optionsFocus: false };
+    const charts = {};
+    const TABS = [
+      { id: "overview", label: "Overview" },
+      { id: "detail", label: "Asset detail" },
+      { id: "sectors", label: "Sectors" },
+      { id: "playbook", label: "Options playbook" },
+    ];
+
+    function filtered() {
+      return state.sector === "all" ? ASSETS : ASSETS.filter((a) => a.sector === state.sector);
+    }
+    function asset() {
+      return ASSETS.find((a) => a.symbol === state.symbol) || ASSETS[2];
+    }
+    function fmtPct(n) {
+      return (n > 0 ? "+" : "") + n.toFixed(1) + "%";
+    }
+    function destroyChart(id) {
+      if (charts[id]) { charts[id].destroy(); delete charts[id]; }
+    }
+    function chartDefaults() {
+      return {
+        responsive: true,
+        plugins: { legend: { labels: { color: "#7fa3be" } } },
+        scales: {
+          x: { ticks: { color: "#7fa3be", maxRotation: 45 }, grid: { color: "#1e2d4a" } },
+          y: { ticks: { color: "#7fa3be" }, grid: { color: "#1e2d4a" } },
+        },
+      };
+    }
+
+    function updateHeroStats(list) {
+      const avgEps = list.reduce((s, a) => s + a.epsGrowthYoy, 0) / list.length;
+      const avgIv = list.reduce((s, a) => s + a.ivPercentile, 0) / list.length;
+      const bull = list.filter((a) => a.rating === "bullish").length;
+      document.getElementById("hAssets").textContent = list.length;
+      document.getElementById("hEps").textContent = fmtPct(avgEps);
+      document.getElementById("hIv").textContent = Math.round(avgIv);
+      document.getElementById("hBull").textContent = bull;
+    }
+
+    function initControls() {
+      const tabBar = document.getElementById("tabBar");
+      TABS.forEach((t) => {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.className = "tab" + (state.tab === t.id ? " active" : "");
+        b.textContent = t.label;
+        b.onclick = () => { state.tab = t.id; render(); };
+        tabBar.appendChild(b);
+      });
+      const sym = document.getElementById("symbolSel");
+      ASSETS.forEach((a) => {
+        const o = document.createElement("option");
+        o.value = a.symbol;
+        o.textContent = a.symbol + " — " + a.name;
+        sym.appendChild(o);
+      });
+      sym.value = state.symbol;
+      sym.onchange = () => { state.symbol = sym.value; if (state.tab !== "detail") state.tab = "detail"; render(); };
+
+      const sectors = [...new Set(ASSETS.map((a) => a.sector))].sort();
+      const sec = document.getElementById("sectorSel");
+      sectors.forEach((s) => {
+        const o = document.createElement("option");
+        o.value = s;
+        o.textContent = s;
+        sec.appendChild(o);
+      });
+      sec.value = state.sector;
+      sec.onchange = () => { state.sector = sec.value; render(); };
+
+      document.getElementById("optionsFocus").checked = state.optionsFocus;
+      document.getElementById("optionsFocus").onchange = (e) => {
+        state.optionsFocus = e.target.checked;
+        render();
+      };
+    }
+
+    function renderStats(list) {
+      updateHeroStats(list);
+      const avgEps = list.reduce((s, a) => s + a.epsGrowthYoy, 0) / list.length;
+      const avgIv = list.reduce((s, a) => s + a.ivPercentile, 0) / list.length;
+      const bull = list.filter((a) => a.rating === "bullish").length;
+      document.getElementById("stats").innerHTML = `
+        <div class="stat"><b>${list.length}</b><span>Assets</span></div>
+        <div class="stat"><b>${fmtPct(avgEps)}</b><span>Avg EPS growth</span></div>
+        <div class="stat"><b>${Math.round(avgIv)}</b><span>Avg IV %ile</span></div>
+        <div class="stat"><b>${bull}</b><span>Bullish ratings</span></div>`;
+    }
+
+    function renderOverview() {
+      const list = filtered();
+      renderStats(list);
+      const labels = list.map((a) => a.symbol);
+      const pe = list.map((a) => a.forwardPe ?? 0);
+      const g2 = list.map((a) => state.optionsFocus ? a.ivPercentile : a.epsGrowthYoy);
+
+      document.getElementById("chart2Title").textContent = state.optionsFocus ? "IV percentile (52w)" : "EPS growth YoY (%)";
+      document.getElementById("chart2Cap").textContent = state.optionsFocus
+        ? "Higher IV → richer premiums; use defined-risk short vol"
+        : "Y-axis: YoY EPS growth (%)";
+
+      destroyChart("pe");
+      destroyChart("growth");
+      charts.pe = new Chart(document.getElementById("chartPe"), {
+        type: "bar",
+        data: { labels, datasets: [{ label: "Forward P/E", data: pe, backgroundColor: "#22d3ee" }] },
+        options: chartDefaults(),
+      });
+      charts.growth = new Chart(document.getElementById("chartGrowth"), {
+        type: "bar",
+        data: {
+          labels,
+          datasets: [{
+            label: state.optionsFocus ? "IV %ile" : "EPS growth %",
+            data: g2,
+            backgroundColor: state.optionsFocus ? "#fbbf24" : "#10b981",
+          }],
+        },
+        options: chartDefaults(),
+      });
+
+      const thead = document.querySelector("#mainTable thead");
+      thead.innerHTML = "<tr><th>Symbol</th><th>Sector</th><th>Fwd P/E</th><th>EPS YoY</th><th>Rev YoY</th><th>IV</th><th>Rating</th><th>Note</th></tr>";
+      const tbody = document.querySelector("#mainTable tbody");
+      tbody.innerHTML = list.map((a) => `
+        <tr data-sym="${a.symbol}">
+          <td><strong>${a.symbol}</strong></td>
+          <td>${a.sector}</td>
+          <td>${a.forwardPe ?? "—"}</td>
+          <td>${fmtPct(a.epsGrowthYoy)}</td>
+          <td>${fmtPct(a.revenueGrowthYoy)}</td>
+          <td>${a.ivPercentile}</td>
+          <td><span class="pill ${a.rating}">${a.rating}</span></td>
+          <td>${(state.optionsFocus ? a.options.volBias : a.summary).slice(0, 55)}…</td>
+        </tr>`).join("");
+      tbody.querySelectorAll("tr").forEach((tr) => {
+        tr.onclick = () => {
+          state.symbol = tr.dataset.sym;
+          state.tab = "detail";
+          document.getElementById("symbolSel").value = state.symbol;
+          render();
+        };
+      });
+    }
+
+    function renderDetail() {
+      const a = asset();
+      renderStats([a]);
+      document.getElementById("detailBadges").innerHTML = `
+        <span class="pill ${a.rating}">${a.rating}</span>
+        <span class="pill neutral">${a.type}</span>
+        <span class="pill neutral">${a.sector}</span>
+        <span style="color:var(--muted);font-size:0.85rem">$${a.price.toLocaleString()}</span>`;
+      document.getElementById("detailSummary").textContent = a.summary;
+      document.getElementById("detailOptionsNarrative").textContent = a.optionsNarrative;
+      document.getElementById("detailVol").textContent = a.options.volBias;
+      document.getElementById("detailSkew").textContent = a.options.skew;
+      document.getElementById("detailStrategies").innerHTML = a.options.strategies.map((s) => `<span>${s}</span>`).join("");
+      document.getElementById("detailCatalysts").textContent = "Catalysts: " + a.options.catalysts + " · Risks: " + a.options.risks;
+      document.getElementById("ivFill").style.width = a.ivPercentile + "%";
+      document.getElementById("ivHint").textContent = a.ivPercentile >= 55
+        ? "Elevated IV — favor credit with wide wings"
+        : a.ivPercentile <= 35
+          ? "Low IV — covered calls / debit spreads"
+          : "Mid IV — balanced spreads";
+
+      const hasMargin = a.type === "equity" && a.marginTrend.some((m) => m > 0);
+      document.getElementById("chartDetail2Title").textContent = hasMargin ? "Operating margin (%)" : "vs 5y avg P/E (%)";
+      document.getElementById("chartDetail2Cap").textContent = hasMargin ? "Y-axis: operating margin (%)" : "Richness vs 5-year average P/E";
+
+      destroyChart("eps");
+      destroyChart("margin");
+      const epsData = a.type === "futures" ? a.epsQoQ.map((v) => v / 10) : a.epsQoQ;
+      charts.eps = new Chart(document.getElementById("chartEps"), {
+        type: "line",
+        data: {
+          labels: QUARTERS,
+          datasets: [{ label: "EPS", data: epsData, borderColor: "#22d3ee", fill: true, backgroundColor: "rgba(34,211,238,0.12)", tension: 0.2 }],
+        },
+        options: chartDefaults(),
+      });
+      charts.margin = new Chart(document.getElementById("chartMargin"), {
+        type: hasMargin ? "line" : "bar",
+        data: {
+          labels: hasMargin ? QUARTERS : [a.symbol],
+          datasets: [{
+            label: hasMargin ? "Op margin %" : "vs 5y P/E %",
+            data: hasMargin ? a.marginTrend : [a.peVs5yPct],
+            borderColor: "#10b981",
+            backgroundColor: hasMargin ? "rgba(16,185,129,0.15)" : a.peVs5yPct > 10 ? "#fbbf24" : "#10b981",
+            fill: hasMargin,
+            tension: 0.2,
+          }],
+        },
+        options: chartDefaults(),
+      });
+
+      if (a.type === "equity") {
+        document.getElementById("detailMetrics").innerHTML = `
+          <div class="stat"><b>${a.grossMargin.toFixed(1)}%</b><span>Gross margin</span></div>
+          <div class="stat"><b>${a.operatingMargin.toFixed(1)}%</b><span>Op margin</span></div>
+          <div class="stat"><b>${a.roe.toFixed(1)}%</b><span>ROE</span></div>
+          <div class="stat"><b>${fmtPct(a.fcfYield)}</b><span>FCF yield</span></div>`;
+      } else {
+        document.getElementById("detailMetrics").innerHTML = `
+          <div class="stat"><b>${a.forwardPe ?? "—"}</b><span>Fwd P/E</span></div>
+          <div class="stat"><b>${fmtPct(a.epsGrowthYoy)}</b><span>EPS growth</span></div>
+          <div class="stat"><b>${a.ivPercentile}</b><span>IV %ile</span></div>`;
+      }
+    }
+
+    function renderSectors() {
+      const list = filtered();
+      renderStats(list);
+      const sectors = [...new Set(list.map((a) => a.sector))];
+      const avgPe = sectors.map((sec) => {
+        const g = list.filter((a) => a.sector === sec);
+        const pes = g.map((a) => a.forwardPe).filter(Boolean);
+        return pes.length ? pes.reduce((s, v) => s + v, 0) / pes.length : 0;
+      });
+      const avgIv = sectors.map((sec) => {
+        const g = list.filter((a) => a.sector === sec);
+        return g.reduce((s, a) => s + a.ivPercentile, 0) / g.length;
+      });
+      destroyChart("secPe");
+      destroyChart("secIv");
+      charts.secPe = new Chart(document.getElementById("chartSecPe"), {
+        type: "bar",
+        data: { labels: sectors, datasets: [{ label: "Avg fwd P/E", data: avgPe, backgroundColor: "#22d3ee" }] },
+        options: chartDefaults(),
+      });
+      charts.secIv = new Chart(document.getElementById("chartSecIv"), {
+        type: "bar",
+        data: { labels: sectors, datasets: [{ label: "Avg IV %ile", data: avgIv, backgroundColor: "#fbbf24" }] },
+        options: chartDefaults(),
+      });
+      document.getElementById("sectorAccordions").innerHTML = sectors.map((sec) => {
+        const g = list.filter((a) => a.sector === sec);
+        return `<details class="fod-panel" style="margin-bottom:.5rem"><summary><strong>${sec}</strong> (${g.length})</summary>${g.map((a) => `<p style="font-size:.85rem;color:var(--muted)"><strong style="color:var(--text)">${a.symbol}</strong> — ${a.summary}</p>`).join("")}</details>`;
+      }).join("");
+    }
+
+    function renderPlaybook() {
+      renderStats(ASSETS);
+      const high = ASSETS.filter((a) => a.ivPercentile >= 55).sort((a, b) => b.ivPercentile - a.ivPercentile);
+      const low = ASSETS.filter((a) => a.ivPercentile <= 40).sort((a, b) => a.ivPercentile - b.ivPercentile);
+      document.getElementById("highIvList").innerHTML = high.map((a) => `<li><strong>${a.symbol}</strong> IV ${a.ivPercentile} — ${a.options.strategies[0]}</li>`).join("");
+      document.getElementById("lowIvList").innerHTML = low.slice(0, 8).map((a) => `<li><strong>${a.symbol}</strong> IV ${a.ivPercentile} — covered calls / calendars</li>`).join("");
+      const cheap = ASSETS.filter((a) => a.peVs5yPct < 0 && a.type === "equity");
+      document.querySelector("#cheapTable tbody").innerHTML = cheap.map((a) => `
+        <tr><td>${a.symbol}</td><td>${fmtPct(a.peVs5yPct)}</td><td>${a.forwardPe}</td><td>${fmtPct(a.epsGrowthYoy)}</td>
+        <td>${a.peVs5yPct < -10 ? "Bullish put spreads / LEAP calls" : "Neutral spreads"}</td></tr>`).join("");
+    }
+
+    function render() {
+      document.querySelectorAll("button.tab").forEach((b, i) => {
+        b.classList.toggle("active", TABS[i].id === state.tab);
+      });
+      ["viewOverview", "viewDetail", "viewSectors", "viewPlaybook"].forEach((id) => {
+        document.getElementById(id).classList.add("hidden");
+      });
+      const map = { overview: "viewOverview", detail: "viewDetail", sectors: "viewSectors", playbook: "viewPlaybook" };
+      document.getElementById(map[state.tab]).classList.remove("hidden");
+      if (state.tab === "overview") renderOverview();
+      else if (state.tab === "detail") renderDetail();
+      else if (state.tab === "sectors") renderSectors();
+      else renderPlaybook();
+    }
+
+    initControls();
+    updateHeroStats(ASSETS);
+    render();
+  </script>
+<script src="search.js" defer></script>
+<script src="page-export.js"></script>
+</body>
+</html>
