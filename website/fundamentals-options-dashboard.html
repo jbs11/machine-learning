@@ -75,6 +75,49 @@
     .fod-iv-fill { height: 100%; background: #fbbf24; }
     .fod-h2 { font-size: 1.05rem; font-weight: 800; margin: 1.25rem 0 .75rem; color: var(--text); }
     details.fod-panel summary { cursor: pointer; font-weight: 700; padding: .25rem 0; }
+    .fod-term-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: .85rem; margin-bottom: 1.5rem; }
+    .fod-term-card {
+      background: var(--card); border: 1px solid var(--border); border-radius: 8px;
+      padding: 1rem 1.1rem; border-left: 3px solid rgba(34,211,238,.45);
+    }
+    .fod-term-card h4 { margin: 0 0 .35rem; font-size: .92rem; font-weight: 800; color: var(--text); }
+    .fod-term-card .abbr { display: block; font-size: .72rem; font-weight: 600; color: #22d3ee; margin-bottom: .4rem; }
+    .fod-term-card p { margin: 0; font-size: .82rem; color: var(--muted); line-height: 1.65; }
+    .fod-term-card p strong { color: var(--text); }
+    .fod-cat-pills { display: flex; flex-wrap: wrap; gap: .4rem; margin-bottom: 1rem; }
+    .fod-cat-pill {
+      padding: .28rem .75rem; border-radius: 99px; border: 1px solid var(--border);
+      background: transparent; color: var(--muted); font-size: .75rem; font-weight: 700; cursor: pointer;
+    }
+    .fod-cat-pill.active { background: rgba(34,211,238,.12); border-color: #22d3ee; color: #22d3ee; }
+    .fod-guide-step {
+      background: var(--card); border: 1px solid var(--border); border-radius: 8px;
+      padding: 1rem 1.15rem; margin-bottom: .85rem;
+    }
+    .fod-guide-step h4 { margin: 0 0 .5rem; font-size: .95rem; color: #22d3ee; }
+    .fod-guide-step p, .fod-guide-step li { font-size: .85rem; color: var(--muted); line-height: 1.65; }
+    .fod-guide-step ul { margin: .4rem 0 0 1.1rem; padding: 0; }
+    .fod-matrix { width: 100%; border-collapse: collapse; font-size: .8rem; margin-top: .5rem; }
+    .fod-matrix th, .fod-matrix td { border: 1px solid var(--border); padding: .5rem .6rem; text-align: left; }
+    .fod-matrix th { background: var(--surface); color: var(--muted); font-size: .68rem; text-transform: uppercase; }
+    .fod-callout {
+      background: rgba(34,211,238,.06); border: 1px solid rgba(34,211,238,.25);
+      border-radius: 8px; padding: .85rem 1rem; margin-bottom: 1rem; font-size: .85rem; color: var(--muted); line-height: 1.6;
+    }
+    .fod-callout a { color: #22d3ee; font-weight: 600; }
+    .fod-section-divider {
+      border: none; border-top: 2px solid var(--border); margin: 2.5rem 0 1.25rem;
+    }
+    .fod-page-jump {
+      display: flex; flex-wrap: wrap; gap: .75rem 1.25rem; margin-bottom: 1.5rem; font-size: .88rem;
+    }
+    .fod-page-jump a {
+      color: #22d3ee; font-weight: 700; text-decoration: none;
+      padding: .35rem .85rem; border: 1px solid rgba(34,211,238,.35); border-radius: 6px;
+    }
+    .fod-page-jump a:hover { background: rgba(34,211,238,.08); }
+    .fod-bottom-section { scroll-margin-top: 5rem; padding-bottom: 2rem; }
+    .fod-bottom-section > .fod-h2 { font-size: 1.35rem; margin-top: 0; padding-top: .5rem; border-bottom: 1px solid var(--border); padding-bottom: .65rem; }
   </style>
 </head>
 <body>
@@ -95,12 +138,14 @@
   <a href="forecast.html" style="color:#f59e0b;font-weight:700;">Forecast</a>
   <span class="page-nav-sep">|</span>
   <a href="asset-details.html">Asset Review</a>
+  <span class="page-nav-sep">|</span>
+  <a href="terminology.html">Terminology</a>
 </nav>
 
 <section class="fod-hero">
   <div class="fod-badge">&#128200; Fundamentals &middot; Options Impact &middot; 27 Assets</div>
   <h1>Fundamentals + Options<br>Impact Dashboard</h1>
-  <p>Interactive view of valuation, growth trends, IV percentile, and how each regime maps to options structures — SPX, ES, ETFs, Mag 7, financials, energy, and more.</p>
+  <p>Interactive view of valuation, growth trends, IV percentile, and how each regime maps to options structures — SPX, ES, ETFs, Mag 7, financials, energy, and more. Scroll to the <strong><a href="#fod-terminology" style="color:#22d3ee">Terminology</a></strong> and <strong><a href="#fod-trade-guide" style="color:#22d3ee">How to trade</a></strong> sections at the bottom of the page.</p>
 </section>
 
 <div class="stats-strip">
@@ -114,6 +159,7 @@
   <div class="fod-banner">
     <strong>Snapshot data</strong> (May 2026) for offline charts. For live P/E, analyst targets, and rankings, use
     <a href="fundamentals.html">Fundamentals Analysis &amp; Rankings</a> (Flask API on port 3000).
+    &nbsp;·&nbsp; On this page: <a href="#fod-terminology">Terminology ↓</a> &nbsp; <a href="#fod-trade-guide">How to trade ↓</a>
   </div>
 
   <div class="fod-controls">
@@ -186,6 +232,79 @@
       <div class="fod-h2">Valuation discount vs 5y P/E</div>
       <div class="fod-table-wrap"><table id="cheapTable"><thead><tr><th>Symbol</th><th>vs 5y</th><th>Fwd P/E</th><th>EPS gr.</th><th>Bias</th></tr></thead><tbody></tbody></table></div>
     </div>
+
+    <hr class="fod-section-divider" aria-hidden="true" />
+    <nav class="fod-page-jump" aria-label="Page sections">
+      <a href="#fod-terminology">↓ Terminology — detailed definitions</a>
+      <a href="#fod-trade-guide">↓ How to trade with fundamentals</a>
+    </nav>
+
+    <section id="fod-terminology" class="fod-bottom-section">
+      <h2 class="fod-h2">Terminology — detailed definitions</h2>
+      <div class="fod-callout">
+        Definitions for every metric and options concept on this dashboard. For the full site glossary (GEX, ML signals, flows), see
+        <a href="terminology.html">Trading Terminology</a>.
+      </div>
+      <div class="fod-cat-pills" id="termCatPills"></div>
+      <div id="termCardContainer" class="fod-term-grid"></div>
+    </section>
+
+    <section id="fod-trade-guide" class="fod-bottom-section">
+      <h2 class="fod-h2">How to trade with fundamentals + options</h2>
+      <div class="fod-callout">
+        Use fundamentals to choose <strong style="color:var(--text)">what</strong> to trade and options structure to choose <strong style="color:var(--text)">how</strong> to express the view — always with defined risk (spreads, not naked short options).
+      </div>
+
+      <div class="fod-guide-step">
+        <h4>Step 1 — Start on Overview</h4>
+        <p>Scan the universe table and charts. Sort mentally by sector filter if you care about one theme (e.g., Technology, Energy). Compare <strong>forward P/E</strong> (valuation) with <strong>EPS growth YoY</strong> (momentum). Toggle <strong>Options focus</strong> to overlay <strong>IV percentile</strong> — this tells you whether the options market is paying you well to sell premium or whether long-vol structures are cheap.</p>
+      </div>
+
+      <div class="fod-guide-step">
+        <h4>Step 2 — Open Asset detail for your symbol</h4>
+        <p>Click any row or pick a symbol. Read the summary, EPS trend, and margin chart. Check <strong>IV percentile</strong> and the options impact box (vol bias, skew, favored structures). If fundamentals are bullish but IV is elevated, prefer <strong>bull call spreads</strong> or <strong>cash-secured puts</strong> over naked calls. If fundamentals are weak and IV is high, consider <strong>bear call spreads</strong> or wide <strong>iron condors</strong> with small size.</p>
+      </div>
+
+      <div class="fod-guide-step">
+        <h4>Step 3 — Confirm with live fundamentals (optional)</h4>
+        <p>This dashboard uses a representative snapshot. Before sizing real trades, cross-check analyst targets, earnings dates, and composite scores on
+        <a href="fundamentals.html">Fundamentals Analysis &amp; Rankings</a> (live API). Align ML signals and GEX from other site pages when available.</p>
+      </div>
+
+      <div class="fod-guide-step">
+        <h4>Step 4 — Match structure to the regime (decision matrix)</h4>
+        <table class="fod-matrix">
+          <thead>
+            <tr><th>Fundamentals</th><th>IV %ile</th><th>Typical bias</th><th>Options approach</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Strong EPS growth, reasonable P/E</td><td>Low (≤35)</td><td>Bullish directional</td><td>Debit call spreads, LEAP calls, diagonal calls</td></tr>
+            <tr><td>Strong growth, rich P/E</td><td>High (≥55)</td><td>Bullish but crowded</td><td>Sell OTM put spreads after events; avoid chasing naked calls</td></tr>
+            <tr><td>Flat/negative EPS, high P/E</td><td>High</td><td>Bearish / fade</td><td>Bear call spreads, wide iron condors (small size)</td></tr>
+            <tr><td>Cheap vs 5y P/E, stable EPS</td><td>Low–mid</td><td>Mean reversion</td><td>Cash-secured puts, covered calls if long stock</td></tr>
+            <tr><td>Index (SPX, SPY, QQQ)</td><td>Any</td><td>Macro hedge</td><td>SPX/SPY put spreads, calendars around CPI/FOMC — less about single-name earnings</td></tr>
+            <tr><td>Defensive (WMT, JNJ)</td><td>Low</td><td>Income</td><td>Covered calls, occasional protective puts</td></tr>
+            <tr><td>Cyclical (BAC, XOM, HD)</td><td>Mid</td><td>Macro-linked</td><td>Trade with rates/oil/housing data; use spreads around sector reports</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="fod-guide-step">
+        <h4>Step 5 — Risk rules when mixing fundamentals + options</h4>
+        <ul>
+          <li><strong>Defined risk only</strong> — spreads and condors cap loss; avoid naked short puts/calls on high-IV names (e.g., TSLA, NVDA) unless you are explicitly willing to own/short stock.</li>
+          <li><strong>Earnings</strong> — IV often rises into prints; selling premium right before earnings without a plan is dangerous. Compare implied move to historical move.</li>
+          <li><strong>Size</strong> — High IV names pay more premium but gap more; use smaller contract count than on SPY.</li>
+          <li><strong>Confluence</strong> — Best trades combine fundamentals, directional bias on this page, acceptable IV regime, and (when possible) ML/GEX/flow agreement from other dashboard pages.</li>
+          <li><strong>Indices vs singles</strong> — SPX/ES options reflect macro; single names reflect earnings and idiosyncratic skew.</li>
+        </ul>
+      </div>
+
+      <div class="fod-guide-step">
+        <h4>Step 6 — Use Sectors and Options playbook tabs</h4>
+        <p><strong>Sectors</strong> compares average valuation and IV by group — useful for rotation (e.g., Energy vs Technology). <strong>Options playbook</strong> lists high-IV premium-selling candidates and low-IV debit/income names plus stocks trading below their 5-year average P/E.</p>
+      </div>
+    </section>
 </div>
 
   <script>
@@ -196,6 +315,68 @@
       { id: "detail", label: "Asset detail" },
       { id: "sectors", label: "Sectors" },
       { id: "playbook", label: "Options playbook" },
+    ];
+
+    const TERM_CATS = ["all", "valuation", "growth", "profitability", "options", "structures"];
+    const TERM_LABELS = {
+      all: "All",
+      valuation: "Valuation",
+      growth: "Growth",
+      profitability: "Profitability",
+      options: "Options & vol",
+      structures: "Strategies",
+    };
+    let termCat = "all";
+
+    const TERMS = [
+      { cat: "valuation", name: "Forward P/E (Price-to-Earnings)", abbr: "Fwd P/E",
+        def: "Share price divided by <strong>expected</strong> earnings per share over the next 12 months (analyst consensus). Lower forward P/E can mean cheaper expectations; higher can mean growth is priced in. Compare to sector peers and to the stock’s own history (see vs 5y P/E)." },
+      { cat: "valuation", name: "Trailing P/E", abbr: "Trail P/E",
+        def: "Price divided by <strong>reported</strong> EPS from the last four quarters. Useful after earnings; lags when growth is accelerating or decelerating. Forward P/E is usually more relevant for positioning ahead of the next year." },
+      { cat: "valuation", name: "PEG Ratio", abbr: "PEG",
+        def: "Forward P/E divided by expected EPS growth rate (as a percent). PEG near 1.0 is often described as “fair” for growth; below 1 may suggest growth is cheap relative to multiple; above 2 suggests the market pays a premium for growth. Not reliable for low or negative growth." },
+      { cat: "valuation", name: "vs 5-Year Average P/E", abbr: "vs 5y P/E",
+        def: "How far current valuation sits above or below the stock’s own five-year average multiple. Negative % (below average) can support mean-reversion longs if fundamentals are stable; very positive % can flag crowded longs unless growth justifies it." },
+      { cat: "growth", name: "EPS Growth (Year over Year)", abbr: "EPS gr. YoY",
+        def: "Percent change in earnings per share vs the same quarter a year ago. Core fundamental momentum signal: accelerating EPS often supports bullish bias; negative growth with high P/E is a classic “fade” setup for defined-risk bearish spreads when IV allows." },
+      { cat: "growth", name: "Revenue Growth (YoY)", abbr: "Rev. gr. YoY",
+        def: "Top-line sales growth. Confirms whether EPS gains are driven by real demand vs margin-only improvement. Divergence (revenue flat, EPS up) may mean cost cuts or buybacks — less durable than both growing." },
+      { cat: "profitability", name: "Operating Margin", abbr: "Op. margin",
+        def: "Operating income as % of revenue. Shows core business profitability before interest and taxes. Rising margins with revenue growth is a strong quality signal; shrinking margins with rising P/E increases risk into earnings." },
+      { cat: "profitability", name: "Gross Margin", abbr: "Gross margin",
+        def: "Revenue minus cost of goods sold, as % of revenue. Reflects pricing power and input costs. Tech and software often run high gross margins; banks and retailers lower — compare within sector, not across unrelated industries." },
+      { cat: "profitability", name: "Return on Equity", abbr: "ROE",
+        def: "Net income divided by shareholders’ equity. Measures how efficiently management uses equity capital. Very high ROE can reflect leverage (e.g., financials); pair with debt levels when judging quality." },
+      { cat: "profitability", name: "Free Cash Flow Yield", abbr: "FCF yield",
+        def: "Free cash flow per share divided by price (often shown as %). Cash-based view of valuation: higher yield can support dividends, buybacks, or debt paydown — attractive for income and covered-call overlays on stable names." },
+      { cat: "options", name: "Implied Volatility (IV)", abbr: "IV",
+        def: "The options market’s forecast of future realized volatility, embedded in option prices. High IV means options are expensive; low IV means they are cheap. IV rises ahead of uncertain events (earnings, Fed) and often collapses after (vol crush)." },
+      { cat: "options", name: "IV Percentile", abbr: "IV %ile",
+        def: "Where current IV ranks vs the past year (0–100). <strong>High (e.g., 55+)</strong>: favor premium-selling structures (spreads, iron condors) with defined risk. <strong>Low (e.g., 40−)</strong>: favor debit spreads, long calls/puts, or calendars. This dashboard uses IV %ile as the primary vol regime filter." },
+      { cat: "options", name: "Volatility Bias", abbr: "Vol bias",
+        def: "Summary label on each asset (e.g., sell premium, buy vol, neutral) derived from IV %ile and skew. Tells you whether the options market is better for collecting theta or paying for directional convexity on that name <em>right now</em> — not a fundamental direction call by itself." },
+      { cat: "options", name: "Put Skew", abbr: "Skew",
+        def: "Relative richness of OTM puts vs calls (often crash protection demand). Steep put skew means puts are expensive — bearish hedges cost more; call spreads may be relatively attractive for bulls. Index skew spikes in stress (SPX, VIX)." },
+      { cat: "options", name: "Rating (Bullish / Neutral / Bearish)", abbr: "Rating",
+        def: "Composite fundamental tilt on this dashboard from growth, margins, and valuation vs history — not a buy/sell signal. Use with IV regime and your own risk limits; confirm on <a href=\"fundamentals.html\">live fundamentals</a> before trading size." },
+      { cat: "structures", name: "Bull Call Spread", abbr: "Debit spread (calls)",
+        def: "Buy a call, sell a higher-strike call same expiry. Caps upside but lowers cost vs naked call. Fits <strong>bullish fundamentals + moderate/low IV</strong> when you want defined risk directional exposure." },
+      { cat: "structures", name: "Bear Call Spread", abbr: "Credit spread (calls)",
+        def: "Sell a call, buy a higher call. Collect premium; profit if price stays below short strike. Fits <strong>weak growth / rich valuation + elevated IV</strong> — defined-risk bearish or neutral-bearish income." },
+      { cat: "structures", name: "Cash-Secured Put / Bull Put Spread", abbr: "Put credit",
+        def: "Obligation or spread to buy stock lower. Bull put spread = sell put, buy lower put. Fits <strong>bullish or mean-reversion</strong> views when you want to enter on dips; size for assignment risk on volatile names." },
+      { cat: "structures", name: "Iron Condor", abbr: "IC",
+        def: "Sell OTM put spread + OTM call spread. Profits if price stays in a range; loses if a large move occurs. Fits <strong>range-bound or neutral</strong> names with <strong>high IV</strong>; use smaller size on single stocks than on broad indices." },
+      { cat: "structures", name: "Covered Call", abbr: "CC",
+        def: "Long stock + short call. Generates income; caps upside. Fits <strong>low IV, stable fundamentals</strong> (defensives, mega-cap quality) when you are willing to sell upside for premium." },
+      { cat: "structures", name: "Calendar Spread", abbr: "Calendar",
+        def: "Sell near-term option, buy longer-term at similar strike. Benefits from time decay on the short leg and can benefit from a vol rise in the back month. Useful around <strong>events</strong> (earnings, CPI) when front IV is elevated vs back." },
+      { cat: "structures", name: "LEAP Call", abbr: "LEAP",
+        def: "Long-dated call (often 6–24 months). Stock replacement with less capital than shares; theta is slower than short-dated calls. Fits <strong>strong long-term fundamentals + low IV</strong> when you want multi-quarter bullish exposure." },
+      { cat: "valuation", name: "Market Cap", abbr: "Mkt cap",
+        def: "Share price × shares outstanding. Liquidity in options generally improves with cap; mega-caps (AAPL, MSFT) have tight spreads; smaller names have wider markets and more gap risk." },
+      { cat: "options", name: "Index vs Single-Name Options", abbr: "SPX / SPY / QQQ vs stocks",
+        def: "<strong>Indices/ETFs</strong> (SPX, ES, SPY, QQQ, IWM, DIA): macro, rates, breadth, 0DTE flow — less earnings idiosyncrasy. <strong>Single names</strong>: earnings, guidance, sector news dominate; skew and IV crush around prints matter more. Match instrument to your thesis." },
     ];
 
     function filtered() {
@@ -446,6 +627,32 @@
         <td>${a.peVs5yPct < -10 ? "Bullish put spreads / LEAP calls" : "Neutral spreads"}</td></tr>`).join("");
     }
 
+    function renderTerminology() {
+      const pills = document.getElementById("termCatPills");
+      if (!pills.dataset.inited) {
+        pills.dataset.inited = "1";
+        TERM_CATS.forEach((c) => {
+          const b = document.createElement("button");
+          b.type = "button";
+          b.className = "fod-cat-pill" + (c === termCat ? " active" : "");
+          b.textContent = TERM_LABELS[c];
+          b.onclick = () => { termCat = c; renderTerminology(); };
+          pills.appendChild(b);
+        });
+      } else {
+        pills.querySelectorAll(".fod-cat-pill").forEach((b, i) => {
+          b.classList.toggle("active", TERM_CATS[i] === termCat);
+        });
+      }
+      const list = termCat === "all" ? TERMS : TERMS.filter((t) => t.cat === termCat);
+      document.getElementById("termCardContainer").innerHTML = list.map((t) => `
+        <article class="fod-term-card">
+          <h4>${t.name}</h4>
+          <span class="abbr">${t.abbr}</span>
+          <p>${t.def}</p>
+        </article>`).join("");
+    }
+
     function render() {
       document.querySelectorAll("button.tab").forEach((b, i) => {
         b.classList.toggle("active", TABS[i].id === state.tab);
@@ -453,7 +660,12 @@
       ["viewOverview", "viewDetail", "viewSectors", "viewPlaybook"].forEach((id) => {
         document.getElementById(id).classList.add("hidden");
       });
-      const map = { overview: "viewOverview", detail: "viewDetail", sectors: "viewSectors", playbook: "viewPlaybook" };
+      const map = {
+        overview: "viewOverview",
+        detail: "viewDetail",
+        sectors: "viewSectors",
+        playbook: "viewPlaybook",
+      };
       document.getElementById(map[state.tab]).classList.remove("hidden");
       if (state.tab === "overview") renderOverview();
       else if (state.tab === "detail") renderDetail();
@@ -464,6 +676,7 @@
     initControls();
     updateHeroStats(ASSETS);
     render();
+    renderTerminology();
   </script>
 <script src="search.js" defer></script>
 <script src="page-export.js"></script>
