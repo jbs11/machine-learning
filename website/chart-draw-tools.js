@@ -61,6 +61,11 @@
     '.flow-chart', '.vix-chart', '.opt-chart', '.ms-chart',
     '#vd-term-chart', '#vf-chart',
     '#oc-price-chart', '#oc-term-chart', '#oc-pnl-chart', '#oc-pnl-page-chart',
+    '#gp-chart-container', '#gexCurve', '#ivSkewCanvas', '#gexTsChart',
+    '.gexCanvasWrap', '#flowChart', '#pc-chart',
+    '.fc-chart-wrap', '.ts-chart-wrap', '#framework-canvas',
+    '.fod-chart-host', '.fcast-cone-canvas', '[id^="cone-"]',
+    '#brief-spy-chart', '#fc-spy-chart', '#ad-hub-spy-chart',
   ].join(',');
 
   var CHART_ID_DENY = /^(chart-symbol-title|chart-ohlc-display|chart-candle-count|chart-loading|chart-header)$/;
@@ -487,17 +492,38 @@
     return state;
   }
 
+  function isCanvasChartEl(cv) {
+    if (!cv || cv.tagName !== 'CANVAS') return false;
+    if (cv.classList.contains('cdt-overlay')) return false;
+    if (cv.classList.contains('fc-cv') || cv.classList.contains('fcast-cone-canvas')) return true;
+    if (cv.id === 'gexCurve' || cv.id === 'ivSkewCanvas' || cv.id === 'framework-canvas' ||
+        cv.id === 'ts-canvas' || cv.id === 'hist-canvas') return true;
+    if (cv.id && /^cone-/.test(cv.id)) return true;
+    if (cv.id && /^cv-/.test(cv.id)) return true;
+    if (cv.id && /^(tornado|netprem|ddhp)-/.test(cv.id)) return true;
+    return false;
+  }
+
   function isChartContainer(el) {
     if (!el || el.closest('nav') || el.closest('.cdt-toolbar')) return false;
     if (el.id && CHART_ID_DENY.test(el.id)) return false;
     if (el.closest('.chart-header') && el.id !== 'chart-container') return false;
     if (el.id === 'chart-container') return true;
     if (el.id === 'vd-term-chart' || el.id === 'vf-chart') return true;
+    if (el.id === 'gp-chart-container' || el.id === 'gexTsChart' || el.id === 'flowChart' ||
+        el.id === 'pc-chart' || el.id === 'brief-spy-chart' || el.id === 'fc-spy-chart' ||
+        el.id === 'ad-hub-spy-chart') return true;
+    if (el.id === 'gexCurve' || el.id === 'ivSkewCanvas' || el.id === 'framework-canvas' ||
+        el.id === 'ts-canvas' || el.id === 'hist-canvas') return true;
+    if (el.id && /^cone-/.test(el.id)) return true;
     if (el.classList && (
       el.classList.contains('ty-chart') || el.classList.contains('ghm-chart') ||
       el.classList.contains('ap-chart') || el.classList.contains('lt-chart') ||
       el.classList.contains('flow-chart') || el.classList.contains('vix-chart') ||
-      el.classList.contains('opt-chart') || el.classList.contains('ms-chart')
+      el.classList.contains('opt-chart') || el.classList.contains('ms-chart') ||
+      el.classList.contains('gexCanvasWrap') || el.classList.contains('fc-chart-wrap') ||
+      el.classList.contains('ts-chart-wrap') || el.classList.contains('fod-chart-host') ||
+      el.classList.contains('chart') || el.classList.contains('fcast-cone-canvas')
     )) return true;
     if (el.id && /^cv-/.test(el.id)) return true;
     if (el.id === 'oc-price-chart' || el.id === 'oc-term-chart' ||
@@ -570,9 +596,9 @@
       if (cv.closest('#chart-container') || cv.closest('.cdt-chart-slot')) return;
       var r = cv.getBoundingClientRect();
       if (r.width < 80 || r.height < 40) return;
-      if (cv.id && /^cv-/.test(cv.id)) {
-        if (cv.closest('.cdt-wrap') || cv.__cdtAttached) return;
-        attachCore(cv, { mode: 'canvas', chartId: cv.id });
+      if (isCanvasChartEl(cv)) {
+        if (cv.__cdtAttached) return;
+        attachCore(cv, { mode: 'canvas', chartId: cv.id || ('cdt-cv-' + uid()) });
         return;
       }
       var parent = cv.parentElement;
@@ -640,14 +666,19 @@
     applyOptions: applyMarketTimeOptions,
   };
 
+  function rescanDrawTools() {
+    scanContainers();
+  }
+
   window.ChartDrawTools = {
     attach: attachLightweightChart,
-    rescan: scanContainers,
+    rescan: rescanDrawTools,
     patch: patchCreateChart,
     createChart: createLwcChart,
     formatMarketAxisTime: formatMarketAxisTime,
     applyMarketTimeOptions: applyMarketTimeOptions,
   };
+  window.cdtRescan = rescanDrawTools;
   window.createLwcChart = createLwcChart;
 
   init();

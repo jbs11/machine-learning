@@ -119,6 +119,7 @@
     .fod-bottom-section { scroll-margin-top: 5rem; padding-bottom: 2rem; }
     .fod-bottom-section > .fod-h2 { font-size: 1.35rem; margin-top: 0; padding-top: .5rem; border-bottom: 1px solid var(--border); padding-bottom: .65rem; }
   </style>
+  <script src="chart-draw-tools.js?v=6"></script>
 </head>
 <body>
 
@@ -187,8 +188,8 @@
 
     <div id="viewOverview">
       <div class="fod-grid2">
-        <div class="fod-panel"><h3 id="chart1Title">Forward P/E by symbol</h3><canvas id="chartPe"></canvas><p class="fod-cap">Y-axis: forward P/E (×) · May 2026 snapshot</p></div>
-        <div class="fod-panel"><h3 id="chart2Title">EPS growth YoY (%)</h3><canvas id="chartGrowth"></canvas><p class="fod-cap" id="chart2Cap">Y-axis: YoY EPS growth (%)</p></div>
+        <div class="fod-panel fod-chart-host"><h3 id="chart1Title">Forward P/E by symbol</h3><canvas id="chartPe"></canvas><p class="fod-cap">Y-axis: forward P/E (×) · May 2026 snapshot</p></div>
+        <div class="fod-panel fod-chart-host"><h3 id="chart2Title">EPS growth YoY (%)</h3><canvas id="chartGrowth"></canvas><p class="fod-cap" id="chart2Cap">Y-axis: YoY EPS growth (%)</p></div>
       </div>
       <div class="fod-h2">Universe snapshot</div>
       <div class="fod-table-wrap"><table id="mainTable"><thead></thead><tbody></tbody></table></div>
@@ -198,8 +199,8 @@
       <div class="detail-header" id="detailBadges"></div>
       <p id="detailSummary" style="color:var(--muted);line-height:1.65;"></p>
       <div class="fod-grid2">
-        <div class="fod-panel"><h3>EPS trend (8 quarters)</h3><canvas id="chartEps"></canvas><p class="fod-cap">X-axis: quarter · Y-axis: EPS ($)</p></div>
-        <div class="fod-panel"><h3 id="chartDetail2Title">Operating margin (%)</h3><canvas id="chartMargin"></canvas><p class="fod-cap" id="chartDetail2Cap"></p></div>
+        <div class="fod-panel fod-chart-host"><h3>EPS trend (8 quarters)</h3><canvas id="chartEps"></canvas><p class="fod-cap">X-axis: quarter · Y-axis: EPS ($)</p></div>
+        <div class="fod-panel fod-chart-host"><h3 id="chartDetail2Title">Operating margin (%)</h3><canvas id="chartMargin"></canvas><p class="fod-cap" id="chartDetail2Cap"></p></div>
       </div>
       <div id="detailMetrics" class="fod-stats"></div>
       <div class="fod-options-box">
@@ -217,8 +218,8 @@
 
     <div id="viewSectors" class="hidden">
       <div class="fod-grid2">
-        <div class="fod-panel"><h3>Avg forward P/E by sector</h3><canvas id="chartSecPe"></canvas></div>
-        <div class="fod-panel"><h3>Avg IV percentile by sector</h3><canvas id="chartSecIv"></canvas></div>
+        <div class="fod-panel fod-chart-host"><h3>Avg forward P/E by sector</h3><canvas id="chartSecPe"></canvas></div>
+        <div class="fod-panel fod-chart-host"><h3>Avg IV percentile by sector</h3><canvas id="chartSecIv"></canvas></div>
       </div>
       <div id="sectorAccordions"></div>
     </div>
@@ -671,12 +672,14 @@
       else if (state.tab === "detail") renderDetail();
       else if (state.tab === "sectors") renderSectors();
       else renderPlaybook();
+      if (window.cdtRescan) requestAnimationFrame(function () { window.cdtRescan(); });
     }
 
     initControls();
     updateHeroStats(ASSETS);
     render();
     renderTerminology();
+    if (window.cdtRescan) setTimeout(function () { window.cdtRescan(); }, 600);
   </script>
 <script src="search.js" defer></script>
 <script src="page-export.js"></script>

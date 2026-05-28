@@ -8,7 +8,7 @@
   <link rel="stylesheet" href="page-export.css">
   <link rel="preload" href="lightweight-charts.min.js" as="script">
   <script src="lightweight-charts.min.js"></script>
-  <script src="chart-draw-tools.js"></script>
+  <script src="chart-draw-tools.js?v=6"></script>
   <link rel="stylesheet" href="style.css">
   <style>
     /* ── Layout ── */
@@ -442,6 +442,7 @@
         const w = chartEl.parentElement.clientWidth;
         if (w > 0) _pcChart.resize(w, 260);
       }).observe(chartEl.parentElement);
+      if (window.cdtRescan) requestAnimationFrame(function () { window.cdtRescan(); });
     }
 
     window.pcLoadChart = async function() {
@@ -587,6 +588,7 @@ function renderCards() {
     drawTornado(r);
     drawNetPrem(r);
     drawDealerDelta(r);
+    if (window.cdtRescan) requestAnimationFrame(function () { window.cdtRescan(); });
   }
 
   filtered.forEach(function(r) {
@@ -601,6 +603,7 @@ function renderCards() {
     });
     robs.observe(cv);
   });
+  if (window.cdtRescan) requestAnimationFrame(function () { window.cdtRescan(); });
 }
 
 /* ── Build card HTML ── */

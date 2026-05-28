@@ -8,7 +8,7 @@
   <link rel="stylesheet" href="page-export.css">
   <link rel="preload" href="lightweight-charts.min.js" as="script">
   <script src="lightweight-charts.min.js"></script>
-  <script src="chart-draw-tools.js"></script>
+  <script src="chart-draw-tools.js?v=6"></script>
   <link rel="stylesheet" href="style.css">
   <style>
     .wrap { max-width: 1600px; margin: 0 auto; padding: 0 1.5rem 6rem; }
@@ -1600,6 +1600,7 @@ function initGexTimeChart(){
   // Show timezone in header meta if available
   const meta = document.getElementById('gexTimeMeta');
   if (meta) meta.textContent = 'Timezone: US Eastern (ET)';
+  if (window.cdtRescan) requestAnimationFrame(function () { window.cdtRescan(); });
 }
 
 function _gexRegime(row){
@@ -2230,6 +2231,7 @@ function updateIvPanel(volAll, symbol){
     _ivSkewLast = { calls, puts };
     const cv = document.getElementById('ivSkewCanvas');
     if (cv) drawIvSkew(cv, calls, puts);
+    if (window.cdtRescan) requestAnimationFrame(function () { window.cdtRescan(); });
     _ivSkewAttachTooltip();
     if (note1) note1.innerHTML = `<strong>Skew curve:</strong> IV% vs moneyness (selected expiry). Left (m&lt;1) emphasizes puts; right (m&gt;1) emphasizes calls.`;
   } else {
@@ -2395,6 +2397,7 @@ async function loadGex(nocache=false){
     renderAlertStatus(spyRow);
     maybeGexAlerts(spyRow);
     drawGammaCurve(document.getElementById('gexCurve'), spyRow || {});
+    if (window.cdtRescan) requestAnimationFrame(function () { window.cdtRescan(); });
     try{ renderBestOptions(); }catch(e){}
     if (document.getElementById('gexTimeWrap').style.display !== 'none') {
       const ts = d.timestamp ? Date.parse(d.timestamp) : Date.now();

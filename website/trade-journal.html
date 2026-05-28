@@ -184,7 +184,7 @@
   .rem-row .t { color:var(--text); }
   .rem-row .when { color:var(--muted); font-size:.72rem; }
 </style>
-  <script src="chart-draw-tools.js"></script>
+  <script src="chart-draw-tools.js?v=6"></script>
 </head>
 <body>
 
@@ -1100,6 +1100,7 @@ function drawCharts() {
       ctx2.fillText(sig+' '+s.w+'W/'+s.l+'L', lx+13, cv2.height-9); lx+=70;
     });
   }
+  if (window.cdtRescan) requestAnimationFrame(function () { window.cdtRescan(); });
 }
 
 // ── TOS CSV Import ──────────────────────────────────────────────────────────

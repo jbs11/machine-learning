@@ -243,6 +243,7 @@
     }
     .asset-live-scroll thead th:first-child { z-index: 4; }
   </style>
+  <script src="chart-draw-tools.js?v=6"></script>
 </head>
 <body>
 <script>
@@ -1037,6 +1038,7 @@ function drawFramework() {
   ctx.fillStyle = 'rgba(255,255,255,.2)';
   ctx.textAlign = 'center';
   ctx.fillText('All three layers must align for maximum-confidence trades', W/2, startY + boxH + 20);
+  if (window.cdtRescan) requestAnimationFrame(function () { window.cdtRescan(); });
 }
 
 function roundRect(ctx, x, y, w, h, r) {

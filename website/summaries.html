@@ -236,6 +236,9 @@
     @keyframes skel { to { background:rgba(255,255,255,.1); } }
     .loading-msg { padding:2rem; text-align:center; color:var(--muted); font-size:.85rem; }
   </style>
+  <script src="lightweight-charts.min.js"></script>
+  <script src="chart-draw-tools.js?v=6"></script>
+  <script src="brief-spy-chart.js"></script>
 </head>
 <body>
 
@@ -299,6 +302,14 @@
       <div class="kpi-val c-purp" id="kpi-top">—</div>
       <div class="kpi-sub" id="kpi-top-sub">Highest conviction signal</div>
     </div>
+  </div>
+
+  <div class="sec-label">
+    <span class="sec-label-icon">&#128200;</span> SPY Price Chart
+    <span style="font-size:.72rem;color:var(--muted);font-weight:500;">Drawing toolbar on chart — lines, arrows, shapes, text (saved in browser)</span>
+  </div>
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:.85rem 1rem;margin-bottom:.25rem;">
+    <div id="brief-spy-chart" class="flow-chart" style="height:280px;background:#070d18;border-radius:8px;"></div>
   </div>
 
   <!-- ─── SECTION 2: THE EDGE 3-Layer Verdict ────────────────────────────── -->
@@ -974,6 +985,7 @@ function refreshAll() {
 
 /* ── Auto-start ──────────────────────────────────────────────────────────────── */
 refreshAll();
+if (window.mountBriefSpyChart) mountBriefSpyChart('brief-spy-chart', 280);
 </script>
 
 <script src="search.js" defer></script>

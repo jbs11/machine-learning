@@ -177,6 +177,7 @@
     @keyframes spin { to { transform:rotate(360deg); } }
     .spinner { width:14px; height:14px; border:2px solid var(--border); border-top-color:#ef4444; border-radius:50%; animation:spin .7s linear infinite; display:inline-block; }
   </style>
+  <script src="chart-draw-tools.js?v=6"></script>
 </head>
 <body>
 <script>
@@ -647,6 +648,7 @@ function drawTermStructure(vals) {
       signalEl.textContent = 'Flat-to-mild contango. Near-term and long-term vol are priced similarly — market is uncertain about the near-term direction. Both debit and credit spread strategies can work. Use ES futures direction and SPX/VIX correlation as primary bias filter.';
     }
   }
+  if (window.cdtRescan) requestAnimationFrame(function () { window.cdtRescan(); });
 }
 
 // History chart
@@ -745,6 +747,7 @@ function drawHistory(histData) {
     const x = pad.left + (i / (closes.length-1)) * cW;
     ctx.fillText(lbl, x, H - 5);
   }
+  if (window.cdtRescan) requestAnimationFrame(function () { window.cdtRescan(); });
 }
 
 // Signal cards

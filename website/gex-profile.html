@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>GEX Profile — Gamma Exposure &amp; Institutional Positioning</title>
   <script src="lightweight-charts.min.js"></script>
-  <script src="chart-draw-tools.js"></script>
+  <script src="chart-draw-tools.js?v=6"></script>
   <link rel="preload" href="style.css" as="style" fetchpriority="high">
   <link rel="stylesheet" href="page-export.css">
   <link rel="stylesheet" href="style.css">
@@ -1061,6 +1061,7 @@ async function loadCandles() {
 
     // Draw overlay — retry until priceToCoordinate() returns real values
     scheduleOverlayDraw();
+    if (window.cdtRescan) requestAnimationFrame(function () { window.cdtRescan(); });
 
   } catch(e) {
     document.getElementById('gp-chart-container').innerHTML =
