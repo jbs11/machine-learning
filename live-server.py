@@ -221,6 +221,7 @@ SYMBOL_LABELS = {
     '^NDX':  'NASDAQ-100 Index (^NDX)',
     '^RUT':  'Russell 2000 Index (^RUT)',
     '^VIX':  'CBOE Volatility Index (VIX)',
+    'SPX':   'S&P 500 Index (SPX / SPXW)',
 }
 
 FUTURES_MULTIPLIERS = {
@@ -240,6 +241,17 @@ _FUTURES_PROXY_MAP = {
     'GC=F': 'GLD',   # Gold → SPDR Gold Shares ETF
     'SI=F': 'SLV',   # Silver → iShares Silver Trust ETF
     'ZB=F': 'TLT',   # 30-Yr T-Bond → iShares 20+ Year Treasury ETF
+}
+
+# ETF/options proxy for cash indices (scale GEX levels to index price)
+_INDEX_GEX_PROXY: dict[str, tuple[str, str, str]] = {
+    # symbol -> (options_proxy, spot_symbol, candle_symbol)
+    'SPX':   ('SPY', '^GSPC', '^GSPC'),
+    '^GSPC': ('SPY', '^GSPC', '^GSPC'),
+    '^NDX':  ('QQQ', '^NDX',  '^NDX'),
+    '^RUT':  ('IWM', '^RUT',  '^RUT'),
+    '^DJI':  ('DIA', '^DJI',  '^DJI'),
+    '^IXIC': ('QQQ', '^IXIC', '^IXIC'),
 }
 
 # Indices are yfinance-only — IBKR doesn't support them as standard contracts
@@ -4831,10 +4843,380 @@ def _gex_row(symbol: str, group: str, nocache: bool = False) -> dict | None:
 
 _GEX_GROUPS = [
     ('ETFs',        SYMBOLS['sp500']),
+    ('Indices',     ['SPX', '^GSPC', '^NDX', '^RUT', '^VIX', '^DJI']),
     ('Mag 7',       SYMBOLS['mag7']),
     ('Blue Chips',  SYMBOLS['bluechip']),
     ('Futures',     SYMBOLS['futures']),
 ]
+
+# ── GEX wall shift history (call wall / put wall / gamma flip) ────────────────
+_GEX_WALL_HISTORY_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'gex_wall_history.json')
+_gex_wall_history: dict[str, list] = {}
+_gex_wall_shifts: list = []
+_gex_wall_history_lock = threading.Lock()
+_GEX_WALL_MAX_SNAPS = 400
+_GEX_WALL_MAX_SHIFTS = 600
+_GEX_WALL_RECORD_INTERVAL_SEC = 60
+
+
+def _gex_wall_load() -> None:
+    global _gex_wall_history, _gex_wall_shifts
+    try:
+        if os.path.exists(_GEX_WALL_HISTORY_FILE):
+            with open(_GEX_WALL_HISTORY_FILE, 'r', encoding='utf-8') as f:
+                data = _json.load(f)
+            _gex_wall_history = data.get('history') or {}
+            _gex_wall_shifts = data.get('shifts') or []
+    except Exception as e:
+        print(f'[gex-wall] load failed: {e}')
+
+
+def _gex_wall_save() -> None:
+    try:
+        os.makedirs(os.path.dirname(_GEX_WALL_HISTORY_FILE), exist_ok=True)
+        with open(_GEX_WALL_HISTORY_FILE, 'w', encoding='utf-8') as f:
+            _json.dump(
+                {'history': _gex_wall_history, 'shifts': _gex_wall_shifts[-_GEX_WALL_MAX_SHIFTS:]},
+                f,
+            )
+    except Exception as e:
+        print(f'[gex-wall] save failed: {e}')
+
+
+def _gex_wall_threshold(spot: float) -> float:
+    if not spot or spot <= 0:
+        return 0.5
+    return max(0.25, float(spot) * 0.002)
+
+
+def _parse_iso_ts(ts_str: str | None):
+    if not ts_str:
+        return None
+    try:
+        return datetime.fromisoformat(str(ts_str).replace('Z', '+00:00'))
+    except Exception:
+        return None
+
+
+def _gex_levels_changed(prev: dict, curr: dict, spot: float) -> bool:
+    if not prev:
+        return True
+    thr = _gex_wall_threshold(spot)
+    for key in ('gamma_wall', 'put_wall', 'flip_level'):
+        pv, cv = prev.get(key), curr.get(key)
+        if pv is None and cv is None:
+            continue
+        if pv is None or cv is None:
+            return True
+        if abs(float(cv) - float(pv)) >= thr:
+            return True
+    return False
+
+
+def _gex_level_delta(prev_val, curr_val):
+    if prev_val is None or curr_val is None:
+        return None
+    return round(float(curr_val) - float(prev_val), 4)
+
+
+def _find_snapshot_at_or_before(hist: list, target_dt) -> dict | None:
+    best = None
+    for snap in hist:
+        ts = _parse_iso_ts(snap.get('ts'))
+        if ts and ts <= target_dt:
+            best = snap
+    return best
+
+
+def _find_overnight_baseline(hist: list) -> dict | None:
+    """Last snapshot before today's 9:30 ET RTH open (or prior close if pre-market)."""
+    if not hist:
+        return None
+    try:
+        et = ZoneInfo('America/New_York')
+        now = datetime.now(et)
+    except Exception:
+        now = datetime.now().astimezone()
+        et = now.tzinfo
+    rth_open = now.replace(hour=9, minute=30, second=0, microsecond=0)
+    if now < rth_open:
+        prev_close = (now - timedelta(days=1)).replace(hour=16, minute=0, second=0, microsecond=0)
+        return _find_snapshot_at_or_before(hist, prev_close) or hist[0]
+    baseline = _find_snapshot_at_or_before(hist, rth_open)
+    return baseline or hist[0]
+
+
+def _find_session_open_baseline(hist: list) -> dict | None:
+    if not hist:
+        return None
+    try:
+        et = ZoneInfo('America/New_York')
+        now = datetime.now(et)
+    except Exception:
+        return hist[0]
+    rth_open = now.replace(hour=9, minute=30, second=0, microsecond=0)
+    for snap in hist:
+        ts = _parse_iso_ts(snap.get('ts'))
+        if ts and ts >= rth_open:
+            return snap
+    return hist[0]
+
+
+def _find_snapshot_hours_ago(hist: list, hours: float = 1.0) -> dict | None:
+    if not hist:
+        return None
+    target = datetime.now().astimezone() - timedelta(hours=hours)
+    return _find_snapshot_at_or_before(hist, target)
+
+
+def _detect_gex_wall_shifts(sym: str, row: dict, prev: dict, curr: dict) -> None:
+    spot = float(curr.get('spot') or 0)
+    thr = _gex_wall_threshold(spot)
+    label = row.get('label', sym)
+    group = row.get('group', '')
+    now_iso = curr['ts']
+    for snap_key, level_name in (
+        ('gamma_wall', 'Call Wall'),
+        ('put_wall', 'Put Wall'),
+        ('flip_level', 'Gamma Flip'),
+    ):
+        pv, cv = prev.get(snap_key), curr.get(snap_key)
+        if pv is None or cv is None:
+            continue
+        delta = float(cv) - float(pv)
+        if abs(delta) < thr:
+            continue
+        mag = 'large' if abs(delta) >= thr * 3 else ('medium' if abs(delta) >= thr * 1.5 else 'small')
+        _gex_wall_shifts.append({
+            'ts': now_iso,
+            'symbol': sym,
+            'label': label,
+            'group': group,
+            'level': level_name,
+            'field': snap_key,
+            'from': round(float(pv), 4),
+            'to': round(float(cv), 4),
+            'delta': round(delta, 4),
+            'spot': round(spot, 4) if spot else None,
+            'magnitude': mag,
+        })
+    if len(_gex_wall_shifts) > _GEX_WALL_MAX_SHIFTS:
+        del _gex_wall_shifts[:-_GEX_WALL_MAX_SHIFTS]
+
+
+def _record_gex_wall_snapshots(rows: list) -> None:
+    with _gex_wall_history_lock:
+        now = datetime.now().astimezone()
+        now_iso = now.replace(microsecond=0).isoformat()
+        for row in rows:
+            if row.get('no_options'):
+                continue
+            sym = row.get('symbol')
+            if not sym:
+                continue
+            snap = {
+                'ts': now_iso,
+                'gamma_wall': row.get('gamma_wall') or row.get('call_wall'),
+                'put_wall': row.get('put_wall'),
+                'flip_level': row.get('flip_level'),
+                'spot': row.get('spot'),
+                'regime': row.get('regime'),
+            }
+            hist = _gex_wall_history.setdefault(sym, [])
+            prev = hist[-1] if hist else None
+            should_record = False
+            if not prev:
+                should_record = True
+            elif _gex_levels_changed(prev, snap, float(snap.get('spot') or 0)):
+                should_record = True
+            else:
+                pts = _parse_iso_ts(prev.get('ts'))
+                if pts and (now - pts).total_seconds() >= _GEX_WALL_RECORD_INTERVAL_SEC:
+                    should_record = True
+            if not should_record:
+                continue
+            if prev and _gex_levels_changed(prev, snap, float(snap.get('spot') or 0)):
+                _detect_gex_wall_shifts(sym, row, prev, snap)
+            hist.append(snap)
+            if len(hist) > _GEX_WALL_MAX_SNAPS:
+                _gex_wall_history[sym] = hist[-_GEX_WALL_MAX_SNAPS:]
+        _gex_wall_save()
+
+
+def _change_block(baseline: dict | None, curr: dict) -> dict:
+    def one(field):
+        bv = baseline.get(field) if baseline else None
+        cv = curr.get(field)
+        return {'prev': bv, 'now': cv, 'delta': _gex_level_delta(bv, cv)}
+    return {
+        'call_wall': one('gamma_wall'),
+        'put_wall': one('put_wall'),
+        'flip_level': one('flip_level'),
+    }
+
+
+def _last_shift_for_symbol(sym: str) -> dict | None:
+    for shift in reversed(_gex_wall_shifts):
+        if shift.get('symbol') == sym:
+            return shift
+    return None
+
+
+def _build_gex_wall_tracker(rows: list, record: bool = True) -> dict:
+    if record:
+        _record_gex_wall_snapshots(rows)
+    assets = []
+    shift_count_today = 0
+    try:
+        et = ZoneInfo('America/New_York')
+        today = datetime.now(et).date()
+    except Exception:
+        today = datetime.now().date()
+
+    for shift in _gex_wall_shifts:
+        ts = _parse_iso_ts(shift.get('ts'))
+        if ts and ts.date() == today:
+            shift_count_today += 1
+
+    for row in rows:
+        sym = row.get('symbol')
+        hist = _gex_wall_history.get(sym, [])
+        curr_snap = {
+            'gamma_wall': row.get('gamma_wall') or row.get('call_wall'),
+            'put_wall': row.get('put_wall'),
+            'flip_level': row.get('flip_level'),
+            'spot': row.get('spot'),
+            'regime': row.get('regime'),
+        }
+        prev_snap = hist[-2] if len(hist) >= 2 else None
+        overnight = _find_overnight_baseline(hist)
+        session_open = _find_session_open_baseline(hist)
+        hour_ago = _find_snapshot_hours_ago(hist, 1.0)
+        last_shift = _last_shift_for_symbol(sym)
+        assets.append({
+            **row,
+            'call_wall': curr_snap['gamma_wall'],
+            'changes': {
+                'since_last': _change_block(prev_snap, curr_snap),
+                'overnight': _change_block(overnight, curr_snap),
+                'session_open': _change_block(session_open, curr_snap),
+                'one_hour': _change_block(hour_ago, curr_snap),
+            },
+            'history': hist[-200:],
+            'history_full': hist,
+            'last_shift': last_shift,
+            'snapshot_count': len(hist),
+        })
+
+    recent_shifts = sorted(_gex_wall_shifts, key=lambda x: x.get('ts', ''), reverse=True)[:60]
+    return {
+        'assets': assets,
+        'count': len(assets),
+        'recent_shifts': recent_shifts,
+        'shift_count_today': shift_count_today,
+        'timestamp': iso_now(),
+    }
+
+
+def _fetch_gex_rows(nocache: bool = False) -> list:
+    def _quick_spot(sym: str) -> float:
+        try:
+            with _yf_lock:
+                return float(yf.Ticker(sym).fast_info.last_price or 0)
+        except Exception:
+            return 0.0
+
+    def _scale_gex_row(row: dict, symbol: str, group: str, scale: float,
+                       spot: float, proxy_sym: str | None = None,
+                       candle_sym: str | None = None) -> dict:
+        def sc(v):
+            if v is None:
+                return None
+            try:
+                return round(float(v) * scale, 2)
+            except Exception:
+                return None
+
+        out = dict(row)
+        out['symbol'] = symbol
+        out['label'] = SYMBOL_LABELS.get(symbol, symbol)
+        out['group'] = group
+        out['asset_type'] = 'index'
+        out['spot'] = round(spot, 4) if spot else out.get('spot')
+        out['gamma_wall'] = sc(row.get('gamma_wall') or row.get('call_wall'))
+        out['put_wall'] = sc(row.get('put_wall'))
+        out['flip_level'] = sc(row.get('flip_level'))
+        out['call_wall'] = out['gamma_wall']
+        if row.get('strikes'):
+            out['strikes'] = [sc(k) for k in row.get('strikes', [])]
+        if row.get('gex'):
+            out['gex'] = [round(float(v) * scale, 3) for v in row.get('gex', [])]
+        if proxy_sym:
+            out['proxy_symbol'] = proxy_sym
+        if candle_sym:
+            out['candle_symbol'] = candle_sym
+        out['no_options'] = row.get('no_options', False)
+        return out
+
+    def _gex_index_row(symbol: str, group: str) -> dict | None:
+        if symbol == '^VIX':
+            row = _gex_row('^VIX', group, nocache=nocache)
+            if row:
+                row = dict(row)
+                row['symbol'] = '^VIX'
+                row['label'] = SYMBOL_LABELS.get('^VIX', '^VIX')
+                row['group'] = group
+                row['asset_type'] = 'index'
+                row['candle_symbol'] = '^VIX'
+            return row
+
+        proxy_info = _INDEX_GEX_PROXY.get(symbol)
+        if not proxy_info:
+            return None
+        proxy_sym, spot_sym, candle_sym = proxy_info
+        proxy_row = _gex_row(proxy_sym, group, nocache=nocache)
+        if not proxy_row:
+            return None
+        index_spot = _quick_spot(spot_sym)
+        proxy_spot = float(proxy_row.get('spot') or 0)
+        if index_spot <= 0:
+            index_spot = proxy_spot
+        scale = (index_spot / proxy_spot) if proxy_spot > 0 else 1.0
+        return _scale_gex_row(proxy_row, symbol, group, scale, index_spot, proxy_sym, candle_sym)
+
+    all_items = [(sym, grp) for grp, syms in _GEX_GROUPS for sym in syms]
+    rows = []
+    with ThreadPoolExecutor(max_workers=4) as pool:
+        def _fetch_one(sym: str, grp: str):
+            if sym in _INDEX_GEX_PROXY or sym == '^VIX' or grp == 'Indices':
+                return _gex_index_row(sym, grp)
+            return _gex_row(sym, grp, nocache)
+
+        futs = {pool.submit(_fetch_one, sym, grp): (sym, grp) for sym, grp in all_items}
+        for fut in as_completed(futs):
+            sym, grp = futs[fut]
+            try:
+                r = fut.result()
+            except Exception as e:
+                print(f'[gex-wall] {sym}: {e}')
+                r = None
+            if r:
+                rows.append(r)
+            else:
+                rows.append({
+                    'symbol': sym, 'label': SYMBOL_LABELS.get(sym, sym),
+                    'group': grp, 'asset_type': _asset_type_for(sym),
+                    'spot': 0.0, 'strikes': [], 'gex': [], 'call_oi': [], 'put_oi': [],
+                    'total_gex_m': 0.0, 'gamma_wall': None, 'put_wall': None,
+                    'call_wall': None, 'flip_level': None, 'regime': 'No Data',
+                    'pcr': None, 'expiries': [], 'no_options': True,
+                })
+    grp_ord = {g: i for i, (g, _) in enumerate(_GEX_GROUPS)}
+    rows.sort(key=lambda r: (grp_ord.get(r['group'], 99), r['symbol']))
+    return rows
+
+
+_gex_wall_load()
 
 
 # ── Treasury yields (10Y / 2Y / curve vs SPX options) ─────────────────────────
@@ -5052,34 +5434,33 @@ def gamma_exposure_endpoint():
         if cached:
             return jsonify(cached)
 
-    all_items = [(sym, grp) for grp, syms in _GEX_GROUPS for sym in syms]
-    rows = []
-    with ThreadPoolExecutor(max_workers=4) as pool:
-        futs = {pool.submit(_gex_row, sym, grp, nocache): (sym, grp) for sym, grp in all_items}
-        for fut in as_completed(futs):
-            sym, grp = futs[fut]
-            try:
-                r = fut.result()
-            except Exception as e:
-                print(f'[gex-endpoint] {sym}: {e}')
-                r = None
-            if r:
-                rows.append(r)
-            else:
-                # Always include a minimal row so every symbol appears in the UI
-                rows.append({
-                    'symbol': sym, 'label': SYMBOL_LABELS.get(sym, sym),
-                    'group': grp, 'asset_type': _asset_type_for(sym),
-                    'spot': 0.0, 'strikes': [], 'gex': [], 'call_oi': [], 'put_oi': [],
-                    'total_gex_m': 0.0, 'gamma_wall': None, 'put_wall': None,
-                    'call_wall': None, 'flip_level': None, 'regime': 'No Data',
-                    'pcr': None, 'expiries': [], 'no_options': True,
-                })
-
-    grp_ord = {g: i for i, (g, _) in enumerate(_GEX_GROUPS)}
-    rows.sort(key=lambda r: (grp_ord.get(r['group'], 99), r['symbol']))
-
+    rows = _fetch_gex_rows(nocache=nocache)
     result = {'assets': rows, 'count': len(rows), 'timestamp': iso_now()}
+    _record_gex_wall_snapshots(rows)
+    cache_set(ck, result)
+    return jsonify(result)
+
+
+@app.route('/api/gex-wall-tracker')
+def gex_wall_tracker_endpoint():
+    """Track call wall, put wall, and gamma flip shifts across all GEX assets."""
+    nocache = request.args.get('nocache', '0') == '1'
+    ck = cache_key('all', 'gex-wall-tracker')
+    if not nocache:
+        cached = cache_get(ck)
+        if cached:
+            return jsonify(cached)
+
+    gex_ck = cache_key('all', 'gamma-exposure')
+    gex_cached = None if nocache else cache_get(gex_ck)
+    fresh = nocache or not (gex_cached and gex_cached.get('assets'))
+    if fresh:
+        rows = _fetch_gex_rows(nocache=nocache)
+        cache_set(gex_ck, {'assets': rows, 'count': len(rows), 'timestamp': iso_now()})
+    else:
+        rows = gex_cached['assets']
+
+    result = _build_gex_wall_tracker(rows, record=fresh)
     cache_set(ck, result)
     return jsonify(result)
 
@@ -8613,6 +8994,7 @@ if __name__ == '__main__':
         PREWARM_ENDPOINTS = [
             '/api/market-summary',
             '/api/gamma-exposure',
+            '/api/gex-wall-tracker',
             '/api/option-flows',
             '/api/most-active-options',
             '/api/0dte',

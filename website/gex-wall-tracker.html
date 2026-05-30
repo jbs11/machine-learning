@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="lightweight-charts.min.js"></script>
+  <title>GEX Wall Tracker — Call Wall, Put Wall &amp; Gamma Flip Shifts</title>
+  <link rel="preload" href="style.css" as="style" fetchpriority="high">
+  <link rel="stylesheet" href="page-export.css">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .gwt-wrap { max-width: min(100%, 1960px); margin: 0 auto; padding: 0 .85rem 3rem; }
+    .gwt-hero {
+      padding: 3.2rem 1.5rem 2.2rem; text-align: center;
+      background: radial-gradient(ellipse 80% 55% at 50% -5%, rgba(34,211,238,.12) 0%, transparent 65%), var(--bg);
+      border-bottom: 1px solid var(--border);
+    }
+    .gwt-badge {
+      display: inline-flex; align-items: center; gap: .5rem; padding: .3rem 1rem;
+      background: rgba(34,211,238,.1); border: 1px solid rgba(34,211,238,.28); border-radius: 999px;
+      color: #22d3ee; font-size: .78rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; margin-bottom: .9rem;
+    }
+    .gwt-hero h1 {
+      font-size: clamp(1.75rem, 4vw, 2.85rem); font-weight: 900; letter-spacing: -.03em; line-height: 1.15; margin-bottom: .7rem;
+      background: linear-gradient(135deg, #22d3ee 0%, #4ade80 40%, #a78bfa 80%, #fff 95%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    .gwt-hero p { color: var(--muted); font-size: 1rem; max-width: 900px; margin: 0 auto; line-height: 1.7; }
+    .gwt-pills { display: flex; flex-wrap: wrap; gap: .45rem; justify-content: center; margin-top: 1rem; }
+    .gwt-pills a { padding: .28rem .75rem; border-radius: 6px; border: 1px solid var(--border); color: var(--muted); font-size: .75rem; font-weight: 700; text-decoration: none; }
+    .gwt-pills a:hover { border-color: #22d3ee; color: #22d3ee; }
+
+    .gwt-bar { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; padding: .85rem 0 .4rem; }
+    .gwt-pill {
+      padding: .28rem .75rem; border-radius: 99px; border: 1px solid var(--border);
+      background: transparent; color: var(--muted); font-size: .75rem; font-weight: 700; cursor: pointer;
+    }
+    .gwt-pill.active { background: rgba(34,211,238,.12); border-color: #22d3ee; color: #22d3ee; }
+    .gwt-refresh { padding: .28rem .85rem; border-radius: 6px; border: 1px solid var(--border); background: transparent; color: var(--muted); font-size: .72rem; font-weight: 700; cursor: pointer; }
+    .gwt-refresh:hover { border-color: #22d3ee; color: #22d3ee; }
+    .gwt-upd { font-size: .68rem; color: var(--muted); margin-left: auto; }
+
+    .gwt-strip { display: flex; flex-wrap: wrap; gap: .65rem; padding: .5rem 0 1rem; }
+    .gwt-snap { flex: 1 1 130px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: .65rem .9rem; min-width: 120px; }
+    .gwt-snap-k { font-size: .64rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+    .gwt-snap-v { font-size: 1.25rem; font-weight: 900; font-family: Consolas, monospace; margin-top: .08rem; }
+
+    .gwt-sec {
+      font-size: .76rem; font-weight: 700; text-transform: uppercase; letter-spacing: .1em;
+      color: #22d3ee; padding: 1.35rem 0 .6rem; border-bottom: 1px solid var(--border); margin-bottom: .75rem;
+    }
+    .gwt-sec-sub { font-size: .72rem; color: var(--muted); font-weight: 500; text-transform: none; letter-spacing: 0; margin-left: .5rem; }
+
+    .gwt-table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow-x: auto; margin-bottom: 1.1rem; }
+    .gwt-table { width: 100%; border-collapse: collapse; font-size: .78rem; min-width: 1100px; }
+    .gwt-table th {
+      background: rgba(0,0,0,.25); color: var(--muted); padding: .45rem .65rem; text-align: left;
+      font-size: .64rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; border-bottom: 1px solid var(--border); white-space: nowrap;
+    }
+    .gwt-table th.r { text-align: right; }
+    .gwt-table td { padding: .48rem .65rem; border-bottom: 1px solid rgba(36,48,88,.35); vertical-align: middle; }
+    .gwt-table tr:last-child td { border-bottom: none; }
+    .gwt-table tr:hover td { background: rgba(255,255,255,.02); }
+    .gwt-table tr.shifted td { background: rgba(251,191,36,.04); }
+    .gwt-sym { font-weight: 900; font-family: Consolas, monospace; color: #22d3ee; }
+    .gwt-lbl { font-size: .66rem; color: var(--muted); display: block; }
+    .gwt-price { text-align: right; font-weight: 800; font-family: Consolas, monospace; }
+    .gwt-delta { text-align: right; font-weight: 700; font-family: Consolas, monospace; font-size: .74rem; }
+    .up { color: #4ade80; } .dn { color: #f87171; } .flat { color: var(--muted); }
+    .chip { display: inline-block; padding: .15rem .45rem; border-radius: 4px; font-size: .62rem; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; }
+    .chip-call { background: rgba(34,197,94,.12); color: #4ade80; border: 1px solid rgba(34,197,94,.25); }
+    .chip-put { background: rgba(248,113,113,.12); color: #f87171; border: 1px solid rgba(248,113,113,.25); }
+    .chip-flip { background: rgba(251,191,36,.12); color: #fbbf24; border: 1px solid rgba(251,191,36,.25); }
+    .chip-lg { background: rgba(239,68,68,.15); color: #f87171; }
+    .chip-md { background: rgba(251,191,36,.12); color: #fbbf24; }
+    .chip-sm { background: rgba(148,163,184,.1); color: var(--muted); }
+
+    .gwt-shifts { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: .75rem; margin-bottom: 1.2rem; }
+    .gwt-shift-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: .85rem 1rem; border-left: 3px solid #22d3ee; }
+    .gwt-shift-card.large { border-left-color: #ef4444; }
+    .gwt-shift-h { display: flex; justify-content: space-between; align-items: center; gap: .5rem; margin-bottom: .35rem; }
+    .gwt-shift-sym { font-weight: 900; font-family: Consolas, monospace; color: #22d3ee; }
+    .gwt-shift-time { font-size: .66rem; color: var(--muted); }
+    .gwt-shift-body { font-size: .78rem; color: var(--muted); line-height: 1.55; }
+    .gwt-shift-body strong { color: var(--text); }
+
+    .gwt-info { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: .85rem; margin: .85rem 0 1.2rem; }
+    .gwt-info-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: .95rem 1.05rem; }
+    .gwt-info-card h4 { font-size: .88rem; font-weight: 800; margin-bottom: .4rem; color: #22d3ee; }
+    .gwt-info-card p, .gwt-info-card li { font-size: .78rem; color: var(--muted); line-height: 1.6; }
+    .gwt-info-card ul { padding-left: 1.1rem; margin: .3rem 0 0; }
+
+    .gwt-gloss { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: .85rem; }
+    .gwt-term { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: .9rem 1rem; }
+    .gwt-term h4 { font-size: .88rem; font-weight: 800; color: #22d3ee; margin-bottom: .35rem; }
+    .gwt-term p { font-size: .78rem; color: var(--muted); line-height: 1.6; margin: 0; }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .gwt-spin { width: 20px; height: 20px; border: 2px solid var(--border); border-top-color: #22d3ee; border-radius: 50%; animation: spin .7s linear infinite; display: inline-block; vertical-align: middle; }
+  
+    .gwt-table tr.gwt-row { cursor: pointer; }
+    .gwt-table tr.gwt-row.selected td { background: rgba(34,211,238,.08) !important; outline: 1px solid rgba(34,211,238,.35); }
+    .gwt-detail { display: none; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; margin-bottom: 1.2rem; }
+    .gwt-detail-h { padding: .65rem 1rem; border-bottom: 1px solid var(--border); display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .5rem; }
+    .gwt-detail-t { font-weight: 800; font-size: .95rem; }
+    .gwt-detail-s { font-size: .72rem; color: var(--muted); }
+    .gwt-spread-row { display: flex; flex-wrap: wrap; gap: .75rem; padding: .45rem 1rem .55rem; border-bottom: 1px solid var(--border); font-size: .74rem; }
+    .gwt-spread-item { background: rgba(255,255,255,.03); border: 1px solid var(--border); border-radius: 6px; padding: .35rem .65rem; }
+    .gwt-spread-item strong { color: var(--text); }
+    .gwt-chart-legend { display: flex; flex-wrap: wrap; gap: .8rem; padding: .4rem 1rem; font-size: .68rem; color: var(--muted); border-bottom: 1px solid var(--border); }
+    .gwt-leg-line { width: 16px; height: 3px; border-radius: 2px; display: inline-block; vertical-align: middle; margin-right: 4px; }
+    
+    .gwt-chart-wrap { position: relative; width: 100%; }
+    .gwt-gamma-panel {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: .5rem .75rem; padding: .65rem 1rem; border-top: 1px solid var(--border);
+      background: rgba(255,255,255,.02); font-size: .72rem;
+    }
+    .gwt-gamma-panel h5 {
+      grid-column: 1 / -1; font-size: .62rem; letter-spacing: .08em;
+      text-transform: uppercase; color: var(--muted); margin: 0 0 .15rem;
+    }
+    .gwt-gamma-cell { background: rgba(255,255,255,.03); border: 1px solid var(--border); border-radius: 6px; padding: .4rem .55rem; }
+    .gwt-gamma-cell .k { font-size: .62rem; color: var(--muted); margin-bottom: .15rem; }
+    .gwt-gamma-cell .v { font-weight: 800; font-variant-numeric: tabular-nums; font-size: .82rem; }
+
+    #detail-chart { width: 100%; height: clamp(576px, 70vh, 896px); min-height: 576px; background: #070d18; position: relative; }
+
+  </style>
+</head>
+<body>
+<script>
+if (window.location.search.indexOf('_v=') === -1) {
+  window.location.replace(window.location.pathname + '?_v=' + Date.now());
+}
+</script>
+
+<nav class="nav">
+  <a href="index.html" class="nav-logo">
+    <img src="images/steve.jpg" class="nav-logo-photo" alt="Stephen Borick">
+    <div class="nav-logo-text"><span class="nav-company">Artificial Intelligence</span><span class="nav-name">Solutions, Inc.</span></div>
+  </a>
+  <ul class="nav-links">
+    <li><a href="index.html">Home</a></li>
+    <li><a href="spx-hub.html" style="color:#a78bfa;font-weight:700;">SPX Hub</a></li>
+    <li><a href="gex-profile.html" style="color:#22d3ee;font-weight:700;">&#128200; GEX Profile</a></li>
+    <li><a href="gex-heatmap.html" style="color:#22d3ee;font-weight:700;">&#127777; GEX Heat Maps</a></li>
+    <li><a href="gex-wall-tracker.html" style="color:#22d3ee;font-weight:700;" class="active">&#128260; Wall Tracker</a></li>
+    <li><a href="spx-daily-tracker.html" style="color:#10b981;font-weight:700;">&#128202; SPX Daily</a></li>
+    <li><a href="vix-dashboard.html" style="color:#f87171;font-weight:700;">&#128293; VIX</a></li>
+    <li><a href="terminology.html">Terminology</a></li>
+    <li><a href="report-ms.html" target="_blank" style="background:#22d3ee;color:var(--bg);padding:.28rem .85rem;border-radius:5px;font-weight:700;">&#128202; Market Report</a></li>
+  </ul>
+</nav>
+
+<div class="gwt-hero">
+  <div class="gwt-badge">&#128260; Dealer Gamma Level Monitor</div>
+  <h1>GEX Wall Tracker</h1>
+  <p>Track intraday and overnight shifts in <strong>Call Wall</strong>, <strong>Put Wall</strong>, and <strong>Gamma Flip</strong> across every asset on the dashboard. Walls move as open interest, dealer hedging, theta, and breakouts redistribute gamma — largest shifts typically occur overnight; 0DTE sessions see frequent intraday relocations.</p>
+  <div class="gwt-pills">
+    <a href="#shifts">Recent Shifts</a>
+    <a href="#master">All Assets</a>
+    <a href="#why">Why Walls Move</a>
+    <a href="#terminology">Terminology</a>
+  </div>
+</div>
+
+<div class="gwt-wrap">
+
+  <div class="gwt-bar">
+    <button class="gwt-pill active" data-filter="all">All</button>
+    <button class="gwt-pill" data-filter="ETFs">ETFs</button>
+    <button class="gwt-pill" data-filter="Indices">Indices</button>
+    <button class="gwt-pill" data-filter="Mag 7">Mag 7</button>
+    <button class="gwt-pill" data-filter="Blue Chips">Blue Chips</button>
+    <button class="gwt-pill" data-filter="Futures">Futures</button>
+    <button class="gwt-pill" data-filter="shifted">Shifts Only</button>
+    <button class="gwt-refresh" id="btn-refresh">&#8635; Refresh</button>
+    <span class="gwt-upd" id="last-upd">Loading…</span>
+  </div>
+
+  <div class="gwt-strip" id="snap-strip"></div>
+
+  <div class="gwt-sec" id="shifts">&#9889; Recent Wall Shifts <span class="gwt-sec-sub">Detected level relocations</span></div>
+  <div class="gwt-shifts" id="shift-grid"><div style="color:var(--muted);padding:1rem;"><span class="gwt-spin"></span> Loading shifts…</div></div>
+
+  <div class="gwt-sec" id="master">&#128203; All Assets — Level Changes <span class="gwt-sec-sub">Overnight = vs pre-open baseline · Session = vs RTH open · 1H = vs one hour ago</span></div>
+  <div class="gwt-table-wrap">
+    <table class="gwt-table">
+      <thead>
+        <tr>
+          <th>Symbol</th>
+          <th>Regime</th>
+          <th class="r">Spot</th>
+          <th class="r">Call Wall</th>
+          <th class="r">&#916; O/N</th>
+          <th class="r">Put Wall</th>
+          <th class="r">&#916; O/N</th>
+          <th class="r">Gamma Flip</th>
+          <th class="r">&#916; O/N</th>
+          <th class="r">&#916; 1H</th>
+          <th>Last Shift</th>
+          <th>Snaps</th>
+        </tr>
+      </thead>
+      <tbody id="master-body">
+        <tr><td colspan="12" style="text-align:center;padding:2rem;color:var(--muted);"><span class="gwt-spin"></span> Loading…</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+
+  <div class="gwt-detail" id="detail-panel">
+    <div class="gwt-detail-h">
+      <div>
+        <div class="gwt-detail-t" id="detail-title">Select a symbol</div>
+        <div class="gwt-detail-s" id="detail-sub">Click any row in the table to view price + wall migration chart</div>
+      </div>
+      <div style="font-size:.68rem;color:var(--muted);" id="detail-proxy"></div>
+    </div>
+    <div class="gwt-spread-row" id="detail-spreads"></div>
+    <div class="gwt-chart-legend">
+      <span><span class="gwt-leg-line" style="background:#e2e8f0;"></span>Price</span>
+      <span><span class="gwt-leg-line" style="background:#4ade80;opacity:.5;height:2px;border-top:2px dashed #4ade80;background:transparent;"></span>Call Wall (now)</span>
+      <span><span class="gwt-leg-line" style="background:#4ade80;"></span>Call path</span>
+      <span><span class="gwt-leg-line" style="background:#f87171;opacity:.5;height:2px;border-top:2px dashed #f87171;background:transparent;"></span>Put Wall (now)</span>
+      <span><span class="gwt-leg-line" style="background:#f87171;"></span>Put path</span>
+      <span><span class="gwt-leg-line" style="background:#fbbf24;opacity:.5;height:2px;border-top:2px dashed #fbbf24;background:transparent;"></span>Flip (now)</span>
+      <span><span class="gwt-leg-line" style="background:#fbbf24;"></span>Flip path</span>
+    </div>
+    <div class="gwt-chart-wrap">
+      <div id="detail-chart"></div>
+    </div>
+    <div class="gwt-gamma-panel" id="detail-gamma-box" style="display:none;">
+      <h5>Gamma Levels</h5>
+      <div class="gwt-gamma-cell"><div class="k" style="color:#4ade80">Call Wall</div><div class="v" id="gb-call">—</div></div>
+      <div class="gwt-gamma-cell"><div class="k" style="color:#f87171">Put Support</div><div class="v" id="gb-put">—</div></div>
+      <div class="gwt-gamma-cell"><div class="k" style="color:#fbbf24">Gamma Flip</div><div class="v" id="gb-flip">—</div></div>
+      <div class="gwt-gamma-cell"><div class="k">Regime</div><div class="v" id="gb-regime">—</div></div>
+      <div class="gwt-gamma-cell"><div class="k">Zone Width</div><div class="v" id="gb-width">—</div></div>
+      <div class="gwt-gamma-cell" id="gb-overlap-note" style="display:none;grid-column:1/-1;font-size:.68rem;color:var(--muted);border-style:dashed;"></div>
+    </div>
+  </div>
+
+  <div class="gwt-sec" id="why">&#128214; Why Walls Shift Throughout the Day</div>
+  <div class="gwt-info">
+    <div class="gwt-info-card">
+      <h4>&#128200; New Option Volume</h4>
+      <p>Large new call or put positions at fresh strikes concentrate gamma. Heavy call buying at higher strikes relocates the <strong>Call Wall</strong> upward as dealer hedging pivots.</p>
+    </div>
+    <div class="gwt-info-card">
+      <h4>&#128260; Contract Rolling</h4>
+      <p>Institutions rolling hedges or closing positions reshapes open interest. Put walls often shift more intraday as puts are closed and dealers buy back short delta.</p>
+    </div>
+    <div class="gwt-info-card">
+      <h4>&#9203; Time Decay (Theta)</h4>
+      <p>As expiration approaches — especially 0DTE — gamma concentrates around ATM. Flip and walls tighten toward spot; small OI changes produce large level jumps.</p>
+    </div>
+    <div class="gwt-info-card">
+      <h4>&#128640; Breakouts</h4>
+      <p>When spot breaks a wall with force, formerly OTM strikes become ITM. The zone of dealer influence migrates; new walls form at the next OI cluster.</p>
+    </div>
+    <div class="gwt-info-card">
+      <h4>&#128994; Call Wall (Ceiling)</h4>
+      <p>Strike with highest call gamma — structural resistance. Dealers sell into rallies here. Intraday rallies can spawn new call walls at higher strikes.</p>
+    </div>
+    <div class="gwt-info-card">
+      <h4>&#128308; Put Wall (Floor)</h4>
+      <p>Strike with highest put gamma — structural support. Put walls tend to shift more frequently as hedges are adjusted through the session.</p>
+    </div>
+  </div>
+
+  <div class="gwt-sec" id="terminology">&#128218; Terminology</div>
+  <div class="gwt-gloss">
+    <div class="gwt-term"><h4>Call Wall</h4><p>Strike with the largest positive call gamma exposure. Market makers hedging short calls sell the underlying into rallies — creating a structural <strong>ceiling</strong> where upside often stalls.</p></div>
+    <div class="gwt-term"><h4>Put Wall</h4><p>Strike with the largest put gamma concentration. Dealer put hedges create a <strong>floor</strong> where dips often find mechanical buying support.</p></div>
+    <div class="gwt-term"><h4>Gamma Flip (HVL)</h4><p>The zero-gamma / high-volatility level. Above flip = positive gamma (stabilizing); below = negative gamma (amplifying). Flip shifts are regime-change signals.</p></div>
+    <div class="gwt-term"><h4>Overnight Shift</h4><p>Change vs the last snapshot before today&apos;s 9:30 ET open. Captures globex flow, Asia/Europe sessions, and pre-market OI updates — usually the largest moves.</p></div>
+    <div class="gwt-term"><h4>Intraday Shift</h4><p>Level change during RTH from new volume, rolling, theta, or breakouts. Common in high-volume 0DTE environments (SPXW, SPY).</p></div>
+    <div class="gwt-term"><h4>Dealer Hedging</h4><p>Market makers delta-hedge customer option flow. Their buy/sell activity at key strikes creates the walls and flip levels shown on this page.</p></div>
+    <div class="gwt-term"><h4>0DTE Gamma</h4><p>Same-day expiration options carry extreme gamma near ATM. Walls can relocate quickly; always confirm with live flow before sizing SPXW trades.</p></div>
+    <div class="gwt-term"><h4>External References</h4><p>Commercial platforms like <strong>SpotGamma</strong> and <strong>FlashAlpha</strong> offer real-time GEX monitoring. This dashboard uses your server&apos;s options chain data and persists snapshots locally for shift detection.</p></div>
+  </div>
+
+</div>
+
+<script src="search.js" defer></script>
+<script>
+'use strict';
+var API = '';
+var trackerData = null;
+var activeFilter = 'all';
+
+function fmt(v) {
+  if (v == null || isNaN(v)) return '—';
+  return v >= 1000 ? v.toLocaleString('en-US', { maximumFractionDigits: 1 }) : Number(v).toFixed(2);
+}
+function fmtDelta(v) {
+  if (v == null || isNaN(v)) return '<span class="flat">—</span>';
+  var cls = v > 0.001 ? 'up' : v < -0.001 ? 'dn' : 'flat';
+  var sign = v > 0 ? '+' : '';
+  return '<span class="' + cls + '">' + sign + fmt(v) + '</span>';
+}
+function fmtTime(ts) {
+  if (!ts) return '—';
+  try {
+    var d = new Date(ts);
+    return d.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+  } catch (e) { return ts; }
+}
+function levelChip(name) {
+  if (name.indexOf('Call') >= 0) return 'chip-call';
+  if (name.indexOf('Put') >= 0) return 'chip-put';
+  return 'chip-flip';
+}
+function magChip(m) {
+  return m === 'large' ? 'chip-lg' : m === 'medium' ? 'chip-md' : 'chip-sm';
+}
+function hasShift(a) {
+  var c = a.changes || {};
+  var o = c.overnight || {};
+  ['call_wall', 'put_wall', 'flip_level'].forEach(function(k) {
+    if (o[k] && o[k].delta != null && Math.abs(o[k].delta) > 0.001) return true;
+  });
+  return !!(a.last_shift);
+}
+function assetShifted(a) {
+  var o = (a.changes || {}).overnight || {};
+  return ['call_wall', 'put_wall', 'flip_level'].some(function(k) {
+    var d = o[k] && o[k].delta;
+    return d != null && Math.abs(d) > 0.001;
+  }) || !!a.last_shift;
+}
+function filterAssets(assets) {
+  return assets.filter(function(a) {
+    if (a.no_options) return activeFilter === 'all';
+    if (activeFilter === 'all') return true;
+    if (activeFilter === 'shifted') return assetShifted(a);
+    return a.group === activeFilter;
+  });
+}
+
+function renderSnaps(data) {
+  document.getElementById('snap-strip').innerHTML =
+    '<div class="gwt-snap"><div class="gwt-snap-k">Assets</div><div class="gwt-snap-v">' + (data.count || 0) + '</div></div>' +
+    '<div class="gwt-snap"><div class="gwt-snap-k">Shifts Today</div><div class="gwt-snap-v" style="color:#fbbf24">' + (data.shift_count_today || 0) + '</div></div>' +
+    '<div class="gwt-snap"><div class="gwt-snap-k">Recent Events</div><div class="gwt-snap-v">' + ((data.recent_shifts || []).length) + '</div></div>' +
+    '<div class="gwt-snap"><div class="gwt-snap-k">Refresh</div><div class="gwt-snap-v" style="font-size:.85rem">5 min</div></div>';
+}
+
+function renderShifts(shifts) {
+  var el = document.getElementById('shift-grid');
+  if (!shifts || !shifts.length) {
+    el.innerHTML = '<div style="color:var(--muted);padding:1rem;grid-column:1/-1;">No wall shifts recorded yet. Snapshots accumulate as GEX data refreshes — leave the server running through the session.</div>';
+    return;
+  }
+  el.innerHTML = shifts.slice(0, 18).map(function(s) {
+    var cls = s.magnitude === 'large' ? ' large' : '';
+    var dir = s.delta > 0 ? 'up' : 'dn';
+    return '<div class="gwt-shift-card' + cls + '">' +
+      '<div class="gwt-shift-h"><span class="gwt-shift-sym">' + s.symbol + '</span>' +
+      '<span class="chip ' + levelChip(s.level) + '">' + s.level + '</span></div>' +
+      '<div class="gwt-shift-time">' + fmtTime(s.ts) + ' · <span class="chip ' + magChip(s.magnitude) + '">' + s.magnitude + '</span></div>' +
+      '<div class="gwt-shift-body"><strong>' + fmt(s.from) + '</strong> → <strong>' + fmt(s.to) + '</strong> ' +
+      '<span class="' + dir + '">(' + (s.delta > 0 ? '+' : '') + fmt(s.delta) + ')</span><br>' +
+      (s.label || '') + (s.spot ? ' · Spot ' + fmt(s.spot) : '') + '</div></div>';
+  }).join('');
+}
+
+function renderTable(assets) {
+  var filtered = filterAssets(assets || []);
+  if (!filtered.length) {
+    document.getElementById('master-body').innerHTML = '<tr><td colspan="12" style="text-align:center;padding:1.5rem;color:var(--muted);">No assets match filter.</td></tr>';
+    return;
+  }
+  document.getElementById('master-body').innerHTML = filtered.map(function(a) {
+    if (a.no_options) {
+      return '<tr><td><span class="gwt-sym">' + a.symbol + '</span><span class="gwt-lbl">' + (a.label || '') + '</span></td>' +
+        '<td colspan="11" style="color:var(--muted);font-size:.75rem;">No options chain — spot only</td></tr>';
+    }
+    var o = (a.changes || {}).overnight || {};
+    var h = (a.changes || {}).one_hour || {};
+    var oc = o.call_wall || {}, op = o.put_wall || {}, of = o.flip_level || {};
+    var hc = h.call_wall || {}, hp = h.put_wall || {}, hf = h.flip_level || {};
+    var max1h = Math.max(Math.abs(hc.delta || 0), Math.abs(hp.delta || 0), Math.abs(hf.delta || 0));
+    var ls = a.last_shift;
+    var lsHtml = ls ? '<span class="chip ' + levelChip(ls.level) + '">' + ls.level + '</span> ' + fmtTime(ls.ts) : '<span class="flat">—</span>';
+    var rowCls = ' class="gwt-row' + (assetShifted(a) ? ' shifted' : '') + (selectedSymbol === a.symbol ? ' selected' : '') + '"';
+    return '<tr' + rowCls + '>' +
+      '<td><span class="gwt-sym">' + a.symbol + '</span><span class="gwt-lbl">' + (a.group || '') + '</span></td>' +
+      '<td style="font-size:.72rem;">' + (a.regime || '—') + '</td>' +
+      '<td class="gwt-price">' + fmt(a.spot) + '</td>' +
+      '<td class="gwt-price" style="color:#4ade80">' + fmt(a.call_wall) + '</td>' +
+      '<td class="gwt-delta">' + fmtDelta(oc.delta) + '</td>' +
+      '<td class="gwt-price" style="color:#f87171">' + fmt(a.put_wall) + '</td>' +
+      '<td class="gwt-delta">' + fmtDelta(op.delta) + '</td>' +
+      '<td class="gwt-price" style="color:#fbbf24">' + fmt(a.flip_level) + '</td>' +
+      '<td class="gwt-delta">' + fmtDelta(of.delta) + '</td>' +
+      '<td class="gwt-delta">' + (max1h > 0.001 ? fmtDelta(max1h) : '<span class="flat">—</span>') + '</td>' +
+      '<td style="font-size:.72rem;">' + lsHtml + '</td>' +
+      '<td style="font-size:.72rem;color:var(--muted);">' + (a.snapshot_count || 0) + '</td>' +
+      '</tr>';
+  }).join('');
+}
+
+function renderAll(data) {
+  trackerData = data;
+  renderSnaps(data);
+  renderShifts(data.recent_shifts || []);
+  renderTable(data.assets || []);
+  document.getElementById('last-upd').textContent = 'Updated ' + fmtTime(data.timestamp);
+}
+
+async function loadTracker() {
+  document.getElementById('last-upd').textContent = 'Updating…';
+  try {
+    var res = await fetch(API + '/api/gex-wall-tracker?nocache=1', { cache: 'no-store' });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    renderAll(await res.json());
+  } catch (e) {
+    document.getElementById('master-body').innerHTML = '<tr><td colspan="12" style="color:#f87171;padding:1.5rem;text-align:center;">Failed: ' + e.message + '</td></tr>';
+  }
+}
+
+document.querySelectorAll('.gwt-pill').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    document.querySelectorAll('.gwt-pill').forEach(function(b) { b.classList.remove('active'); });
+    btn.classList.add('active');
+    activeFilter = btn.dataset.filter;
+    if (trackerData) renderTable(trackerData.assets || []);
+  });
+});
+document.getElementById('btn-refresh').addEventListener('click', loadTracker);
+
+var AUTO_REFRESH_MS = 5 * 60 * 1000;
+function _doAutoRefresh() { if (!document.hidden) loadTracker(); }
+document.addEventListener('visibilitychange', function() { if (!document.hidden) _doAutoRefresh(); });
+setInterval(_doAutoRefresh, AUTO_REFRESH_MS);
+
+
+var selectedSymbol = null;
+var detailChart = null;
+var detailSeries = {};
+
+function snapToUnix(ts) {
+  try { return Math.floor(new Date(ts).getTime() / 1000); } catch (e) { return null; }
+}
+
+function destroyDetailChart() {
+  if (detailChart) { try { detailChart.remove(); } catch (e) {} }
+  detailChart = null;
+  detailSeries = {};
+}
+
+function uniqueLinePoints(arr) {
+  var seen = {};
+  return arr.filter(function(p) {
+    if (!p || p.time == null || p.value == null || isNaN(p.value)) return false;
+    if (seen[p.time]) return false;
+    seen[p.time] = true;
+    return true;
+  }).sort(function(a, b) { return a.time - b.time; });
+}
+
+function getMigrationHistory(asset) {
+  var hist = asset.history_full || asset.history || [];
+  if (hist.length >= 2) return { hist: hist, fromProxy: false };
+  if (!asset.proxy_symbol || !trackerData || !trackerData.assets) return { hist: hist, fromProxy: false };
+  var proxy = trackerData.assets.find(function(a) { return a.symbol === asset.proxy_symbol; });
+  if (!proxy) return { hist: hist, fromProxy: false };
+  var ph = proxy.history_full || proxy.history || [];
+  if (ph.length <= hist.length) return { hist: hist, fromProxy: false };
+  var ps = Number(proxy.spot) || 0;
+  var is = Number(asset.spot) || 0;
+  var scale = (ps > 0 && is > 0) ? (is / ps) : 1;
+  var scaled = ph.map(function(s) {
+    function sc(v) { return v == null || isNaN(v) ? null : Math.round(Number(v) * scale * 100) / 100; }
+    return { ts: s.ts, gamma_wall: sc(s.gamma_wall), put_wall: sc(s.put_wall), flip_level: sc(s.flip_level), spot: sc(s.spot) };
+  });
+  return { hist: scaled, fromProxy: true };
+}
+
+function buildSteppedWallSeries(hist, field, tMin, tMax) {
+  var snaps = hist.map(function(h) {
+    if (h[field] == null || isNaN(h[field])) return null;
+    var t = snapToUnix(h.ts);
+    return t ? { time: t, value: Number(h[field]) } : null;
+  }).filter(Boolean).sort(function(a, b) { return a.time - b.time; });
+  if (!snaps.length || tMin == null || tMax == null) return [];
+  var pts = [];
+  var first = snaps[0];
+  var last = snaps[snaps.length - 1];
+  if (first.time > tMin) pts.push({ time: tMin, value: first.value });
+  for (var i = 0; i < snaps.length; i++) {
+    var cur = snaps[i];
+    if (i > 0) {
+      var prev = snaps[i - 1];
+      if (prev.time < cur.time) pts.push({ time: cur.time, value: prev.value });
+    }
+    pts.push({ time: cur.time, value: cur.value });
+  }
+  if (last.time < tMax) pts.push({ time: tMax, value: last.value });
+  return uniqueLinePoints(pts);
+}
+
+function wallNear(a, b, spot) {
+  if (a == null || b == null || isNaN(a) || isNaN(b)) return false;
+  return Math.abs(Number(a) - Number(b)) <= Math.max(0.05, Number(spot || a) * 0.00015);
+}
+
+function pathsOverlap(ptsA, ptsB) {
+  if (!ptsA.length || !ptsB.length || ptsA.length !== ptsB.length) return false;
+  for (var i = 0; i < ptsA.length; i++) {
+    if (ptsA[i].time !== ptsB[i].time) return false;
+    if (Math.abs(ptsA[i].value - ptsB[i].value) > 0.05) return false;
+  }
+  return true;
+}
+
+function addFixedWallLines(series, asset) {
+  if (!series) return;
+  var spot = Number(asset.spot) || 0;
+  var call = asset.call_wall, put = asset.put_wall, flip = asset.flip_level;
+  var callFlipSame = wallNear(call, flip, spot);
+  var lines = [];
+  if (put != null && !isNaN(put)) {
+    lines.push({ v: put, color: '#f87171', title: 'Put Wall', width: 1, style: LightweightCharts.LineStyle.Dashed });
+  }
+  if (callFlipSame && call != null && !isNaN(call)) {
+    lines.push({ v: call, color: '#4ade80', title: 'Call Wall / Flip', width: 2, style: LightweightCharts.LineStyle.Solid });
+  } else {
+    if (flip != null && !isNaN(flip)) {
+      lines.push({ v: flip, color: '#fbbf24', title: 'Gamma Flip', width: 1, style: LightweightCharts.LineStyle.Dotted });
+    }
+    if (call != null && !isNaN(call)) {
+      lines.push({ v: call, color: '#4ade80', title: 'Call Wall', width: 2, style: LightweightCharts.LineStyle.Solid });
+    }
+  }
+  lines.forEach(function(w) {
+    series.createPriceLine({
+      price: Number(w.v), color: w.color, lineWidth: w.width,
+      lineStyle: w.style, axisLabelVisible: true, title: w.title,
+    });
+  });
+}
+
+function addMigrationLine(chart, pts, opts) {
+  if (!pts || !pts.length) return null;
+  var s = chart.addLineSeries(Object.assign({
+    lineWidth: 2,
+    lineType: LightweightCharts.LineType.WithSteps,
+    lastValueVisible: false,
+    priceLineVisible: false,
+    crosshairMarkerVisible: true,
+    pointMarkersVisible: pts.length <= 30,
+  }, opts));
+  s.setData(pts);
+  return s;
+}
+
+function updateGammaBox(asset) {
+  var box = document.getElementById('detail-gamma-box');
+  if (!box) return;
+  box.style.display = 'grid';
+  document.getElementById('gb-flip').textContent = fmt(asset.flip_level);
+  document.getElementById('gb-call').textContent = fmt(asset.call_wall);
+  document.getElementById('gb-put').textContent = fmt(asset.put_wall);
+  var regime = asset.regime || '—';
+  var neg = regime.toLowerCase().indexOf('short') >= 0 || regime.toLowerCase().indexOf('negative') >= 0;
+  document.getElementById('gb-regime').innerHTML = '<span style="color:' + (neg ? '#f87171' : '#4ade80') + '">' + regime + '</span>';
+  var cw = Number(asset.call_wall), pw = Number(asset.put_wall);
+  var width = (cw > 0 && pw > 0) ? (Math.abs(cw - pw) / ((cw + pw) / 2) * 100) : null;
+  document.getElementById('gb-width').textContent = width != null ? width.toFixed(1) + '%' : '—';
+  var note = document.getElementById('gb-overlap-note');
+  if (wallNear(asset.call_wall, asset.flip_level, asset.spot)) {
+    note.style.display = 'block';
+    note.textContent = 'Call Wall and Gamma Flip are at the same strike (' + fmt(asset.call_wall) + ') — shown as one green line on the chart.';
+  } else {
+    note.style.display = 'none';
+    note.textContent = '';
+  }
+}
+
+function updateSpreads(asset, hist) {
+  var last = hist.length ? hist[hist.length - 1] : {};
+  var cw = last.gamma_wall, pw = last.put_wall, fl = last.flip_level;
+  function spread(a, b, label, color) {
+    if (a == null || b == null) return '';
+    var d = Number(a) - Number(b);
+    return '<div class="gwt-spread-item"><span style="color:' + color + '">' + label + '</span> · <strong>' + fmt(Math.abs(d)) + '</strong> ' +
+      (d > 0 ? '<span class="up">▲</span>' : d < 0 ? '<span class="dn">▼</span>' : '') + '</div>';
+  }
+  var html = spread(cw, pw, 'Call − Put', '#a78bfa') +
+    spread(cw, fl, 'Call − Flip', '#4ade80') +
+    spread(fl, pw, 'Flip − Put', '#fbbf24');
+  if (hist.length >= 2) {
+    var prev = hist[hist.length - 2];
+    var pcw = prev.gamma_wall, ppw = prev.put_wall;
+    if (pcw != null && pw != null && ppw != null) {
+      var wPrev = Math.abs(Number(pcw) - Number(ppw));
+      var wNow = Math.abs(Number(cw) - Number(pw));
+      var tightening = wNow < wPrev;
+      html += '<div class="gwt-spread-item">Wall width <strong>' + (tightening ? 'compressing' : 'expanding') + '</strong> (' +
+        fmt(wPrev) + ' → ' + fmt(wNow) + ')</div>';
+    }
+  }
+  document.getElementById('detail-spreads').innerHTML = html || '<span style="color:var(--muted);">Need more snapshots for spread analysis</span>';
+}
+
+async function showAssetChart(asset) {
+  if (!asset) return;
+  selectedSymbol = asset.symbol;
+  document.querySelectorAll('.gwt-row').forEach(function(tr) {
+    tr.classList.toggle('selected', tr.dataset.sym === asset.symbol);
+  });
+  var panel = document.getElementById('detail-panel');
+  panel.style.display = 'block';
+  document.getElementById('detail-title').textContent = asset.symbol + ' — ' + (asset.label || asset.symbol);
+  var proxyNote = asset.proxy_symbol ? ('GEX via ' + asset.proxy_symbol + ' · scaled to index') : (asset.group || '');
+  var mig = getMigrationHistory(asset);
+  document.getElementById('detail-sub').textContent = (asset.regime || '—') + ' · ' + (asset.snapshot_count || 0) + ' snapshots tracked';
+  document.getElementById('detail-proxy').textContent = proxyNote + (mig.fromProxy ? ' · path seeded from ' + asset.proxy_symbol + ' history' : '');
+  panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+  var hist = mig.hist;
+  updateSpreads(asset, hist);
+  updateGammaBox(asset);
+
+  var candleSym = asset.candle_symbol || asset.proxy_symbol || asset.symbol;
+  var container = document.getElementById('detail-chart');
+  container.innerHTML = '<div style="color:var(--muted);text-align:center;padding:3rem;"><span class="gwt-spin"></span> Loading chart…</div>';
+  destroyDetailChart();
+
+  try {
+    var url = API + '/api/candles/' + encodeURIComponent(candleSym) + '?interval=1m&period=1d';
+    var res = await fetch(url, { cache: 'no-store' });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    var raw = await res.json();
+    var candles = Array.isArray(raw) ? raw : (raw.candles || []);
+    candles = candles.map(function(c) {
+      return { time: c.time || c.timestamp, open: c.open, high: c.high, low: c.low, close: c.close };
+    }).filter(function(c) { return c.time && c.close; });
+
+    container.innerHTML = '';
+    var cw = container.clientWidth || Math.min(window.innerWidth - 32, 1900);
+    var ch = container.clientHeight || Math.min(Math.round(window.innerHeight * 0.70), 896);
+    detailChart = LightweightCharts.createChart(container, {
+      width: cw, height: ch,
+      layout: { background: { color: '#070d18' }, textColor: 'rgba(226,232,240,0.9)' },
+      grid: { vertLines: { color: 'rgba(36,48,88,.35)' }, horzLines: { color: 'rgba(36,48,88,.35)' } },
+      rightPriceScale: { borderColor: 'rgba(255,255,255,0.14)' },
+      timeScale: { borderColor: 'rgba(255,255,255,0.14)', timeVisible: true, secondsVisible: false },
+      crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
+    });
+
+    var tMin = candles.length ? candles[0].time : null;
+    var tMax = candles.length ? candles[candles.length - 1].time : null;
+
+    if (candles.length) {
+      detailSeries.candles = detailChart.addCandlestickSeries({
+        upColor: '#26a69a', downColor: '#ef5350', borderUpColor: '#26a69a', borderDownColor: '#ef5350',
+        wickUpColor: '#26a69a', wickDownColor: '#ef5350',
+      });
+      detailSeries.candles.setData(candles);
+      addFixedWallLines(detailSeries.candles, asset);
+    }
+
+    var callPts = buildSteppedWallSeries(hist, 'gamma_wall', tMin, tMax);
+    var putPts = buildSteppedWallSeries(hist, 'put_wall', tMin, tMax);
+    var flipPts = buildSteppedWallSeries(hist, 'flip_level', tMin, tMax);
+
+    var callFlipOverlap = pathsOverlap(callPts, flipPts) || wallNear(asset.call_wall, asset.flip_level, asset.spot);
+    detailSeries.putPath = addMigrationLine(detailChart, putPts, { color: '#f87171', lineWidth: 2, title: 'Put path' });
+    if (!callFlipOverlap) {
+      detailSeries.flipPath = addMigrationLine(detailChart, flipPts, {
+        color: '#fbbf24', lineWidth: 2, title: 'Flip path', lineStyle: LightweightCharts.LineStyle.Dashed,
+      });
+    }
+    detailSeries.callPath = addMigrationLine(detailChart, callPts, {
+      color: '#4ade80', lineWidth: callFlipOverlap ? 3 : 2,
+      title: callFlipOverlap ? 'Call / Flip path' : 'Call path',
+    });
+
+    detailChart.timeScale().fitContent();
+    new ResizeObserver(function() {
+      if (!detailChart || container.clientWidth < 50) return;
+      detailChart.applyOptions({
+        width: container.clientWidth,
+        height: container.clientHeight || ch,
+      });
+    }).observe(container);
+  } catch (e) {
+    container.innerHTML = '<div style="color:#f87171;text-align:center;padding:2rem;font-size:.85rem;">Chart error: ' + e.message + '</div>';
+  }
+}
+
+function onRowClick(sym) {
+  if (!trackerData || !trackerData.assets) return;
+  var asset = trackerData.assets.find(function(a) { return a.symbol === sym; });
+  if (asset) showAssetChart(asset);
+}
+
+// patch renderTable to add clickable rows
+var _origRenderTable = renderTable;
+renderTable = function(assets) {
+  _origRenderTable(assets);
+  document.querySelectorAll('#master-body tr').forEach(function(tr) {
+    var symEl = tr.querySelector('.gwt-sym');
+    if (!symEl) return;
+    var sym = symEl.textContent.trim();
+    tr.classList.add('gwt-row');
+    tr.dataset.sym = sym;
+    tr.onclick = function() { onRowClick(sym); };
+  });
+  if (selectedSymbol) {
+    var sel = trackerData && trackerData.assets && trackerData.assets.find(function(a) { return a.symbol === selectedSymbol; });
+    if (sel) showAssetChart(sel);
+  } else {
+    var spy = trackerData && trackerData.assets && trackerData.assets.find(function(a) { return a.symbol === 'SPX' || a.symbol === 'SPY'; });
+    if (spy && !spy.no_options) showAssetChart(spy);
+  }
+};
+
+loadTracker();
+</script>
+</body>
+</html>
