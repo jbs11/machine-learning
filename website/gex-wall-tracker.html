@@ -124,6 +124,21 @@
     .gwt-gamma-cell .k { font-size: .62rem; color: var(--muted); margin-bottom: .15rem; }
     .gwt-gamma-cell .v { font-weight: 800; font-variant-numeric: tabular-nums; font-size: .82rem; }
 
+    .gwt-tf-bar {
+      display: flex; flex-wrap: wrap; align-items: center; gap: .4rem;
+      padding: .45rem 1rem; border-bottom: 1px solid var(--border);
+    }
+    .gwt-tf-label {
+      font-size: .64rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .08em; color: var(--muted); margin-right: .25rem;
+    }
+    .gwt-tf {
+      padding: .22rem .65rem; border-radius: 99px; border: 1px solid var(--border);
+      background: transparent; color: var(--muted); font-size: .72rem; font-weight: 700; cursor: pointer;
+    }
+    .gwt-tf:hover { border-color: #22d3ee; color: #22d3ee; }
+    .gwt-tf.active { background: rgba(34,211,238,.12); border-color: #22d3ee; color: #22d3ee; }
+
     #detail-chart { width: 100%; height: clamp(576px, 70vh, 896px); min-height: 576px; background: #070d18; position: relative; }
 
   </style>
@@ -219,6 +234,14 @@ if (window.location.search.indexOf('_v=') === -1) {
       <div style="font-size:.68rem;color:var(--muted);" id="detail-proxy"></div>
     </div>
     <div class="gwt-spread-row" id="detail-spreads"></div>
+    <div class="gwt-tf-bar" id="detail-tf-bar">
+      <span class="gwt-tf-label">Timeframe</span>
+      <button type="button" class="gwt-tf active" data-interval="5m" data-period="5d">5m</button>
+      <button type="button" class="gwt-tf" data-interval="15m" data-period="14d">15m</button>
+      <button type="button" class="gwt-tf" data-interval="1h" data-period="14d">1H</button>
+      <button type="button" class="gwt-tf" data-interval="4h" data-period="60d">4H</button>
+      <button type="button" class="gwt-tf" data-interval="1d" data-period="90d">1D</button>
+    </div>
     <div class="gwt-chart-legend">
       <span><span class="gwt-leg-line" style="background:#e2e8f0;"></span>Price</span>
       <span><span class="gwt-leg-line" style="background:#4ade80;opacity:.5;height:2px;border-top:2px dashed #4ade80;background:transparent;"></span>Call Wall (now)</span>
@@ -439,8 +462,11 @@ setInterval(_doAutoRefresh, AUTO_REFRESH_MS);
 
 
 var selectedSymbol = null;
+var selectedAssetObj = null;
 var detailChart = null;
 var detailSeries = {};
+var chartInterval = '5m';
+var chartPeriod = '5d';
 
 function snapToUnix(ts) {
   try { return Math.floor(new Date(ts).getTime() / 1000); } catch (e) { return null; }
@@ -607,49 +633,57 @@ function updateSpreads(asset, hist) {
   document.getElementById('detail-spreads').innerHTML = html || '<span style="color:var(--muted);">Need more snapshots for spread analysis</span>';
 }
 
-async function showAssetChart(asset) {
-  if (!asset) return;
-  selectedSymbol = asset.symbol;
-  document.querySelectorAll('.gwt-row').forEach(function(tr) {
-    tr.classList.toggle('selected', tr.dataset.sym === asset.symbol);
+function syncTfButtons() {
+  document.querySelectorAll('.gwt-tf').forEach(function(btn) {
+    btn.classList.toggle('active', btn.dataset.interval === chartInterval);
   });
-  var panel = document.getElementById('detail-panel');
-  panel.style.display = 'block';
-  document.getElementById('detail-title').textContent = asset.symbol + ' — ' + (asset.label || asset.symbol);
-  var proxyNote = asset.proxy_symbol ? ('GEX via ' + asset.proxy_symbol + ' · scaled to index') : (asset.group || '');
+}
+
+function setChartTf(btn) {
+  if (!btn || !selectedAssetObj) return;
+  chartInterval = btn.dataset.interval || chartInterval;
+  chartPeriod = btn.dataset.period || chartPeriod;
+  syncTfButtons();
+  renderDetailChart(selectedAssetObj);
+}
+
+async function renderDetailChart(asset) {
+  if (!asset) return;
   var mig = getMigrationHistory(asset);
-  document.getElementById('detail-sub').textContent = (asset.regime || '—') + ' · ' + (asset.snapshot_count || 0) + ' snapshots tracked';
-  document.getElementById('detail-proxy').textContent = proxyNote + (mig.fromProxy ? ' · path seeded from ' + asset.proxy_symbol + ' history' : '');
-  panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-
   var hist = mig.hist;
-  updateSpreads(asset, hist);
-  updateGammaBox(asset);
-
   var candleSym = asset.candle_symbol || asset.proxy_symbol || asset.symbol;
   var container = document.getElementById('detail-chart');
-  container.innerHTML = '<div style="color:var(--muted);text-align:center;padding:3rem;"><span class="gwt-spin"></span> Loading chart…</div>';
+  container.innerHTML = '<div style="color:var(--muted);text-align:center;padding:3rem;"><span class="gwt-spin"></span> Loading ' + chartInterval.toUpperCase() + ' chart…</div>';
   destroyDetailChart();
 
   try {
-    var url = API + '/api/candles/' + encodeURIComponent(candleSym) + '?interval=1m&period=1d';
+    var url = API + '/api/candles/' + encodeURIComponent(candleSym) +
+      '?interval=' + encodeURIComponent(chartInterval) +
+      '&period=' + encodeURIComponent(chartPeriod) + '&nocache=1';
     var res = await fetch(url, { cache: 'no-store' });
     if (!res.ok) throw new Error('HTTP ' + res.status);
     var raw = await res.json();
     var candles = Array.isArray(raw) ? raw : (raw.candles || []);
     candles = candles.map(function(c) {
-      return { time: c.time || c.timestamp, open: c.open, high: c.high, low: c.low, close: c.close };
+      var t = c.time || c.timestamp;
+      if (t > 1e12) t = Math.floor(t / 1000);
+      return { time: t, open: c.open, high: c.high, low: c.low, close: c.close };
     }).filter(function(c) { return c.time && c.close; });
 
     container.innerHTML = '';
     var cw = container.clientWidth || Math.min(window.innerWidth - 32, 1900);
     var ch = container.clientHeight || Math.min(Math.round(window.innerHeight * 0.70), 896);
+    var intraday = chartInterval !== '1d';
     detailChart = LightweightCharts.createChart(container, {
       width: cw, height: ch,
       layout: { background: { color: '#070d18' }, textColor: 'rgba(226,232,240,0.9)' },
       grid: { vertLines: { color: 'rgba(36,48,88,.35)' }, horzLines: { color: 'rgba(36,48,88,.35)' } },
       rightPriceScale: { borderColor: 'rgba(255,255,255,0.14)' },
-      timeScale: { borderColor: 'rgba(255,255,255,0.14)', timeVisible: true, secondsVisible: false },
+      timeScale: {
+        borderColor: 'rgba(255,255,255,0.14)',
+        timeVisible: intraday,
+        secondsVisible: chartInterval === '5m',
+      },
       crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
     });
 
@@ -682,16 +716,42 @@ async function showAssetChart(asset) {
     });
 
     detailChart.timeScale().fitContent();
-    new ResizeObserver(function() {
+    if (container._gwtResizeObs) {
+      try { container._gwtResizeObs.disconnect(); } catch (e) {}
+    }
+    container._gwtResizeObs = new ResizeObserver(function() {
       if (!detailChart || container.clientWidth < 50) return;
       detailChart.applyOptions({
         width: container.clientWidth,
         height: container.clientHeight || ch,
       });
-    }).observe(container);
+    });
+    container._gwtResizeObs.observe(container);
   } catch (e) {
     container.innerHTML = '<div style="color:#f87171;text-align:center;padding:2rem;font-size:.85rem;">Chart error: ' + e.message + '</div>';
   }
+}
+
+async function showAssetChart(asset) {
+  if (!asset) return;
+  selectedSymbol = asset.symbol;
+  selectedAssetObj = asset;
+  document.querySelectorAll('.gwt-row').forEach(function(tr) {
+    tr.classList.toggle('selected', tr.dataset.sym === asset.symbol);
+  });
+  var panel = document.getElementById('detail-panel');
+  panel.style.display = 'block';
+  document.getElementById('detail-title').textContent = asset.symbol + ' — ' + (asset.label || asset.symbol);
+  var proxyNote = asset.proxy_symbol ? ('GEX via ' + asset.proxy_symbol + ' · scaled to index') : (asset.group || '');
+  var mig = getMigrationHistory(asset);
+  document.getElementById('detail-sub').textContent = (asset.regime || '—') + ' · ' + (asset.snapshot_count || 0) + ' snapshots tracked · ' + chartInterval.toUpperCase();
+  document.getElementById('detail-proxy').textContent = proxyNote + (mig.fromProxy ? ' · path seeded from ' + asset.proxy_symbol + ' history' : '');
+  panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+  updateSpreads(asset, mig.hist);
+  updateGammaBox(asset);
+  syncTfButtons();
+  await renderDetailChart(asset);
 }
 
 function onRowClick(sym) {
@@ -720,6 +780,10 @@ renderTable = function(assets) {
     if (spy && !spy.no_options) showAssetChart(spy);
   }
 };
+
+document.querySelectorAll('.gwt-tf').forEach(function(btn) {
+  btn.addEventListener('click', function() { setChartTf(btn); });
+});
 
 loadTracker();
 </script>
