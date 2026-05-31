@@ -4611,7 +4611,7 @@ def _build_spx_0dte_risk(nocache: bool = False) -> dict:
             'spot': gex_row.get('spot') if gex_row else None,
             'total_gex_m': gex_row.get('total_gex_m') if gex_row else None,
             'regime': gex_row.get('regime') if gex_row else None,
-            'call_wall': gex_row.get('gamma_wall') or gex_row.get('call_wall') if gex_row else None,
+            'call_wall': (gex_row.get('gamma_wall') or gex_row.get('call_wall')) if gex_row else None,
             'put_wall': gex_row.get('put_wall') if gex_row else None,
             'flip_level': gex_row.get('flip_level') if gex_row else None,
             'assessment': gex_assess,
