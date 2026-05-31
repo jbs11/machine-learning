@@ -1060,6 +1060,7 @@ _API_RESP_TTL: dict = {
     '/api/gamma-exposure':      480,
     '/api/option-flows':        480,
     '/api/treasury-yields':     300,
+    '/api/spx-0dte-risk':       120,
 }
 
 def api_resp_get(endpoint):
@@ -4305,6 +4306,334 @@ def spx_hub_endpoint():
         'timestamp': iso_now(),
         'note': 'Breadth + treemap are computed on a proxy universe (ETFs + Mag7 + key blue chips). Add full SPX constituents list to upgrade to true S&P 500 breadth/map.',
     }
+    cache_set(ck, result)
+    return jsonify(result)
+
+
+
+# ── SPX 0DTE Fat-Tail Risk Dashboard ─────────────────────────────────────────
+def _vix1d_regime(v: float | None) -> dict:
+    if v is None or not math.isfinite(float(v)):
+        return {'level': 'unknown', 'label': 'Unavailable', 'color': '#94a3b8',
+                'guidance': 'VIX1D data unavailable — use VIX9D proxy or wait for feed.'}
+    if v < 12:
+        return {'level': 'low', 'label': 'Low Risk', 'color': '#4ade80',
+                'guidance': 'Market prices tight ranges — favor quick scalp exits and tight stops.'}
+    if v <= 18:
+        return {'level': 'normal', 'label': 'Normal Range', 'color': '#22d3ee',
+                'guidance': 'Historical-normal 0DTE environment — standard ATM/OTM structures apply.'}
+    if v <= 20:
+        return {'level': 'elevated', 'label': 'Elevated', 'color': '#fbbf24',
+                'guidance': 'Vol rising — trim contract size and avoid naked short gamma.'}
+    return {'level': 'fat_tail', 'label': 'Fat Tail', 'color': '#f87171',
+            'guidance': 'Premiums inflated, gap risk high — cut size sharply or widen spread distance.'}
+
+
+def _gex_0dte_assessment(gex_row: dict | None) -> dict:
+    if not gex_row or gex_row.get('no_options'):
+        return {'level': 'unknown', 'label': 'GEX Unavailable', 'color': '#94a3b8',
+                'guidance': 'No GEX data — confirm SPY chain before sizing 0DTE.'}
+    total = float(gex_row.get('total_gex_m') or 0)
+    regime = (gex_row.get('regime') or '').lower()
+    neg = total < 0 or 'short' in regime or 'negative' in regime
+    near_zero = abs(total) < 50
+    if neg or near_zero:
+        return {'level': 'negative', 'label': 'Zero / Negative GEX', 'color': '#f87171',
+                'guidance': 'Dealers amplify moves — fat-tail breakouts likely; favor defined-risk spreads.'}
+    return {'level': 'positive', 'label': 'Positive GEX', 'color': '#4ade80',
+            'guidance': 'Dealers dampen vol — range/pin behavior more likely near key strikes.'}
+
+
+def _option_mid(row) -> float:
+    try:
+        bid = float(row.get('bid') or 0)
+        ask = float(row.get('ask') or 0)
+        if bid > 0 and ask > 0:
+            return (bid + ask) / 2.0
+        for k in ('lastPrice', 'ask', 'bid'):
+            v = float(row.get(k) or 0)
+            if v > 0:
+                return v
+    except Exception:
+        pass
+    return 0.0
+
+
+def _zero_dte_atm_straddle(spy_spot: float) -> dict | None:
+    """ATM straddle on nearest 0DTE SPY expiry for expected-move estimate."""
+    from datetime import date as _date
+    if not spy_spot or spy_spot <= 0:
+        return None
+    try:
+        with _yf_lock:
+            tk = yf.Ticker('SPY')
+            exps = list(tk.options or [])
+        if not exps:
+            return None
+        today = _date.today().isoformat()
+        exp = today if today in exps else exps[0]
+        dte = max(0, (_date.fromisoformat(exp) - _date.today()).days)
+        with _yf_lock:
+            chain = tk.option_chain(exp)
+        calls, puts = chain.calls, chain.puts
+        if calls.empty or puts.empty:
+            return None
+        atm_idx = (calls['strike'] - spy_spot).abs().argsort().iloc[0]
+        strike = float(calls.iloc[atm_idx]['strike'])
+        cr = calls[calls['strike'] == strike]
+        pr = puts[puts['strike'] == strike]
+        if cr.empty or pr.empty:
+            return None
+        call_mid = _option_mid(cr.iloc[0])
+        put_mid = _option_mid(pr.iloc[0])
+        straddle = call_mid + put_mid
+        if straddle <= 0:
+            return None
+        return {
+            'expiry': exp,
+            'dte': dte,
+            'strike_spy': strike,
+            'call_mid': round(call_mid, 2),
+            'put_mid': round(put_mid, 2),
+            'straddle_spy': round(straddle, 2),
+            'straddle_pct_spy': round(straddle / spy_spot * 100, 3),
+        }
+    except Exception as e:
+        print(f'[_zero_dte_atm_straddle] {e}')
+        return None
+
+
+def _session_open_from_candles(df: pd.DataFrame) -> float | None:
+    if df is None or df.empty:
+        return None
+    try:
+        idx = df.index
+        if hasattr(idx, 'tz') and idx.tz is not None:
+            local = idx.tz_convert('America/New_York')
+        else:
+            local = idx
+        today = pd.Timestamp.now(tz='America/New_York').date()
+        mask = local.date == today
+        sub = df.loc[mask] if mask.any() else df.tail(78)
+        if sub.empty:
+            return None
+        return float(sub['Open'].iloc[0])
+    except Exception:
+        try:
+            return float(df['Open'].iloc[-78])
+        except Exception:
+            return float(df['Open'].iloc[0])
+
+
+def _compute_tail_risk_stats(spx_spot: float, session_open: float | None) -> dict:
+    from scipy.stats import kurtosis
+    out = {
+        'excess_kurtosis': None,
+        'kurtosis_flag': False,
+        'z_score_daily': None,
+        'z_score_intraday': None,
+        'z_breach_35': False,
+        'daily_sigma_pct': None,
+        'session_return_pct': None,
+    }
+    try:
+        df_d = get_candles('^GSPC', interval='1d', period='120d')
+        if df_d is not None and len(df_d) >= 30:
+            rets = df_d['Close'].pct_change().dropna()
+            if len(rets) >= 20:
+                ex_k = float(kurtosis(rets.values, fisher=True))
+                out['excess_kurtosis'] = round(ex_k, 2)
+                out['kurtosis_flag'] = ex_k > 3.0
+                sigma = float(rets.std())
+                out['daily_sigma_pct'] = round(sigma * 100, 3)
+                if len(rets) >= 2 and spx_spot:
+                    prev = float(df_d['Close'].iloc[-2])
+                    z_d = (spx_spot - prev) / (prev * sigma) if sigma > 0 else 0.0
+                    out['z_score_daily'] = round(z_d, 2)
+                    if abs(z_d) >= 3.5:
+                        out['z_breach_35'] = True
+        if session_open and spx_spot and session_open > 0:
+            sess_ret = (spx_spot - session_open) / session_open
+            out['session_return_pct'] = round(sess_ret * 100, 3)
+            sigma = out.get('daily_sigma_pct')
+            if sigma and sigma > 0:
+                z_i = sess_ret / (sigma / 100.0)
+                out['z_score_intraday'] = round(z_i, 2)
+                if abs(z_i) >= 3.5:
+                    out['z_breach_35'] = True
+    except Exception as e:
+        print(f'[_compute_tail_risk_stats] {e}')
+    return out
+
+
+def _build_spx_0dte_risk(nocache: bool = False) -> dict:
+    """Aggregate VIX1D, expected move, GEX, and tail stats for SPX 0DTE prep."""
+    def _last(sym: str) -> float | None:
+        try:
+            with _yf_lock:
+                p = float(yf.Ticker(sym).fast_info.last_price)
+                if p > 0:
+                    return p
+        except Exception:
+            pass
+        df = get_candles(sym, interval='1d', period='5d')
+        if df is not None and not df.empty:
+            return float(df['Close'].iloc[-1])
+        return None
+
+    vix1d_sym = '^VIX1D'
+    vix1d = _last(vix1d_sym)
+    vix1d_source = 'VIX1D'
+    if vix1d is None:
+        vix1d = _last('^VIX9D')
+        vix1d_source = 'VIX9D (proxy)'
+    vix30 = _last('^VIX')
+    spx_spot = _last('^GSPC')
+    spy_spot = _last('SPY')
+    ratio = (spx_spot / spy_spot) if (spx_spot and spy_spot and spy_spot > 0) else None
+
+    straddle = _zero_dte_atm_straddle(spy_spot or 0.0)
+    vix_regime = _vix1d_regime(vix1d)
+
+    em = {
+        'method': None,
+        'straddle_spx_pts': None,
+        'straddle_pct': None,
+        'vix1d_implied_pts': None,
+        'vix1d_implied_pct': None,
+        'partial_pct': 0.55,
+        'partial_pts': round(spx_spot * 0.0055, 1) if spx_spot else None,
+        'upper_full': None,
+        'lower_full': None,
+        'upper_partial': None,
+        'lower_partial': None,
+        'session_open': None,
+        'breached_full': False,
+        'breached_partial': False,
+        'move_from_open_pct': None,
+    }
+
+    if straddle and ratio:
+        spx_straddle = straddle['straddle_spy'] * ratio
+        em['method'] = 'ATM 0DTE straddle (SPY scaled to SPX)'
+        em['straddle_spx_pts'] = round(spx_straddle, 1)
+        em['straddle_pct'] = round(spx_straddle / spx_spot * 100, 3) if spx_spot else None
+        em['expiry'] = straddle.get('expiry')
+        em['strike_spy'] = straddle.get('strike_spy')
+
+    if vix1d and spx_spot:
+        vix_pct = (vix1d / 100.0) / np.sqrt(252)
+        em['vix1d_implied_pts'] = round(vix_pct * spx_spot, 1)
+        em['vix1d_implied_pct'] = round(vix_pct * 100, 3)
+
+    df5 = get_candles('SPY', interval='5m', period='5d')
+    session_open_spy = _session_open_from_candles(df5)
+    session_open = (session_open_spy * ratio) if (session_open_spy and ratio) else session_open_spy
+    if session_open_spy and not ratio:
+        session_open = session_open_spy
+    em['session_open'] = round(session_open, 2) if session_open else None
+
+    anchor = session_open or spx_spot
+    move_pts = abs(spx_spot - anchor) if (spx_spot and anchor) else 0
+    if anchor and spx_spot:
+        em['move_from_open_pct'] = round((spx_spot - anchor) / anchor * 100, 3)
+
+    full_pts = em.get('straddle_spx_pts') or em.get('vix1d_implied_pts')
+    if anchor and full_pts:
+        em['upper_full'] = round(anchor + full_pts, 2)
+        em['lower_full'] = round(anchor - full_pts, 2)
+        if move_pts >= full_pts:
+            em['breached_full'] = True
+    partial_pts = em.get('partial_pts') or (spx_spot * 0.0055 if spx_spot else None)
+    if anchor and partial_pts:
+        em['upper_partial'] = round(anchor + partial_pts, 2)
+        em['lower_partial'] = round(anchor - partial_pts, 2)
+        if move_pts >= partial_pts:
+            em['breached_partial'] = True
+
+    gex_row = _gex_row('SPX', 'Indices', nocache=nocache) or _gex_row('SPY', 'ETFs', nocache=nocache)
+    gex_assess = _gex_0dte_assessment(gex_row)
+    tail = _compute_tail_risk_stats(spx_spot or 0.0, session_open)
+
+    score = 0
+    if vix_regime['level'] == 'fat_tail':
+        score += 3
+    elif vix_regime['level'] == 'elevated':
+        score += 2
+    elif vix_regime['level'] == 'normal':
+        score += 1
+    if gex_assess['level'] == 'negative':
+        score += 2
+    if em.get('breached_full'):
+        score += 2
+    if tail.get('z_breach_35'):
+        score += 2
+    if tail.get('kurtosis_flag'):
+        score += 1
+
+    if score <= 2:
+        composite = {'level': 'favorable', 'label': 'Favorable for Defined-Risk 0DTE',
+                     'color': '#4ade80', 'size_guidance': 'Normal defined-risk size OK'}
+    elif score <= 4:
+        composite = {'level': 'caution', 'label': 'Caution — Trim Size',
+                     'color': '#fbbf24', 'size_guidance': 'Reduce contracts ~30–50%; prefer spreads over naked'}
+    elif score <= 6:
+        composite = {'level': 'elevated', 'label': 'Elevated Tail Risk',
+                     'color': '#f97316', 'size_guidance': 'Half size or wider spreads; avoid iron condors at EM boundary'}
+    else:
+        composite = {'level': 'extreme', 'label': 'Extreme — Capital Preservation',
+                     'color': '#f87171', 'size_guidance': 'Avoid new 0DTE or paper-only until VIX1D & GEX stabilize'}
+
+    playbook = []
+    if vix_regime['level'] == 'low':
+        playbook.append('VIX1D < 12: scalp-friendly — take profits quickly, don\'t hold through lunch chop.')
+    elif vix_regime['level'] == 'fat_tail':
+        playbook.append('VIX1D > 20: drop size, widen strikes, no naked short gamma.')
+    if em.get('breached_full'):
+        playbook.append('SPX beyond full expected move — mean-reversion thesis invalid; use stops at EM boundary.')
+    if gex_assess['level'] == 'negative':
+        playbook.append('Negative GEX: momentum can accelerate — avoid selling uncovered premium into trends.')
+    if tail.get('z_breach_35'):
+        playbook.append(f'Z-score breach (|Z| ≥ 3.5): distribution tail event — fade only with tight risk.')
+    if not playbook:
+        playbook.append('All pillars in normal band — standard SPXW defined-risk setups apply with normal size.')
+
+    return {
+        'vix1d': round(vix1d, 2) if vix1d else None,
+        'vix1d_source': vix1d_source,
+        'vix30': round(vix30, 2) if vix30 else None,
+        'vix1d_regime': vix_regime,
+        'spx_spot': round(spx_spot, 2) if spx_spot else None,
+        'spy_spot': round(spy_spot, 2) if spy_spot else None,
+        'expected_move': em,
+        'gex': {
+            'symbol': gex_row.get('symbol') if gex_row else None,
+            'spot': gex_row.get('spot') if gex_row else None,
+            'total_gex_m': gex_row.get('total_gex_m') if gex_row else None,
+            'regime': gex_row.get('regime') if gex_row else None,
+            'call_wall': gex_row.get('gamma_wall') or gex_row.get('call_wall') if gex_row else None,
+            'put_wall': gex_row.get('put_wall') if gex_row else None,
+            'flip_level': gex_row.get('flip_level') if gex_row else None,
+            'assessment': gex_assess,
+        },
+        'tail_risk': tail,
+        'composite': composite,
+        'risk_score': score,
+        'playbook': playbook,
+        'timestamp': iso_now(),
+    }
+
+
+@app.route('/api/spx-0dte-risk')
+def spx_0dte_risk_endpoint():
+    """SPX 0DTE fat-tail prep: VIX1D, expected move, GEX regime, kurtosis/z-scores."""
+    nocache = request.args.get('nocache', '0') == '1'
+    ck = cache_key('all', 'spx-0dte-risk')
+    if not nocache:
+        cached = cache_get(ck)
+        if cached:
+            return jsonify(cached)
+    result = _build_spx_0dte_risk(nocache=nocache)
     cache_set(ck, result)
     return jsonify(result)
 
@@ -8998,6 +9327,7 @@ if __name__ == '__main__':
             '/api/option-flows',
             '/api/most-active-options',
             '/api/0dte',
+            '/api/spx-0dte-risk',
             '/api/options-strategy',
             '/api/fundamentals',
             '/api/volatility-surface?symbol=SPY',
